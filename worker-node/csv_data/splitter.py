@@ -13,11 +13,11 @@ class Splitter:
         del self.data[:]
         with open(file_name, 'r') as csv_file:
             reader = csv.DictReader(csv_file)
-            for row in reader:
+            for row in reader: 
                 self.data.append(row)
 
     def split(self, param):
-        del self.new_data[:]
+        del self.new_data[:] 
         for d in self.data:
             if self.param_list[param] == d["Name"]:
                 self.new_data.append(d)

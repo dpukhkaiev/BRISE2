@@ -2,7 +2,7 @@ FROM python:3-alpine
 
 VOLUME ~/.cache
 
-RUN mkdir -p /usr/src/app
+RUN mkdir -p /usr/src/app 
 WORKDIR /usr/src/app
 
 # COPY requirements.txt /usr/src/app/
@@ -11,4 +11,4 @@ WORKDIR /usr/src/app
 COPY . /usr/src/app
 
 EXPOSE 8080
-CMD ["gunicorn" , "-b", "0.0.0.0:8000", "-w", "3",  "main:app"]
+CMD [ "python", "-u", "./server.py" ]
