@@ -27,7 +27,12 @@ class Splitter:
         for i in self.data:
             if i['FR'] == FR and i['TR'] == TR:
                 self.new_data.append(i)
-        return self.new_data
+        return {
+            'Threads': self.new_data[0]["TR"], 
+            'Frequency': self.new_data[0]["FR"], 
+            'Energy': self.new_data[0]["EN"], 
+            'Time': self.new_data[0]["TIM"]
+        } 
                 
 
     def make_csv(self, name, data_type):

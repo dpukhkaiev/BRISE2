@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs, urlencode
 # import subprocess
 # import threading
 import json
+import cgi
 # import time
 
 from worker import work
@@ -19,21 +20,27 @@ def startServer(port=8080):
             self.end_headers()
 
         def do_GET(self):
-            self._set_headers()
             parsed_path = urlparse(self.path)
             route = parsed_path.path
             params = parse_qs(parsed_path.query)
             
-            worker_result = []
-            # Get treads and frequency (TR,FR)
             print("Params: ", params)
-            if params is not None:   
+
+            worker_result = []      
+            if not params:
+                self.send_response(400)
+                self.end_headers()
+                worker_result = None
+            else:
+                self._set_headers()
+                # Get treads and frequency (TR,FR)            
                 tr = params.get("tr")[0]
                 fr = params.get("fr")[0]
                 print("Keys: ", type(tr), type(fr))
                 # Launch main task. 
                 worker_result = work(fr, tr)
 
+            # return result
             self.wfile.write(json.dumps(
                 {'json': 
                     {"GET - id": route, "Path": parsed_path, "Data": worker_result}
@@ -41,18 +48,24 @@ def startServer(port=8080):
             ).encode("utf-8"))
 
         def do_POST(self):
-            self._set_headers()
-            parsed_path = urllib.parse.urlparse(self.path)
-            request_id = parsed_path.path
+            ctype, pdict = cgi.parse_header(self.headers['content-type'])
+
+            # refuse to receive non-json content
+            if ctype != 'application/json':
+                self.send_response(400)
+                self.end_headers()
+                return
 
             # TODO - write parcer for JSON responce from clients
             with open("client_responces.log", 'a') as logfile:
                 try:
-                    
-                    request = self.request
+                    # get json from request data
+                    self.json_data = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    #print key,value
+                    for key,value in dict(self.json_data).items():
+                        print (key + " - " + value)
                 except:
-                    pass
-                    
+                    pass      
 
             with open('WebServ.log', 'a') as logfile:
                 logfile.write('%s - - [%s] %s\n'%
@@ -60,14 +73,20 @@ def startServer(port=8080):
                                 self.log_date_time_string(),
                                 self.request))
             
+
+            print ("Request: ", self.request)
+            print ("Data: ", self.json_data)
+
+            # return result 
+            self._set_headers()           
             self.wfile.write(json.dumps(
                 {'json': 
-                    {"POST - id": request_id, "Path": parsed_path, "Data": worcer_result}
+                    {"POST": pdict, "Data": self.json_data}
                 }
             ).encode("utf-8"))
 
-        def do_HEAD(self):
-            self._set_headers()
+        # def do_HEAD(self):
+        #     self._set_headers()
         
 
 
