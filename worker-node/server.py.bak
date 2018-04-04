@@ -1,7 +1,6 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 # import SocketServer
-import urllib.parse
-from urllib.parse import urlparse, parse_qs, urlencode
+import urlparse
 # import subprocess
 # import threading
 import json
@@ -20,29 +19,17 @@ def startServer(port=8080):
 
         def do_GET(self):
             self._set_headers()
-            parsed_path = urlparse(self.path)
-            route = parsed_path.path
-            params = parse_qs(parsed_path.query)
+            parsed_path = urlparse.urlparse(self.path)
+            request_id = parsed_path.path
+            csv_data = work()
             
-            worker_result = []
-            # Get treads and frequency (TR,FR)
-            print("Params: ", params)
-            if params is not None:   
-                tr = params.get("tr")[0]
-                fr = params.get("fr")[0]
-                print("Keys: ", type(tr), type(fr))
-                # Launch main task. 
-                worker_result = work(fr, tr)
-
-            self.wfile.write(json.dumps(
-                {'json': 
-                    {"GET - id": route, "Path": parsed_path, "Data": worker_result}
-                }
-            ).encode("utf-8"))
+            self.wfile.write({'json': 
+                json.dumps({"ID": request_id, "Path": parsed_path, "Data": csv_data})
+            })
 
         def do_POST(self):
             self._set_headers()
-            parsed_path = urllib.parse.urlparse(self.path)
+            parsed_path = urlparse.urlparse(self.path)
             request_id = parsed_path.path
 
             # TODO - write parcer for JSON responce from clients
@@ -60,11 +47,9 @@ def startServer(port=8080):
                                 self.log_date_time_string(),
                                 self.request))
             
-            self.wfile.write(json.dumps(
-                {'json': 
-                    {"POST - id": request_id, "Path": parsed_path, "Data": worcer_result}
-                }
-            ).encode("utf-8"))
+            self.wfile.write( {'json': 
+                json.dumps({"POST", request_id, parsed_path})
+            })
 
         def do_HEAD(self):
             self._set_headers()
@@ -74,8 +59,8 @@ def startServer(port=8080):
     def run(server_class=HTTPServer, handler_class=S, port=port):
         server_address = ('', port)
         httpd = server_class(server_address, handler_class)
-        print('Starting httpd...')
-        print(' ', server_address)
+        print 'Starting httpd...'
+        print ' ', server_address
         
         httpd.serve_forever()
     
@@ -88,23 +73,24 @@ def readConfig(fileName='config.json'):
             return config
 
     except IOError as e:
-        print('No config file found!')
-        print(e)
+        print 'No config file found!'
+        print e
         return {}
     except ValueError as e:
-        print('Invalid config file!')
-        print(e)
+        print 'Invalid config file!'
+        print e
         return {}
 
 def run():
+
     #   Reading config file 
-    conf = readConfig()
-    if not conf:
-        print('Unable to start script, no configuration!')
+    remoteDaemons = readConfig()
+    if not remoteDaemons:
+        print 'Unable to start script, no configuration!'
         return
 
     #   Starting http server to recieve responce from containers at background
     startServer()
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     run()
