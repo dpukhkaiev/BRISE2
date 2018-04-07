@@ -23,6 +23,11 @@ def startServer(port=8080):
             parsed_path = urlparse(self.path)
             route = parsed_path.path
             params = parse_qs(parsed_path.query)
+
+            if route == '/favicon.ico':
+                self.send_response(200)
+                self.end_headers()
+                return 
             
             print("Params: ", params)
 
