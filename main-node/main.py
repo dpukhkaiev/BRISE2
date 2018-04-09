@@ -9,7 +9,8 @@ import os
 import fnmatch
 import csv
 import requests
-
+import sobol_seq
+import numpy
 
 def runRemoteContainer(host, image):
 
@@ -164,6 +165,76 @@ def run_sobol(path_to_sobol_file="/home/sem/TMP/BRISE/"):
         config.append([threads[int(point[0])-1], freqs[int(point[1]) - 1]])
 
     return [experiment_number, config]
+
+
+def generate_sobol_seq(dimensionality=2, sizes=(6, 16), number_of_data_points='all'):
+    """
+        Generates sobol sequence of uniformly distributed data points in N dimensional space.
+        :param dimensionality: - number of different parameters in greed.
+        :param sizes: - number of different allowed values in each parameter, for Energy consumption parameters greed we have 6 threads and 16 frequencies.
+        :param number_of_data_points: int or str "all"
+        :return: sobol sequence as numpy array.
+    """
+    if len(sizes) != dimensionality:
+        print("Error in Sobol sequence generator: different number of dimensions and given sizes of dimensions.")
+        return
+
+    else:
+        if number_of_data_points == "all":
+            number_of_data_points = 1
+            for x in sizes:
+                number_of_data_points *= int(x)
+        else:
+            pass
+
+        return sobol_seq.i4_sobol_generate(dimensionality, number_of_data_points)
+
+
+def merge_params_with_sobol_seq(params, sobol_seq=None):
+    """
+    Method maps input parameter points to uniformly generated sobol sequence and returns data points.
+    Number of parameters should be the same as depth of each point in Sobol sequence.
+    It is possible to call method without providing Sobol sequence - it will be generated in runtime.
+    :param params: list of iterable parameter values
+    :param sobol_seq: data points
+    :return: List with uniformly distributed parameters across parameter space.
+    """
+
+    if type(sobol_seq) is numpy.ndarray:
+        if len(params) != len(sobol_seq[0]):
+            print("Warning! Number of provided parameters does not match with size of Sobol sequence. Generating own Sobol sequence based on provided parameters.")
+            sobol_seq = None
+
+    if not sobol_seq or type(sobol_seq) is not numpy.ndarray:
+        sizes = []
+        for parameter in params:
+            sizes.append(len(parameter))
+        sobol_seq = generate_sobol_seq(len(params), sizes, "all")
+
+    # Following loop apply Sobol grid to given parameter grid, e.g.:
+    # for Sobol array(
+    #  [[ 0.5  ,  0.5  ],
+    #   [ 0.75 ,  0.25 ],
+    #   [ 0.25 ,  0.75 ],
+    #   [ 0.375,  0.375],
+    #   [ 0.875,  0.875]])
+    #
+    # And params = [
+    # [1, 2, 4, 8, 16, 32],
+    # [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
+    #   2900.0, 2901.0]
+    #               ]
+    # We will have output like:
+    # [[3.0, 8.0],
+    #  [4.5, 4.0],
+    #  [1.5, 12.0],
+    #  [2.25, 6.0],
+    #  [5.25, 14.0]]
+    result = []
+    for point in sobol_seq:
+        result.append([parameter_value * len(params[parameter_index]) for parameter_index, parameter_value in enumerate(point)])
+
+    return result
 
 
 class TaskRunner(object):
@@ -329,7 +400,7 @@ def run():
         threading.Thread(target=map_task, args=worker["instance"]).start()
 
     while threading.active_count() > 0:
-        time.sleep(0.1)
+        time.sleep(0.5)
 
 if __name__ == "__main__":
     run()
