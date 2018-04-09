@@ -41,7 +41,6 @@ def startServer(port=8080):
                 # Get treads and frequency (TR,FR)            
                 tr = params.get("tr")[0]
                 fr = params.get("fr")[0]
-                print("Keys: ", type(tr), type(fr))
                 # Launch main task. 
                 worker_result = work(fr, tr)
 
