@@ -1,6 +1,6 @@
 FROM python:3-alpine
 
-VOLUME ~/.cache
+# VOLUME ~/.cache
 
 RUN mkdir -p /usr/src/app 
 WORKDIR /usr/src/app

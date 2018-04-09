@@ -1,0 +1,50 @@
+version: "2"
+services: 
+  w_alpha: 
+    build: ./worker-node/
+    container_name: w_alpha
+    environment: 
+      - workername=alpha
+    networks: 
+      worker_net: 
+        aliases: 
+          - alpha
+    ports: 
+      - "1831:8080"
+    volumes: 
+      - "./worker-node:/usr/src/app"
+  w_beta: 
+    build: ./worker-node/
+    container_name: w_beta
+    environment: 
+      - workername=beta
+    networks: 
+      worker_net: 
+        aliases: 
+          - beta
+    ports: 
+      - "1832:8080"
+    volumes: 
+      - "./worker-node:/usr/src/app"
+  w_service: 
+    build: ./worker-service/
+    command: sh
+    stdin_open: true      
+    tty: true
+    container_name: w_service
+    networks: 
+      worker_net: 
+        aliases: 
+          - w_service
+    ports: 
+      - "80:8080"
+    volumes: 
+      - "./worker-service:/usr/src/app"
+
+networks: 
+  worker_net: 
+    driver: bridge
+
+
+
+# Launch & Build a bunch containers with workers and one service for them
