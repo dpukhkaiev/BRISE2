@@ -6,7 +6,7 @@ from urllib.parse import urlparse, parse_qs, urlencode
 # import threading
 import json
 import cgi
-# import time
+import os
 
 from worker import work
 
@@ -48,7 +48,10 @@ def startServer(port=8080):
             # return result
             self.wfile.write(json.dumps(
                 {'json': 
-                    {"GET - id": route, "Path": parsed_path, "Data": worker_result}
+                    {"GET - id": route, 
+                    "Path": parsed_path, 
+                    "Node:": os.environ['workername'], 
+                    "Data": worker_result}
                 }
             ).encode("utf-8"))
 
@@ -86,7 +89,7 @@ def startServer(port=8080):
             self._set_headers()           
             self.wfile.write(json.dumps(
                 {'json': 
-                    {"POST": pdict, "Data": self.json_data}
+                    {"POST": pdict, "Node:": os.environ['workername'], "Data": self.json_data}
                 }
             ).encode("utf-8"))
 

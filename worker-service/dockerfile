@@ -1,0 +1,15 @@
+
+# Service
+FROM python:3-alpine
+
+RUN mkdir -p /usr/src/app 
+WORKDIR /usr/src/app
+
+COPY . /usr/src/app
+
+# TODO: install from source code
+RUN apk add --no-cache curl && \
+ pip3 install request 
+ 
+EXPOSE 8080 1831 1832
+CMD [ "python", "-u", "./intro.py" ]
