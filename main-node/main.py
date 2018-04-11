@@ -1,6 +1,7 @@
-import docker
-
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from WorkerService import WorkerService
+
+import docker
 import urllib.parse
 import threading
 import json
@@ -8,7 +9,6 @@ import time
 import os
 import fnmatch
 import csv
-import requests
 import sobol_seq
 import numpy
 
@@ -167,6 +167,22 @@ def run_sobol(path_to_sobol_file="/home/sem/TMP/BRISE/"):
     return [experiment_number, config]
 
 
+def load_task(path_to_file="./task.json"):
+    """
+    Method reads task.json file where task name and task parameters, that are needed to be sent to the workers specified.
+    :param path_to_file: sting path to task file.
+    :return: dict with task name and task parameters
+    """
+    try:
+        with open(path_to_file, 'r') as taskFile:
+            task = json.loads(taskFile.read())
+            return task
+    except IOError as e:
+        print("Error with reading task.json file: %s" % e)
+    except json.JSONDecodeError as e:
+        print("Error with decoding task: %s" % e)
+
+
 def generate_sobol_seq(dimensionality=2, sizes=(6, 16), number_of_data_points='all'):
     """
         Generates sobol sequence of uniformly distributed data points in N dimensional space.
@@ -237,170 +253,34 @@ def merge_params_with_sobol_seq(params, sobol_seq=None):
     return result
 
 
-class TaskRunner(object):
-
-    def __init__(self, experiment_number, host):
-        """
-        self.State displays state of runner, possible states: Free, TaskSent, ResultsGot
-        :param experiment_number: sequence number of experiment to write results
-        :param config: dict object {"key": value} - will be sent to slave
-        :param host: remote slave address including port "127.0.0.1:8089"
-        """
-        self.experiment_number = experiment_number
-        self.config = None
-        self.host = host
-        self.path = "http://%s" % self.host
-        self.results = None
-        self.State = "Free"
-
-    def send_task(self, config):
-
-        if self.State != "Free":
-            print("Runner is already busy.")
-            return 1
-        else:
-            self.config = config
-
-        headers = {
-            'Type': "AddTask"
-        }
-        for x in range(10):
-            try:
-                responce = requests.post(self.path, data=json.dumps(self.config), headers=headers)
-                if "OK" not in responce.content:
-                    continue
-                break
-            except requests.RequestException as e:
-                print("Failed to send task to %s: %s" %( self.host, e))
-        if x == 4: return 1
-
-        self.State = "TaskSent"
-        return
-
-    def get_results(self):
-        """
-        Send one time poll request to get results from the slave
-        :return: dict object with results or None in case of faulere
-        """
-        if self.State != "TaskSent":
-            print("Task was not send.")
-            return 1
-
-        headers = {
-            "Type": "GetResults"
-        }
-        try:
-            responce = requests.get(self.path + "/results", headers=headers)
-            try:
-                result = responce.content.decode()
-                while "\n" in result: result = result.replace("\n", "")
-                self.results = json.loads(result)["json"]["Data"]
-                self.State = "ResultsGot"
-                return self.results
-            except Exception as e:
-                print("Unable to decode responce: %s\nError: %s" % responce.content, e)
-                return None
-
-        except requests.RequestException as e:
-            print("Failed to get results from host %s" % self.host)
-            return None
-
-    def poll_while_not_get(self, interval = 0.1, timeout = 10):
-        """
-        Start polling results from host with specified time interval and before timeout elapsed.
-        :param interval: interval between each poll request
-        :param timeout:  timeout before terminating task
-        :return:
-        """
-        time_start = time.time()
-        result = self.get_results()
-
-        while not result:
-            result = self.get_results()
-            if time.time() - time_start > timeout:
-                break
-            time.sleep(interval)
-
-        return result
-
-    def write_results(self):
-        """
-        Appends results to "results_ExperimentNumber.csv" file
-        :return:
-        """
-        if self.State != "ResultsGot":
-            print("No results to write.")
-            return 1
-
-        if not self.results:
-            self.get_results()
-
-        result_fields = ["Threads", "Frequency", "Energy", "Time"]
-        # result_fields = ['MinAPIVersion', 'GoVersion', 'Arch', 'ApiVersion', 'Os', 'GitCommit', 'BuildTime', 'Version', 'KernelVersion']
-        if len(self.results) != len(result_fields):
-            print("ERROR - different number of fields got and needed to be written!")
-            print("Got:%s\nNeed:%s\n" %(self.results.keys(), result_fields))
-            return 1
-        try:
-            with open("results_%s.csv" % self.experiment_number, 'a', newline="") as csvfile:
-                writer = csv.DictWriter(csvfile, restval=' ', fieldnames=result_fields)
-                writer.writerow(self.results)
-                self.State = "Free"
-            return 0
-        except Exception as e:
-            print("Failed to write the results: %s" % e)
-            return 1
-
-    def work(self, config):
-        self.send_task(config)
-        self.poll_while_not_get()
-        self.write_results()
-
-
 def run():
 
     #   Reading config file 
-    worker_set = readConfig()
-    if not worker_set:
-        print('Unable to start script, no configuration!')
-        return
+    globalConfig = readConfig()
 
-    #   Starting http server to recieve responce from containers at background
-    # server_thread = threading.Thread(target=startServer)
-    # server_thread.start()
-    # time.sleep(2) # to start a httpd
+    #   Loading task config and creating config points distribution according to Sobol.
+    task = load_task()["task1"]
+    task_params_by_sobol = merge_params_with_sobol_seq(task["taskParams"])
 
-    #   Start runnig containters on remote daemons
-    for worker in list(worker_set.keys()):
-        runRemoteContainer(worker_set[worker], worker_set[worker]["image"])
-    #   After finishing running containers - join server thread to main thread
-    # server_thread.join()
+    #   Connect to the Worker Service and send task.
+    # TODO: need to add "connect" method that will ensure reachable of Worker Service
 
-    #   Running sobol R script for generation of tasks
-    exp_number, tasks_list = run_sobol()
+    WS = WorkerService(experiment=1, host=globalConfig["WorkerService"]["address"])
+    # WS.send_task({"taskName"    : task["taskName"],
+    #               "taskParams"  : task_params_by_sobol})
 
-    # Function that runs one worker
-    def map_task(worker):
-        global tasks_list
-        while tasks_list:
-            try:
-                task = tasks_list.pop()
-                task = {"TR": task[0], "FR": task[1]}
-                worker.work(task)
-            except IndexError:
-                return
+    #   Sending test task to sleep
+    WS.send_task({
+        "taskName"  : "Sleep",
+        "taskParams": [10]
+    })
 
-    # Create worker instances
-    for worker in worker_set:
-        worker_WS_addr = "http://%s:8080" % worker['ip']
-        worker_set[worker]["instance"] = TaskRunner(exp_number, worker_WS_addr)
+    #   Start polling results
+    result = WS.poll_while_not_get(interval=0.5, timeout=15)
+    print("Finished sending and polling task 'Sleep' with results:\n%s" % result)
 
-    # Start swarming :)
-    for worker in worker_set:
-        threading.Thread(target=map_task, args=worker["instance"]).start()
+    WS.write_results_to_csv()
 
-    while threading.active_count() > 0:
-        time.sleep(0.5)
 
 if __name__ == "__main__":
     run()
