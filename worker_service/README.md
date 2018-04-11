@@ -2,4 +2,6 @@
 
 ###### This folder consist code that encapsulates logic distribution of tasks between workers
 
-- [worker node](Valavanca/benchmark/tree/master/worker-node/info.md)
+- Dependancy: Flask, requests
+
+- [worker node](Valavanca/benchmark/tree/master/worker_node/README.md)
