@@ -7,9 +7,9 @@ WORKDIR /usr/src/app
 
 COPY . /usr/src/app
 
-# TODO: install from source code
 RUN apk add --no-cache curl && \
- python3 -mpip install requests 
+ python3 -mpip install requests && \
+ pip install Flask
  
-EXPOSE 8080
+EXPOSE 80
 CMD [ "python", "-u", "./intro.py" ]
