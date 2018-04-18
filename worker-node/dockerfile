@@ -3,7 +3,9 @@ FROM python:3-alpine
 RUN mkdir -p /usr/src/app 
 WORKDIR /usr/src/app
 
+RUN pip install Flask
+
 COPY . /usr/src/app
 
 EXPOSE 8080
-CMD [ "python", "-u", "./server.py" ]
+CMD [ "python", "-u", "./w_server.py" ]
