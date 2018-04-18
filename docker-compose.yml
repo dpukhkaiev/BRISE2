@@ -27,7 +27,7 @@ services:
     volumes: 
       - "./worker-node:/usr/src/app"
   w_service: 
-    build: ./worker-service/
+    build: ./worker_service/
     command: sh
     stdin_open: true      
     tty: true
@@ -37,9 +37,13 @@ services:
         aliases: 
           - w_service
     ports: 
-      - "80:8080"
+      - "80:80"
     volumes: 
-      - "./worker-service:/usr/src/app"
+      - "./worker_service:/usr/src/app"
+    environment:
+      - FLASK_APP=worker_service/__init__.py
+      - FLASK_DEBUG=1
+      - WORKER_COUNT=2 # depends of worker instance. [alpha, beta, gamma, delta]
 
 networks: 
   worker_net: 
