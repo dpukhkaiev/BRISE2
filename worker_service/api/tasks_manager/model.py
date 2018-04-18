@@ -1,5 +1,5 @@
 from flask import jsonify
-
+import time
 import uuid
 
 class Task():
@@ -7,9 +7,9 @@ class Task():
      The basic working unit that executed by the workers
     '''
 
-    def __init__(self, method, params, conf=None, owner=None, appointment=None, receive=None, accept=None, complete=None):
+    def __init__(self, method, params, conf=None, owner=None, appointment=None, receive=None, accept=None, result=None):
         self.id = uuid.uuid4().hex
-        self.data = {
+        self.run = {
            'method': method,
            'param': params
         }
@@ -19,23 +19,23 @@ class Task():
             'appointment': appointment,
             'receive': receive,
             'accept': accept,
-            'complete': complete 
+            'result': result 
         }  
 
     def to_json(self):
         return {
-            'Data': self.data,
-            'Config': self.conf,
-            'Meta data': self.meta
+            'id': self.id,
+            'run': self.run,
+            'config': self.conf,
+            'meta_data': self.meta
         }
 
 
 def t_parser(payload): 
     # Parse json data in to Task objects
     task_list = list()
-
     for method in payload:
-        new = Task(method=method['task_name'],params=method['params'],conf=method['worker_config'])        
+        new = Task(method=method['task_name'],params=method['params'],conf=method['worker_config'],receive=time.time())        
         task_list.append(new)
     return task_list
 
@@ -57,10 +57,8 @@ class Stack():
 
     def pop(self):
         # remove first task from queue
-        if len(self.queue) > 0:
-            return self.queue.pop(0)
-        else:
-            return None
+        return self.queue.pop(0) if len(self.queue) > 0 else None
+
     
     def push(self, task, index=0):
         index=len(self.queue)
