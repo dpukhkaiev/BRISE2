@@ -5,6 +5,8 @@ from .tasks_manager.workflow import Workflow, Task
 from .tasks_manager.model import t_parser
 from .worker_manager.recruit import Recruit 
 
+import time
+
 
 # initialization flask router blueprint
 service_blueprint = Blueprint('service', __name__, static_folder='static')
@@ -14,7 +16,7 @@ flow = Workflow()
 
 # worker manager/discover
 hr = Recruit(flow)
-hr.print()
+# hr.print()
 
 
 @service_blueprint.route('/', methods=['GET', 'POST'])
@@ -25,7 +27,7 @@ def index():
     else:
         username = "default"
         email = "default" 
-    return jsonify({'1': username, '2': email, 'Data': flow.go_go_baby()}), 200
+    return jsonify({'1': username, '2': email}), 200
 
 
 @service_blueprint.route('/ping', methods=['GET'])
@@ -36,52 +38,43 @@ def ping_pong():
     })
 
 
-@service_blueprint.route('/status', methods=['GET'])
+@service_blueprint.route('/result', methods=['GET'])
 def get_all_nodes():
-    """Get all nodes"""
+    """Get all result"""
     response_object = {
-        'status': 'success',
-        'data': {
-            'nodes': "good"
-            # 'nodes': [user.to_json() for user in User.query.all()]
-        }
+        'time': time.time(),
+        'results': hr.results()
     }
     return jsonify(response_object), 200
 
 
-@service_blueprint.route('/status/<node_id>', methods=['GET'])
-def get_single_node(node_id):
-    """Get single node details"""
+@service_blueprint.route('/result/<task_id>', methods=['GET'])
+def get_single_node(task_id):
+    """Get single result"""
     response_object = {
         'status': 'fail',
-        'message': 'Node does not exist'
+        'message': 'task does not exist'
     }
-    try:
-        # user = User.query.filter_by(id=int(node_id)).first()
-        if not user:
-            return jsonify(response_object), 404
-        else:
-            response_object = {
-                'status': 'success',
-                'data': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'active': user.active
-                }
-            }
-            return jsonify(response_object), 200
-    except ValueError:
+    result = hr.results(task_id)
+    if not result:
         return jsonify(response_object), 404
+    else:
+        response_object = {
+            'time': time.time(),
+            'result': result
+        }
+        return jsonify(response_object), 200
 
 
 @service_blueprint.route('/task/add', methods=['POST'])
 def add_tasks():
     '''
-    Get new tasks from JSON (mimetype is application/json)
+    Get new tasks from JSON 
+    Mimetype - application/json
     '''
+    # request data
     post_data = request.get_json()
-    # print("POST data ::", request.form)
+
     response_object = {
         'status': 'fail',
         'message': 'Invalid payload.'
@@ -140,7 +133,7 @@ def run_test():
         if request.method == 'GET':
             r = hr.assign_test() # test execution
         else:
-            r = hr.assign() # Task instance
+            r = hr.spin() # Task instance
             
         if not r:
             return jsonify(response_object), 404

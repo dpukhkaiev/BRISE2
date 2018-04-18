@@ -9,8 +9,8 @@ class Workflow():
 
     def __init__(self):
         self.stack = Stack()
-        self.add_task(Task('random', 42, owner=1)) # Test instance
-        self.add_task(Task('random', 42, owner=2)) # Test instance
+        # self.add_task(Task('random', 42, owner=1)) # Test instance
+        # self.add_task(Task('random', 42, owner=2)) # Test instance
 
 
     def add_task(self, task):
@@ -22,13 +22,13 @@ class Workflow():
         return self.stack.pop()
 
     def get_task(self, index=0):
-        # get task copy from stack
+        # get copy of task from stack
         return self.stack.get(index)
 
-    def go_go_baby(self):
-        # debug method
-        # use '__dict__' to return valid data
-        return self.stack.pop().__dict__ 
+    # def go_go_baby(self):
+    #     # debug method
+    #     # use '__dict__' to return valid data
+    #     return self.stack.pop().__dict__ 
 
     def get_stack(self):
         return self.stack.to_json() or {}
