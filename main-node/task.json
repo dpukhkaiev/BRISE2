@@ -1,0 +1,10 @@
+{
+    "task_name"  : "EnergyConsumption",
+    "params": {
+      "ExperimentNumber"  : 1,
+      "InitTrain_size"  : 0.3,
+      "SobolInitLength" : 5,
+      "DataFile"        : "./taskData.json",
+      "DimensionNames"  : ["threads", "frequency"]
+    }
+}
