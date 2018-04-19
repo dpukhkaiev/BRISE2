@@ -53,7 +53,7 @@ def get_via_format():
     if not post_data:
         return jsonify(response_object), 400
 
-    structure = hr.results_2(post_data)
+    structure = hr.results_struct(post_data)
     return jsonify(structure), 200
 
 

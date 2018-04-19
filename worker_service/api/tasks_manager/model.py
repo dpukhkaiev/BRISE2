@@ -7,7 +7,7 @@ class Task():
      The basic working unit that executed by the workers
     '''
 
-    def __init__(self, method, params, conf=None, owner=None, appointment=None, receive=None, accept=None, result=None):
+    def __init__(self, method, params, conf="null", owner="null", appointment="null", receive="null", accept="null", result="null"):
         self.id = uuid.uuid4().hex
         self.run = {
            'method': method,
