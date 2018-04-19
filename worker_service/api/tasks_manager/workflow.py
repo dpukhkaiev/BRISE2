@@ -25,10 +25,5 @@ class Workflow():
         # get copy of task from stack
         return self.stack.get(index)
 
-    # def go_go_baby(self):
-    #     # debug method
-    #     # use '__dict__' to return valid data
-    #     return self.stack.pop().__dict__ 
-
     def get_stack(self):
         return self.stack.to_json() or {}

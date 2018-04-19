@@ -36,6 +36,10 @@ class Recruit():
                 print(" Spin:", self.spin())
                 time.sleep(1)
 
+            for task in self.flow.get_stack():
+                if task["id"] not in self.result:
+                    self.result[task["id"]] = task
+
     def status(self):
         print(" Workers:", self.workers)
 
@@ -44,7 +48,7 @@ class Recruit():
           return self.result[id] if id in self.result else None 
         else: return self.result
 
-    def results_2(self, struct):
+    def results_struct(self, struct):
         answer = {
             "response_type": "get_results",
             "task_name": [],
@@ -54,22 +58,27 @@ class Recruit():
         }
 
         for i in struct["id"]:
-            temp = self.result[i] 
-            answer["task_name"].append(temp["run"]["method"])
-            answer["statuses"].append("done" if temp["meta_data"]["result"] else "in progress")
-            
-            t_val = []
-            for par in struct["response_struct"]:
-                if temp["meta_data"]["result"]:
-                    try:
-                        t_val.append(temp["meta_data"]["result"][par])
-                    except:
-                        with open("recruit.log", 'w') as f:
-                            f.write(str(temp))
-                            f.write("par:" + str(par))
-                else: t_val.append("in stack")
+            if i in self.result:
+                temp = self.result[i]
+                answer["task_name"].append(temp["run"]["method"] if "run" in temp else "...")
+                answer["statuses"].append("done" if "time" in temp["meta_data"]["result"] else "in progress")
+                
+                t_val = []
+                for par in struct["response_struct"]:
+                    if temp["meta_data"]["result"]:
+                        try:
+                            t_val.append(temp["meta_data"]["result"][par])
+                        except:
+                            with open("recruit.log", 'w') as f:
+                                f.write(str(temp))
+                                f.write("par:" + str(par))
+                    else: t_val.append("in stack")
 
-            answer["param_values"].append(t_val)
+                answer["param_values"].append(t_val)
+            else:
+                answer["statuses"].append("wrong id")
+                answer["task_name"].append("null")
+                answer["param_values"].append(["null"])
         return answer
 
 
