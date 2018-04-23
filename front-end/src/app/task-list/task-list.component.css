@@ -1,0 +1,32 @@
+.focus, .stack {
+  display: inline-block;
+}
+.focus {
+  width: 48%;
+  min-width: 460px;
+}
+.stack {
+  width: 50%;
+  min-width: 500px;
+}
+
+.selected {
+    font-weight: 700;
+    border-left: 2px solid rgba(0, 0, 0, 0.9);;
+}
+.selected .mat-list-icon {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+
+.mat-list-icon {
+  color: rgba(0, 0, 0, 0.54);
+}
+.mat-icon {
+  color: rgba(0, 0, 0, 0.54);
+}
+.mat-icon + span {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: .95em;
+  vertical-align: middle;
+}
