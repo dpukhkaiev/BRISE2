@@ -10,11 +10,11 @@ def work(fr, tr):
 
 def random_1(param):
     data = Splitter("csv_data/Radix-750mio_avg.csv")
-    time.sleep(randint(3, 7))
-    return data.search(str(param['fr']), str(param['tr']))  
+    time.sleep(randint(1, 3))
+    return data.search(str(param['frequency']), str(param['threads']))  
 
 def random_2(param):
     data = Splitter("csv_data/Radix-750mio_avg.csv")
-    time.sleep(randint(3, 6))
-    return data.search(str(param['fr']), str(param['tr']))  
+    time.sleep(randint(1, 3))
+    return data.search(str(param['frequency']), str(param['threads']))  
     

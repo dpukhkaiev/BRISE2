@@ -34,7 +34,7 @@ def ping_pong():
     return jsonify({
         'status': 'success',
         'message': 'pong!'
-    })
+    }), 200
 
 
 @service_blueprint.route('/result/format', methods=['PUT'])
@@ -105,10 +105,8 @@ def add_tasks():
 
     try:
         # parse data in to task list
-        print("Bool v2: ", hasattr(post_data, 'request_typ1'))
         if 'request_type' in post_data and post_data['request_type'] == 'send_task': 
             id_list, task_list = t_parser_2(post_data) 
-            print("v2: ", task_list)
         else: 
             id_list, task_list = t_parser(post_data)
              
@@ -142,7 +140,8 @@ def get_stack():
     try:
         stack = flow.get_stack()
         if not stack:
-            return jsonify(response_object), 404
+            response_object['message'] = 'empty'
+            return jsonify(response_object), 200
         else:
             response_object = {
                 'status': 'success',
