@@ -2,8 +2,8 @@
     "task_name"  : "random_1",
     "params": {
       "ExperimentNumber"  : 1,
-      "ModelTestSize"  : 0.3,
-      "SobolInitLength" : 5,
+      "ModelTestSize"  : 0.4,
+      "SobolInitLength" : 10,
       "DataFile"        : "./taskData.json",
       "FeatureNames"  : ["frequency", "threads"],
       "ResultStructure"  : ["frequency", "threads", "energy"],

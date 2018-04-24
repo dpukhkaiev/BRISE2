@@ -9,13 +9,17 @@ Requirements:
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from WorkerService import WorkerService
-from regression import Regression
+from regression import Regression, SobolSequence
 
 
 import urllib.parse
 import json
-import sobol_seq
 import numpy
+import itertools
+
+# disable warnings for demonstration.
+from warnings import filterwarnings
+filterwarnings("ignore")
 
 def startServer(port=8089):
 
@@ -96,21 +100,23 @@ def load_task(path_to_file="./task.json"):
             task = json.loads(taskFile.read())
             # return task
         dataFile = task["params"]["DataFile"]
-        dimmensions = task["params"]["DimensionNames"]
+        dimmensions = task["params"]["FeatureNames"]
         with open(dataFile) as f:
             data = json.loads(f.read())[task["task_name"]]
             taskDataPoints = []
             for dimension in dimmensions:
-                taskDataPoints.append(numpy.array(data[dimension]))
+                taskDataPoints.append(data["all_data"][dimension])
     except IOError as e:
         print("Error with reading task.json file: %s" % e)
         exit(1)
     except json.JSONDecodeError as e:
         print("Error with decoding task: %s" % e)
         exit(1)
-    return {"task_name"          : task["task_name"],
-            "params"        : task["params"],
-            "TaskDataPoints"    : taskDataPoints}
+    return {"task_name"         : task["task_name"],
+            "params"            : task["params"],
+            "TaskDataPoints"    : taskDataPoints,
+            "default_best"      : data["default_best"]}
+
 
 def cartesian_product(*arrays):
     la = len(arrays[0])
@@ -119,100 +125,6 @@ def cartesian_product(*arrays):
     for i, a in enumerate(numpy.ix_(*arrays[0])):
         arr[...,i] = a
     return arr.reshape(-1, la)
-
-class SobolSequence():
-
-    def __init__(self, dimensionality, data):
-        """
-        Creates SobolSequence instance that stores information about number of generated poitns
-        :param dimensionality: - number of different parameters in greed.
-
-        """
-        self.dimensionality = dimensionality
-        self.data = data
-        self.numOfGeneratedPoints = 0
-
-    def __generate_sobol_seq(self, number_of_data_points=1, skip = 0):
-        """
-            Generates sobol sequence of uniformly distributed data points in N dimensional space.
-            :param number_of_data_points: int - number of points that needed to be generated in this iteration
-            :return: sobol sequence as numpy array.
-        """
-
-        sequence = sobol_seq.i4_sobol_generate(self.dimensionality, skip + number_of_data_points)[skip:]
-        self.numOfGeneratedPoints += number_of_data_points
-
-        return sequence
-
-    def getNextPoint(self):
-        """
-        Will return next data point from initiated Sobol sequence.
-        :return:
-        """
-        # Cut out previously generated points.
-        skip = self.numOfGeneratedPoints
-
-        # Point is a list with floats uniformly distributed between 0 and 1 for all parameters [paramA, paramB..]
-        point = self.__generate_sobol_seq(skip=skip)[0]
-
-        result = []
-        # In loop below this distribution imposed to real parameter values list.
-        for parameter_index, parameterValue in enumerate(point):
-            result.append(self.data[parameter_index][round(len(self.data[parameter_index]) * float(parameterValue) - 1 )])
-
-        return result
-
-    def mergeDataWithSobolSeq(self, sobol_seq=None, numOfPoints = 'all'):
-        """
-        Method maps input parameter points to uniformly generated sobol sequence and returns data points.
-        Number of parameters should be the same as depth of each point in Sobol sequence.
-        It is possible to call method without providing Sobol sequence - it will be generated in runtime.
-        :param sobol_seq: data points
-        :param numOfPoints: 'all' - all parameters will be mapped to sobol distribution function, or int
-        :return: List with uniformly distributed parameters across parameter space.
-        """
-
-        if type(sobol_seq) is numpy.ndarray:
-            if len(self.data) != len(sobol_seq[0]):
-                print("Warning! Number of provided parameters does not match with size of Sobol sequence. Generating own Sobol sequence based on provided parameters.")
-                sobol_seq = None
-
-        # The below 'if' case generates sobol sequence
-        if not sobol_seq or type(sobol_seq) is not numpy.ndarray:
-
-            if numOfPoints == 'all':
-                numOfPoints = 1
-                for parameter in self.data:
-                    numOfPoints *= len(parameter)
-
-            sobol_seq = self.__generate_sobol_seq(numOfPoints)
-
-        # Following loop apply Sobol grid to given parameter grid, e.g.:
-        # for Sobol array(
-        #  [[ 0.5  ,  0.5  ],
-        #   [ 0.75 ,  0.25 ],
-        #   [ 0.25 ,  0.75 ],
-        #   [ 0.375,  0.375],
-        #   [ 0.875,  0.875]])
-        #
-        # And params = [
-        # [1, 2, 4, 8, 16, 32],
-        # [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
-        #   2900.0, 2901.0]
-        #               ]
-        # We will have output like:
-        # [[3.0, 8.0],
-        #  [4.5, 4.0],
-        #  [1.5, 12.0],
-        #  [2.25, 6.0],
-        #  [5.25, 14.0]]
-        result = []
-        for point in sobol_seq:
-            tmp_res = []
-            for parameter_index, parameterValue in enumerate(point):
-                tmp_res.append(self.data[parameter_index][round(len(self.data[parameter_index]) * float(parameterValue) - 1 )])
-            result.append(tmp_res)
-        return result
 
 
 def feat_lab_split(data, structure):
@@ -232,7 +144,7 @@ def feat_lab_split(data, structure):
             else:
                 to_labels.append(point[index])
         results['features'].append(to_features)
-        results['lamels'].append(to_labels)
+        results['labels'].append(to_labels)
     return results['features'], results['labels']
 
 def run():
@@ -247,67 +159,68 @@ def run():
     # Creating instance of Sobol based on task data for further uniformly distributed data points generation.
     sobol = SobolSequence(dimensionality = len(task["TaskDataPoints"]), data=task["TaskDataPoints"])
 
+    #   Connect to the Worker Service and send task.
+    WS = WorkerService(task_name=task["task_name"],
+                       features_names=task["params"]["FeatureNames"],
+                       results_structure=task["params"]["ResultStructure"],
+                       experiment_number=task["params"]["ExperimentNumber"],
+                       host=globalConfig["WorkerService"]["Address"])
+
+    # Need to find default value that we will used in regression to evaluate solution
+    print("Getting default best value..")
+    default_best_task = task["default_best"]
+    default_best_results = WS.work([default_best_task])
+    default_best_point, default_best_energy = feat_lab_split(default_best_results, task["params"]["ResultFeatLabels"])
+    print(default_best_energy)
+
     # Creating initial set of points for testing and first attempt to create regression model.
     initial_task = sobol.mergeDataWithSobolSeq(numOfPoints=task["params"]["SobolInitLength"])
 
-    # Preparing task request for sending it to the WS.
-
-    #   Connect to the Worker Service and send task.
-    results_structure = ["frequency", "threads", "energy", "exe_time", "state_time"]
-    feat_and_labels_structure = ['feature', 'feature', 'label']
-
-    WS = WorkerService(task_name=task["task_name"],
-                       features_names=task["params"]["DimensionNames"],
-                       results_structure=results_structure,
-                       experiment_number=task["params"]["ExperimentNumber"],
-                       host=globalConfig["WorkerService"]["Address"])
-    # Check availability of WS
-    # if not WS.ping():
-    #     print("WS does not available, shutting down.")
-    #     return 1
-    # else:
-
     # Results will be in a list of points, each point is also a list of values:
     # [[val1, val2,... valN], [val1, val2,... valN]...]
+    print("Sending initial task..")
     results = WS.work(initial_task)
+    print("Results got, splitting to features and labels..")
+    features, labels = feat_lab_split(results, task["params"]["ResultFeatLabels"])
 
-    features, labels = feat_lab_split(results, feat_and_labels_structure)
+    # Generate whole search space for regression.
+    search_space = list(itertools.product(*task["TaskDataPoints"]))
 
-    reg_model = Regression("",
-                           task["params"]["InitTrain_size"],
-                           features,
-                           labels)
+    reg_success = False
+    while not reg_success:
+        reg = Regression(output_filename = "%s_regression.txt" % task["task_name"],
+                         test_size = task["params"]["ModelTestSize"],
+                         features = features,
+                         targets = labels)
 
-    model_is_accurate = reg_model.regression(filename=WS.output_filename,
-                                          param='noParam',
-                                          degree=6,  # found in start.py of BRISE
-                                          r2_min=0.8)
-    search_space = cartesian_product(task["TaskDataPoints"])
+        reg_success = reg.regression(param=task["params"],
+                                        score_min=0.5,
+                                        searchspace=search_space)
+        if reg_success:
+            print("Model build with accuracy: %s" % reg.accuracy)
+            print("Verifying solution that model gave..")
+            measured_energy = feat_lab_split(WS.work([reg.solution_features]), task["params"]["ResultFeatLabels"])[1][0]
 
-    energy = -1
-    features = []
+            # If our measured energy higher than default best value OR
+            # Our predicted energy deviates for more than 10% from measured - take new point.
+            if measured_energy > default_best_energy[0] or \
+                    abs(measured_energy[0] - reg.solution_labels[0]) > measured_energy[0] * 0.1:
 
-    while not model_is_accurate or energy < 0:
-        print("Model is not valid, running new task. Checked points by Sobol: %s" % sobol.numOfGeneratedPoints)
-        cur_task = sobol.getNextPoint()
-        results = WS.work(cur_task)
-        new_feature, new_label = feat_lab_split(results, feat_and_labels_structure)
-        features += new_feature
-        labels += new_label
+                print("Predicted energy larger than default, or deviation too big.")
+                print("Predicted energy: %s. Measured: %s. Best default: %s" %(reg.solution_labels[0], measured_energy[0], default_best_energy[0][0]))
+                reg_success = False
 
-        reg_model = Regression("",
-                               task["params"]["InitTrain_size"],
-                               features,
-                               labels)
+        if not reg_success:
+            print("New data point needed to continue building regression. Current number of data points: %s" % str(sobol.numOfGeneratedPoints))
+            cur_task = [sobol.getNextPoint()]
+            results = WS.work(cur_task)
+            new_feature, new_label = feat_lab_split(results, task["params"]["ResultFeatLabels"])
+            features += new_feature
+            labels += new_label
 
-        model_is_accurate = reg_model.regression(filename=WS.output_filename,
-                                   param='noParam',
-                                   degree=6,  # found in start.py of BRISE
-                                   r2_min=0.99)
-        if model_is_accurate:
-            energy, features = reg_model.find_optimal(search_space)
-
-
+    predicted_energy, predicted_point = reg.solution_labels, reg.solution_features
+    print("\n\nPredicted energy: %s, with configuration: %s" % (predicted_energy[0], predicted_point))
+    print("Measured energy is: %s" % str(measured_energy[0]))
 
 
 if __name__ == "__main__":
