@@ -10,7 +10,7 @@ The objective of this progect is to reduce the amount of effort spent on benchma
 ## Components
 ### Back End
 - [Main thread](./main-node) regresion, experiment selection, assumption
-- [Worker service](./main-node) experiment managing, encapsulation, result storing 
+- [Worker service](./worker_service) experiment managing, encapsulation, result storing 
 - [Worker](./worker_node) experiment execution
 
 ### Front-end
