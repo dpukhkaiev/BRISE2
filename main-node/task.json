@@ -1,10 +1,12 @@
 {
-    "task_name"  : "EnergyConsumption",
+    "task_name"  : "random_1",
     "params": {
       "ExperimentNumber"  : 1,
-      "InitTrain_size"  : 0.3,
+      "ModelTestSize"  : 0.3,
       "SobolInitLength" : 5,
       "DataFile"        : "./taskData.json",
-      "DimensionNames"  : ["threads", "frequency"]
+      "FeatureNames"  : ["frequency", "threads"],
+      "ResultStructure"  : ["frequency", "threads", "energy"],
+      "ResultFeatLabels" : ["feature", "feature", "label"]
     }
 }
