@@ -11,10 +11,14 @@ class Splitter:
 
     def __init__(self, file_name):
         del self.data[:]
-        with open(file_name, 'r') as csv_file:
-            reader = csv.DictReader(csv_file)
-            for row in reader: 
-                self.data.append(row)
+        try:
+            with open(file_name, 'r') as csv_file:
+                reader = csv.DictReader(csv_file)
+                for row in reader: 
+                    self.data.append(row)
+        except EnvironmentError:
+            None
+
 
     def split(self, param):
         del self.new_data[:] 
@@ -24,15 +28,17 @@ class Splitter:
 
     def search(self, FR, TR):
         del self.new_data[:]
-        for i in self.data:
-            if i['FR'] == FR and i['TR'] == TR:
-                self.new_data.append(i)
+        if self.data:
+            for i in self.data:
+                if i['FR'] == FR and i['TR'] == TR:
+                    self.new_data.append(i)
+
         return {
             'threads': self.new_data[0]["TR"], 
             'frequency': self.new_data[0]["FR"], 
             'energy': self.new_data[0]["EN"], 
             'time': self.new_data[0]["TIM"]
-        } if self.new_data else {}
+        } if self.new_data else {"worker": "Error! Incorect worker config"}
                 
 
     def make_csv(self, name, data_type):
