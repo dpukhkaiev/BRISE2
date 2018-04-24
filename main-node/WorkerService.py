@@ -7,7 +7,7 @@ import os
 
 class WorkerService(object):
 
-    def __init__(self, task_name, features_names, results_structure, experiment_number, host):
+    def __init__(self, task_name, features_names, results_structure, experiment_number, WSFile, host):
         """
         self.State displays state of runner, possible states: Free, TaskSent, ResultsGot
         :param experiment_number: sequence number of experiment to write results
@@ -20,6 +20,7 @@ class WorkerService(object):
             time.sleep(5)
 
         self.experiment_number = experiment_number
+        self.WSFile = WSFile
         self.task_name = task_name
         self.features_names = features_names
         self.State = "Free"
@@ -57,6 +58,7 @@ class WorkerService(object):
 
                 # self.task_body is a dictionary
                 self.task_body["task_name"] = self.task_name
+                self.task_body["ws_file"] = self.WSFile
                 self.task_body["request_type"] = "send_task"
                 self.task_body["params_names"] = self.features_names
                 self.task_body["param_values"] = task
