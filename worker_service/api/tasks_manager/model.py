@@ -7,7 +7,7 @@ class Task():
      The basic working unit that executed by the workers
     '''
 
-    def __init__(self, method, params, conf=None, owner=None, appointment=None, receive=None, accept=None, result=None):
+    def __init__(self, method, params, conf="null", owner="null", appointment="null", receive="null", accept="null", result="null"):
         self.id = uuid.uuid4().hex
         self.run = {
            'method': method,
@@ -34,10 +34,42 @@ class Task():
 def t_parser(payload): 
     # Parse json data in to Task objects
     task_list = list()
+    id_list = list()    
     for method in payload:
         new = Task(method=method['task_name'],params=method['params'],conf=method['worker_config'],receive=time.time())        
         task_list.append(new)
-    return task_list
+        id_list.append(new.id)
+    return id_list, task_list
+
+def t_parser_2(payload): 
+    # Parse json data in to Task objects. Special for the Jeka regresion
+    task_list = list()
+    id_list = list()
+    for values in payload["param_values"]:
+        p_unit = dict(zip(payload["params_names"], values))
+        new = Task(method=payload['task_name'],params=p_unit,conf=payload['worker_config'],receive=time.time())        
+        task_list.append(new)
+        id_list.append(new.id)
+    return id_list, task_list
+
+'''
+
+{
+	"task_name": "random_1",
+	"request_type": "send_task",
+	"params_names": ["param1", "param2", "paramN"],
+	"param_values": [
+		[123.0, 123.0, 123.0],
+		[123.0, 123.0, 123.0]
+	],
+	"worker_config": {
+		"koko": "2",
+		"b": "3"
+	}
+}
+
+
+'''
 
 
 class Stack():

@@ -9,7 +9,8 @@ COPY . /usr/src/app
 
 RUN apk add --no-cache curl && \
  python3 -mpip install requests && \
- pip install Flask
+ pip install Flask && \
+ pip install flask-cors
  
 EXPOSE 80
 CMD [ "python", "-u", "./intro.py" ]

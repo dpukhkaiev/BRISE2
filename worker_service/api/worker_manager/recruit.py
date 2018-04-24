@@ -36,11 +36,76 @@ class Recruit():
                 print(" Spin:", self.spin())
                 time.sleep(1)
 
+            for task in self.flow.get_stack():
+                if task["id"] not in self.result:
+                    self.result[task["id"]] = task
+
     def status(self):
         print(" Workers:", self.workers)
 
     def results(self, id=False):
-        return self.result[id] if id else self.result
+        if id: 
+          return self.result[id] if id in self.result else None 
+        else: return self.result
+
+    def results_struct(self, struct):
+        answer = {
+            "response_type": "get_results",
+            "task_name": [],
+            "param_values": [],
+            "statuses": [],
+            "params_names": struct["response_struct"]
+        }
+
+        for i in struct["id"]:
+            if i in self.result:
+                temp = self.result[i]
+                answer["task_name"].append(temp["run"]["method"] if "run" in temp else "...")
+                answer["statuses"].append("done" if "time" in temp["meta_data"]["result"] else "in progress")
+                
+                t_val = []
+                for par in struct["response_struct"]:
+                    if temp["meta_data"]["result"]:
+                        try:
+                            t_val.append(temp["meta_data"]["result"][par])
+                        except:
+                            with open("recruit.log", 'w') as f:
+                                f.write(str(temp))
+                                f.write("par:" + str(par))
+                    else: t_val.append("in stack")
+
+                answer["param_values"].append(t_val)
+            else:
+                answer["statuses"].append("wrong id")
+                answer["task_name"].append("null")
+                answer["param_values"].append(["null"])
+        return answer
+
+
+    ''' PUT ==>
+    {
+        "task_name": "random_1",
+        "request_type": "get_results",
+        "response_struct": ["frequency", "threads", "time" ],
+        "ID": [123123123, 123123124, 123123125]
+    }
+    '''
+
+    ''' <==
+    {
+        "task_name": "random_1",
+        "response_type": "get_results",
+        "params_names": ["param1", "param2", "paramN"],
+        “statuses”: [status1, status2, statusN]
+        "param_values": [
+            [123, "value_for_param_2", 123.1],
+            [112313253, "value2_for_param_2", 123123.1],
+            [123, null, null]
+        ]
+    }
+
+    '''
+
 
     def assign_test(self):
         payload = {'fr': '2700.0', 'tr': '32'}
