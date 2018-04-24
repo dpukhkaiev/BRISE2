@@ -48,7 +48,7 @@ class WorkerService(object):
                 #         [123.0, 123.0, 123.0]
                 #     ],
                 #     "worker_config": {
-                #         "koko": "2",
+                #         "ws_file": "name of file that will be read"
                 #         "b": "3"
                 #     }
                 # }
@@ -58,13 +58,11 @@ class WorkerService(object):
 
                 # self.task_body is a dictionary
                 self.task_body["task_name"] = self.task_name
-                self.task_body["ws_file"] = self.WSFile
                 self.task_body["request_type"] = "send_task"
                 self.task_body["params_names"] = self.features_names
                 self.task_body["param_values"] = task
                 self.task_body["worker_config"] =  {
-                    "koko": "2",
-                    "b": "3"
+                    "ws_file": self.WSFile
                 }
 
             # print("From module %s:\n%s" % (self.__module__, self.task_body))
@@ -73,7 +71,6 @@ class WorkerService(object):
                 'Type': "Send_task",
                 'Content-Type': 'application/json'
             }
-
             try:
                 response = requests.post(self.path + "/task/add", data=json.dumps(self.task_body), headers=headers)
 

@@ -17,12 +17,12 @@ RUN pip3 install --upgrade pip setuptools && \
     rm -r /root/.cache
 
 # Installing sklearn with needed dependencies (numpy, scipy).
-RUN pip --no-cache-dir install -U scikit-learn[alldeps]
+RUN pip --no-cache-dir install -U scikit-learn[alldeps] sobol_seq
 
-COPY . /main-node
+COPY . /root
 
-RUN chmod +x /main-node/configure_sshd.sh
-RUN /main-node/configure_sshd.sh
+RUN chmod +x /root/configure_sshd.sh
+RUN /root/configure_sshd.sh
 EXPOSE 2222
 
 
