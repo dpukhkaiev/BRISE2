@@ -107,58 +107,25 @@ def get_status():
     except ValueError:
         return jsonify(response_object), 404
 
-@w_app.route('/status/<task_id>', methods=['GET'])
-def get_single_status(task_id):
-    ''' Task status 
-    '''
-    response_object = {
-        'status': 'fail',
-        'message': 'task does not exist'
-    }
-    try:
-        # user = User.query.filter_by(id=int(task_id)).first()
-        if not user:
-            return jsonify(response_object), 404
-        else:
-            response_object = {
-                'status': 'success',
-                'data': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'active': user.active
-                }
-            }
-            return jsonify(response_object), 200
-    except ValueError:
-        return jsonify(response_object), 404
-
-@w_app.route('/terminate/<task_id>', methods=['DELATE'])
-def term_single_task(task_id):
+@w_app.route('/terminate/<req_id>', methods=['DELETE'])
+def term_single_task(req_id):
     ''' Terminate single task. Get task Id 
     '''
+    global task_id
     response_object = {
-        'status': 'fail',
-        'message': 'task does not exist'
+        'status': 'ok',
+        'message': 'delete'
     }
-    try:
-        # user = User.query.filter_by(id=int(task_id)).first()
-        if not user:
-            return jsonify(response_object), 404
-        else:
-            response_object = {
-                'status': 'success',
-                'data': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'active': user.active
-                }
-            }
-            return jsonify(response_object), 200
-    except ValueError:
-        return jsonify(response_object), 404
 
+    if task_id is req_id:
+        return prm.shutdown()
+    else:
+        response_object = {
+            'status': 'wrong ID',
+            'temp id': task_id,
+            'request id': req_id
+        }
+        return jsonify(response_object), 200
 
 
 # end router config

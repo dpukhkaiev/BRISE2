@@ -36,7 +36,9 @@ def t_parser(payload):
     task_list = list()
     id_list = list()    
     for method in payload:
-        new = Task(method=method['task_name'],params=method['params'],conf=method['worker_config'],receive=time.time())        
+        par = method['params']
+        par['ws_file'] = method['worker_config']['ws_file']
+        new = Task(method=method['task_name'],params=par,conf=method['worker_config'],receive=time.time())        
         task_list.append(new)
         id_list.append(new.id)
     return id_list, task_list
@@ -47,29 +49,12 @@ def t_parser_2(payload):
     id_list = list()
     for values in payload["param_values"]:
         p_unit = dict(zip(payload["params_names"], values))
+        p_unit.update(dict(payload["worker_config"]))
         new = Task(method=payload['task_name'],params=p_unit,conf=payload['worker_config'],receive=time.time())        
         task_list.append(new)
         id_list.append(new.id)
     return id_list, task_list
 
-'''
-
-{
-	"task_name": "random_1",
-	"request_type": "send_task",
-	"params_names": ["param1", "param2", "paramN"],
-	"param_values": [
-		[123.0, 123.0, 123.0],
-		[123.0, 123.0, 123.0]
-	],
-	"worker_config": {
-		"koko": "2",
-		"b": "3"
-	}
-}
-
-
-'''
 
 
 class Stack():
