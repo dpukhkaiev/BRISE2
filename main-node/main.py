@@ -164,6 +164,7 @@ def run():
                        features_names=task["params"]["FeatureNames"],
                        results_structure=task["params"]["ResultStructure"],
                        experiment_number=task["params"]["ExperimentNumber"],
+                       WSFile=task["params"]["WSFile"],
                        host=globalConfig["WorkerService"]["Address"])
 
     # Need to find default value that we will used in regression to evaluate solution
@@ -203,10 +204,8 @@ def run():
 
             # If our measured energy higher than default best value OR
             # Our predicted energy deviates for more than 10% from measured - take new point.
-            if measured_energy > default_best_energy[0] or \
-                    abs(measured_energy[0] - reg.solution_labels[0]) > measured_energy[0] * 0.1:
-
-                print("Predicted energy larger than default, or deviation too big.")
+            if measured_energy > default_best_energy[0]:
+                print("Predicted energy larger than default.")
                 print("Predicted energy: %s. Measured: %s. Best default: %s" %(reg.solution_labels[0], measured_energy[0], default_best_energy[0][0]))
                 reg_success = False
 
