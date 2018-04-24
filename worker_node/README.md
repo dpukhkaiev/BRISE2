@@ -6,7 +6,7 @@
 
 - [Service](../worker_service/README.md)
 
-[service <==> worker](../worker_service/service.jpg "dependencies between the workers and the service")
+![service <==> worker](../worker_service/service.jpg "dependencies between the workers and the service")
 
 In case of changing workers:
 1. Add worker container

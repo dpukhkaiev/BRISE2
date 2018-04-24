@@ -6,7 +6,7 @@
 
 - [worker node](Valavanca/benchmark/tree/master/worker_node/README.md)
 
-[service <==> worker](./service.jpg "dependencies between the workers and the service")
+![service <==> worker](./service.jpg "dependencies between the workers and the service")
 
 ### API examples
 **POST**  http://0.0.0.0:80/task/add
