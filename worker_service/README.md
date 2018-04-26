@@ -4,7 +4,7 @@
 
 - Dependancy: Python 3.6, [Flask](http://flask.pocoo.org/docs/0.12/ "Flask"), [Requests](http://docs.python-requests.org/en/master/ "Requests"), Docker
 
-- [worker node](Valavanca/benchmark/tree/master/worker_node/README.md)
+- [worker node](Valavanca/benchmark/tree/master/worker/README.md)
 
 ![service <==> worker](./service.jpg "dependencies between the workers and the service")
 
