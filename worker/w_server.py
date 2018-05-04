@@ -15,11 +15,12 @@ task_id = None
 # Flask init
 w_app = Flask(__name__)
 
-from worker import work, random_1, random_2
+from worker import work, random_1, random_2, energy_consumption
 # Object with available executable methods
 menu = {
     'random_1': random_1,
     'random_2': random_2,
+    'energy_consumption': energy_consumption,
     'work': work
 }
 

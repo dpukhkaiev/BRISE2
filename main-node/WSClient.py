@@ -127,9 +127,9 @@ class WSClient(object):
         }
 
         try:
-            #print(json.dumps(data))
+            print(json.dumps(data))
             response = requests.put(self.path + '/result/format', data=json.dumps(data), headers=headers)
-            #print(response.content)
+            print(response.content)
             if response.status_code != 200:
                 print("Incorrect response code from server on getting results: %s\nBody:%s" % (response.status_code, response.content))
                 return 1
