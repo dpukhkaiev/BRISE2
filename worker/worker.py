@@ -18,6 +18,7 @@ def random_2(param):
     time.sleep(randint(1, 5))
     return data.search(str(param['frequency']), str(param['threads']))
 
+<<<<<<< HEAD
 def energy_consumption(param):
     data = Splitter("csv_data/"+param['ws_file'])
     time.sleep(randint(1, 2))
@@ -29,3 +30,11 @@ def energy_consumption(param):
         'energy': result["EN"],
         'time': result["TIM"]
     }
+=======
+def random_real(param):
+    data = Splitter("csv_data/"+param['ws_file'])
+    result = data.search(str(param['frequency']), str(param['threads']))
+    if result["TIM"]: time.sleep(result["TIM"]/10000) 
+    else: time.sleep(2)
+    return result
+>>>>>>> c5314b1c93b9ea96f19642629a5bf2eb6089e242

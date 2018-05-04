@@ -2,57 +2,57 @@
 version: "2"
 services: 
   w_alpha:
-    build: ./worker_node/
+    build: ./worker/
     container_name: w_alpha
-    environment: 
+    environment:
       - workername=alpha
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - alpha
-    ports: 
+    ports:
       - "1831:8080"  # if direct access is required
-    volumes: 
+    volumes:
       - "./worker:/usr/src/app"
-  w_beta: 
-    build: ./worker_node/
+  w_beta:
+    build: ./worker/
     container_name: w_beta
-    environment: 
+    environment:
       - workername=beta
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - beta
-    ports: 
+    ports:
       - "1832:8080" # if direct access is required
-    volumes: 
+    volumes:
       - "./worker:/usr/src/app"
-  w_gamma: 
-    build: ./worker_node/
+  w_gamma:
+    build: ./worker/
     container_name: w_gamma
-    environment: 
+    environment:
       - workername=gamma
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - gamma
-    ports: 
+    ports:
       - "1833:8080" # if direct access is required
-    volumes: 
+    volumes:
       - "./worker:/usr/src/app"
   w_service:
     build: ./worker_service/
     command: python3 intro.py
-    stdin_open: true      
+    stdin_open: true
     tty: true
     container_name: w_service
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - w_service
-    ports: 
+    ports:
       - "80:80"
-    volumes: 
+    volumes:
       - "./worker_service:/usr/src/app"
     depends_on:
         - "w_alpha"
@@ -63,6 +63,6 @@ services:
       - FLASK_DEBUG=1
       - WORKER_COUNT=3 # depends of workers instance. [alpha, beta, gamma, delta]
 
-networks: 
-  worker_net: 
+networks:
+  worker_net:
     driver: bridge

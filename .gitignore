@@ -1,0 +1,7 @@
+.gitignore
+worker-node/pycache
+pycache
+env
+*.log
+*.pyc
+.idea/

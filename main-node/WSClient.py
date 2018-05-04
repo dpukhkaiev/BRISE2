@@ -171,7 +171,7 @@ class WSClient(object):
             print("Failed to get results from WS %s, error: %s" % (self.host, e))
             return None
 
-    def poll_while_not_get(self, interval=3, timeout=90):
+    def poll_while_not_get(self, interval=3, timeout=90, terminate=False):
         """
         Start polling results from host with specified time interval and before timeout elapsed.
         :param interval: interval between each poll request
@@ -188,7 +188,9 @@ class WSClient(object):
         while self.State != "ResultsGot":
             self.get_results()
             if time.time() - time_start > timeout:
-                break
+                if terminate:
+                    response = requests.delete(self.path + '/terminate/'+'id' headers=headers)
+                else: break
             time.sleep(interval)
 
         return self.results
