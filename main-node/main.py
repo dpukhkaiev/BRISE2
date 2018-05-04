@@ -8,8 +8,9 @@ Requirements:
 """
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from WorkerService import WorkerService
+from WSClient import WSClient
 from regression import Regression, SobolSequence
+from repeater import Repeater
 
 
 import urllib.parse
@@ -147,30 +148,35 @@ def feat_lab_split(data, structure):
         results['labels'].append(to_labels)
     return results['features'], results['labels']
 
+
+
 def run():
 
     #   Reading config file 
     globalConfig = readGlobalConfig()
 
     #   Loading task config and creating config points distribution according to Sobol.
-    # {"task_name": String, "params": Dict, "taskDataPoints": List of ndarrays }
+    # {"task_name": String, "params": Dict, "taskDataPoints": List of points }
     task = load_task()
 
     # Creating instance of Sobol based on task data for further uniformly distributed data points generation.
     sobol = SobolSequence(dimensionality = len(task["TaskDataPoints"]), data=task["TaskDataPoints"])
 
     #   Connect to the Worker Service and send task.
-    WS = WorkerService(task_name=task["task_name"],
+    WS = WSClient(task_name=task["task_name"],
                        features_names=task["params"]["FeatureNames"],
                        results_structure=task["params"]["ResultStructure"],
                        experiment_number=task["params"]["ExperimentNumber"],
                        WSFile=task["params"]["WSFile"],
                        host=globalConfig["WorkerService"]["Address"])
 
+    # Creating runner for experiments that will repeat task running for avoiding fluctuations.
+    runner = Repeater(WS)
+
     # Need to find default value that we will used in regression to evaluate solution
     print("Getting default best value..")
     default_best_task = task["default_best"]
-    default_best_results = WS.work([default_best_task])
+    default_best_results = runner.measure_task([default_best_task], 'brute_decision')
     default_best_point, default_best_energy = feat_lab_split(default_best_results, task["params"]["ResultFeatLabels"])
     print(default_best_energy)
 
@@ -180,7 +186,7 @@ def run():
     # Results will be in a list of points, each point is also a list of values:
     # [[val1, val2,... valN], [val1, val2,... valN]...]
     print("Sending initial task..")
-    results = WS.work(initial_task)
+    results = runner.measure_task(initial_task, 'brute_decision')
     print("Results got, splitting to features and labels..")
     features, labels = feat_lab_split(results, task["params"]["ResultFeatLabels"])
 
@@ -200,7 +206,7 @@ def run():
         if reg_success:
             print("Model build with accuracy: %s" % reg.accuracy)
             print("Verifying solution that model gave..")
-            measured_energy = feat_lab_split(WS.work([reg.solution_features]), task["params"]["ResultFeatLabels"])[1][0]
+            measured_energy = feat_lab_split(runner.measure_task([reg.solution_features], 'brute_decision'), task["params"]["ResultFeatLabels"])[1][0]
 
             # If our measured energy higher than default best value OR
             # Our predicted energy deviates for more than 10% from measured - take new point.
@@ -212,7 +218,7 @@ def run():
         if not reg_success:
             print("New data point needed to continue building regression. Current number of data points: %s" % str(sobol.numOfGeneratedPoints))
             cur_task = [sobol.getNextPoint()]
-            results = WS.work(cur_task)
+            results = runner.measure_task(cur_task)
             new_feature, new_label = feat_lab_split(results, task["params"]["ResultFeatLabels"])
             features += new_feature
             labels += new_label
