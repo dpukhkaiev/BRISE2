@@ -181,7 +181,9 @@ class WSClient(object):
         if self.State != "TaskSent":
             print("Task was not send.")
             return 1
-
+        headers = {
+            'Content-Type': 'application/json'
+        }
         time_start = time.time()
         self.results = self.get_results()
 
@@ -189,7 +191,7 @@ class WSClient(object):
             self.get_results()
             if time.time() - time_start > timeout:
                 if terminate:
-                    response = requests.delete(self.path + '/terminate/'+'id' headers=headers)
+                    response = requests.delete(self.path + '/terminate/'+'id', headers=headers)
                 else: break
             time.sleep(interval)
 
