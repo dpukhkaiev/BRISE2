@@ -1,11 +1,11 @@
 {
-    "task_name"  : "random_1",
+    "task_name"  : "energy_consumption",
     "params": {
       "ExperimentNumber"  : 1,
       "ModelTestSize"  : 0.4,
       "SobolInitLength" : 10,
       "DataFile"        : "./taskData.json",
-      "WSFile"          : "Radix-1000mio_avg.csv",
+      "WSFile"          : "Radix-1000mio.csv",
       "FeatureNames"  : ["frequency", "threads"],
       "ResultStructure"  : ["frequency", "threads", "energy"],
       "ResultFeatLabels" : ["feature", "feature", "label"]

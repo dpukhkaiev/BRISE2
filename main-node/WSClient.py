@@ -5,7 +5,7 @@ import csv
 import os
 
 
-class WorkerService(object):
+class WSClient(object):
 
     def __init__(self, task_name, features_names, results_structure, experiment_number, WSFile, host):
         """
@@ -93,12 +93,12 @@ class WorkerService(object):
 
             except requests.RequestException or json.JSONDecodeError as e:
                 print("Failed to send task to %s: %s" % (self.host, e))
-                return 1
+                return None
             except json.JSONDecodeError as e:
                 print("Failed to decode response for send task request:" % e)
-                return 1
+                return None
             self.State = "TaskSent"
-            # return self.task_body
+            return self.task_body['id']
 
     def get_results(self):
         """
@@ -127,8 +127,9 @@ class WorkerService(object):
         }
 
         try:
-            # print(json.dumps(data))
+            #print(json.dumps(data))
             response = requests.put(self.path + '/result/format', data=json.dumps(data), headers=headers)
+            #print(response.content)
             if response.status_code != 200:
                 print("Incorrect response code from server on getting results: %s\nBody:%s" % (response.status_code, response.content))
                 return 1
@@ -246,10 +247,10 @@ class WorkerService(object):
             return False
 
     def work(self, task):
-        print("sending task")
+        print("Sending task: %s" % str(task))
         self.send_task(task)
-        print("polling results..")
-        time.sleep(2)   # TODO: need to fix this issue from the WS site - it could happen that generated IDs not in stack yet.
+        print("Polling results..")
+        time.sleep(1)   # TODO: need to fix this issue from the WS site - it could happen that generated IDs not in stack yet.
         self.poll_while_not_get()
         self.write_results_to_csv()
         return self.results
