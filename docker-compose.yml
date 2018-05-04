@@ -2,10 +2,7 @@
 version: "2"
 services: 
   w_alpha: 
-<<<<<<< HEAD
     build: ./worker/
-=======
->>>>>>> a172c2f2a02f2cb39f5a3d8a034abf18d820792a
     container_name: w_alpha
     environment: 
       - workername=alpha
@@ -16,12 +13,9 @@ services:
     ports: 
       - "1831:8080"  # if direct access is required
     volumes: 
-<<<<<<< HEAD
       - "./worker:/usr/src/app"
   w_beta: 
     build: ./worker/
-=======
->>>>>>> a172c2f2a02f2cb39f5a3d8a034abf18d820792a
     container_name: w_beta
     environment: 
       - workername=beta
@@ -32,12 +26,9 @@ services:
     ports: 
       - "1832:8080" # if direct access is required
     volumes: 
-<<<<<<< HEAD
       - "./worker:/usr/src/app"
   w_gamma: 
     build: ./worker/
-=======
->>>>>>> a172c2f2a02f2cb39f5a3d8a034abf18d820792a
     container_name: w_gamma
     environment: 
       - workername=gamma
@@ -48,10 +39,7 @@ services:
     ports: 
       - "1833:8080" # if direct access is required
     volumes: 
-<<<<<<< HEAD
       - "./worker:/usr/src/app"
-=======
->>>>>>> a172c2f2a02f2cb39f5a3d8a034abf18d820792a
   w_service: 
     build: ./worker_service/
     command: python3 intro.py
