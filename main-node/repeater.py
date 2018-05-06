@@ -10,10 +10,12 @@ class Repeater:
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.available_decision_functions = {
-            'brute_decision': self.brute_decition
+            'brute_decision': self.brute_decition,
+            'student_deviation': self.student_deviation
         }
+        self.performed_measurements = 0
 
-    def measure_task(self, task, decision_function):
+    def measure_task(self, task, decision_function, **configuration):
 
         # Verifying that provided decision function is available.
         if decision_function in self.available_decision_functions.keys():
@@ -27,8 +29,13 @@ class Repeater:
         self.current_measurement_finished = False
         # Creating holders for current measurements
         for point in task:
+            # Evaluating decision function for each point in task
             self.current_measurement[str(point)] = {'data': point,
                                                     'Finished': False}
+            result = decision_function(self.history, point, **configuration)
+            if result:
+                self.current_measurement[str(point)]['Finished'] = True
+                self.current_measurement[str(point)]['Results'] = result
 
         # Continue to make measurements while decision function will not terminate it.
         while not self.current_measurement_finished:
@@ -38,6 +45,11 @@ class Repeater:
             for point in self.current_measurement.keys():
                 if not self.current_measurement[point]['Finished']:
                     cur_task.append(self.current_measurement[point]['data'])
+                    self.performed_measurements += 1
+
+            if not cur_task:
+                self.current_measurement_finished = True
+                break
 
             # Send this task to Worker service
             results = self.WSClient.work(cur_task)
@@ -57,10 +69,16 @@ class Repeater:
                 if result:
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
-            print(self.history.history)
+
+        results = []
+        for point in task:
+            results.append(self.current_measurement[str(point)]['Results'])
+        return results
 
 
-    def brute_decition(self, history, point, iterations=5):
+
+
+    def brute_decition(self, history, point, iterations = 10, **configuration):
         """
         Dum approach - just repeat measurement N times, compute the average and that's all.
         :param iterations: int, number of times to repeat measurement.
@@ -80,11 +98,66 @@ class Repeater:
                     result[index] += value
 
             # Calculating average.
-            for index, value in result:
-                result[index] = value / len(all_experiments)
+            for index, value in enumerate(result):
+                result[index] = round(value / len(all_experiments), 2)
 
             return result
 
+    def student_deviation(self, history, point, threshold=15, **configuration):
+        import numpy as np
+
+        # Preparing configuration
+        params = configuration.keys()
+
+        threshold = configuration['threshold'] if 'threshold' in params else threshold
+        default_point = configuration['default_point'] if 'default_point' in params else None
+
+        # For trusted probability 0.95
+        student_coeficients = {
+            2: 12.7,
+            3: 4.30,
+            4: 3.18,
+            5: 2.78,
+            6: 2.57,
+            7: 2.45,
+            8: 2.36,
+            9: 2.31,
+            10: 2.26,
+            11: 1.96
+        }
+
+        # first of all - need at least 2 measurements
+        all_experiments = history.get(point)
+        if len(all_experiments) < 2:
+            return False
+        else:
+
+            # Calculating average for all dimensions
+            all_experiments_np = np.matrix(all_experiments)
+            all_dim_avg = all_experiments_np.mean(0)
+
+            # Calculating standard deviation (середнє квадратичне відхилення)
+            all_dim_sko = np.std(all_experiments_np, axis=0)
+
+            # Pick the Student's coefficient, if number of experiments is 11 or more - pick coefficient for 11
+            student_coeficient = student_coeficients[len(all_experiments) if len(all_experiments) < 11 else 11]
+
+            # Calculating confidence interval for each dimension
+            conf_interval = [student_coeficient * dim_sko / pow(len(all_experiments), 0.5) for dim_sko in all_dim_sko]
+
+            # Calculating relative error for each dimension
+            relative_errors = [interval / avg * 100 for interval, avg in zip(conf_interval, all_dim_avg)][0].tolist()[0]
+
+            # Verifying that deviation of errors in each dimmension is
+            for index, error in enumerate(relative_errors):
+                # If for any dimension relative error is > that threshold - abort
+                # print("student_deviation - need more: %s" % str(relative_errors))
+                if error > threshold:
+                    return False
+            # print(all_dim_avg.tolist()[0])
+            result = [round(x, 2) for x in all_dim_avg.tolist()[0]]
+            print("Point %s finished after %s measurements. Result: %s" % (str(point), len(all_experiments), str(result)))
+            return result
 
 class History:
     def __init__(self):
@@ -94,7 +167,7 @@ class History:
         try:
             return  self.history[str(point)]
         except KeyError:
-            return None
+            return {}
 
     def put(self, point, values):
         try:

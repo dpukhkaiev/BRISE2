@@ -176,7 +176,7 @@ def run():
     # Need to find default value that we will used in regression to evaluate solution
     print("Getting default best value..")
     default_best_task = task["default_best"]
-    default_best_results = runner.measure_task([default_best_task], 'brute_decision')
+    default_best_results = runner.measure_task([default_best_task], 'student_deviation')
     default_best_point, default_best_energy = feat_lab_split(default_best_results, task["params"]["ResultFeatLabels"])
     print(default_best_energy)
 
@@ -186,7 +186,7 @@ def run():
     # Results will be in a list of points, each point is also a list of values:
     # [[val1, val2,... valN], [val1, val2,... valN]...]
     print("Sending initial task..")
-    results = runner.measure_task(initial_task, 'brute_decision')
+    results = runner.measure_task(initial_task, 'student_deviation')
     print("Results got, splitting to features and labels..")
     features, labels = feat_lab_split(results, task["params"]["ResultFeatLabels"])
 
@@ -195,36 +195,47 @@ def run():
 
     reg_success = False
     while not reg_success:
+        # print(features)
+        # print(labels)
         reg = Regression(output_filename = "%s_regression.txt" % task["task_name"],
                          test_size = task["params"]["ModelTestSize"],
                          features = features,
                          targets = labels)
 
         reg_success = reg.regression(param=task["params"],
-                                        score_min=0.5,
+                                        score_min=0.85,
                                         searchspace=search_space)
         if reg_success:
             print("Model build with accuracy: %s" % reg.accuracy)
             print("Verifying solution that model gave..")
-            measured_energy = feat_lab_split(runner.measure_task([reg.solution_features], 'brute_decision'), task["params"]["ResultFeatLabels"])[1][0]
+            measured_energy = feat_lab_split(runner.measure_task([reg.solution_features], 'student_deviation'), task["params"]["ResultFeatLabels"])[1][0]
 
-            # If our measured energy higher than default best value OR
-            # Our predicted energy deviates for more than 10% from measured - take new point.
+            # If our measured energy higher than default best value - add this point to data set and rebuild model.
             if measured_energy > default_best_energy[0]:
+                features += [reg.solution_features]
+                labels += [measured_energy]
                 print("Predicted energy larger than default.")
                 print("Predicted energy: %s. Measured: %s. Best default: %s" %(reg.solution_labels[0], measured_energy[0], default_best_energy[0][0]))
                 reg_success = False
+                continue
 
         if not reg_success:
             print("New data point needed to continue building regression. Current number of data points: %s" % str(sobol.numOfGeneratedPoints))
-            cur_task = [sobol.getNextPoint()]
-            results = runner.measure_task(cur_task)
+            # cur_task = [sobol.getNextPoint()]
+            cur_task = [sobol.getNextPoint() for x in range(task['params']['step'])]
+            # if reg.feature_result:
+            #     cur_task.append(reg.feature_result)
+            results = runner.measure_task(cur_task, 'student_deviation')
             new_feature, new_label = feat_lab_split(results, task["params"]["ResultFeatLabels"])
             features += new_feature
             labels += new_label
 
+    # if
+
     predicted_energy, predicted_point = reg.solution_labels, reg.solution_features
     print("\n\nPredicted energy: %s, with configuration: %s" % (predicted_energy[0], predicted_point))
+    print("Number of measured points: %s" % len(features))
+    print("Number of performed measurements: %s" % runner.performed_measurements)
     print("Measured energy is: %s" % str(measured_energy[0]))
 
 
