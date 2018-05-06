@@ -149,7 +149,6 @@ def feat_lab_split(data, structure):
     return results['features'], results['labels']
 
 
-
 def run():
 
     #   Reading config file 
@@ -221,6 +220,7 @@ def run():
 
         if not reg_success:
             print("New data point needed to continue building regression. Current number of data points: %s" % str(sobol.numOfGeneratedPoints))
+            print('='*100)
             # cur_task = [sobol.getNextPoint()]
             cur_task = [sobol.getNextPoint() for x in range(task['params']['step'])]
             # if reg.feature_result:

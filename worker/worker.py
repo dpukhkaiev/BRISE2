@@ -20,7 +20,7 @@ def random_2(param):
 
 def energy_consumption(param):
     data = Splitter("csv_data/"+param['ws_file'])
-    time.sleep(randint(1, 2))
+    # time.sleep(randint(0, 2))
     data.search(str(param['frequency']), str(param['threads']))
     result = choice(data.new_data)
     return {

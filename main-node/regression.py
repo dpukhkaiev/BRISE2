@@ -73,7 +73,7 @@ class Regression:
                 self.test_size -= 0.01
         return False
 
-    def build_model_BRISE(self, degree, score_min, tries=10):
+    def build_model_BRISE(self, degree, score_min, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -90,7 +90,7 @@ class Regression:
                     if score_measured > best_got:
                         best_got = score_measured
                         best_model = model
-                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (score_measured, self.test_size, cur_accuracy))
+                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (score_measured, round(self.test_size,2), round(cur_accuracy,2)))
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
@@ -114,6 +114,7 @@ class Regression:
 
         # Build regression.
         self.target_result, self.feature_result = self.find_optimal(searchspace)
+        self.test_mode_all_data(searchspace)
 
         # Check if the model is adequate - write it.
         if self.target_result[0] >= 0:
@@ -153,6 +154,27 @@ class Regression:
     def sum_fact(self, num):
             return reduce(lambda x,y: x+y, list(range(1 ,num + 1)))
 
+    def test_mode_all_data(self, search_space, data_file = '/media/sem/B54BE5B22C0D3FA8/GoogleDrive/Master thesis/code/worker/csv_data/Radix-1000mio.csv'):
+        import sys
+        from main import feat_lab_split
+        sys.path.insert(0, "../worker/csv_data")
+        from splitter import Splitter
+        all_data = []
+        spl = Splitter(data_file)
+
+        for point in self.all_features:
+            if point in search_space:
+                search_space.remove(point)
+
+        for point in search_space:
+            spl.search(str(point[0]), str(point[1]))
+            all_data += [[float(x['FR']),float(x['TR']),float(x['EN'])] for x in spl.new_data]
+
+        features, labels = feat_lab_split(all_data, ['feature','feature','label'])
+        # from sklearn.model_selection import train_test_split
+
+        score = self.model.score(features, labels)
+        print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
 class SobolSequence():
 
