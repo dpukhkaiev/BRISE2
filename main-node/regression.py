@@ -1,5 +1,3 @@
-__author__ = 'dmitrii'
-
 from sklearn import model_selection
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
@@ -30,6 +28,7 @@ class Regression:
         self.solution_ready = False
         self.solution_features = None
         self.solution_labels = None
+        self.feature_result = None
 
     def resplitData(self):
         """
@@ -52,40 +51,72 @@ class Regression:
 
         best_got = -10e10
         best_model = None
+        while self.test_size > 0.3:
+            for x in range(tries):
+                self.resplitData()
+                model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())])
+                model.fit(self.feature_train, self.target_train)
+                score_measured = model.score(self.feature_test, self.target_test)
 
-        for x in range(tries):
-            self.resplitData()
-            model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())])
-            model.fit(self.feature_train, self.target_train)
-            score_measured = model.score(self.feature_test, self.target_test)
+                if score_measured > best_got:
+                    best_got = score_measured
+                    best_model = model
+                    print('GOT NEW ACCURACY: %s' %score_measured)
 
-            if score_measured > best_got:
-                best_got = score_measured
-                best_model = model
 
-        if best_got < score_min:
-            print("Cannot create model in %s tries, current best accuracy: %s" % (tries, best_got))
-            return False
-        else:
-            self.model = best_model
-            self.accuracy = best_got
-            print("Regression model built! Verifying..")
-            return True
+            if best_got > score_min:
+                self.model = best_model
+                self.accuracy = best_got
+                print("Regression model built with %s test size and %s accuracy! Verifying.." % (self.test_size, self.accuracy))
+                return True
+            else:
+                self.test_size -= 0.01
+        return False
+
+    def build_model_BRISE(self, degree, score_min, tries=10):
+        cur_accuracy = 0.99
+        best_got = -10e10
+        best_model = None
+        init_test_size = self.test_size
+        while cur_accuracy > score_min:
+            self.test_size = init_test_size
+            while self.test_size > 0.3:
+                for x in range(tries):
+                    self.resplitData()
+                    model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())])
+                    model.fit(self.feature_train, self.target_train)
+                    score_measured = model.score(self.feature_test, self.target_test)
+
+                    if score_measured > best_got:
+                        best_got = score_measured
+                        best_model = model
+                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (score_measured, self.test_size, cur_accuracy))
+                    # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
+                if best_got > cur_accuracy:
+                    self.model = best_model
+                    self.accuracy = best_got
+                    print("Regression model built with %s test size and %s accuracy! Verifying.." % (self.test_size, self.accuracy))
+                    return True
+                else:
+                    self.test_size -= 0.01
+            cur_accuracy -= 0.01
+        print("Unable to build model, current best accuracy: %s need more data.." % best_got)
+        return False
 
     def regression(self, param, score_min, searchspace, degree=6):
 
         # Build model if was not built.
         if not self.model:
-            if not self.build_model(degree, score_min=score_min):
+            if not self.build_model_BRISE(degree, score_min=score_min):
                 print("Unable to buld regression model, need more data.")
                 self.solution_ready = False
                 return False
 
         # Build regression.
-        target_result, feature_result = self.find_optimal(searchspace)
+        self.target_result, self.feature_result = self.find_optimal(searchspace)
 
         # Check if the model is adequate - write it.
-        if target_result[0] >= 0:
+        if self.target_result[0] >= 0:
             f = open(self.filename, "a")
             f.write("Parameters:\n")
             f.write(str(param)+"\n")
@@ -102,12 +133,12 @@ class Regression:
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_)+"\n")
             f.close()
             self.solution_ready = True
-            self.solution_labels = target_result
-            self.solution_features = feature_result
+            self.solution_labels = self.target_result
+            self.solution_features = self.feature_result
             return True
         else:
             self.solution_ready = False
-            print("Predicted energy lower than 0, need more data..")
+            print("Predicted energy lower than 0: %s. Need more data.." % self.target_result[0])
             return False
 
     def find_optimal(self, features):

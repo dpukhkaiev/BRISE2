@@ -127,9 +127,9 @@ class WSClient(object):
         }
 
         try:
-            print(json.dumps(data))
+            # print(json.dumps(data))
             response = requests.put(self.path + '/result/format', data=json.dumps(data), headers=headers)
-            print(response.content)
+            # print(response.content)
             if response.status_code != 200:
                 print("Incorrect response code from server on getting results: %s\nBody:%s" % (response.status_code, response.content))
                 return 1
@@ -171,7 +171,7 @@ class WSClient(object):
             print("Failed to get results from WS %s, error: %s" % (self.host, e))
             return None
 
-    def poll_while_not_get(self, interval=3, timeout=90, terminate=False):
+    def poll_while_not_get(self, interval=0.1, timeout=90, terminate=False):
         """
         Start polling results from host with specified time interval and before timeout elapsed.
         :param interval: interval between each poll request
@@ -252,7 +252,7 @@ class WSClient(object):
         print("Sending task: %s" % str(task))
         self.send_task(task)
         print("Polling results..")
-        time.sleep(1)   # TODO: need to fix this issue from the WS site - it could happen that generated IDs not in stack yet.
+        time.sleep(3)   # TODO: need to fix this issue from the WS site - it could happen that generated IDs not in stack yet.
         self.poll_while_not_get()
         self.write_results_to_csv()
         return self.results
