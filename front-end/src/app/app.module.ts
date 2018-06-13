@@ -10,16 +10,20 @@ import { TaskListComponent } from './task-list/task-list.component';
 // Animation
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 // Material
-import { MatButtonModule, MatCheckboxModule, MatCardModule, MatListModule, MatIconModule, MatTabsModule } from '@angular/material';
+import { MatButtonModule, MatCheckboxModule, MatCardModule, MatListModule, MatIconModule, MatTabsModule, MatTooltipModule} from '@angular/material';
 
 /* Shared Service */
 import { WorkerService } from './services/worker.service';
+import { HeatMapComponent } from './heat-map/heat-map.component';
+import { RegChartComponent } from './reg-chart/reg-chart.component';
 
 
 @NgModule({ 
   declarations: [
     AppComponent,
-    TaskListComponent
+    TaskListComponent,
+    HeatMapComponent,
+    RegChartComponent
   ],
   imports: [
     BrowserModule, HttpModule, 
@@ -29,7 +33,8 @@ import { WorkerService } from './services/worker.service';
     MatCardModule, 
     MatListModule, 
     MatIconModule,
-    MatTabsModule
+    MatTabsModule,
+    MatTooltipModule
   ],
   providers: [{ provide: WorkerService, useClass: WorkerService }],
   bootstrap: [AppComponent]

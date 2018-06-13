@@ -4,7 +4,16 @@
     <h1>
       [logo] Benchmark
     </h1>
-    <app-task-list> </app-task-list>
+
+    <mat-tab-group>
+      <mat-tab label="Heat map">
+         <h-map></h-map>
+         <reg-chart></reg-chart>
+      </mat-tab>
+      <mat-tab label="Tasks">
+        <app-task-list> </app-task-list>
+      </mat-tab>
+    </mat-tab-group>
   </div>
 </div>
 
