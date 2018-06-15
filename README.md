@@ -24,12 +24,14 @@ ___
 4. From front-end root `$ npm install`
 5. Start front-server with `$ ng serve --host 0.0.0.0 --port 4201`
 
-###### Back-end + Docker environment
+###### Back-end + Docker environment + Main thread
 1. Install Docker and docker-compose
-2. `$ docker-compose up -d --build`
+2. Verify worker-node ip address and change it in **main-node/GlobalConfig.json** (you may do it later).
+3. `$ docker-compose up -d --build`
 
 ###### Main thread
-1. comming soon..
+1. SSH into container: `ssh root@localhost -p 2222` (password is "root" or you could add you public key to **configure_sshd.sh** file) 
+* Run main script: `./main.sh`
 
 ### Technologies stack :wrench:
 - Front-end | [Angular-cli](https://cli.angular.io/ "Angular CLI"), [Angular material](https://material.angular.io/ "Angular material")

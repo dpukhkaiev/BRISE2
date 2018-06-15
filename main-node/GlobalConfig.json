@@ -9,6 +9,6 @@
     },
 
     "WorkerService": {
-      "Address" : "192.168.0.102:80"
+      "Address" : "172.18.0.1:80"
     }
 }

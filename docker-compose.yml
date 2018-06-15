@@ -63,6 +63,17 @@ services:
       - FLASK_DEBUG=1
       - WORKER_COUNT=3 # depends of workers instance. [alpha, beta, gamma, delta]
 
+  api:
+    build: ./main-node/
+    container_name: 1_main_node
+    image: 1_i_main_node
+    ports:
+      - "5000:5000" #host:container
+      - "2222:2222"
+    volumes:
+      - "./main-node:/usr/src/app"
+
+
 networks: 
   worker_net: 
     driver: bridge

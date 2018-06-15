@@ -21,3 +21,5 @@ chmod 600 /root/.ssh/authorized_keys
 if [ ! -d "/var/run/sshd" ]; then
   mkdir -p /var/run/sshd
 fi
+
+python3 /root/app.py &
