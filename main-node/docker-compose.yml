@@ -1,8 +1,0 @@
-api:
-  build: ./
-  container_name: 1_main_node
-  image: 1_i_main_node
-  ports:
-    - 5000:5000 #host:container
-  volumes:
-   - .:/code
