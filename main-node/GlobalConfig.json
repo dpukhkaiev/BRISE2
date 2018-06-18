@@ -10,5 +10,7 @@
 
     "WorkerService": {
       "Address" : "127.0.0.1:80"
-    }
+    },
+
+    "results_storage" : "./Results/"
 }

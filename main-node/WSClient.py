@@ -7,7 +7,7 @@ import os
 
 class WSClient(object):
 
-    def __init__(self, task_name, features_names, results_structure, experiment_number, WSFile, host):
+    def __init__(self, task_name, features_names, results_structure, experiment_number, WSFile, host, logfile):
         """
         self.State displays state of runner, possible states: Free, TaskSent, ResultsGot
         :param experiment_number: sequence number of experiment to write results
@@ -27,7 +27,7 @@ class WSClient(object):
         self.task_body = {}
         self.results = None
         self.results_structure = results_structure
-        self.output_filename = ''
+        self.logfile = logfile
 
     def send_task(self, task):
             """
@@ -77,7 +77,7 @@ class WSClient(object):
                 if response.status_code != 201:
                     print("Incorrect response code from server: %s\nBody:%s" % (response.status_code, response.content))
                     exit()
-
+                #print(response.content)
                 response = response.content.decode()
                 response = response.replace("\n", "")
                 response = json.loads(response)
@@ -127,9 +127,9 @@ class WSClient(object):
         }
 
         try:
-            # print(json.dumps(data))
+            #print(json.dumps(data))
             response = requests.put(self.path + '/result/format', data=json.dumps(data), headers=headers)
-            # print(response.content)
+            #print(response.content)
             if response.status_code != 200:
                 print("Incorrect response code from server on getting results: %s\nBody:%s" % (response.status_code, response.content))
                 return 1
@@ -208,13 +208,10 @@ class WSClient(object):
             print("Results are not ready to be written.")
             return 1
 
-        # Formulating output_filename
-        self.output_filename = "{task_name}_{ExNum}_results.csv".format(task_name=self.task_name, ExNum=self.experiment_number)
-
         # Creating file if not exists
-        file_exists = os.path.isfile(self.output_filename)
+        file_exists = os.path.isfile(self.logfile)
         if not file_exists:
-            with open(self.output_filename, 'w') as f:
+            with open(self.logfile, 'w') as f:
                 legend = ''
                 for column_name in self.results_structure:
                     legend += column_name + ", "
@@ -222,7 +219,7 @@ class WSClient(object):
 
         # Writing the results
         try:
-            with open(self.output_filename, 'a', newline="") as csvfile:
+            with open(self.logfile, 'a', newline="") as csvfile:
                 writer = csv.writer(csvfile, delimiter=',')
                 for result in self.results:
                     writer.writerow(result)

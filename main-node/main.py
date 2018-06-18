@@ -73,9 +73,15 @@ def startServer(port=8089):
 
 
 def readGlobalConfig(fileName='./GlobalConfig.json'):
+    from os import path, makedirs
     try:
         with open(fileName, 'r') as cfile:
             config = json.loads(cfile.read())
+
+            results_path = config['results_storage']
+            if not path.exists(path.dirname(results_path)):
+                makedirs(path.dirname(results_path))
+
             return config
 
     except IOError as e:
@@ -163,11 +169,12 @@ def run():
 
     #   Connect to the Worker Service and send task.
     WS = WSClient(task_name=task["task_name"],
-                       features_names=task["params"]["FeatureNames"],
-                       results_structure=task["params"]["ResultStructure"],
-                       experiment_number=task["params"]["ExperimentNumber"],
-                       WSFile=task["params"]["WSFile"],
-                       host=globalConfig["WorkerService"]["Address"])
+                  features_names=task["params"]["FeatureNames"],
+                  results_structure=task["params"]["ResultStructure"],
+                  experiment_number=task["params"]["ExperimentNumber"],
+                  WSFile=task["params"]["WSFile"],
+                  host=globalConfig["WorkerService"]["Address"],
+                  logfile='%s%s_WSClient.csv' % (globalConfig['results_storage'], task['params']["WSFile"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
     runner = Repeater(WS)
@@ -175,7 +182,7 @@ def run():
     # Need to find default value that we will used in regression to evaluate solution
     print("Getting default best value..")
     default_best_task = task["default_best"]
-    default_best_results = runner.measure_task([default_best_task], 'student_deviation')
+    default_best_results = runner.measure_task([default_best_task], 'brute_decision')
     default_best_point, default_best_energy = feat_lab_split(default_best_results, task["params"]["ResultFeatLabels"])
     print(default_best_energy)
 
@@ -185,7 +192,7 @@ def run():
     # Results will be in a list of points, each point is also a list of values:
     # [[val1, val2,... valN], [val1, val2,... valN]...]
     print("Sending initial task..")
-    results = runner.measure_task(initial_task, 'student_deviation')
+    results = runner.measure_task(initial_task, 'student_deviation', default_point=default_best_results[0])
     print("Results got, splitting to features and labels..")
     features, labels = feat_lab_split(results, task["params"]["ResultFeatLabels"])
 
@@ -196,14 +203,14 @@ def run():
     while not reg_success:
         # print(features)
         # print(labels)
-        reg = Regression(output_filename = "%s_regression.txt" % task["task_name"],
+        reg = Regression(output_filename = "%s%s_regression.txt" % (globalConfig['results_storage'], task['params']["WSFile"]),
                          test_size = task["params"]["ModelTestSize"],
                          features = features,
                          targets = labels)
 
         reg_success = reg.regression(param=task["params"],
-                                        score_min=0.85,
-                                        searchspace=search_space)
+                                     score_min=0.85,
+                                     searchspace=search_space)
         if reg_success:
             print("Model build with accuracy: %s" % reg.accuracy)
             print("Verifying solution that model gave..")
@@ -223,14 +230,18 @@ def run():
             print('='*100)
             # cur_task = [sobol.getNextPoint()]
             cur_task = [sobol.getNextPoint() for x in range(task['params']['step'])]
-            # if reg.feature_result:
-            #     cur_task.append(reg.feature_result)
-            results = runner.measure_task(cur_task, 'student_deviation')
+            if reg.feature_result:
+                cur_task.append(reg.feature_result)
+            results = runner.measure_task(cur_task, 'student_deviation', default_point=default_best_results[0])
             new_feature, new_label = feat_lab_split(results, task["params"]["ResultFeatLabels"])
             features += new_feature
             labels += new_label
-
-    # if
+            if len(features) > len(search_space):
+                print("Unable to finish normally, terminating with best results")
+                min_en = min(labels)
+                min_en_config = features[labels.index(min_en)]
+                print("Measured best config: %s, energy: %s" % (str(min_en_config), str(min_en)))
+                break
 
     predicted_energy, predicted_point = reg.solution_labels, reg.solution_features
     print("\n\nPredicted energy: %s, with configuration: %s" % (predicted_energy[0], predicted_point))
