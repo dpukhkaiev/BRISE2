@@ -15,7 +15,7 @@ class Repeater:
         }
         self.performed_measurements = 0
 
-    def measure_task(self, task, decision_function, **configuration):
+    def measure_task(self, task, decision_function, **decis_func_config):
 
         # Verifying that provided decision function is available.
         if decision_function in self.available_decision_functions.keys():
@@ -32,7 +32,7 @@ class Repeater:
             # Evaluating decision function for each point in task
             self.current_measurement[str(point)] = {'data': point,
                                                     'Finished': False}
-            result = decision_function(self.history, point, **configuration)
+            result = decision_function(self.history, point, **decis_func_config)
             if result:
                 self.current_measurement[str(point)]['Finished'] = True
                 self.current_measurement[str(point)]['Results'] = result
@@ -65,7 +65,7 @@ class Repeater:
 
             # Evaluating decision function for each point in task
             for point in cur_task:
-                result = decision_function(self.history, point)
+                result = decision_function(self.history, point, **decis_func_config)
                 if result:
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
@@ -78,7 +78,7 @@ class Repeater:
 
 
 
-    def brute_decition(self, history, point, iterations = 10, **configuration):
+    def brute_decition(self, history, point, iterations = 3, **configuration):
         """
         Dum approach - just repeat measurement N times, compute the average and that's all.
         :param iterations: int, number of times to repeat measurement.
@@ -103,13 +103,13 @@ class Repeater:
 
             return result
 
-    def student_deviation(self, history, point, threshold=15, **configuration):
+    def student_deviation(self, history, point, threshold = 15, **configuration):
         import numpy as np
+        from math import exp
 
         # Preparing configuration
         params = configuration.keys()
 
-        threshold = configuration['threshold'] if 'threshold' in params else threshold
         default_point = configuration['default_point'] if 'default_point' in params else None
 
         # For trusted probability 0.95
@@ -150,6 +150,8 @@ class Repeater:
 
             # Verifying that deviation of errors in each dimmension is
             for index, error in enumerate(relative_errors):
+                # Selecting needed threshold - 100/(1+exp(-x+3.3)) where x is value of measured point divided to default
+                threshold = 100/(1+exp(-float((all_dim_avg.tolist()[0][index] / default_point[index]))+3.3)) + len(all_experiments) - 2 if default_point else threshold + len(all_experiments)
                 # If for any dimension relative error is > that threshold - abort
                 # print("student_deviation - need more: %s" % str(relative_errors))
                 if error > threshold:

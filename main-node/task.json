@@ -6,7 +6,7 @@
       "SobolInitLength" : 10,
       "step": 2,
       "DataFile"        : "./taskData.json",
-      "WSFile"          : "Radix-1000mio.csv",
+      "WSFile"          : "game1-tar-3DES_decrypt.csv",
       "FeatureNames"  : ["frequency", "threads"],
       "ResultStructure"  : ["frequency", "threads", "energy"],
       "ResultFeatLabels" : ["feature", "feature", "label"]

@@ -39,7 +39,7 @@ class Regression:
         self.feature_train, self.feature_test, self.target_train, self.target_test = \
             model_selection.train_test_split(self.all_features, self.all_targets, test_size=self.test_size)
 
-    def build_model(self, degree, score_min, tries=20):
+    def build_model(self, degree, score_min, tries=10):
         """
         This function will try to build model that will provide needed accuracy. Each time 10 times resplitting the data
         and going from the best accuracy (0.99) to the worst (score_min param).
