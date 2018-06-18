@@ -1,0 +1,14 @@
+{
+  "task_name"  : "taskNB", 
+  "params": {
+    "ExperimentNumber"  : 1,
+    "ModelTestSize"  : 0.9,
+    "SobolInitLength" : 10,
+    "step": 2,
+    "DataFile"        : "./taskNBData.json",
+    "WSFile"          : "",
+    "FeatureNames"  : ["laplace correction", "estimation mode", "bandwidth selection", "bandwidth", "minimum bandwidth", "number of kernels", "use application grid", "application grid size"],
+    "ResultStructure"  : ["laplace correction", "estimation mode", "bandwidth selection", "bandwidth", "minimum bandwidth", "number of kernels", "use application grid", "application grid size", "accuracy"],
+    "ResultFeatLabels" : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
+  }
+}

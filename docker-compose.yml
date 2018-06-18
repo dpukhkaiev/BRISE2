@@ -27,19 +27,19 @@ services:
       - "1832:8080" # if direct access is required
     volumes:
       - "./worker:/usr/src/app"
-  w_gamma:
-    build: ./worker/
-    container_name: w_gamma
-    environment:
-      - workername=gamma
-    networks:
-      worker_net:
-        aliases:
-          - gamma
-    ports:
-      - "1833:8080" # if direct access is required
-    volumes:
-      - "./worker:/usr/src/app"
+  # w_gamma:
+  #   build: ./worker/
+  #   container_name: w_gamma
+  #   environment:
+  #     - workername=gamma
+  #   networks:
+  #     worker_net:
+  #       aliases:
+  #         - gamma
+  #   ports:
+  #     - "1833:8080" # if direct access is required
+  #   volumes:
+  #     - "./worker:/usr/src/app"
   w_service:
     build: ./worker_service/
     command: python3 intro.py
@@ -57,11 +57,11 @@ services:
     depends_on:
         - "w_alpha"
         - "w_beta"
-        - "w_gamma"
+        # - "w_gamma"
     environment:
       - FLASK_APP=worker_service/__init__.py
       - FLASK_DEBUG=1
-      - WORKER_COUNT=3 # depends of workers instance. [alpha, beta, gamma, delta]
+      - WORKER_COUNT=2 # depends of workers instance. [alpha, beta, gamma, delta]
 
 networks:
   worker_net:
