@@ -9,7 +9,7 @@
     },
 
     "WorkerService": {
-      "Address" : "127.0.0.1:80"
+      "Address" : "w_service:80"
     },
 
     "results_storage" : "./Results/"

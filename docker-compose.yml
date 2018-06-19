@@ -63,6 +63,22 @@ services:
       - FLASK_DEBUG=1
       - WORKER_COUNT=2 # depends of workers instance. [alpha, beta, gamma, delta]
 
+  main_node:
+    build: ./main-node/
+    command: /usr/sbin/sshd -D
+    tty: true
+    container_name: main-node
+    networks:
+      worker_net:
+        aliases:
+          - main-node
+    ports:
+      - "2222:2222"
+    depends_on:
+      - "w_service"
+    volumes:
+      - "./main-node/Results:/root/Results"
+
 networks:
   worker_net:
     driver: bridge

@@ -169,12 +169,9 @@ def run():
 
     #   Connect to the Worker Service and send task.
     WS = WSClient(task_name=task["task_name"],
-                  features_names=task["params"]["FeatureNames"],
-                  results_structure=task["params"]["ResultStructure"],
-                  experiment_number=task["params"]["ExperimentNumber"],
-                  WSFile=task["params"]["WSFile"],
-                  host=globalConfig["WorkerService"]["Address"],
-                  logfile='%s%s_WSClient.csv' % (globalConfig['results_storage'], task['params']["WSFile"]))
+                  task_params=task["params"],
+                  ws_addr=globalConfig["WorkerService"]["Address"],
+                  logfile='%s%s_WSClient.csv' % (globalConfig['results_storage'], task['params']["FileToRead"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
     runner = Repeater(WS)
@@ -203,7 +200,7 @@ def run():
     while not reg_success:
         # print(features)
         # print(labels)
-        reg = Regression(output_filename = "%s%s_regression.txt" % (globalConfig['results_storage'], task['params']["WSFile"]),
+        reg = Regression(output_filename = "%s%s_regression.txt" % (globalConfig['results_storage'], task['params']["FileToRead"]),
                          test_size = task["params"]["ModelTestSize"],
                          features = features,
                          targets = labels)
