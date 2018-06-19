@@ -19,16 +19,19 @@ def random_2(param):
     return data.search(str(param['frequency']), str(param['threads']))
 
 def energy_consumption(param):
-    data = Splitter("csv_data/"+param['ws_file'])
-    # time.sleep(randint(0, 2))
-    data.search(str(param['frequency']), str(param['threads']))
-    result = choice(data.new_data)
-    return {
-        'threads': result["TR"],
-        'frequency': result["FR"],
-        'energy': result["EN"],
-        'time': result["TIM"]
-    }
+    try:
+        data = Splitter("csv_data/"+param['ws_file'])
+        # time.sleep(randint(0, 2))
+        data.search(str(param['frequency']), str(param['threads']))
+        result = choice(data.new_data)
+        return {
+            'threads': result["TR"],
+            'frequency': result["FR"],
+            'energy': result["EN"],
+            'time': result["TIM"]
+        }
+    except Exception as e:
+        print("ERROR IN WORKER during performing energy consumption with parameters: %s" %param)
 
 def random_real(param):
     data = Splitter("csv_data/"+param['ws_file'])
