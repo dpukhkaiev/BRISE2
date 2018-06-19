@@ -6,9 +6,10 @@
       "SobolInitLength" : 10,
       "step": 2,
       "DataFile"        : "./taskData.json",
-      "WSFile"          : "game1-tar-3DES_decrypt.csv",
+      "FileToRead"          : "game1-tar-3DES_decrypt.csv",
       "FeatureNames"  : ["frequency", "threads"],
       "ResultStructure"  : ["frequency", "threads", "energy"],
+      "ResultDataTypes"  : ["float", "int", "float"],
       "ResultFeatLabels" : ["feature", "feature", "label"]
     }
 }

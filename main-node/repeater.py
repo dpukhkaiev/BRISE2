@@ -54,11 +54,6 @@ class Repeater:
             # Send this task to Worker service
             results = self.WSClient.work(cur_task)
 
-            if len(cur_task) != len(results):
-                print("Results and task have different length: %s and %s. Need to investigate:" % (cur_task, results))
-                while True:
-                    exec(input(">>>"))
-
             # Writing data to history.
             for point, result in zip(cur_task, results):
                 self.history.put(point, result)
@@ -74,9 +69,6 @@ class Repeater:
         for point in task:
             results.append(self.current_measurement[str(point)]['Results'])
         return results
-
-
-
 
     def brute_decition(self, history, point, iterations = 3, **configuration):
         """
@@ -99,7 +91,7 @@ class Repeater:
 
             # Calculating average.
             for index, value in enumerate(result):
-                result[index] = round(value / len(all_experiments), 2)
+                result[index] = eval(self.WSClient.results_data_types[index])(round(value / len(all_experiments), 2))
 
             return result
 
@@ -157,9 +149,18 @@ class Repeater:
                 if error > threshold:
                     return False
             # print(all_dim_avg.tolist()[0])
-            result = [round(x, 2) for x in all_dim_avg.tolist()[0]]
+            # eval(self...)(value) - process of casting according to ResultDataTypes in task.json
+            result = [eval(self.WSClient.results_data_types[index])(round(value, 2)) for index, value in enumerate(all_dim_avg.tolist()[0])]
             print("Point %s finished after %s measurements. Result: %s" % (str(point), len(all_experiments), str(result)))
             return result
+
+    def cast_results(self, results):
+
+        # WSClient during initialization stores data types in himself, need to cast results according to that data types.
+        return_for_main = []
+        for point in results:
+            return_for_main.append(eval(self.WSClient.results_data_types[index])(value) for index, value in enumerate(point))
+        return return_for_main
 
 class History:
     def __init__(self):

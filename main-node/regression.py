@@ -114,7 +114,7 @@ class Regression:
 
         # Build regression.
         self.target_result, self.feature_result = self.find_optimal(searchspace)
-        self.test_mode_all_data(searchspace)
+        self.test_model_all_data(searchspace)
 
         # Check if the model is adequate - write it.
         if self.target_result[0] >= 0:
@@ -154,13 +154,13 @@ class Regression:
     def sum_fact(self, num):
             return reduce(lambda x,y: x+y, list(range(1 ,num + 1)))
 
-    def test_mode_all_data(self, search_space, data_file = '/media/sem/B54BE5B22C0D3FA8/GoogleDrive/Master thesis/code/worker/csv_data/Radix-1000mio.csv'):
-        import sys
-        from main import feat_lab_split
-        sys.path.insert(0, "../worker/csv_data")
-        from splitter import Splitter
+    def test_model_all_data(self, search_space):
+        from main import feat_lab_split, load_task
+        from Tools.splitter import Splitter
+
         all_data = []
-        spl = Splitter(data_file)
+        file_path = "./csv/" + load_task()["params"]["FileToRead"]
+        spl = Splitter(file_path)
 
         for point in self.all_features:
             if point in search_space:
@@ -168,7 +168,7 @@ class Regression:
 
         for point in search_space:
             spl.search(str(point[0]), str(point[1]))
-            all_data += [[float(x['FR']),float(x['TR']),float(x['EN'])] for x in spl.new_data]
+            all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
 
         features, labels = feat_lab_split(all_data, ['feature','feature','label'])
         # from sklearn.model_selection import train_test_split
