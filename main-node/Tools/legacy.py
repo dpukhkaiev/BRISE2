@@ -2,6 +2,11 @@ import docker
 import os
 import fnmatch
 import csv
+import numpy
+import json
+import urllib.parse
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 
 def runRemoteContainer(host, image):
 
@@ -87,3 +92,83 @@ def run_sobol(path_to_sobol_file="/home/sem/TMP/BRISE/"):
         config.append([threads[int(point[0])-1], freqs[int(point[1]) - 1]])
 
     return [experiment_number, config]
+
+def cartesian_product(*arrays):
+    la = len(arrays[0])
+    dtype = numpy.result_type(*arrays[0])
+    arr = numpy.empty([len(a) for a in arrays[0]] + [la], dtype=dtype)
+    for i, a in enumerate(numpy.ix_(*arrays[0])):
+        arr[...,i] = a
+    return arr.reshape(-1, la)
+
+def readGlobalConfig1(fileName='./GlobalConfig.json'):
+    from os import path, makedirs
+    try:
+        with open(fileName, 'r') as cfile:
+            config = json.loads(cfile.read())
+
+            results_path = config['results_storage']
+            if not path.exists(path.dirname(config['results_storage'])):
+                makedirs(path.dirname(results_path))
+
+            return config
+
+    except IOError as e:
+        print('No config file found!')
+        print(e)
+        # return {}
+        exit(3)
+    except ValueError as e:
+        print('Invalid config file!')
+        print(e)
+        # return {}
+        exit(3)
+
+def startServer(port=8089):
+
+    class S(BaseHTTPRequestHandler):
+        def _set_headers(self):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+
+        def do_GET(self):
+            self._set_headers()
+            parsed_path = urllib.parse.urlparse(self.path)
+            request_id = parsed_path.path
+            
+            self.wfile.write("Hello\nRequest ID:%s\npath:%s" % (request_id, parsed_path))
+
+        def do_POST(self):
+            self._set_headers()
+            parsed_path = urllib.parse.urlparse(self.path)
+            request_id = parsed_path.path
+
+            # TODO - write parcer for JSON responce from clients
+            with open("client_responces.log", 'a') as logfile:
+                try:
+                    
+                    request = self.request
+                except: pass
+
+
+            with open('WebServ.log', 'a') as logfile:
+                logfile.write('%s - - [%s] %s\n'%
+                                (self.client_address[0],
+                                self.log_date_time_string(),
+                                self.request))
+            
+            self.wfile.write("Hello\nRequest ID:%s\npath:%s" % (request_id, parsed_path))
+
+        def do_HEAD(self):
+            self._set_headers()
+        
+
+
+    def run(server_class=HTTPServer, handler_class=S, port=port):
+        server_address = ('', port)
+        httpd = server_class(server_address, handler_class)
+        print('Starting httpd...')
+        httpd.serve_forever()
+    
+    run()
