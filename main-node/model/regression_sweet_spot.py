@@ -7,8 +7,11 @@ from functools import reduce
 import sobol_seq
 import numpy
 
+from model.model_abs import Model
+from tools.features_tools import split_features_and_labels
 
-class Regression:
+
+class RegressionSweetSpot(Model):
 
     def __init__(self, output_filename, test_size, features, targets):
         """
@@ -39,40 +42,6 @@ class Regression:
         self.feature_train, self.feature_test, self.target_train, self.target_test = \
             model_selection.train_test_split(self.all_features, self.all_targets, test_size=self.test_size)
 
-    def build_model(self, degree, score_min, tries=10):
-        """
-        This function will try to build model that will provide needed accuracy. Each time 10 times resplitting the data
-        and going from the best accuracy (0.99) to the worst (score_min param).
-        :param degree: Int, see http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
-        :param score_min: Float, 0.5 < r2_min < 1.0 - Accuracy threshold for model estimation.
-        :param tries: int, number of times to try to generate model
-        :return: Bool True if created model has needed accuracy, False if not.
-        """
-
-        best_got = -10e10
-        best_model = None
-        while self.test_size > 0.3:
-            for x in range(tries):
-                self.resplitData()
-                model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())])
-                model.fit(self.feature_train, self.target_train)
-                score_measured = model.score(self.feature_test, self.target_test)
-
-                if score_measured > best_got:
-                    best_got = score_measured
-                    best_model = model
-                    print('GOT NEW ACCURACY: %s' %score_measured)
-
-
-            if best_got > score_min:
-                self.model = best_model
-                self.accuracy = best_got
-                print("Regression model built with %s test size and %s accuracy! Verifying.." % (self.test_size, self.accuracy))
-                return True
-            else:
-                self.test_size -= 0.01
-        return False
-
     def build_model_BRISE(self, degree, score_min, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
@@ -90,7 +59,7 @@ class Regression:
                     if score_measured > best_got:
                         best_got = score_measured
                         best_model = model
-                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (score_measured, round(self.test_size,2), round(cur_accuracy,2)))
+                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (round(score_measured,3), round(self.test_size,2), round(cur_accuracy,2)))
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
@@ -103,7 +72,7 @@ class Regression:
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def regression(self, param, score_min, searchspace, degree=6):
+    def build_model(self, param, score_min, searchspace, degree=6):
 
         # Build model if was not built.
         if not self.model:
@@ -176,3 +145,51 @@ class Regression:
 
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
+
+    def validate(self, success, task, repeater, selector, default_value, default_result, search_space, features, labels):
+        if success:
+            # validate() in regression
+            print("Model build with accuracy: %s" % self.accuracy)
+            print("Verifying solution that model gave..")
+            real_result = split_features_and_labels(repeater.measure_task([self.solution_features]), task["params"]["ResultFeatLabels"])[1][0]
+
+            # If our measured energy higher than default best value - add this point to data set and rebuild model.
+            #validate false
+            if real_result > default_value[0]:
+                features += [self.solution_features]
+                labels += [real_result]
+                print("Predicted energy larger than default.")
+                print("Predicted energy: %s. Measured: %s. Best default: %s" %(self.solution_labels[0], real_result[0], default_value[0][0]))
+                success = False
+            return features, labels, real_result, success
+
+        if not success:
+            # get new point from selection alg
+            print("New data point needed to continue building regression. Current number of data points: %s" % str(selector.numOfGeneratedPoints))
+            print('='*100)
+            # cur_task = [sobol.getNextPoint()]
+            cur_task = [selector.get_next_point() for x in range(task['params']['step'])]
+            if self.feature_result:
+                cur_task.append(self.feature_result)
+            results = repeater.measure_task(cur_task, default_point=default_result[0])
+            new_feature, new_label = split_features_and_labels(results, task["params"]["ResultFeatLabels"])
+            features += new_feature
+            labels += new_label
+            # fail rip
+            if len(features) > len(search_space):
+                print("Unable to finish normally, terminating with best results")
+                min_en = min(labels)
+                min_en_config = features[labels.index(min_en)]
+                print("Measured best config: %s, energy: %s" % (str(min_en_config), str(min_en)))
+                success = True
+            return features, labels, None, success
+
+    def get_new_point(self):
+        pass
+
+    def get_result(self, features, repeater, measured_energy):
+        print("\n\nPredicted energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
+        print("Number of measured points: %s" % len(features))
+        print("Number of performed measurements: %s" % repeater.performed_measurements)
+        print("Measured energy is: %s" % str(measured_energy[0]))
+        return self.solution_labels, self.solution_features

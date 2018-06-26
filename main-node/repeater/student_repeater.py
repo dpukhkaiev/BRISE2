@@ -1,10 +1,11 @@
-from repeater.default_repeater import Repeater
+from repeater.repeater_abs import Repeater
 class StudentRepeater(Repeater):
+    
     def decision_function(self, history, point, threshold = 15, **configuration):
         import numpy as np
-        from math import exp
+        from math import exp 
 
-        # Preparing configuration
+        # Preparing configuration 
         params = configuration.keys()
 
         default_point = configuration['default_point'] if 'default_point' in params else None

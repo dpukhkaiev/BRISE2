@@ -6,7 +6,7 @@
       "NumberOfInitialExperiments"   : 10,
       "step"              : 2,
       "SelectionType"     : "SobolSequence",
-      "StopCondition"     : "regression",
+      "ModelType"         : "regression",
       "DecisionFunction"  : "student_deviation",
       "DataFile"          : "./Resources/taskData.json",
       "FileToRead"        : "Radix-1000mio.csv",
