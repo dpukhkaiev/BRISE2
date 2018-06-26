@@ -73,6 +73,7 @@ class SobolSequence(SelectionAlgorithm):
                 point = distances_dict[current_distance]
                 self.returned_points.append(point)
                 break
+            # Only for debug, need to remove it.
             else:
                 print("Woops, it was picked, taking next one!")
 

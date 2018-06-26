@@ -159,7 +159,7 @@ class RegressionSweetSpot(Model):
                 features += [self.solution_features]
                 labels += [real_result]
                 print("Predicted energy larger than default.")
-                print("Predicted energy: %s. Measured: %s. Best default: %s" %(self.solution_labels[0], real_result[0], default_value[0][0]))
+                print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(self.solution_labels[0], real_result[0], default_value[0][0]))
                 success = False
             return features, labels, real_result, success
 

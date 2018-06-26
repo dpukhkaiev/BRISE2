@@ -2,7 +2,7 @@ from repeater.history import History
 from repeater.repeater_abs import Repeater
 class DefaultRepeater(Repeater):
     
-    def decision_function(self, history, point, iterations = 3, **configuration):
+    def decision_function(self, history, point, iterations = 10, **configuration):
         """
         Dum approach - just repeat measurement N times, compute the average and that's all.
         :param iterations: int, number of times to repeat measurement.
