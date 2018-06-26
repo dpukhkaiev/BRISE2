@@ -14,6 +14,8 @@ services:
       - "1831:8080"  # if direct access is required
     volumes:
       - "./worker:/usr/src/app"
+    depends_on:
+        - "w_service"
   w_beta:
     build: ./worker/
     container_name: w_beta
@@ -27,6 +29,8 @@ services:
       - "1832:8080" # if direct access is required
     volumes:
       - "./worker:/usr/src/app"
+    depends_on:
+        - "w_service"
   # w_gamma:
   #   build: ./worker/
   #   container_name: w_gamma
@@ -43,6 +47,7 @@ services:
   w_service:
     build: ./worker_service/
     command: python3 intro.py
+    # command: sh
     stdin_open: true
     tty: true
     container_name: w_service
@@ -54,10 +59,9 @@ services:
       - "80:80"
     volumes:
       - "./worker_service:/usr/src/app"
-    depends_on:
-        - "w_alpha"
-        - "w_beta"
-        # - "w_gamma"
+    # depends_on:
+    #     - "w_alpha"
+    #     - "w_beta"
     environment:
       - FLASK_APP=worker_service/__init__.py
       - FLASK_DEBUG=1
