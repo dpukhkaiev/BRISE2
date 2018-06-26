@@ -4,18 +4,34 @@ Module to read data from files. Each function = 1 file type.
 
 import sobol_seq
 import numpy
+from selection.selection_algorithm_abs import SelectionAlgorithm
+from scipy.spatial.distance import euclidean
+from itertools import product
 
-class SobolSequence():
+class SobolSequence(SelectionAlgorithm):
 
-    def __init__(self, dimensionality, data):
+    def __init__(self, data):
         """
         Creates SobolSequence instance that stores information about number of generated poitns
-        :param dimensionality: - number of different parameters in greed.
+        :param data: list of dimensions that describes a
 
         """
-        self.dimensionality = dimensionality
+        # TODO: Selection algorithm needs to know measured points by regression model
+
+        self.dimensionality = len(data)
         self.data = data
         self.numOfGeneratedPoints = 0
+        self.returned_points = []   # Storing previously returned points
+        self.hypercube_coordinates = []
+
+        # Need to use floating numbers of indexes for searching distances between target point and other points in hypercube
+        for dimmension in data:
+            dimm_indexes = [float(x) for x in range(len(dimmension))]
+            self.hypercube_coordinates.append(dimm_indexes)
+
+        # Building hypercube
+        self.hypercube = list(product(*self.hypercube_coordinates))
+
 
     def __generate_sobol_seq(self, number_of_data_points=1, skip = 0):
         """
@@ -40,61 +56,35 @@ class SobolSequence():
         # Point is a list with floats uniformly distributed between 0 and 1 for all parameters [paramA, paramB..]
         point = self.__generate_sobol_seq(skip=skip)[0]
 
-        result = []
+        # Putting this point to hypercube
+        point = [len(self.hypercube_coordinates[dimension_index]) * dimension_value for dimension_index, dimension_value in enumerate(point)]
+
+        # Calculate dictionary with distances to all other points in search space from this point
+        # Keys - distance, values - point
+        distances_dict = {}
+        for hypercube_point in self.hypercube:
+            distances_dict[euclidean(point, hypercube_point)] = hypercube_point
+
+        # Picking existing configuration point from hypercube by the smallest distance if it was not previously picked.
+        distances = list(distances_dict.keys())
+        distances.sort()
+        for current_distance in distances:
+            if distances_dict[current_distance] not in self.returned_points:
+                point = distances_dict[current_distance]
+                self.returned_points.append(point)
+                break
+            else:
+                print("Woops, it was picked, taking next one!")
+
+        # Retrieve configuration from the task
+        result_to_return = [self.data[int(dimension_index)][int(dimension_value)] for dimension_index, dimension_value in enumerate(point)]
+
+
+
+        """
+        result_to_return = []
         # In loop below this distribution imposed to real parameter values list.
         for parameter_index, parameterValue in enumerate(point):
-            result.append(self.data[parameter_index][round(len(self.data[parameter_index]) * float(parameterValue) - 1 )])
-
-        return result
-
-    def merge_data_with_selection_algorithm(self, sobol_seq=None, numOfPoints = 'all'):
+            result_to_return.append(self.search_space[parameter_index][round(len(self.search_space[parameter_index]) * float(parameterValue) - 1 )])
         """
-        Method maps input parameter points to uniformly generated sobol sequence and returns data points.
-        Number of parameters should be the same as depth of each point in Sobol sequence.
-        It is possible to call method without providing Sobol sequence - it will be generated in runtime.
-        :param sobol_seq: data points
-        :param numOfPoints: 'all' - all parameters will be mapped to sobol distribution function, or int
-        :return: List with uniformly distributed parameters across parameter space.
-        """
-
-        if type(sobol_seq) is numpy.ndarray:
-            if len(self.data) != len(sobol_seq[0]):
-                print("Warning! Number of provided parameters does not match with size of Sobol sequence. Generating own Sobol sequence based on provided parameters.")
-                sobol_seq = None
-
-        # The below 'if' case generates sobol sequence
-        if not sobol_seq or type(sobol_seq) is not numpy.ndarray:
-
-            if numOfPoints == 'all':
-                numOfPoints = 1
-                for parameter in self.data:
-                    numOfPoints *= len(parameter)
-
-            sobol_seq = self.__generate_sobol_seq(numOfPoints)
-
-        # Following loop apply Sobol grid to given parameter grid, e.g.:
-        # for Sobol array(
-        #  [[ 0.5  ,  0.5  ],
-        #   [ 0.75 ,  0.25 ],
-        #   [ 0.25 ,  0.75 ],
-        #   [ 0.375,  0.375],
-        #   [ 0.875,  0.875]])
-        #
-        # And params = [
-        # [1, 2, 4, 8, 16, 32],
-        # [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
-        #   2900.0, 2901.0]
-        #               ]
-        # We will have output like:
-        # [[3.0, 8.0],
-        #  [4.5, 4.0],
-        #  [1.5, 12.0],
-        #  [2.25, 6.0],
-        #  [5.25, 14.0]]
-        result = []
-        for point in sobol_seq:
-            tmp_res = []
-            for parameter_index, parameterValue in enumerate(point):
-                tmp_res.append(self.data[parameter_index][round(len(self.data[parameter_index]) * float(parameterValue) - 1 )])
-            result.append(tmp_res)
-        return result
+        return result_to_return

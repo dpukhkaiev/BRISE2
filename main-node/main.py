@@ -27,7 +27,6 @@ def run():
     globalConfig, task = initialize_config()
     # Creating instance of selector based on selection type and task data for further uniformly distributed data points generation.
     selector = get_selector(selector_type=task["params"]["SelectionType"],
-                            dimensionality=len(task["TaskDataPoints"]), 
                             data=task["TaskDataPoints"])
     #   Connect to the Worker Service and send task.
     WS = WSClient(task_name=task["task_name"],
@@ -46,7 +45,7 @@ def run():
     print(default_value)
 
     # Creating initial set of points for testing and first attempt to create regression model.
-    initial_task = selector.merge_data_with_selection_algorithm(numOfPoints=task["params"]["NumberOfInitialExperiments"])
+    initial_task = [selector.get_next_point() for x in range(task["params"]["NumberOfInitialExperiments"])]
 
     # Results will be in a list of points, each point is also a list of values:
     # [[val1, val2,... valN], [val1, val2,... valN]...]
