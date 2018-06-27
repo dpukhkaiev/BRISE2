@@ -10,6 +10,10 @@ from concurrent.futures import ThreadPoolExecutor
 # LOGIN
 import logging
 # logging.basicConfig(filename='recruit.log',level=logging.DEBUG)
+logging.getLogger('socketio').setLevel(logging.DEBUG)
+logging.getLogger('engineio').setLevel(logging.DEBUG)
+
+default_logger = logging.getLogger('socketio')
 
 class Recruit():
     '''
@@ -25,23 +29,28 @@ class Recruit():
         self._executor = ThreadPoolExecutor(1).submit(self._loop)
         self.socket = socket
 
+
+        default_logger.info('TEST -- Constructor')
+
         # managing array with curent workers
-        self.socket.on('connected', namespace='/status')
+        self.socket.on('connect', namespace='/status')
         def connected():
-            print(' connected: ' + str(request.namespace.socket.sessid))
-            workers.append(request.namespace)
+            # print('------ connected: ' + str(request.namespace.socket.sessid))
+            default_logger.info('LOGER -- Connected')
+            workers.append('request.namespace')
             return 'from server:connected'     
 
         self.socket.on('disconnect', namespace='/status')
         def disconnect():
-            print(' disconnected: ' + str((request.namespace.socket.sessid)))
-            workers.remove(request.namespace)
+            # print('------ disconnected: ' + str((request.namespace.socket.sessid)))
+            default_logger.info('LOGER -- Disconnecting')
+            workers.remove('request.namespace')
             return 'from server:disconnect'
 
         self.socket.on('ping')
         def ping_pong():
             print(' PING: ' + str((request.namespace.socket.sessid)))
-            return 'server - pong'
+            return 'server - pong :: HR'
 
         self.socket.on('result', namespace='/task')
         def handle_result(json):

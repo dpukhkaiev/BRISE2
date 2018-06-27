@@ -9,6 +9,10 @@ from api.tasks_manager.workflow import Workflow, Task
 from api.tasks_manager.model import t_parser, t_parser_2
 from api.worker_manager.recruit import Recruit 
 
+# Logging
+import logging
+
+
 # workflow instance with tasks stack
 flow = Workflow()
 
@@ -19,12 +23,13 @@ def create_app(script_info=None):
 
     # WebSocket
     app.config['SECRET_KEY'] = 'secret!'
-    socketio = SocketIO(app)
+    socketio = SocketIO(app, logger=True, engineio_logger=True)
+    logging.getLogger('socketio').setLevel(logging.DEBUG)
 
     # worker manager/explorer
     hr = Recruit(flow, socketio)
     hr.status()
-
+    
     # ---------------------------------------- HTTP
     @app.route('/')
     def index():
@@ -116,10 +121,22 @@ def create_app(script_info=None):
 
     # ---------------------------------------- Events
     # 
-    # @socketio.on('ping', namespace='/status')
+    # @socketio.on('ping')
     # def ping_message(message):
     #     print('ping-pong')
     #     return {'server':'pong!'}
+
+    @socketio.on('connect', namespace='/status')
+    def connected():
+        print('++++++ connected: ' + str(request.sid))
+        # workers.append('request.namespace')
+        return 'from server:connected' 
+
+    @socketio.on('disconnect', namespace='/status')
+    def disco():
+        print('------ disconnect: ' + str(request.sid))
+        # workers.append('request.namespace')
+        return 'from server:disconnect' 
 
     # @socketio.on('catch', namespace='/task')
     # def ping_message(json):
