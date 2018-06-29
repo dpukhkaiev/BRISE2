@@ -1,7 +1,11 @@
 import os
 import requests
+import threading
 
-from flask_socketio import SocketIO, send, emit
+import eventlet
+eventlet.monkey_patch()
+
+# from flask_socketio import SocketIO, send, emit
 import time
 from random import randint
 from concurrent.futures import ThreadPoolExecutor
@@ -13,7 +17,6 @@ import logging
 logging.getLogger('socketio').setLevel(logging.DEBUG)
 logging.getLogger('engineio').setLevel(logging.DEBUG)
 
-default_logger = logging.getLogger('socketio')
 
 class Recruit():
     '''
@@ -21,60 +24,41 @@ class Recruit():
     '''
      
     def __init__(self, flow, socket):
-        # Set how much workers we have
-        # self.workers = ['alpha', 'beta', 'gamma', 'delta'][:int(os.getenv('WORKER_COUNT'))]
         self.workers = []
         self.flow = flow
-        self.result = dict()
-        self._executor = ThreadPoolExecutor(1).submit(self._loop)
+        # self._executor = ThreadPoolExecutor(1).submit(self._loop, socket)
         self.socket = socket
 
+        self.result = dict()
+        self.send = True
+        self.focus_task = None
 
-        default_logger.info('TEST -- Constructor')
+        eventlet.spawn(self._loop)
 
-        # managing array with curent workers
-        self.socket.on('connect', namespace='/status')
-        def connected():
-            # print('------ connected: ' + str(request.namespace.socket.sessid))
-            default_logger.info('LOGER -- Connected')
-            workers.append('request.namespace')
-            return 'from server:connected'     
+        # self._thread = threading.Thread(target=self._loop, args=())
+        # self._thread.daemon = True
+        # self._thread.start()
 
-        self.socket.on('disconnect', namespace='/status')
-        def disconnect():
-            # print('------ disconnected: ' + str((request.namespace.socket.sessid)))
-            default_logger.info('LOGER -- Disconnecting')
-            workers.remove('request.namespace')
-            return 'from server:disconnect'
-
-        self.socket.on('ping')
-        def ping_pong():
-            print(' PING: ' + str((request.namespace.socket.sessid)))
-            return 'server - pong :: HR'
-
-        self.socket.on('result', namespace='/task')
-        def handle_result(json):
-            self.analysis_res(json)
-            print(' received results: ' + str(json))
-
-    def __del__(self):
-        self._executor.cancel()
+    # def __del__(self):
+    #     self._executor.cancel()
 
     def _loop(self):
         while True: 
             # wait task in queue
-            time.sleep(1) 
+            eventlet.sleep(1)
+
             if self.flow.stack.queue:
                 # if there is a task(s) in the queue
                 print(" Spin:", self.spin())
                 time.sleep(1)
 
             for task in self.flow.get_stack():
+                print('--- from  task:', task)
                 if task["id"] not in self.result:
                     self.result[task["id"]] = task
 
     # def test(self):
-    #     self.socket.emit('ping', {'data': 42})
+    #     self.socket.emit('ping', {'data': 42324243242342342}, namespace='/status', room=self.workers[0])
     #     return 'ping'
 
     def status(self):
@@ -145,38 +129,33 @@ class Recruit():
         ''' Pull out task from the Stack and find a worker who can complete it
         '''
 
-        task = self.flow.pull_task()
-        payload = task.to_json()
+        self.focus_task = self.flow.pull_task()
+        payload = self.focus_task.to_json()
         # store task id - status
         if payload:
             self.result[payload['id']] = payload
 
         # success flag
-        send = False  
+        self.send = False  
+        print("SPIN :: payload ::", self.focus_task)
 
-        while task and not send:
+        while self.focus_task and not self.send:
             # TODO it is necessary to form a structure that monitors free workers
-            # select random worker
-            w_random = randint(0, 9)%len(self.workers)     
-            
-            # try assign a task to worker          
-            # r = requests.post('http://'+ self.workers[w_random] +':8080/run', json=payload)
-            res = None
-            if workers:
-                k = random.randint(0, len(workers)-1)
-                print("Task send to", workers[k].socket.sessid)
-                res = workers[k].emit('assign', 
-                                payload, 
-                                namespace='/task', 
-                                callback= lambda res: task_confirm(res))
 
-            def task_confirm(res):
-                if res['status'] == 'run':
-                    self.result[payload['id']]['meta_data']['accept'] = time.time()
-                    self.result[payload['id']]['meta_data']['appointment'] = res['node']
-                    send = True
-                    task = None
-                    return res
+            eventlet.sleep(1)
+            if len(self.workers):
+                k = randint(0, 9)%len(self.workers)
+                print(" Task send to", self.workers[k])
+                self.socket.emit('assign', payload, namespace='/task', room=self.workers[k])
+
+    def task_confirm(self, obj):
+        if obj['status'] == 'run':
+            self.result[obj['task id']]['meta_data']['accept'] = time.time()
+            self.result[obj['task id']]['meta_data']['appointment'] = obj['node']
+            self.send = True
+            self.focus_task = None
+        else:
+            print('Error! Worker did not confirm a task')
 
     def analysis_res(self, json_response):
         result = json_response['result']

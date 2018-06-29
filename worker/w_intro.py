@@ -56,7 +56,7 @@ task = socketIO.define(TaskNamespace, '/task')
 # -----------------------------------------------
 # Basic functionality
 
-def ping_obj():
+def ping_obj(*argv):
     ''' Ping response'''
     return {
         'message': 'pong!',
@@ -69,10 +69,13 @@ def run_task(*argv):
     ''' Run new task '''
     response_object = {
         'status': 'fail',
-        'message': 'no task'
+        'message': 'null'
     }
     global prm
     global task_id
+
+    # DEBUG
+    # print(' --- run in worker:', argv)
 
     # separate new task
      
@@ -80,35 +83,32 @@ def run_task(*argv):
         new_task = argv[0]
 
     if not new_task:
-        # empty request
-        return response_object 
+        # empty request 
+        response_object['message'] = 'no task'
     elif prm and not prm.done(): 
         # if worker busy
-        response_object.message='busy'
-        return response_object
+        response_object['message']='busy'
     else:
         if not new_task['run']['method'] in menu:
             # if worker don't have method 
+            response_object['message']='wrong method'
+        else:
+            task_id = new_task['id']
+            # pointer to method execution
+            method = menu[new_task['run']['method']]
+
+            # thread
+            prm = executor.submit(method, new_task['run']['param'])
+            prm.add_done_callback(lambda fut: task.emit('result', task_result(fut.result())))
+
             response_object = {
-                'status': 'fail',
-                'message': 'wrong method'
+                'status': 'run',
+                'node': os.environ['workername'],
+                'method': new_task['run']['method'],
+                'task id': new_task['id']
             }
-            return response_object
-        task_id = new_task['id']
-        # pointer to method execution
-        method = menu[new_task['run']['method']]
 
-        # thread
-        prm = executor.submit(method, new_task['run']['param'])
-        prm.add_done_callback(lambda: task.emit('result', task_result(), test_print))
-
-        response_object = {
-            'status': 'run',
-            'node': os.environ['workername'],
-            'method': new_task['run']['method'],
-            'task id': new_task['id']
-        }
-        return response_object
+    task.emit('assign', response_object)
 
 def worker_status():
     ''' Worker status. Check thread '''
@@ -151,24 +151,17 @@ def task_result(data):
 
 
 # ------------------------------------------
-# STATUS listen on events
+# Listen events
 
 status.on('ping', ping_obj)
 
-# ASSIGN listen on events
 task.on('assign', run_task)
 task.on('status', worker_status)
 task.on('terminate', term_task)
 task.on('result', task_result)
 
-
+# Registration. Hello!
 socketIO.emit('ping', {'worker': os.getenv('workername')}, test_print)
 
 
-# --- emit --> 
-# task.emit('catch', {'worker': os.getenv('workername'), 'id': '123123124124124124'}, test_print)
-# task.emit('result', task_result(), test_print)
-
-
 socketIO.wait()
-
