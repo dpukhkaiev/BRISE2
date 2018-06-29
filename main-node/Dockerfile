@@ -32,6 +32,7 @@ RUN apt-get update \
 
 
 COPY . /root
+RUN rm /root/Dockerfile
 
 RUN chmod +x /root/configure_sshd.sh
 RUN /root/configure_sshd.sh
