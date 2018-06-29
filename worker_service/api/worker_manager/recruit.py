@@ -26,18 +26,14 @@ class Recruit():
     def __init__(self, flow, socket):
         self.workers = []
         self.flow = flow
-        # self._executor = ThreadPoolExecutor(1).submit(self._loop, socket)
         self.socket = socket
 
         self.result = dict()
+        # success flag
         self.send = True
         self.focus_task = None
 
         eventlet.spawn(self._loop)
-
-        # self._thread = threading.Thread(target=self._loop, args=())
-        # self._thread.daemon = True
-        # self._thread.start()
 
     # def __del__(self):
     #     self._executor.cancel()
@@ -49,11 +45,10 @@ class Recruit():
 
             if self.flow.stack.queue:
                 # if there is a task(s) in the queue
-                print(" Spin:", self.spin())
+                self.spin()
                 time.sleep(1)
 
             for task in self.flow.get_stack():
-                print('--- from  task:', task)
                 if task["id"] not in self.result:
                     self.result[task["id"]] = task
 
@@ -126,7 +121,7 @@ class Recruit():
 
 
     def spin(self): # bind with flow.stack. Eternal loop
-        ''' Pull out task from the Stack and find a worker who can complete it
+        ''' Pull out a task from the Stack and find a worker who can complete it
         '''
 
         self.focus_task = self.flow.pull_task()
@@ -137,7 +132,6 @@ class Recruit():
 
         # success flag
         self.send = False  
-        print("SPIN :: payload ::", self.focus_task)
 
         while self.focus_task and not self.send:
             # TODO it is necessary to form a structure that monitors free workers
@@ -155,7 +149,7 @@ class Recruit():
             self.send = True
             self.focus_task = None
         else:
-            print('Error! Worker did not confirm a task')
+            print('Worker did not confirm a task')
 
     def analysis_res(self, json_response):
         result = json_response['result']

@@ -26,26 +26,14 @@ menu = {
 # -----------------------------------------------
 # Namespace
 # -----------------------------------------------
-def test_print(*args):
-    print('response:: ', args)
-
-# class Namespace(BaseNamespace):   
-#     def on_connect(self):
-#         print('[Connected]')
-#     def on_reconnect(self):
-#         print('[Reconnected]')
-#     def on_disconnect(self):
-#         print('[Disconnected]')
 
 class StatusNamespace(BaseNamespace):
-    def on_pong_response(self, *args):
-        print('pong', args)
-    def on_ping_response(self, *args):
-        print('ping', args)
+    def on_pong_status_response(self, *args):
+        print(':: status pong', args)
 
 class TaskNamespace(BaseNamespace):
-    def on_catch_response(self, *args):
-        print('assign -> catch', args)
+    def on_pong_task_response(self, *args):
+        print(':: task pong', args)
 # -----------------------------------------------
 # Connect to worker service
 socketIO = SocketIO('w_service', 80, BaseNamespace)
@@ -74,11 +62,7 @@ def run_task(*argv):
     global prm
     global task_id
 
-    # DEBUG
-    # print(' --- run in worker:', argv)
-
     # separate new task
-     
     if argv:
         new_task = argv[0]
 
@@ -99,7 +83,7 @@ def run_task(*argv):
 
             # thread
             prm = executor.submit(method, new_task['run']['param'])
-            prm.add_done_callback(lambda fut: task.emit('result', task_result(fut.result())))
+            prm.add_done_callback(lambda ftr: task.emit('result', task_result(ftr.result())))
 
             response_object = {
                 'status': 'run',
@@ -161,7 +145,7 @@ task.on('terminate', term_task)
 task.on('result', task_result)
 
 # Registration. Hello!
-socketIO.emit('ping', {'worker': os.getenv('workername')}, test_print)
+socketIO.emit('ping', {'worker': os.getenv('workername')})
 
 
 socketIO.wait()

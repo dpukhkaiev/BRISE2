@@ -30,7 +30,7 @@ def create_app(script_info=None):
     # ---------------------------------------- HTTP
     @app.route('/')
     def index():
-        return jsonify({'index': 'Please stand by', 
+        return jsonify({'index': 'Please stand by!', 
         'workers': str(hr.workers), 
         "results": hr.result,
         'stack': hr.flow.get_stack()
@@ -38,7 +38,6 @@ def create_app(script_info=None):
 
     @app.route('/worker')
     def w_id():
-        # socketio.emit('ping', {'data': 42}, namespace='/status', room=hr.workers[0])
         return jsonify({'name': 'special worker', 
         'workers': str(hr.workers), 
         "results": hr.result,
@@ -129,53 +128,37 @@ def create_app(script_info=None):
         structure = hr.results_struct(post_data)
         return jsonify(structure), 200
 
-    # ---------------------------------------- Events
+    # ---------------------------- Events ------------ 
     # 
 
     # managing array with curent workers
     @socketio.on('connect', namespace='/status')
     def connected():
         hr.workers.append(request.sid)
-        return 'from server:connected'     
+        print('server.connected :: ', request.sid)     
 
     @socketio.on('disconnect', namespace='/status')
     def disconnect():
         hr.workers.remove(request.sid)
-        return 'from server:disconnect'
+        print('server.disconnect :: ', request.sid)     
 
     @socketio.on('ping')
     def ping_pong(json):
-        print(' PING from: ' + str(request.sid))
-        return 'server - pong'
+        print(' Ping from: ' + str(request.sid))
+        return 'server: pong!'
 
+    # Task workflow
     @socketio.on('assign', namespace='/task')
     def task_confirm(*argv):
         hr.task_confirm(argv[0])
-        print(' response from worker: ' + str(argv))
 
     @socketio.on('result', namespace='/task')
     def handle_result(json):
         hr.analysis_res(json)
-        print(' received results: ' + str(json))
-
-
-    # @socketio.on('catch', namespace='/task')
-    # def ping_message(json):
-    #     print('task in progress...')
-    #     return {'server':'ok! Good work'}
-
-    # @socketio.on('result', namespace='/task')
-    # def get_result(json):
-    #     print('New result', str(json))
-    #     return "Thanks!"
-
 
     # worker manager/explorer
     hr = Recruit(flow, socketio)
     hr.status()
-    
-    # socketio.start_background_task(target=hr._loop(socketio))
-
 
     return socketio, app
 
