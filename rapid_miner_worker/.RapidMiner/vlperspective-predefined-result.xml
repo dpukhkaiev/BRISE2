@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<VLDocking version="2.1">
+<DockingDesktop name="default">
+<DockingPanel>
+<Split orientation="1" location="0.7994376757263355">
+<Dockable>
+<Key dockName="result"/>
+</Dockable>
+<Dockable>
+<Key dockName="repository_browser"/>
+</Dockable>
+</Split>
+</DockingPanel>
+<TabGroups>
+<TabGroup>
+<Dockable>
+<Key dockName="result"/>
+</Dockable>
+<Dockable>
+<Key dockName="datatable_CREATE_LOG_GLOB"/>
+</Dockable>
+<Dockable>
+<Key dockName="datatable_CREATE_LOG_VAL"/>
+</Dockable>
+<Dockable>
+<Key dockName="result_process_1"/>
+</Dockable>
+</TabGroup>
+</TabGroups>
+</DockingDesktop>
+</VLDocking>
