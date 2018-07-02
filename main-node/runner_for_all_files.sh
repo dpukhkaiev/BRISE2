@@ -9,13 +9,13 @@ mkdir -p ./Results
 for file in "${files[@]}"
  do
     # Read current file name from config file for further replacement
-    cur_source_file=$(cat task.json | jq '.params .WSFile')
+    cur_source_file=$(cat ./Resources/task.json | jq '.params .FileToRead')
     # Get new file name that will be run
     new_source_file=$(basename $file)
     # Generate log file name to write script output.
     log_filename=./Results/Run_$new_source_file\_$(date +"%d.%m.%y_%H:%M").log
     # Replace current file name with new one in config file
-    sed -i "s/$cur_source_file/\"$new_source_file\"/" ./task.json
+    sed -i "s/$cur_source_file/\"$new_source_file\"/" ./Resources/task.json
 
     # Run experiment 3 times for each file.
     for i in {1..3}

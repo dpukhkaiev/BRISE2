@@ -31,7 +31,6 @@ class RegressionSweetSpot(Model):
         self.solution_ready = False
         self.solution_features = None
         self.solution_labels = None
-        self.feature_result = None
 
     def resplitData(self):
         """
@@ -82,11 +81,11 @@ class RegressionSweetSpot(Model):
                 return False
 
         # Build regression.
-        self.target_result, self.feature_result = self.find_optimal(searchspace)
+        self.solution_labels, self.solution_features = self.find_optimal(searchspace)
         self.test_model_all_data(searchspace)
 
         # Check if the model is adequate - write it.
-        if self.target_result[0] >= 0:
+        if self.solution_labels[0] >= 0:
             f = open(self.filename, "a")
             f.write("Parameters:\n")
             f.write(str(param)+"\n")
@@ -103,12 +102,10 @@ class RegressionSweetSpot(Model):
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_)+"\n")
             f.close()
             self.solution_ready = True
-            self.solution_labels = self.target_result
-            self.solution_features = self.feature_result
             return True
         else:
             self.solution_ready = False
-            print("Predicted energy lower than 0: %s. Need more data.." % self.target_result[0])
+            print("Predicted energy lower than 0: %s. Need more data.." % self.solution_labels[0])
             return False
 
     def find_optimal(self, features):
@@ -169,8 +166,8 @@ class RegressionSweetSpot(Model):
             print('='*100)
             # cur_task = [sobol.getNextPoint()]
             cur_task = [selector.get_next_point() for x in range(task['params']['step'])]
-            if self.feature_result:
-                cur_task.append(self.feature_result)
+            if self.solution_features:
+                cur_task.append(self.solution_features)
             results = repeater.measure_task(cur_task, default_point=default_result[0])
             new_feature, new_label = split_features_and_labels(results, task["params"]["ResultFeatLabels"])
             features += new_feature
@@ -182,7 +179,7 @@ class RegressionSweetSpot(Model):
                 min_en_config = features[labels.index(min_en)]
                 print("Measured best config: %s, energy: %s" % (str(min_en_config), str(min_en)))
                 success = True
-            return features, labels, None, success
+            return features, labels, "", success
 
     def get_new_point(self):
         pass
