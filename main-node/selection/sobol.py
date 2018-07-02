@@ -59,11 +59,18 @@ class SobolSequence(SelectionAlgorithm):
         # Putting this point to hypercube
         point = [len(self.hypercube_coordinates[dimension_index]) * dimension_value for dimension_index, dimension_value in enumerate(point)]
 
-        # Calculate dictionary with distances to all other points in search space from this point
+        # Calculate dictionary with distances to self.numOfGeneratedPoints points in search space from this point.
+        # self.numOfGeneratedPoints, because in the worst case we will skip this number of points.
         # Keys - distance, values - point
         distances_dict = {}
         for hypercube_point in self.hypercube:
-            distances_dict[euclidean(point, hypercube_point)] = hypercube_point
+            if len(distances_dict) < self.numOfGeneratedPoints:
+                distances_dict[euclidean(point, hypercube_point)] = hypercube_point
+            elif len(distances_dict) == self.numOfGeneratedPoints:
+                distances = list(distances_dict.keys())
+                distances.sort()
+                del(distances_dict[distances.pop()])
+                distances_dict[euclidean(point, hypercube_point)] = hypercube_point
 
         # Picking existing configuration point from hypercube by the smallest distance if it was not previously picked.
         distances = list(distances_dict.keys())
@@ -80,12 +87,4 @@ class SobolSequence(SelectionAlgorithm):
         # Retrieve configuration from the task
         result_to_return = [self.data[int(dimension_index)][int(dimension_value)] for dimension_index, dimension_value in enumerate(point)]
 
-
-
-        """
-        result_to_return = []
-        # In loop below this distribution imposed to real parameter values list.
-        for parameter_index, parameterValue in enumerate(point):
-            result_to_return.append(self.search_space[parameter_index][round(len(self.search_space[parameter_index]) * float(parameterValue) - 1 )])
-        """
         return result_to_return

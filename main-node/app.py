@@ -8,7 +8,7 @@ app = Flask(__name__)
 # hide HTTP request logs
 import logging
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+# log.setLevel(logging.ERROR)
 
 
 #with open ('random_1_1_results.csv', 'r') as csvfile:
@@ -36,6 +36,6 @@ def first_test():
 #     }
 
 if __name__ == '__main__':
-    app.run(debug=True,host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=1234)
 
 
