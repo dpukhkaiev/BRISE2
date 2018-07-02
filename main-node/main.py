@@ -13,6 +13,7 @@ from repeater.repeater_selection import get_repeater
 from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
 from selection.selection_algorithms import get_selector
+from logger.default_logger import Logger
 
 import urllib.parse
 import json
@@ -23,8 +24,14 @@ import itertools
 from warnings import filterwarnings
 filterwarnings("ignore")
 
+
 def run():
+
     globalConfig, task = initialize_config()
+
+    # logger = create_logger(name_of_logger=__name__, global_config=globalConfig)
+    # logger.info("")
+
     # Creating instance of selector based on selection type and task data for further uniformly distributed data points generation.
     selector = get_selector(selector_type=task["params"]["SelectionType"],
                             data=task["TaskDataPoints"])

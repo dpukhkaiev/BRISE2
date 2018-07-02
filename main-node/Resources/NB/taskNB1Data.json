@@ -1,0 +1,9 @@
+{
+  "all_data": {
+    "laplace_correction": [true, false],
+    "estimation_mode": ["full"],
+    "bandwidth_selection": ["heuristic"],
+    "use_application_grid": [ false]
+  },
+  "default_point": [false, "full", "heuristic",  false]
+}
