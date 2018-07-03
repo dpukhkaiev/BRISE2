@@ -25,10 +25,10 @@ from warnings import filterwarnings
 filterwarnings("ignore")
 
 
-def run():
+def run(APPI_QUEUE):
 
     globalConfig, task = initialize_config()
-
+    if APPI_QUEUE: APPI_QUEUE.put({"global_contig": globalConfig, "task": task})
     # logger = create_logger(name_of_logger=__name__, global_config=globalConfig)
     # logger.info("")
 
@@ -49,6 +49,7 @@ def run():
     
     default_result = repeater.measure_task([task["default_point"]]) #change it to switch inside and devide to
     default_features, default_value = split_features_and_labels(default_result, task["params"]["ResultFeatLabels"])
+    if APPI_QUEUE: APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
     print(default_value)
 
     # Creating initial set of points for testing and first attempt to create regression model.
@@ -83,4 +84,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    run(None)
