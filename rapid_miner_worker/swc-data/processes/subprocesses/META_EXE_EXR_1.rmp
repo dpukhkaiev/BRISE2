@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="8.2.000">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="8.2.000" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="1992"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="productivity:execute_process" compatibility="8.2.000" expanded="true" height="68" name="Execute MA_EXR_1_EX_1_NB_INV" width="90" x="112" y="34">
+        <parameter key="process_location" value="../MA_EXR_1_EX_1_NB_INV"/>
+        <parameter key="use_input" value="true"/>
+        <parameter key="store_output" value="false"/>
+        <parameter key="propagate_metadata_recursively" value="true"/>
+        <parameter key="cache_process" value="true"/>
+        <list key="macros"/>
+        <parameter key="fail_for_unknown_macros" value="true"/>
+      </operator>
+      <operator activated="true" class="productivity:execute_process" compatibility="8.2.000" expanded="true" height="68" name="Execute MA_EXR_1_EX_2_RF_INV" width="90" x="112" y="136">
+        <parameter key="process_location" value="../MA_EXR_1_EX_2_RF_INV"/>
+        <parameter key="use_input" value="true"/>
+        <parameter key="store_output" value="false"/>
+        <parameter key="propagate_metadata_recursively" value="true"/>
+        <parameter key="cache_process" value="true"/>
+        <list key="macros"/>
+        <parameter key="fail_for_unknown_macros" value="true"/>
+      </operator>
+      <operator activated="true" class="productivity:execute_process" compatibility="8.2.000" expanded="true" height="68" name="Execute MA_EXR_1_EX_3_SVM_INV" width="90" x="112" y="238">
+        <parameter key="process_location" value="../MA_EXR_1_EX_3_SVM_INV"/>
+        <parameter key="use_input" value="true"/>
+        <parameter key="store_output" value="false"/>
+        <parameter key="propagate_metadata_recursively" value="true"/>
+        <parameter key="cache_process" value="true"/>
+        <list key="macros"/>
+        <parameter key="fail_for_unknown_macros" value="true"/>
+      </operator>
+      <operator activated="true" class="productivity:execute_process" compatibility="8.2.000" expanded="true" height="68" name="Execute MA_EXR_1_EX_4_NN_INV" width="90" x="112" y="340">
+        <parameter key="process_location" value="../MA_EXR_1_EX_4_NN_INV"/>
+        <parameter key="use_input" value="true"/>
+        <parameter key="store_output" value="false"/>
+        <parameter key="propagate_metadata_recursively" value="true"/>
+        <parameter key="cache_process" value="true"/>
+        <list key="macros"/>
+        <parameter key="fail_for_unknown_macros" value="true"/>
+      </operator>
+      <connect from_op="Execute MA_EXR_1_EX_1_NB_INV" from_port="result 1" to_port="result 1"/>
+      <connect from_op="Execute MA_EXR_1_EX_2_RF_INV" from_port="result 1" to_port="result 2"/>
+      <connect from_op="Execute MA_EXR_1_EX_3_SVM_INV" from_port="result 1" to_port="result 3"/>
+      <connect from_op="Execute MA_EXR_1_EX_4_NN_INV" from_port="result 1" to_port="result 4"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+      <portSpacing port="sink_result 4" spacing="0"/>
+      <portSpacing port="sink_result 5" spacing="0"/>
+    </process>
+  </operator>
+</process>
