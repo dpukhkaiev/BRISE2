@@ -4,12 +4,11 @@ MAINTAINER Yevhenii Semendiak <semendyak@gmail.com>
 
 # Updating the system and adding python3
 RUN apt-get update
-RUN apt-get install -y \
-    python3 \
-    python3-pip \
-    rsync \
-    openssh-server \
-    vim
+RUN apt-get install -y python3 
+RUN apt-get install -y    python3-pip 
+RUN apt-get install -y    rsync 
+RUN apt-get install -y    openssh-server 
+RUN apt-get install -y    vim
 
 # Replacing default python2 to python3
 RUN pip3 install --upgrade pip setuptools && \

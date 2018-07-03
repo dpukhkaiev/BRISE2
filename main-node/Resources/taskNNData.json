@@ -1,19 +1,19 @@
 {
-  "NN": {
-    "all_data": {
-      "hidden layers": {
-        "hidden layer": [10, 20, 50, 100, 1000]
-      },
-      "training cycles": [100, 500, 1000, 5000, 10000, 20000],
-      "learning rate": [0.1, 0.01, 0.001, 0.2, 0.25, 0.3, 0.4, 0.5, 1, 2, 3, 5, 8, 10, 15, 20, 25, 50, 100, 200, 500, 1000, 5000, 10000],
-      "momentum": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-      "decay": [true, false],
-      "shuffle": [true, false],
-      "normalize": [true, false],
-      "error epsilon": [0.0, 1.0E-5, 0.1, 0.01, 0.001, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 5, 8, 10, 15, 20, 25, 50, 100, 500, 1000],
-      "use local random seed": [true, false],
-      "local random seed": [1, 2,  3, 4, 5, 8, 10, 15, 20, 25, 50, 100, 500, 1000, 1992, 2500, 5000, 10000, 20000, 50000, 100000]
+  "all_data": {
+    "hidden layers": {
+      "hidden layer": [10, 20, 50, 100, 1000]
     },
-    "default_best": [ {"hidden layer": 20}, 500, 0.01, 0.2, true, true, true, 1.0E-5, false, null]
-  }
+    "training cycles": [100, 500, 1000, 5000, 10000, 20000],
+    "learning rate": [0.1, 0.01, 0.001, 0.2, 0.25, 0.3, 0.4, 0.5, 1, 2, 3, 5, 8, 10, 15, 20, 25, 50, 100, 200, 500, 1000, 5000, 10000],
+    "momentum": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    "decay": [true, false],
+    "shuffle": [true, false],
+    "normalize": [true, false],
+    "error epsilon": [0.0, 1.0E-5, 0.1, 0.01, 0.001, 0.2, 0.3, 0.4, 0.5, 1, 2, 3, 5, 8, 10, 15, 20, 25, 50, 100, 500, 1000],
+    "use local random seed": [true, false],
+    "local random seed": [1, 2, 3, 4, 5, 8, 10, 15, 20, 25, 50, 100, 500, 1000, 1992, 2500, 5000, 10000, 20000, 50000, 100000]
+  },
+  "default_point": [{
+    "hidden layer": 20
+  }, 500, 0.01, 0.2, true, true, true, 1.0E-5, false, null]
 }
