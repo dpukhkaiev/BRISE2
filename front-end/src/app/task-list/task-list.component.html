@@ -7,11 +7,11 @@
         <mat-list role="list">
           <mat-list-item role="listitem">
             <mat-icon>gradient</mat-icon>            
-            <span>Method: </span> <span>{{focus.run.method}}</span>
+            <span>Method: </span> <span> {{focus.run.method}}</span>
           </mat-list-item>
           <mat-list-item role="listitem">
             <mat-icon>whatshot</mat-icon>            
-            <span>Energy: </span> <span> {{focus.meta_data.result.energy}}</span>
+            <span>Energy: </span><span> {{focus.meta_data.result.energy}}</span>
           </mat-list-item>
           <mat-list-item role="listitem">
             <mat-icon>memory</mat-icon>            
@@ -31,15 +31,15 @@
         <mat-list role="list">
           <mat-list-item role="listitem">
             <mat-icon>rowing</mat-icon>                        
-            Worker: {{focus.meta_data.appointment}}
+            <span>Worker:</span> <span>{{focus.meta_data.appointment}}</span>
           </mat-list-item>
           <mat-list-item role="listitem">
             <mat-icon>list</mat-icon>                        
-            Accept: {{focus.meta_data.accept}}
+            <span>Accept:</span> <span>{{focus.meta_data.accept}}</span>
           </mat-list-item>
           <mat-list-item role="listitem">
             <mat-icon>directions</mat-icon>                        
-            Receive: {{focus.meta_data.receive}}
+            <span>Receive:</span> <span>{{focus.meta_data.receive}}</span>
           </mat-list-item>
         </mat-list>
       </mat-tab>
@@ -49,19 +49,16 @@
                   
   <mat-card class="stack">                                                                 <!-- STACK list -->
     <mat-card-actions>
-      <button mat-icon-button (click)="stackList()">
+      <!-- <button mat-icon-button (click)="stackList()">
         <mat-icon>autorenew</mat-icon>
-      </button>
+      </button> -->
     </mat-card-actions>
     <mat-card-header>
       <h3>Stack {{stack?.length}}</h3>
     </mat-card-header> 
     <mat-card-content>
-      <mat-list role="list" *ngIf=stack?.message>
-        {{stack.message}}
-      </mat-list>
-      <mat-list dense role="list" *ngIf=stack?.data>
-        <mat-list-item *ngFor="let task of stack.data" 
+      <mat-list dense role="list" *ngIf=stack>
+        <mat-list-item *ngFor="let task of stack" 
           (click)="taskInfo(task.id)" role="listitem" 
           [class.selected]="task === this.focus">
           <mat-icon matListIcon>folder</mat-icon>
@@ -80,12 +77,12 @@
   
   <mat-card class="result">                                                                <!-- RESULT list -->
     <mat-card-actions>
-      <button mat-icon-button (click)="resList()">           
+      <!-- <button mat-icon-button (click)="resList()">           
         <mat-icon>autorenew</mat-icon>
-      </button>
+      </button> -->
     </mat-card-actions>
     <mat-card-header>
-      <h3>Result  ({{result?.length}})</h3>
+      <h3>Result {{result?.length}}</h3>
     </mat-card-header> 
     <mat-card-content>
       <mat-list dense role="list">

@@ -2,7 +2,7 @@
 version: "2"
 services: 
   w_alpha:
-    build: ./worker/
+    build: ./rapid_miner_worker/
     container_name: w_alpha
     environment:
       - workername=alpha
@@ -13,11 +13,9 @@ services:
     ports:
       - "1831:8080"  # if direct access is required
     volumes:
-      - "./worker:/usr/src/app"
-    depends_on:
-        - "w_service"
+      - "./rapid_miner_worker:/usr/src/app"
   w_beta:
-    build: ./worker/
+    build: ./rapid_miner_worker/
     container_name: w_beta
     environment:
       - workername=beta
@@ -28,22 +26,20 @@ services:
     ports:
       - "1832:8080" # if direct access is required
     volumes:
-      - "./worker:/usr/src/app"
-    depends_on:
-        - "w_service"
-  # w_gamma:
-  #   build: ./worker/
-  #   container_name: w_gamma
-  #   environment:
-  #     - workername=gamma
-  #   networks:
-  #     worker_net:
-  #       aliases:
-  #         - gamma
-  #   ports:
-  #     - "1833:8080" # if direct access is required
-  #   volumes:
-  #     - "./worker:/usr/src/app"
+      - "./rapid_miner_worker:/usr/src/app"
+  w_gamma:
+    build: ./rapid_miner_worker/
+    container_name: w_gamma
+    environment:
+      - workername=gamma
+    networks:
+      worker_net:
+        aliases:
+          - gamma
+    ports:
+      - "1833:8080" # if direct access is required
+    volumes:
+      - "./rapid_miner_worker:/usr/src/app"
   w_service:
     build: ./worker_service/
     command: python3 intro.py
@@ -66,6 +62,23 @@ services:
       - FLASK_APP=worker_service/__init__.py
       - FLASK_DEBUG=1
       - WORKER_COUNT=2 # depends of workers instance. [alpha, beta, gamma, delta]
+
+  main_node:
+    build: ./main-node/
+    command: /usr/sbin/sshd -D
+    tty: true
+    container_name: main-node
+    networks:
+      worker_net:
+        aliases:
+          - main-node
+    ports:
+      - "2222:2222"
+      - "5000:5000"
+    depends_on:
+      - "w_service"
+    volumes:
+      - "./main-node/Results:/root/Results"
 
 networks:
   worker_net:

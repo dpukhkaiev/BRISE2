@@ -1,8 +1,8 @@
 import os
-
+import json
 
 from flask import Flask, jsonify, request
-from flask_socketio import SocketIO, send, emit
+from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from flask_cors import CORS
 import time
 
@@ -26,6 +26,9 @@ def create_app(script_info=None):
     app.config['SECRET_KEY'] = 'secret!'
     socketio = SocketIO(app, logger=True, engineio_logger=True)
     logging.getLogger('socketio').setLevel(logging.DEBUG)
+
+    # clients
+    front_clients = []
     
     # ---------------------------------------- HTTP
     @app.route('/')
@@ -33,7 +36,8 @@ def create_app(script_info=None):
         return jsonify({'index': 'Please stand by!', 
         'workers': str(hr.workers), 
         "results": hr.result,
-        'stack': hr.flow.get_stack()
+        'stack': hr.flow.get_stack(),
+        'front-end': front_clients
         }),200
 
     @app.route('/worker')
@@ -98,6 +102,9 @@ def create_app(script_info=None):
                 for item in task_list:
                     flow.add_task(item)
 
+                # upd stack obj on the client's side
+                socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
+
                 response_object['status'] = 'success'
                 response_object['response_type'] = 'send_task'
                 response_object['id'] = id_list
@@ -128,33 +135,84 @@ def create_app(script_info=None):
         structure = hr.results_struct(post_data)
         return jsonify(structure), 200
 
+    @app.route('/result/<task_id>', methods=['GET'])
+    def get_single_node(task_id):
+        """Get single result"""
+        response_object = {
+            'status': 'fail',
+            'message': 'task does not exist'
+        }
+        result = hr.results(task_id)
+        if not result:
+            return jsonify(response_object), 404
+        else:
+            response_object = {
+                'time': time.time(),
+                'result': result
+            }
+            return jsonify(response_object), 200
+
     # ---------------------------- Events ------------ 
     # 
 
     # managing array with curent workers
-    @socketio.on('connect', namespace='/status')
+    @socketio.on('connect', namespace='/status') 
     def connected():
         hr.workers.append(request.sid)
-        print('server.connected :: ', request.sid)     
 
     @socketio.on('disconnect', namespace='/status')
     def disconnect():
         hr.workers.remove(request.sid)
-        print('server.disconnect :: ', request.sid)     
+
+    # --------------------------------------------
+    # managing array with curent Front-end clients
+    @socketio.on('join', namespace='/front-end')
+    def on_join(data):
+        room = data['room']
+        print("SERVER connection. Room", data)
+        join_room(room)
+        front_clients.append(request.sid)
+
+    @socketio.on('leave', namespace='/front-end')
+    def on_leave(data):
+        room = data['room']
+        leave_room(room)
+        front_clients.remove(request.sid)
+
+    # BUG There is a problem when the server gets up later than the clientt
+    @socketio.on('disconnect', namespace='/front-end')
+    def front_disconnect():
+        if request.sid in front_clients:
+            front_clients.remove(request.sid)
+    # --------------------------------------------
 
     @socketio.on('ping')
     def ping_pong(json):
         print(' Ping from: ' + str(request.sid))
         return 'server: pong!'
 
-    # Task workflow
+    #-- Task workflow
+    # Checking if worker confirm a task
     @socketio.on('assign', namespace='/task')
     def task_confirm(*argv):
         hr.task_confirm(argv[0])
+        # upd stack obj on the client's side
+        socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
 
+    # Listen to the results from the worker
     @socketio.on('result', namespace='/task')
     def handle_result(json):
-        hr.analysis_res(json)
+        temp_id = hr.analysis_res(json)
+        if temp_id is not None:
+            socketio.emit('result', hr.result[temp_id], room='/front-end', namespace='/front-end')
+
+    @socketio.on('all result', namespace='/front-end')
+    def all_result():
+        emit('all result', 
+        json.dumps({'res': list(hr.result.values()), 'stack': hr.flow.get_stack()}), 
+        namespace='/front-end')
+
+
 
     # worker manager/explorer
     hr = Recruit(flow, socketio)

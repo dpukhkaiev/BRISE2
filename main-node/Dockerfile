@@ -4,11 +4,11 @@ MAINTAINER Yevhenii Semendiak <semendyak@gmail.com>
 
 # Updating the system and adding python3
 RUN apt-get update
-RUN apt-get install -y \
-    python3 \
-    python3-pip \
-    rsync \
-    openssh-server
+RUN apt-get install -y python3 
+RUN apt-get install -y    python3-pip 
+RUN apt-get install -y    rsync 
+RUN apt-get install -y    openssh-server 
+RUN apt-get install -y    vim
 
 # Replacing default python2 to python3
 RUN pip3 install --upgrade pip setuptools && \
@@ -19,11 +19,23 @@ RUN pip3 install --upgrade pip setuptools && \
 # Installing sklearn with needed dependencies (numpy, scipy).
 RUN pip --no-cache-dir install -U scikit-learn[alldeps] sobol_seq
 
+# Packages for API
+RUN apt-get update \
+    && apt-get install -y python3-pip python3-dev \
+    && cd /usr/local/bin \
+    && ln -s /usr/bin/python3 python \
+    && python3 -m pip install requests \
+    && python3 -m pip install --upgrade pip \
+    && python3 -m pip install Flask \
+    && python3 -m pip install flask-cors
+
+
 COPY . /root
+RUN rm /root/Dockerfile
 
 RUN chmod +x /root/configure_sshd.sh
 RUN /root/configure_sshd.sh
 EXPOSE 2222
+EXPOSE 5000
 
-
-CMD ["/usr/sbin/sshd","-D"]
+CMD ["/usr/sbin/sshd", "-D"]

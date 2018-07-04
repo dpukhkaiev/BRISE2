@@ -14,7 +14,7 @@ The objective of this progect is to reduce the amount of effort spent on benchma
 - [Worker](./worker) experiment execution
 
 ### Front-end
-- [Front-and](./front-end) monitoring the experiments
+- [Front-end](./front-end) monitoring the experiments
 ___
 #### Dev instructions. Local environment :computer:
 ###### Front-end
@@ -26,10 +26,17 @@ ___
 
 ###### Back-end + Docker environment
 1. Install Docker and docker-compose
-2. `$ docker-compose up -d --build`
+3. Install sshpass: 
+   Ubuntu: `$ apt-get install sshpass`
+4. Verify worker-node ip address and change it in **main-node/GlobalConfig.json** (you may do it later).
+5. For starting:
+   `$ ./start.sh`
+   For stopping:
+   `$ ./stop.sh`
 
 ###### Main thread
-1. comming soon..
+1. SSH into container: `$ ssh root@localhost -p 2222` (password is "root" or you could add you public key to **configure_sshd.sh** file) 
+2. Run main script: `$ python3 main.py`
 
 ### Technologies stack :wrench:
 - Front-end | [Angular-cli](https://cli.angular.io/ "Angular CLI"), [Angular material](https://material.angular.io/ "Angular material")

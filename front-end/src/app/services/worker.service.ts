@@ -28,13 +28,6 @@ export class WorkerService {
     return Observable.throw(error);
   }
 
-  // '/ping/' GET
-  // '/stack' GET 
-  // '/task/add' POST
-  // '/result/<task_id>' GET
-  // '/result/all' GET
-  // '/result/format' PUT + data
-
   // GET /stack /* Observable<Task[]> */
   public getStack(): any {
     return this.http
