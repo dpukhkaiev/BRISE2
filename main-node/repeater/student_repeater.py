@@ -1,11 +1,20 @@
 from repeater.repeater_abs import Repeater
-class StudentRepeater(Repeater):
-    
-    def decision_function(self, history, point, threshold = 15, **configuration):
-        import numpy as np
-        from math import exp 
+from repeater.default_repeater import DefaultRepeater
+import numpy as np
+from math import exp
 
-        # Preparing configuration 
+
+class StudentRepeater(Repeater):
+
+    def __init__(self, *args, **kwargs):
+
+        # Initiating parent class and transferring WSClient in *args and other params in **kwargs
+        super().__init__(*args, **kwargs)
+        self.default_repeater = DefaultRepeater(self.WSClient)
+
+    def decision_function(self, history, point, threshold = 15, **configuration):
+
+        # Preparing configuration
         params = configuration.keys()
 
         default_point = configuration['default_point'] if 'default_point' in params else None
@@ -28,6 +37,10 @@ class StudentRepeater(Repeater):
         all_experiments = history.get(point)
         if len(all_experiments) < 2:
             return False
+
+        elif len(all_experiments) >= 10:
+            return self.default_repeater.decision_function(history, point, **configuration)
+
         else:
 
             # Calculating average for all dimensions
@@ -57,5 +70,4 @@ class StudentRepeater(Repeater):
             # print(all_dim_avg.tolist()[0])
             # eval(self...)(value) - process of casting according to ResultDataTypes in task.json
             result = [eval(self.WSClient.results_data_types[index])(round(value, 2)) for index, value in enumerate(all_dim_avg.tolist()[0])]
-            print("Point %s finished after %s measurements. Result: %s" % (str(point), len(all_experiments), str(result)))
             return result

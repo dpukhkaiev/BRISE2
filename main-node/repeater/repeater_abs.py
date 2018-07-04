@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from repeater.history import History
+
+
 class Repeater(ABC):
     def __init__(self, WorkerServiceClient):
 
@@ -51,6 +53,7 @@ class Repeater(ABC):
             for point in cur_task:
                 result = self.decision_function(self.history, point, **decis_func_config)
                 if result:
+                    print("Point %s finished after %s measurements. Result: %s" % (str(point), len(self.history.get(point)), str(result)))
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
