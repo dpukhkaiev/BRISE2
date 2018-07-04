@@ -3,12 +3,12 @@ FROM ubuntu:16.04
 MAINTAINER Yevhenii Semendiak <semendyak@gmail.com>
 
 # Updating the system and adding python3
-RUN apt-get update
-RUN apt-get install -y python3 
-RUN apt-get install -y    python3-pip 
-RUN apt-get install -y    rsync 
-RUN apt-get install -y    openssh-server 
-RUN apt-get install -y    vim
+RUN apt-get update \
+    && apt-get install -y python3 \
+    && apt-get install -y    python3-pip \
+    && apt-get install -y    rsync \
+    && apt-get install -y    openssh-server \
+    && apt-get install -y    vim
 
 # Replacing default python2 to python3
 RUN pip3 install --upgrade pip setuptools && \

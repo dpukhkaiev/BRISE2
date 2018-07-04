@@ -40,13 +40,12 @@ def create_app(script_info=None):
         'front-end': front_clients
         }),200
 
-    @app.route('/worker')
-    def w_id():
-        return jsonify({'name': 'special worker', 
-        'workers': str(hr.workers), 
-        "results": hr.result,
-        'ping': hr.test()
-        }),200
+    @app.route('/ping', methods=['GET'])
+    def ping():
+        return jsonify({
+            'status': 'success',
+            'message': 'pong!'
+        }), 200
 
     @app.route('/stack', methods=['GET'])
     def get_stack():
