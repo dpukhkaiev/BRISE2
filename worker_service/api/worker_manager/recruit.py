@@ -52,10 +52,6 @@ class Recruit():
                 if task["id"] not in self.result:
                     self.result[task["id"]] = task
 
-    # def test(self):
-    #     self.socket.emit('ping', {'data': 42324243242342342}, namespace='/status', room=self.workers[0])
-    #     return 'ping'
-
     def status(self):
         print(" Workers:", self.workers)
 
@@ -135,7 +131,6 @@ class Recruit():
 
         while self.focus_task and not self.send:
             # TODO it is necessary to form a structure that monitors free workers
-
             eventlet.sleep(1)
             if len(self.workers):
                 k = randint(0, 9)%len(self.workers)
@@ -157,3 +152,5 @@ class Recruit():
             r_id = json_response['task id']
             # if r_id in self.result: # write fresh results
             self.result[r_id]['meta_data']['result'] = result
+            return r_id
+
