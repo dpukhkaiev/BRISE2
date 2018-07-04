@@ -43,6 +43,7 @@ services:
   w_service:
     build: ./worker_service/
     command: python3 intro.py
+    # command: sh
     stdin_open: true
     tty: true
     container_name: w_service
@@ -54,10 +55,9 @@ services:
       - "80:80"
     volumes:
       - "./worker_service:/usr/src/app"
-    depends_on:
-        - "w_alpha"
-        - "w_beta"
-        # - "w_gamma"
+    # depends_on:
+    #     - "w_alpha"
+    #     - "w_beta"
     environment:
       - FLASK_APP=worker_service/__init__.py
       - FLASK_DEBUG=1
