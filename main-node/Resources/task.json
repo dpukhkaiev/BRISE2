@@ -9,7 +9,7 @@
       "ModelType"         : "regression",
       "DecisionFunction"  : "student_deviation",
       "DataFile"          : "./Resources/taskData.json",
-      "FileToRead"        : "Radix-1000mio.csv",
+      "FileToRead"        : "Radix-500mio.csv",
       "FeatureNames"      : ["frequency", "threads"],
       "ResultStructure"   : ["frequency", "threads", "energy"],
       "ResultDataTypes"  : ["float", "int", "float"],

@@ -175,11 +175,11 @@ class RegressionSweetSpot(Model):
             # fail rip
             if len(features) > len(search_space):
                 print("Unable to finish normally, terminating with best results")
-                min_en = min(labels)
-                min_en_config = features[labels.index(min_en)]
-                print("Measured best config: %s, energy: %s" % (str(min_en_config), str(min_en)))
+                self.solution_labels = min(labels)
+                self.solution_features = features[labels.index(self.solution_labels)]
+                print("Measured best config: %s, energy: %s" % (str(self.solution_features), str(self.solution_labels)))
                 success = True
-            return features, labels, "", success
+            return features, labels, self.solution_labels, success
 
     def get_new_point(self):
         pass
