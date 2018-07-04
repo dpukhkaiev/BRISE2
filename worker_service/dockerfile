@@ -7,10 +7,14 @@ WORKDIR /usr/src/app
 
 COPY . /usr/src/app
 
-RUN apk add --no-cache curl && \
+RUN apk add --no-cache curl build-base && \
  python3 -mpip install requests && \
+ pip install --upgrade pip && \
  pip install Flask && \
- pip install flask-cors
+ pip install flask-cors && \
+ pip install flask-socketio && \
+ pip install eventlet
  
 EXPOSE 80
 CMD [ "python", "-u", "./intro.py" ]
+# CMD [ "sh" ]

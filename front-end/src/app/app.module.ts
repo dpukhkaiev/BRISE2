@@ -14,6 +14,7 @@ import { MatButtonModule, MatCheckboxModule, MatCardModule, MatListModule, MatIc
 
 /* Shared Service */
 import { WorkerService } from './services/worker.service';
+import { SocketService } from './services/socket.service';
 import { HeatMapComponent } from './heat-map/heat-map.component';
 import { RegChartComponent } from './reg-chart/reg-chart.component';
 
@@ -36,7 +37,8 @@ import { RegChartComponent } from './reg-chart/reg-chart.component';
     MatTabsModule,
     MatTooltipModule
   ],
-  providers: [{ provide: WorkerService, useClass: WorkerService }],
+  providers: [{ provide: WorkerService, useClass: WorkerService },
+    { provide: SocketService, useClass: SocketService }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -26,4 +26,4 @@ class Workflow():
         return self.stack.get(index)
 
     def get_stack(self):
-        return self.stack.to_json() or {}
+        return self.stack.to_json() or []
