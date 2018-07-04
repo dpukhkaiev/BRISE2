@@ -3,6 +3,7 @@
 from main import run as main_run
 from flask import Flask, jsonify
 from multiprocessing import Process, Queue
+import time
 
 app = Flask(__name__)
 
@@ -77,9 +78,9 @@ def main_process_stop():
     if MAIN_PROCESS.is_alive():
         MAIN_PROCESS.terminate()
         MAIN_PROCESS_QUEUE.close()
+        time.sleep(0.5)
 
     return main_process_status()
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=1234)
