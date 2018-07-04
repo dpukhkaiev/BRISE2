@@ -14,6 +14,7 @@ executor = ThreadPoolExecutor(1) # DOCS https://docs.python.org/3/library/concur
 # promisse for worker execution. Has the last executed stream
 prm = None
 task_id = None
+task_iterator = 0
 
 # Object with available executable methods
 menu = {
@@ -61,6 +62,7 @@ def run_task(*argv):
     }
     global prm
     global task_id
+    global task_iterator
 
     # separate new task
     if argv:
@@ -82,6 +84,8 @@ def run_task(*argv):
             method = menu[new_task['run']['method']]
 
             # thread
+            task_iterator=+1
+            print('\n Task iterator:', task_iterator, "\n")
             prm = executor.submit(method, new_task['run']['param'])
             prm.add_done_callback(lambda ftr: task.emit('result', task_result(ftr.result())))
 
@@ -146,6 +150,5 @@ task.on('result', task_result)
 
 # Registration. Hello!
 socketIO.emit('ping', {'worker': os.getenv('workername')})
-
 
 socketIO.wait()
