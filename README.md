@@ -11,10 +11,10 @@ The objective of this progect is to reduce the amount of effort spent on benchma
 ### Back End
 - [Main thread](./main-node) regresion, experiment selection, assumption
 - [Worker service](./worker_service) experiment managing, encapsulation, result storing 
-- [Worker](./worker_node) experiment execution
+- [Worker](./worker) experiment execution
 
 ### Front-end
-- [Front-and](./front-end) monitoring the experiments
+- [Front-end](./front-end) monitoring the experiments
 ___
 #### Dev instructions. Local environment :computer:
 ###### Front-end
@@ -24,14 +24,19 @@ ___
 4. From front-end root `$ npm install`
 5. Start front-server with `$ ng serve --host 0.0.0.0 --port 4201`
 
-###### Back-end + Docker environment + Main thread
+###### Back-end + Docker environment
 1. Install Docker and docker-compose
-2. Verify worker-node ip address and change it in **main-node/GlobalConfig.json** (you may do it later).
-3. `$ docker-compose up -d --build`
+3. Install sshpass: 
+   Ubuntu: `$ apt-get install sshpass`
+4. Verify worker-node ip address and change it in **main-node/GlobalConfig.json** (you may do it later).
+5. For starting:
+   `$ ./start.sh`
+   For stopping:
+   `$ ./stop.sh`
 
 ###### Main thread
-1. SSH into container: `ssh root@localhost -p 2222` (password is "root" or you could add you public key to **configure_sshd.sh** file) 
-* Run main script: `./main.sh`
+1. SSH into container: `$ ssh root@localhost -p 2222` (password is "root" or you could add you public key to **configure_sshd.sh** file) 
+2. Run main script: `$ python3 main.py`
 
 ### Technologies stack :wrench:
 - Front-end | [Angular-cli](https://cli.angular.io/ "Angular CLI"), [Angular material](https://material.angular.io/ "Angular material")

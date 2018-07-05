@@ -1,0 +1,214 @@
+<process version="8.2.000">
+  <context>
+    <input />
+    <output />
+    <macros />
+  </context>
+  <operator activated="true" class="process" compatibility="8.2.000" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init" />
+    <parameter key="random_seed" value="2001" />
+    <parameter key="send_mail" value="never" />
+    <parameter key="notification_email" value="" />
+    <parameter key="process_duration_for_mail" value="30" />
+    <parameter key="encoding" value="SYSTEM" />
+    <process expanded="true">
+      <operator activated="true" class="retrieve" compatibility="8.2.000" expanded="true" height="68" name="Retrieve DATASET" width="90" x="45" y="85">
+        <parameter key="repository_entry" value="../data/DATASET" />
+      </operator>
+      <operator activated="true" class="subprocess" compatibility="8.2.000" expanded="true" height="82" name="PREPROCESSING" width="90" x="246" y="85">
+        <process expanded="true">
+          <operator activated="true" class="r_scripting:execute_r" compatibility="8.1.000" expanded="true" height="82" name="RAND_SHUFF_INV" width="90" x="112" y="34">
+            <parameter key="script" value="rm_main = function(data) &#10;{ &#10;#Set Random Seed&#10;set.seed(1992)&#10;&#10;#Correction calculation Id from 0-499, 0-499 -&gt; 0-999&#10;data[24490:length(data$M_INV_ID),1] &lt;- data[24490:length(data$M_INV_ID),1] + 500 &#10;&#10;#from 0-999 -&gt; 1-1000&#10;data[1:length(data$M_INV_ID),1] &lt;- data[1:length(data$M_INV_ID),1] + 1 &#10;&#10;#Id randomly mix by calculation&#10;vec_id &lt;- unique(data$M_INV_ID)&#10;vec_id_uni &lt;- sample(vec_id, length(vec_id), replace = FALSE)&#10;&#10;#Determine number of bills&#10;inv_numb &lt;- length(vec_id)&#10;&#10;#Schema of data frame&#10;newData &lt;- as.data.frame(matrix(nrow = 0, ncol = ncol(data)))&#10;tempData &lt;- as.data.frame(matrix(nrow = 0, ncol = ncol(data)))&#10;&#10;#Column names of data frame&#10;colnames(newData) &lt;- colnames(data)&#10;colnames(tempData) &lt;- colnames(data)&#10;&#10;#Composing dataset based on randomly shuffled Id&#10;for(i in vec_id_uni){&#10;  tempData &lt;- data[data$M_INV_ID==i,]&#10;  newData &lt;- rbind(newData, tempData)   &#10;}&#10;&#10;#Add batch&#10;newData &lt;- cbind(newData, &quot;M_BATCH&quot; = 0)&#10;&#10;#Set batch values for 10-fold cross-validation&#10;for (i in 1:10){&#10;  newData[newData$M_INV_ID %in% vec_id_uni[((i)*100-100+1):(i*100)], ncol(newData)] &lt;- i&#10;}&#10;&#10;&#10;&#10;return(newData) &#10;&#10;} " />
+          </operator>
+          <operator activated="true" class="select_attributes" compatibility="8.2.000" expanded="true" height="82" name="SELECT_ATT" width="90" x="313" y="34">
+            <parameter key="attribute_filter_type" value="subset" />
+            <parameter key="attribute" value="" />
+            <parameter key="attributes" value="L_INDIVITEM|F10_N_LVALF_DOCH|F11_N_RVALL_DOCH|F12_N_LENCOL_DOCW|F13_N_LENWOR_DOCW|F14_N_IDROW|F15_PAGEOFINV|F1_NUMCOL|F2_NUMCOLWORD|F3_RECURVAL|F4_N_NUMLET_DOCW|F5_N_NUMDIG_DOCW|F6_N_NUMWC_DOCW|F7_N_LENROW_DOCW|F8_N_LVALF_DOCW|F9_N_RVALL_DOCW|M_BATCH" />
+            <parameter key="use_except_expression" value="false" />
+            <parameter key="value_type" value="attribute_value" />
+            <parameter key="use_value_type_exception" value="false" />
+            <parameter key="except_value_type" value="time" />
+            <parameter key="block_type" value="attribute_block" />
+            <parameter key="use_block_type_exception" value="false" />
+            <parameter key="except_block_type" value="value_matrix_row_start" />
+            <parameter key="invert_selection" value="false" />
+            <parameter key="include_special_attributes" value="false" />
+          </operator>
+          <operator activated="true" class="set_role" compatibility="8.2.000" expanded="true" height="82" name="SET_ROLE" width="90" x="447" y="34">
+            <parameter key="attribute_name" value="M_BATCH" />
+            <parameter key="target_role" value="batch" />
+            <list key="set_additional_roles" />
+          </operator>
+          <connect from_port="in 1" to_op="RAND_SHUFF_INV" to_port="input 1" />
+          <connect from_op="RAND_SHUFF_INV" from_port="output 1" to_op="SELECT_ATT" to_port="example set input" />
+          <connect from_op="SELECT_ATT" from_port="example set output" to_op="SET_ROLE" to_port="example set input" />
+          <connect from_op="SET_ROLE" from_port="example set output" to_port="out 1" />
+          <portSpacing port="source_in 1" spacing="0" />
+          <portSpacing port="source_in 2" spacing="0" />
+          <portSpacing port="sink_out 1" spacing="0" />
+          <portSpacing port="sink_out 2" spacing="0" />
+        </process>
+      </operator>
+      <operator activated="true" class="concurrency:cross_validation" compatibility="8.2.000" expanded="true" height="145" name="BV_10" width="90" x="380" y="34">
+        <parameter key="split_on_batch_attribute" value="true" />
+        <parameter key="leave_one_out" value="false" />
+        <parameter key="number_of_folds" value="10" />
+        <parameter key="sampling_type" value="stratified sampling" />
+        <parameter key="use_local_random_seed" value="true" />
+        <parameter key="local_random_seed" value="1992" />
+        <parameter key="enable_parallel_execution" value="true" />
+        <process expanded="true">
+          <operator activated="true" class="generate_macro" compatibility="8.2.000" expanded="true" height="82" name="GEN_MACRO_VAL_ITER" width="90" x="45" y="136">
+            <list key="function_descriptions">
+              <parameter key="cv_iter" value="eval(%{execution_count})" />
+            </list>
+          </operator>
+          <operator activated="true" class="generate_macro" compatibility="8.2.000" expanded="true" height="82" name="GEN_MACRO_PROCESS_NAME" width="90" x="45" y="238">
+            <list key="function_descriptions">
+              <parameter key="name" value="%{process_name}" />
+            </list>
+          </operator>
+          <operator activated="true" class="naive_bayes_kernel" compatibility="8.2.000" expanded="true" height="82" name="NAIVE_BAYES_KERNEL" width="90" x="179" y="34">
+            <parameter key="laplace_correction" value="True" />
+            <parameter key="estimation_mode" value="full" />
+            <parameter key="bandwidth_selection" value="heuristic" />
+            <parameter key="bandwidth" value="0.1" />
+            <parameter key="minimum_bandwidth" value="0.4" />
+            <parameter key="number_of_kernels" value="4" />
+            <parameter key="use_application_grid" value="True" />
+            <parameter key="application_grid_size" value="200" />
+          </operator>
+          <operator activated="true" class="generate_macro" compatibility="8.2.000" expanded="true" height="82" name="GEN_MACRO_Work_Directory" width="90" x="45" y="340">
+            <list key="function_descriptions">
+              <parameter key="full_path" value="&quot;/root/swc-data/&quot;" />
+            </list>
+          </operator>
+          <connect from_port="training set" to_op="NAIVE_BAYES_KERNEL" to_port="training set" />
+          <connect from_op="GEN_MACRO_VAL_ITER" from_port="through 1" to_port="through 1" />
+          <connect from_op="GEN_MACRO_PROCESS_NAME" from_port="through 1" to_port="through 2" />
+          <connect from_op="NAIVE_BAYES_KERNEL" from_port="model" to_port="model" />
+          <connect from_op="GEN_MACRO_Work_Directory" from_port="through 1" to_port="through 3" />
+          <portSpacing port="source_training set" spacing="0" />
+          <portSpacing port="sink_model" spacing="0" />
+          <portSpacing port="sink_through 1" spacing="0" />
+          <portSpacing port="sink_through 2" spacing="0" />
+          <portSpacing port="sink_through 3" spacing="0" />
+          <portSpacing port="sink_through 4" spacing="0" />
+        </process>
+        <process expanded="true">
+          <operator activated="true" class="apply_model" compatibility="8.2.000" expanded="true" height="82" name="APPLY_MODEL" width="90" x="45" y="34">
+            <list key="application_parameters" />
+            <parameter key="create_view" value="false" />
+          </operator>
+          <operator activated="true" class="performance_binominal_classification" compatibility="8.2.000" expanded="true" height="82" name="PERFORMANCE" width="90" x="179" y="34">
+            <parameter key="main_criterion" value="AUC" />
+            <parameter key="accuracy" value="true" />
+            <parameter key="classification_error" value="false" />
+            <parameter key="kappa" value="false" />
+            <parameter key="AUC (optimistic)" value="false" />
+            <parameter key="AUC" value="true" />
+            <parameter key="AUC (pessimistic)" value="false" />
+            <parameter key="precision" value="true" />
+            <parameter key="recall" value="true" />
+            <parameter key="lift" value="false" />
+            <parameter key="fallout" value="false" />
+            <parameter key="f_measure" value="true" />
+            <parameter key="false_positive" value="true" />
+            <parameter key="false_negative" value="true" />
+            <parameter key="true_positive" value="true" />
+            <parameter key="true_negative" value="true" />
+            <parameter key="sensitivity" value="false" />
+            <parameter key="specificity" value="false" />
+            <parameter key="youden" value="false" />
+            <parameter key="positive_predictive_value" value="false" />
+            <parameter key="negative_predictive_value" value="false" />
+            <parameter key="psep" value="false" />
+            <parameter key="skip_undefined_labels" value="true" />
+            <parameter key="use_example_weights" value="true" />
+          </operator>
+          <operator activated="true" class="provide_macro_as_log_value" compatibility="8.2.000" expanded="true" height="82" name="VAL_ITER_AS_LOG_VALUE" width="90" x="112" y="238">
+            <parameter key="macro_name" value="cv_iter" />
+          </operator>
+          <operator activated="true" class="provide_macro_as_log_value" compatibility="8.2.000" expanded="true" height="82" name="PROCESS_NAME_AS_LOG_VALUE" width="90" x="112" y="340">
+            <parameter key="macro_name" value="name" />
+          </operator>
+          <operator activated="true" class="multiply" compatibility="8.2.000" expanded="true" height="103" name="MULT" width="90" x="380" y="85" />
+          <operator activated="true" class="log" compatibility="8.2.000" expanded="true" height="103" name="CREATE_LOG_VAL" width="90" x="246" y="238">
+            <list key="log">
+              <parameter key="A" value="operator.VAL_ITER_AS_LOG_VALUE.value.macro_value" />
+              <parameter key="B" value="operator.PROCESS_NAME_AS_LOG_VALUE.value.macro_value" />
+            </list>
+            <parameter key="sorting_type" value="none" />
+            <parameter key="sorting_k" value="100" />
+            <parameter key="persistent" value="false" />
+          </operator>
+          <operator activated="true" class="log_to_data" compatibility="8.2.000" expanded="true" height="103" name="LOG_TO_DATA_VAL" width="90" x="380" y="238" />
+          <operator activated="true" class="r_scripting:execute_r" compatibility="8.1.000" expanded="true" height="103" name="WRITE_METRICS_VAL" width="90" x="581" y="187">
+            <parameter key="script" value="rm_main = function(context, data)&#10;{&#10;#Library&#10;library(PRROC)&#10;&#10;#Get context information from macro&#10;validation_iteration &lt;- round(as.double(as.character(context[nrow(context), 1])), digits=0)&#10;process_name &lt;- context[nrow(context), 2]&#10;#Important, otherwise values are overwritten!!&#10;print(nrow(context))&#10;&#10;#Construct path of file &#10;path &lt;- paste(&quot;%{full_path}Results/Results_Metrics/&quot;, process_name, &quot;.csv&quot;, sep=&quot;&quot;)&#10;&#10;#Check if File exits&#10;if(file.exists(path)){&#10;  newData &lt;- read.table(file = path, header=T, sep=&quot;,&quot;)&#10;  #Delete first column, automatically added&#10;  newData$X &lt;- NULL&#10;} else {&#10;  #Create data frame&#10;  newData &lt;- as.data.frame(matrix(nrow = 14, ncol = 6))&#10;  names(newData) &lt;- c(&quot;Type&quot;, &quot;PR_AUC&quot;, &quot;ROC_AUC&quot;, &quot;PREC_AT_90_REC&quot;, &quot;PREC_AT_95_REC&quot;, &quot;PREC_AT_99_REC&quot;)&#10;&#10;  newData[1:10,2:6] &lt;- 0&#10;  &#10;  newData[1:10, 1] &lt;- c(1:10)  &#10;  newData[11, 1] &lt;- &quot;AVG&quot;&#10;  newData[12, 1] &lt;- &quot;MIN&quot;&#10;  newData[13, 1] &lt;- &quot;MAX&quot;&#10;  newData[14, 1] &lt;- &quot;SD&quot;&#10;  &#10;  #Save data frame&#10;  write.csv(newData, file = path)&#10;}&#10;&#10;#Format label and confidence values&#10;data$confidence.1. &lt;- round(as.double(as.character(data$confidence.1.)),digits = 4)&#10;data$L_INDIVITEM &lt;- round(as.double(as.character(data$L_INDIVITEM)), digits = 0)&#10;&#10;#Set  according to makro of the line&#10;pr &lt;- pr.curve(scores.class0 = data$confidence.1., weights.class0 = data$L_INDIVITEM, curve=T)&#10;roc &lt;- roc.curve(scores.class0 = data$confidence.1., weights.class0 = data$L_INDIVITEM, curve=T)&#10;&#10;prPrec &lt;- pr$curve[,1]&#10;prRec &lt;- pr$curve[,2]&#10;prProb &lt;- pr$curve[,3]&#10;&#10;#Used Metrics for MA&#10;precAt90Rec &lt;- round(x = pr$curve[which.min(abs(prRec-0.9)), 1], digits = 4)&#10;precAt95Rec &lt;- round(x = pr$curve[which.min(abs(prRec-0.95)), 1], digits = 4)&#10;precAt99Rec &lt;- round(x = pr$curve[which.min(abs(prRec-0.99)), 1], digits = 4)&#10;roc_auc &lt;- round(x = roc$auc, digits = 4)&#10;pr_auc &lt;- round(x = pr$auc.davis.goadrich, digits = 4)&#10;&#10;#Write Values&#10;newData[validation_iteration, 2] &lt;- pr_auc&#10;newData[validation_iteration, 3] &lt;- roc_auc&#10;newData[validation_iteration, 4] &lt;- precAt90Rec&#10;newData[validation_iteration, 5] &lt;- precAt95Rec&#10;newData[validation_iteration, 6] &lt;- precAt99Rec&#10;&#10;&#10;#Write metrics&#10;write.csv(newData, file = path)&#10;}&#10;&#10;" />
+          </operator>
+          <connect from_port="model" to_op="APPLY_MODEL" to_port="model" />
+          <connect from_port="test set" to_op="APPLY_MODEL" to_port="unlabelled data" />
+          <connect from_port="through 1" to_op="VAL_ITER_AS_LOG_VALUE" to_port="through 1" />
+          <connect from_port="through 2" to_op="PROCESS_NAME_AS_LOG_VALUE" to_port="through 1" />
+          <connect from_op="APPLY_MODEL" from_port="labelled data" to_op="PERFORMANCE" to_port="labelled data" />
+          <connect from_op="PERFORMANCE" from_port="performance" to_port="performance 1" />
+          <connect from_op="PERFORMANCE" from_port="example set" to_op="MULT" to_port="input" />
+          <connect from_op="VAL_ITER_AS_LOG_VALUE" from_port="through 1" to_op="CREATE_LOG_VAL" to_port="through 1" />
+          <connect from_op="PROCESS_NAME_AS_LOG_VALUE" from_port="through 1" to_op="CREATE_LOG_VAL" to_port="through 2" />
+          <connect from_op="MULT" from_port="output 1" to_port="test set results" />
+          <connect from_op="MULT" from_port="output 2" to_op="WRITE_METRICS_VAL" to_port="input 2" />
+          <connect from_op="CREATE_LOG_VAL" from_port="through 1" to_op="LOG_TO_DATA_VAL" to_port="through 1" />
+          <connect from_op="LOG_TO_DATA_VAL" from_port="exampleSet" to_op="WRITE_METRICS_VAL" to_port="input 1" />
+          <portSpacing port="source_model" spacing="0" />
+          <portSpacing port="source_test set" spacing="0" />
+          <portSpacing port="source_through 1" spacing="0" />
+          <portSpacing port="source_through 2" spacing="0" />
+          <portSpacing port="source_through 3" spacing="0" />
+          <portSpacing port="source_through 4" spacing="0" />
+          <portSpacing port="sink_test set results" spacing="0" />
+          <portSpacing port="sink_performance 1" spacing="0" />
+          <portSpacing port="sink_performance 2" spacing="0" />
+        </process>
+      </operator>
+      <operator activated="true" class="log" compatibility="8.2.000" expanded="true" height="82" name="CREATE_LOG_GLOB" width="90" x="514" y="136">
+        <list key="log">
+          <parameter key="Process_Name" value="operator.PROCESS_NAME_AS_LOG_VALUE.value.macro_value" />
+        </list>
+        <parameter key="sorting_type" value="none" />
+        <parameter key="sorting_k" value="100" />
+        <parameter key="persistent" value="false" />
+      </operator>
+      <operator activated="true" class="log_to_data" compatibility="8.2.000" expanded="true" height="103" name="LOG_TO_DATA_GLOB" width="90" x="648" y="136" />
+      <operator activated="true" class="r_scripting:execute_r" compatibility="8.1.000" expanded="true" height="82" name="WRITE_METRICS_GLOB" width="90" x="849" y="136">
+        <parameter key="script" value="rm_main = function(context)&#10;{&#10;#Library&#10;library(PRROC)&#10;&#10;#Get context information from macro&#10;process_name &lt;- context[nrow(context), 2]&#10;#Wichtig!!&#10;print(nrow(context))&#10;&#10;#Construct path of file &#10;path &lt;- paste(&quot;%{full_path}Results/Results_Metrics/&quot;, process_name, &quot;.csv&quot;, sep=&quot;&quot;)&#10;&#10;#Assumption file exists&#10;&#10;#Load file&#10;newData &lt;- read.table(file = path, header=T, sep=&quot;,&quot;)&#10;#Delete first column, automatically added&#10;newData$X &lt;- NULL&#10;&#10;#Set values&#10;#Set Average&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;AVG&quot;, i] &lt;- round(sum(newData[1:10,i])/ 10, digits = 4)&#10;}&#10;&#10;#Set Min&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;MIN&quot;, i] &lt;- min(newData[1:10,i])&#10;}&#10;&#10;#Set Max&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;MAX&quot;, i] &lt;- max(newData[1:10,i])&#10;}&#10;&#10;#Set SD&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;SD&quot;, i] &lt;- round(sd(newData[1:10,i]), digits = 4)&#10;}&#10;&#10;#Save updated file&#10;write.csv(newData, file = path)&#10;&#10;return(data)&#10;}&#10;&#10;" />
+      </operator>
+      <operator activated="true" class="multiply" compatibility="8.2.000" expanded="true" height="124" name="MULT_2" width="90" x="514" y="289" />
+      <operator activated="true" class="r_scripting:execute_r" compatibility="8.1.000" expanded="true" height="82" name="PLOT_PR_CURVE" width="90" x="849" y="493">
+        <parameter key="script" value="rm_main = function(data) &#10;{ &#10;library(ROCR)&#10;&#10;pdf(&quot;%{full_path}Results/Results_Plots/EXR_1_EX_1_NB_PR_CURVE.pdf&quot;) &#10;&#10;data$confidence.1. &lt;- round(as.double(as.character(data$confidence.1.)),digits = 4)&#10;&#10;pred &lt;- prediction(data$confidence.1., data$L_INDIVITEM)&#10;perf &lt;- performance(pred,&quot;prec&quot;,&quot;rec&quot;)&#10;&#10;&#10;plot(perf, lty=1, col=&quot;blue&quot;, main=&quot;PR Kurve Naive Bayes&quot;)&#10;legend(&quot;bottomleft&quot; ,c(&quot;Naive Bayes&quot;),col=c(&quot;blue&quot;),lty=1)&#10;&#10;return(plot) &#10;} " />
+      </operator>
+      <operator activated="true" class="r_scripting:execute_r" compatibility="8.1.000" expanded="true" height="82" name="PLOT_ROC_CURVE" width="90" x="849" y="391">
+        <parameter key="script" value="rm_main = function(data) &#10;{ &#10;library(ROCR)&#10;&#10;pdf(&quot;%{full_path}Results/Results_Plots/EXR_1_EX_1_NB_ROC_CURVE.pdf&quot;) &#10;&#10;data$confidence.1. &lt;- round(as.double(as.character(data$confidence.1.)),digits = 4)&#10;&#10;pred &lt;- prediction(data$confidence.1., data$L_INDIVITEM)&#10;perf &lt;- performance(pred,&quot;tpr&quot;,&quot;fpr&quot;)&#10;&#10;&#10;plot(perf, lty=1, col=&quot;black&quot;, main=&quot;ROC Kurve Naive Bayes&quot;)&#10;abline(a=0, b= 1)&#10;legend(&quot;bottomright&quot; ,c(&quot;Naive Bayes&quot;),col=c(&quot;black&quot;),lty=1)&#10;&#10;return(plot) &#10;} " />
+      </operator>
+      <operator activated="true" class="write_excel" compatibility="8.2.000" expanded="true" height="82" name="WRITE_TEST_RESULT_SET" width="90" x="849" y="289">
+        <parameter key="excel_file" value="%{full_path}Results/Results_Metrics/TEST_RESULT_SETS/%{name}.xlsx" />
+        <parameter key="file_format" value="xlsx" />
+        <parameter key="encoding" value="SYSTEM" />
+        <parameter key="sheet_name" value="RapidMiner Data" />
+        <parameter key="date_format" value="yyyy-MM-dd HH:mm:ss" />
+        <parameter key="number_format" value="#.0000" />
+      </operator>
+      <connect from_op="Retrieve DATASET" from_port="output" to_op="PREPROCESSING" to_port="in 1" />
+      <connect from_op="PREPROCESSING" from_port="out 1" to_op="BV_10" to_port="example set" />
+      <connect from_op="BV_10" from_port="test result set" to_op="MULT_2" to_port="input" />
+      <connect from_op="BV_10" from_port="performance 1" to_port="result 1" />
+      <connect from_op="CREATE_LOG_GLOB" from_port="through 1" to_op="LOG_TO_DATA_GLOB" to_port="through 1" />
+      <connect from_op="LOG_TO_DATA_GLOB" from_port="exampleSet" to_op="WRITE_METRICS_GLOB" to_port="input 1" />
+      <connect from_op="MULT_2" from_port="output 1" to_op="WRITE_TEST_RESULT_SET" to_port="input" />
+      <connect from_op="MULT_2" from_port="output 2" to_op="PLOT_ROC_CURVE" to_port="input 1" />
+      <connect from_op="MULT_2" from_port="output 3" to_op="PLOT_PR_CURVE" to_port="input 1" />
+      <portSpacing port="source_input 1" spacing="0" />
+      <portSpacing port="sink_result 1" spacing="0" />
+      <portSpacing port="sink_result 2" spacing="0" />
+    </process>
+  </operator>
+</process>

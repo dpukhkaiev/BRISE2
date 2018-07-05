@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<VLDocking version="2.1">
+<DockingDesktop name="default">
+<DockingPanel>
+<Split orientation="1" location="0.8">
+<Dockable>
+<Key dockName="model_wizard"/>
+</Dockable>
+<Dockable>
+<Key dockName="model_wizard_help"/>
+</Dockable>
+</Split>
+</DockingPanel>
+<TabGroups>
+</TabGroups>
+</DockingDesktop>
+</VLDocking>

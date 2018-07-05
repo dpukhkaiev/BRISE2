@@ -1,0 +1,18 @@
+{
+    "task_name"  : "energy_consumption",
+    "params": {
+      "ExperimentNumber"  : 1,
+      "ModelTestSize"     : 0.9,
+      "NumberOfInitialExperiments"   : 10,
+      "step"              : 2,
+      "SelectionType"     : "SobolSequence",
+      "ModelType"         : "regression",
+      "DecisionFunction"  : "student_deviation",
+      "DataFile"          : "./Resources/taskData.json",
+      "FileToRead"        : "Radix-500mio.csv",
+      "FeatureNames"      : ["frequency", "threads"],
+      "ResultStructure"   : ["frequency", "threads", "energy"],
+      "ResultDataTypes"  : ["float", "int", "float"],
+      "ResultFeatLabels"  : ["feature", "feature", "label"]
+    }
+}

@@ -3,13 +3,12 @@ FROM ubuntu:16.04
 MAINTAINER Yevhenii Semendiak <semendyak@gmail.com>
 
 # Updating the system and adding python3
-RUN apt-get update
-RUN apt-get install -y \
-    python3 \
-    python3-pip \
-    rsync \
-    openssh-server \
-    vim
+RUN apt-get update \
+    && apt-get install -y python3 \
+    && apt-get install -y    python3-pip \
+    && apt-get install -y    rsync \
+    && apt-get install -y    openssh-server \
+    && apt-get install -y    vim
 
 # Replacing default python2 to python3
 RUN pip3 install --upgrade pip setuptools && \
@@ -18,7 +17,7 @@ RUN pip3 install --upgrade pip setuptools && \
     rm -r /root/.cache
 
 # Installing sklearn with needed dependencies (numpy, scipy).
-RUN pip3 --no-cache-dir install -U scikit-learn[alldeps] sobol_seq
+RUN pip --no-cache-dir install -U scikit-learn[alldeps] sobol_seq
 
 # Packages for API
 RUN apt-get update \
@@ -30,13 +29,13 @@ RUN apt-get update \
     && python3 -m pip install Flask \
     && python3 -m pip install flask-cors
 
+
 COPY . /root
+RUN rm /root/Dockerfile
 
 RUN chmod +x /root/configure_sshd.sh
-RUN chmod +x /root/main.sh
-RUN /root/configure_sshd.sh 
-
-EXPOSE 5000
+RUN /root/configure_sshd.sh
 EXPOSE 2222
+EXPOSE 5000
 
 CMD ["/usr/sbin/sshd", "-D"]

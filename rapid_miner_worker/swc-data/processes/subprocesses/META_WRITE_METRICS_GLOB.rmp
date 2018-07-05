@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="8.2.000">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="8.2.000" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="1992"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="r_scripting:execute_r" compatibility="8.1.000" expanded="true" height="82" name="WRITE_METRICS_GLOB" width="90" x="179" y="34">
+        <parameter key="script" value="rm_main = function(context)&#10;{&#10;#Library&#10;library(PRROC)&#10;&#10;#Get context information from macro&#10;process_name &lt;- context[nrow(context), 2]&#10;#Wichtig!!&#10;print(nrow(context))&#10;&#10;#Construct path of file &#10;path &lt;- paste(&quot;%{full_path}Results/Results_Metrics/&quot;, process_name, &quot;.csv&quot;, sep=&quot;&quot;)&#10;&#10;#Assumption file exists&#10;&#10;#Load file&#10;newData &lt;- read.table(file = path, header=T, sep=&quot;,&quot;)&#10;#Delete first column, automatically added&#10;newData$X &lt;- NULL&#10;&#10;#Set values&#10;#Set Average&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;AVG&quot;, i] &lt;- round(sum(newData[1:10,i])/ 10, digits = 4)&#10;}&#10;&#10;#Set Min&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;MIN&quot;, i] &lt;- min(newData[1:10,i])&#10;}&#10;&#10;#Set Max&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;MAX&quot;, i] &lt;- max(newData[1:10,i])&#10;}&#10;&#10;#Set SD&#10;for(i in 2:6){&#10;  newData[newData[,1]==&quot;SD&quot;, i] &lt;- round(sd(newData[1:10,i]), digits = 4)&#10;}&#10;&#10;#Save updated file&#10;write.csv(newData, file = path)&#10;&#10;return(data)&#10;}&#10;&#10;"/>
+      </operator>
+      <connect from_port="input 1" to_op="WRITE_METRICS_GLOB" to_port="input 1"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="source_input 2" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+    </process>
+  </operator>
+</process>
