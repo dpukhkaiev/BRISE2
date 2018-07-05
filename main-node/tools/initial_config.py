@@ -43,7 +43,7 @@ def load_task(path_to_file="./Resources/task.json"):
             "TaskDataPoints"    : taskDataPoints,
             "default_point"      : data["default_point"]}
 
-def initialize_config(globalConfigPath='./GlobalConfig.json', taskPath="./Resources/task.json"):
+def initialize_config(globalConfigPath='./GlobalConfig.json', taskPath="./Resources/NB/taskNB1.json"):
     """
     Method reads .json file
     :param path_to_file: sting path to file.

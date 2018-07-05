@@ -7,7 +7,9 @@ RUN apt-get update \
   && cd /usr/local/bin \
   && ln -s /usr/bin/python3 python \
   && pip3 install --upgrade pip
-RUN pip3 install Flask
+
+RUN pip3 install Flask && \
+pip install -U socketIO-client
 RUN apt-get install -y r-base
 
 RUN mkdir -p /usr/src/app 
@@ -37,11 +39,8 @@ COPY .RapidMiner/ /root/.RapidMiner/
 COPY .RapidMiner/ /home/pariom/.RapidMiner/
 COPY swc-data/ /root/swc-data/
 # COPY ./configure_sshd.sh /root/
-COPY csv_data/ /usr/src/app/csv_data/
-COPY config.json /usr/src/app/
-COPY w_server.py /usr/src/app/
-COPY server.py.bak /usr/src/app/
-COPY worker.py /usr/src/app/
+
+COPY . /usr/src/app
 
 
 # RUN chmod +x /root/configure_sshd.sh
@@ -50,4 +49,4 @@ WORKDIR /usr/src/app
 
 
 EXPOSE 8080
-CMD [ "python", "-u", "./w_server.py" ]
+CMD [ "python", "-u", "./w_intro.py" ]

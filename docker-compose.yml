@@ -2,8 +2,8 @@
 version: "2"
 services: 
   w_alpha:
-    # build: ./rapid_miner_worker/
-    build: ./worker/
+    build: ./rapid_miner_worker/
+    # build: ./worker/
     container_name: w_alpha
     environment:
       - workername=alpha
@@ -13,10 +13,11 @@ services:
           - alpha
     ports:
       - "1831:8080"  # if direct access is required
-    volumes:
-      - "./worker:/usr/src/app"
+    # volumes:
+    #   - "./rapid_miner_worker:/usr/src/app"
   w_beta:
-    build: ./worker/
+    build: ./rapid_miner_worker/
+    # build: ./worker/
     container_name: w_beta
     environment:
       - workername=beta
@@ -26,8 +27,8 @@ services:
           - beta
     ports:
       - "1832:8080" # if direct access is required
-    volumes:
-      - "./worker:/usr/src/app"
+    # volumes:
+    #   - "./worker:/usr/src/app"
   # w_gamma:
   #   build: ./rapid_miner_worker/
   #   container_name: w_gamma
