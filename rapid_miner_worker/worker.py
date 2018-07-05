@@ -53,8 +53,10 @@ def naive_bayes_process(param):
     print("start RapidMiner")
     pr = os.system("./rapidminer-studio/scripts/rapidminer-batch.sh //swc-data/processes/MA_EXR_1_EX_1_NB_INV")
     print("end process: " + str(pr))
-    time.sleep(5)
-    print("this is shit!!!")
+    import csv
+    with open('../../../../root/swc-data/Results/Results_Metrics/MA_EXR_1_EX_1_NB_INV.csv') as csvDataFile:
+        data=list(csv.reader(csvDataFile))
+        return data[11][2]
 
 def random_real(param):
     data = Splitter("csv_data/"+param['ws_file'])
@@ -64,5 +66,9 @@ def random_real(param):
     return result
 
 if __name__ == "__main__":
-    param = {'ws_file': '', 'laplace_correction': True, 'use_application_grid': True, 'estimation_mode': 'full', 'bandwidth_selection': 'heuristic'}
-    naive_bayes_process(param)
+    # param = {'ws_file': '', 'laplace_correction': True, 'use_application_grid': True, 'estimation_mode': 'full', 'bandwidth_selection': 'heuristic'}
+    # naive_bayes_process(param)
+    import csv
+    with open('../../../../root/swc-data/Results/Results_Metrics/MA_EXR_1_EX_1_NB_INV.csv') as csvDataFile:
+        data=list(csv.reader(csvDataFile))
+        print(data[11][2])
