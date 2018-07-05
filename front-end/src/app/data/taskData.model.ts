@@ -6,7 +6,7 @@ export class Task {
     constructor(item) {
         this.id = item.id;
         this.run = item.run;
-        this.conf = item.conf;
+        this.conf = item.config;
         this.meta = item.meta;
     }
 

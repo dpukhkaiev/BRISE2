@@ -1,0 +1,14 @@
+{
+  "task_name"  : "taskNN", 
+  "params": {
+    "ExperimentNumber"  : 1,
+    "ModelTestSize"  : 0.9,
+    "SobolInitLength" : 10,
+    "step"             : 2,
+    "DataFile"         : "./taskNNData.json",
+    "FileToRead"       : "",
+    "FeatureNames"     : ["hidden layers", "training cycles", "learning rate", "momentum", "decay", "shuffle", "normalize", "error epsilon", "use local random seed", "local random seed"],
+    "ResultStructure"  : ["hidden layers", "training cycles", "learning rate", "momentum", "decay", "shuffle", "normalize", "error epsilon", "use local random seed", "local random seed", "accuracy"],
+    "ResultFeatLabels" : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
+  }
+}

@@ -7,9 +7,8 @@ from flask import jsonify, Flask
 from __init__ import create_app
 
 # initialization 
-app = create_app()
+socketio, app = create_app()
 
 # Run server
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=80,debug=True)
-
+    socketio.run(app, host='0.0.0.0', debug=True, port=80)

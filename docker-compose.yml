@@ -1,79 +1,87 @@
 # Launch & Build a bunch containers with workers and one service for them.
 version: "2"
 services: 
-  w_alpha: 
-    build: ./worker_node/
+  w_alpha:
+    build: ./rapid_miner_worker/
+    # build: ./worker/
     container_name: w_alpha
-    environment: 
+    environment:
       - workername=alpha
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - alpha
-    ports: 
+    ports:
       - "1831:8080"  # if direct access is required
-    volumes: 
-      - "./worker_node:/usr/src/app"
-  w_beta: 
-    build: ./worker_node/
+    # volumes:
+    #   - "./rapid_miner_worker:/usr/src/app"
+  w_beta:
+    build: ./rapid_miner_worker/
+    # build: ./worker/
     container_name: w_beta
-    environment: 
+    environment:
       - workername=beta
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - beta
-    ports: 
+    ports:
       - "1832:8080" # if direct access is required
-    volumes: 
-      - "./worker_node:/usr/src/app"
-  w_gamma: 
-    build: ./worker_node/
-    container_name: w_gamma
-    environment: 
-      - workername=gamma
-    networks: 
-      worker_net: 
-        aliases: 
-          - gamma
-    ports: 
-      - "1833:8080" # if direct access is required
-    volumes: 
-      - "./worker_node:/usr/src/app"
-  w_service: 
+    # volumes:
+    #   - "./worker:/usr/src/app"
+  # w_gamma:
+  #   build: ./rapid_miner_worker/
+  #   container_name: w_gamma
+  #   environment:
+  #     - workername=gamma
+  #   networks:
+  #     worker_net:
+  #       aliases:
+  #         - gamma
+  #   ports:
+  #     - "1833:8080" # if direct access is required
+  #   volumes:
+  #     - "./rapid_miner_worker:/usr/src/app"
+  w_service:
     build: ./worker_service/
     command: python3 intro.py
-    stdin_open: true      
+    # command: sh
+    stdin_open: true
     tty: true
     container_name: w_service
-    networks: 
-      worker_net: 
-        aliases: 
+    networks:
+      worker_net:
+        aliases:
           - w_service
-    ports: 
+    ports:
       - "80:80"
-    volumes: 
+    volumes:
       - "./worker_service:/usr/src/app"
-    depends_on:
-        - "w_alpha"
-        - "w_beta"
-        - "w_gamma"
+    # depends_on:
+    #     - "w_alpha"
+    #     - "w_beta"
     environment:
       - FLASK_APP=worker_service/__init__.py
       - FLASK_DEBUG=1
-      - WORKER_COUNT=3 # depends of workers instance. [alpha, beta, gamma, delta]
+      - WORKER_COUNT=2 # depends of workers instance. [alpha, beta, gamma, delta]
 
-  api:
+  main_node:
     build: ./main-node/
-    container_name: 1_main_node
-    image: 1_i_main_node
+    command: /usr/sbin/sshd -D
+    tty: true
+    container_name: main-node
+    networks:
+      worker_net:
+        aliases:
+          - main-node
     ports:
-      - "5000:5000" #host:container
       - "2222:2222"
+      - "5000:5000"
+    depends_on:
+      - "w_service"
     volumes:
-      - "./main-node:/usr/src/app"
+      - "./main-node/Results:/root/Results"
 
-
-networks: 
-  worker_net: 
+networks:
+  worker_net:
     driver: bridge

@@ -1,14 +1,9 @@
 {
-    "local" : {
-        "ip": "127.0.0.1",
-        "port": 2375,
-        "image": {
-          "name": "semendiak/benchmark_squeezing_remote_serv",
-          "tag":  ":1.0"
-        }
+    "WorkerService": {
+      "Address" : "w_service:80"
     },
 
-    "WorkerService": {
-      "Address" : "172.18.0.1:80"
-    }
+    "results_storage" : "./Results/",
+    "logging_level" : "DEBUG",
+    "log_filename"  : "BRISE.log"
 }

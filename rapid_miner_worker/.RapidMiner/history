@@ -1,0 +1,4 @@
+repository //swc-data/processes/MA_EXR_1_EX_3_SVM_INV
+repository //swc-data/processes/MA_EXR_1_EX_4_NN_INV
+repository //swc-data/processes/MA_EXR_1_EX_2_RF_INV
+repository //swc-data/processes/MA_EXR_1_EX_1_NB_INV
