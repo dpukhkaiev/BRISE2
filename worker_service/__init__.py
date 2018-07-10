@@ -99,7 +99,7 @@ def create_app(script_info=None):
             
             if bool(task_list):
                 for item in task_list:
-                    flow.add_task(item)
+                    hr.new_task(item)
 
                 # upd stack obj on the client's side
                 socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
