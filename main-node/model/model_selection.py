@@ -4,6 +4,6 @@ def get_model(model_type, res_storage, file_to_read, model_test_size, features, 
         return  RegressionSweetSpot(output_filename = "%s%s_regression.txt" % (res_storage, file_to_read),
                          test_size = model_test_size,
                          features = features,
-                         targets = labels)
+                         labels = labels)
     else:
         raise KeyError

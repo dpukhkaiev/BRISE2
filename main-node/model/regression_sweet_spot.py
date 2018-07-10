@@ -13,7 +13,7 @@ from tools.features_tools import split_features_and_labels
 
 class RegressionSweetSpot(Model):
 
-    def __init__(self, output_filename, test_size, features, targets):
+    def __init__(self, output_filename, test_size, features, labels):
         """
         Initialization of regression model. It will
         :param output_filename: - reserved :D
@@ -24,7 +24,7 @@ class RegressionSweetSpot(Model):
 
         self.test_size = test_size
         self.all_features = features
-        self.all_targets = targets
+        self.all_labels = labels
         self.filename = output_filename
         self.model = None
         self.accuracy = 0
@@ -39,7 +39,7 @@ class RegressionSweetSpot(Model):
         """
 
         self.feature_train, self.feature_test, self.target_train, self.target_test = \
-            model_selection.train_test_split(self.all_features, self.all_targets, test_size=self.test_size)
+            model_selection.train_test_split(self.all_features, self.all_labels, test_size=self.test_size)
 
     def build_model_BRISE(self, degree, score_min, tries=20):
         cur_accuracy = 0.99
@@ -185,6 +185,14 @@ class RegressionSweetSpot(Model):
         pass
 
     def get_result(self, features, repeater, measured_energy):
+
+        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
+        # point, that have less energy consumption, that predicted - report this point instead predicted.
+
+        self.solution_labels = min(self.all_labels)
+        index_of_the_best_labelse = self.all_labels.index(self.solution_labels)
+        self.solution_features = self.all_features[index_of_the_best_labelse]
+
         print("\n\nPredicted energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
         print("Number of measured points: %s" % len(features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
