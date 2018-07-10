@@ -1,15 +1,21 @@
-.focus, .stack {
+.focus, .stack, .result {
   display: inline-block;
+  overflow: auto;
+      align-items: baseline;
 }
 .focus {
-  width: 48%;
-  min-width: 460px;
+    /* position: sticky; */
+    /* bottom:20%; */
 }
 .stack {
-  width: 50%;
-  min-width: 500px;
+    /* align-items: baseline; */
 }
 
+/* .mat-grid-tile .mat-figure {
+  height: auto
+} */
+
+/* Selected item */
 .selected {
     font-weight: 700;
     border-left: 2px solid rgba(0, 0, 0, 0.9);;
@@ -17,8 +23,12 @@
 .selected .mat-list-icon {
   color: rgba(0, 0, 0, 0.9);
 }
+mat-tab-body mat-grid-tile {
+  height: 100%;
+}
 
 
+/* Icons */
 .mat-list-icon {
   color: rgba(0, 0, 0, 0.54);
 }

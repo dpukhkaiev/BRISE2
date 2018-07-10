@@ -10,13 +10,23 @@ import { TaskListComponent } from './task-list/task-list.component';
 // Animation
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 // Material
-import { MatButtonModule, MatCheckboxModule, MatCardModule, MatListModule, MatIconModule, MatTabsModule, MatTooltipModule} from '@angular/material';
+import { MatButtonModule, 
+  MatCheckboxModule, 
+  MatCardModule, 
+  MatListModule, 
+  MatIconModule, 
+  MatTabsModule, 
+  MatTooltipModule,
+  MatGridListModule} from '@angular/material';
 
 /* Shared Service */
 import { WorkerService } from './services/worker.service';
 import { SocketService } from './services/socket.service';
-import { HeatMapComponent } from './heat-map/heat-map.component';
-import { RegChartComponent } from './reg-chart/reg-chart.component';
+
+/* Charts */ 
+import { HeatMapComponent } from './charts/heat-map/heat-map.component';
+import { RegChartComponent } from './charts/reg-chart/reg-chart.component';
+import { Ch1Component } from './charts/ch-1/ch-1.component';
 
 
 @NgModule({ 
@@ -24,7 +34,8 @@ import { RegChartComponent } from './reg-chart/reg-chart.component';
     AppComponent,
     TaskListComponent,
     HeatMapComponent,
-    RegChartComponent
+    RegChartComponent,
+    Ch1Component
   ],
   imports: [
     BrowserModule, HttpModule, 
@@ -35,7 +46,8 @@ import { RegChartComponent } from './reg-chart/reg-chart.component';
     MatListModule, 
     MatIconModule,
     MatTabsModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatGridListModule
   ],
   providers: [{ provide: WorkerService, useClass: WorkerService },
     { provide: SocketService, useClass: SocketService }],
