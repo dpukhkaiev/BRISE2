@@ -48,9 +48,10 @@ class Recruit():
                 self.spin()
                 time.sleep(1)
 
-            for task in self.flow.get_stack():
-                if task["id"] not in self.result:
-                    self.result[task["id"]] = task
+    def new_task(task):
+        if task["id"] not in self.result:
+            self.result[task["id"]] = task
+            self.flow.add_task(item)
 
     def status(self):
         print(" Workers:", self.workers)
