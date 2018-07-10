@@ -86,7 +86,6 @@ def run_task(*argv):
 
             # thread
             task_iterator=+1
-            print('\n Task iterator:', task_iterator, "\n")
             prm = executor.submit(method, new_task['run']['param'])
             prm.add_done_callback(lambda ftr: task.emit('result', task_result(ftr.result())))
 

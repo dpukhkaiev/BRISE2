@@ -34,7 +34,8 @@ export class TaskListComponent implements OnInit {
     // Fresh updates. Each time +1 task
     this.ioConnection = this.io.onResults()
       .subscribe((obj: JSON) => {
-        this.result.push(new Task(obj));
+        var fresh: Task = new Task(obj)
+        !this.result.includes(fresh, -1) && this.result.push(fresh);
         console.log(' Object:', obj);
       });
     // Rewrite task stack
