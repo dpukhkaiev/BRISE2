@@ -13,10 +13,6 @@ from api.worker_manager.recruit import Recruit
 # Logging
 import logging
 
-
-# workflow instance with tasks stack
-flow = Workflow()
-
 def create_app(script_info=None):
     # instantiate the app
     app = Flask(__name__)
@@ -27,7 +23,14 @@ def create_app(script_info=None):
     socketio = SocketIO(app, logger=True, engineio_logger=True)
     logging.getLogger('socketio').setLevel(logging.DEBUG)
 
-    # clients
+    # workflow instance with tasks stack
+    flow = Workflow()
+
+    # worker manager/explorer
+    hr = Recruit(flow, socketio)
+    hr.status()
+
+    # Front-end clients
     front_clients = []
     
     # ---------------------------------------- HTTP
@@ -87,33 +90,33 @@ def create_app(script_info=None):
         if not post_data:
             return jsonify(response_object), 400
 
-        try:
-            # parse data in to task list
-            if 'request_type' in post_data and post_data['request_type'] == 'send_task': 
-                id_list, task_list = t_parser_2(post_data) 
-            else: 
-                id_list, task_list = t_parser(post_data)
-                
-
-            print(" New tasks:", len(task_list))     
+        # try:
+        # parse data in to task list
+        if 'request_type' in post_data and post_data['request_type'] == 'send_task': 
+            id_list, task_list = t_parser_2(post_data) 
+        else: 
+            id_list, task_list = t_parser(post_data)
             
-            if bool(task_list):
-                for item in task_list:
-                    hr.new_task(item)
 
-                # upd stack obj on the client's side
-                socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
+        print(" New tasks:", len(task_list))     
+        
+        if bool(task_list):
+            for item in task_list:
+                hr.new_task(item)
 
-                response_object['status'] = 'success'
-                response_object['response_type'] = 'send_task'
-                response_object['id'] = id_list
-                response_object['message'] = f'{len(task_list)} task(s) are accepted!'
-                return jsonify(response_object), 201
-            else:
-                response_object['message'] = 'Sorry. That task can not run.'
-                return jsonify(response_object), 400
-        except:
+            # upd stack obj on the client's side
+            socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
+
+            response_object['status'] = 'success'
+            response_object['response_type'] = 'send_task'
+            response_object['id'] = id_list
+            response_object['message'] = f'{len(task_list)} task(s) are accepted!'
+            return jsonify(response_object), 201
+        else:
+            response_object['message'] = 'Sorry. That task can not run.'
             return jsonify(response_object), 400
+        # except:
+        #     return jsonify(response_object), 400
 
     @app.route('/result/format', methods=['PUT'])
     def get_via_format():
@@ -210,12 +213,6 @@ def create_app(script_info=None):
         emit('all result', 
         json.dumps({'res': list(hr.result.values()), 'stack': hr.flow.get_stack()}), 
         namespace='/front-end')
-
-
-
-    # worker manager/explorer
-    hr = Recruit(flow, socketio)
-    hr.status()
 
     return socketio, app
 
