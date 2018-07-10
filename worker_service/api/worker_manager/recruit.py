@@ -53,7 +53,7 @@ class Recruit():
 
     def new_task(self, item):
         if item.id not in self.result:
-            self.result[item.id] = item
+            self.result[item.id] = item.to_json()
             self.flow.add_task(item)
 
     def results(self, id=False):
