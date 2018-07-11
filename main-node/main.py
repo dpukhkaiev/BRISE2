@@ -24,8 +24,36 @@ import itertools
 from warnings import filterwarnings
 filterwarnings("ignore")
 
+#####
+import socket
+# def client_connection():
+#     IP = '0.0.0.0'
+#     PORT = 9090
+#     address = (IP, PORT)
+#     socket_client = socket.socket()
+#     socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     socket_client.connect(address)
+#     return socket_client
+
+# def client_stop_connection(socket_client):
+#     socket_client.close()
+
+IP = '0.0.0.0'
+PORT = 9090
+address = (IP, PORT)
+socket_client = socket.socket()
+socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+socket_client.connect(address)
+#####
+
 
 def run(APPI_QUEUE):
+
+    # address = (IP, PORT)
+    # socket_client = socket.socket()
+    # socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # socket_client.connect(address)
+
 
     globalConfig, task = initialize_config()
     if APPI_QUEUE: APPI_QUEUE.put({"global_contig": globalConfig, "task": task})
@@ -47,7 +75,7 @@ def run(APPI_QUEUE):
     # Need to find default value that we will used in regression to evaluate solution
     print("Getting default value..") 
     
-    default_result = repeater.measure_task([task["default_point"]]) #change it to switch inside and devide to
+    default_result = repeater.measure_task([task["default_point"]], socket_client) #change it to switch inside and devide to
     default_features, default_value = split_features_and_labels(default_result, task["params"]["ResultFeatLabels"])
     if APPI_QUEUE: APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
     print(default_value)
@@ -59,7 +87,7 @@ def run(APPI_QUEUE):
     # [[val1, val2,... valN], [val1, val2,... valN]...]
     print("Sending initial task..")
     repeater = get_repeater(task["params"]["DecisionFunction"], WS)
-    results = repeater.measure_task(initial_task, default_point=default_result[0])
+    results = repeater.measure_task(initial_task, socket_client, default_point=default_result[0])
     print("Results got, splitting to features and labels..")
     features, labels = split_features_and_labels(results, task["params"]["ResultFeatLabels"])
 
@@ -75,10 +103,10 @@ def run(APPI_QUEUE):
                           features=features, 
                           labels=labels)
 
-        success = model.build_model(param=task["params"],
+        success = model.build_model(socket_client, param=task["params"],
                                     score_min=0.85,
                                     searchspace=search_space)
-        features, labels, real_result, success = model.validate(success, task, repeater, selector, default_value, default_result, search_space, features, labels)
+        features, labels, real_result, success = model.validate(socket_client, success, task, repeater, selector, default_value, default_result, search_space, features, labels)
 
     optimal_result, optimal_config = model.get_result(features, repeater, real_result) 
 
