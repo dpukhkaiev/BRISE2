@@ -3,7 +3,7 @@ version: "2"
 services: 
   w_alpha:
 #    build: ./rapid_miner_worker/
-     build: ./worker/
+    build: ./worker/
     container_name: w_alpha
     environment:
       - workername=alpha
