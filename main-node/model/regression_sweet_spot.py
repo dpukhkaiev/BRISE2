@@ -214,5 +214,5 @@ class RegressionSweetSpot(Model):
         print("\n\nPredicted energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
         print("Number of measured points: %s" % len(features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Measured energy is: %s" % str(measured_energy[0]))
+        print("Measured energy is: %s" % str(self.solution_labels))
         return self.solution_labels, self.solution_features
