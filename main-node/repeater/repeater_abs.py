@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from repeater.history import History
-
+import socket
 
 class Repeater(ABC):
     def __init__(self, WorkerServiceClient):
@@ -14,7 +14,7 @@ class Repeater(ABC):
     @abstractmethod
     def decision_function(self, history, point, iterations = 3, **configuration): pass
     
-    def measure_task(self, task, **decis_func_config):
+    def measure_task(self, task, socket_client, **decis_func_config):
         # Removing previous measurements
         self.current_measurement.clear()
         self.current_measurement_finished = False
@@ -54,6 +54,12 @@ class Repeater(ABC):
                 result = self.decision_function(self.history, point, **decis_func_config)
                 if result:
                     print("Point %s finished after %s measurements. Result: %s" % (str(point), len(self.history.get(point)), str(result)))
+                    
+                    # data = str(socket_client.recv(1024).decode())
+                    # if (data == "ready" or data == "got"):
+                    msg = str(result).encode()
+                    socket_client.sendall(msg)
+                    
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
