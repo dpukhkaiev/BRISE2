@@ -13,7 +13,7 @@ from tools.features_tools import split_features_and_labels
 
 class RegressionSweetSpot(Model):
 
-    def __init__(self, output_filename, test_size, features, targets):
+    def __init__(self, output_filename, test_size, features, labels):
         """
         Initialization of regression model. It will
         :param output_filename: - reserved :D
@@ -24,7 +24,7 @@ class RegressionSweetSpot(Model):
 
         self.test_size = test_size
         self.all_features = features
-        self.all_targets = targets
+        self.all_labels = labels
         self.filename = output_filename
         self.model = None
         self.accuracy = 0
@@ -39,9 +39,9 @@ class RegressionSweetSpot(Model):
         """
 
         self.feature_train, self.feature_test, self.target_train, self.target_test = \
-            model_selection.train_test_split(self.all_features, self.all_targets, test_size=self.test_size)
+            model_selection.train_test_split(self.all_features, self.all_labels, test_size=self.test_size)
 
-    def build_model_BRISE(self, degree, score_min, tries=20):
+    def build_model_BRISE(self, socket_client, degree, score_min, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -62,6 +62,10 @@ class RegressionSweetSpot(Model):
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
+                    
+                    msg = str(best_model).encode()
+                    socket_client.sendall(msg)
+                    
                     self.accuracy = best_got
                     print("Regression model built with %s test size and %s accuracy! Verifying.." % (self.test_size, self.accuracy))
                     return True
@@ -71,17 +75,17 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def build_model(self, param, score_min, searchspace, degree=6):
+    def build_model(self, socket_client, param, score_min, searchspace, degree=6):
 
         # Build model if was not built.
         if not self.model:
-            if not self.build_model_BRISE(degree, score_min=score_min):
-                print("Unable to buld regression model, need more data.")
+            if not self.build_model_BRISE(socket_client, degree, score_min=score_min):
+                print("Unable to build regression model, need more data.")
                 self.solution_ready = False
                 return False
 
         # Build regression.
-        self.solution_labels, self.solution_features = self.find_optimal(searchspace)
+        self.solution_labels, self.solution_features = self.find_optimal(searchspace, socket_client)
         self.test_model_all_data(searchspace)
 
         # Check if the model is adequate - write it.
@@ -108,12 +112,26 @@ class RegressionSweetSpot(Model):
             print("Predicted energy lower than 0: %s. Need more data.." % self.solution_labels[0])
             return False
 
-    def find_optimal(self, features):
+    def find_optimal(self, features, socket_client):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
             :param features: list of data points (each data point is also a list).
             :return: lowest value, and related features.
             """
+
+            msg = str("** Regression").encode()
+            socket_client.sendall(msg)
+    
+            for (idx,val) in enumerate(self.model.predict(features)):
+                msg = str(features[idx]) + str(' = ') + str(val) + "\n"
+                print ("---- reg:  " + msg)
+                msg = msg.encode()
+                socket_client.sendall(msg)
+                msg = ""
+
+            msg = str("** Regression end").encode()
+            socket_client.sendall(msg)
+
             val, idx = min((val,idx) for (idx,val) in enumerate(self.model.predict(features)))
             return val, features[idx]
 
@@ -143,12 +161,12 @@ class RegressionSweetSpot(Model):
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def validate(self, success, task, repeater, selector, default_value, default_result, search_space, features, labels):
+    def validate(self, socket_client, success, task, repeater, selector, default_value, default_result, search_space, features, labels):
         if success:
             # validate() in regression
             print("Model build with accuracy: %s" % self.accuracy)
             print("Verifying solution that model gave..")
-            real_result = split_features_and_labels(repeater.measure_task([self.solution_features]), task["params"]["ResultFeatLabels"])[1][0]
+            real_result = split_features_and_labels(repeater.measure_task([self.solution_features], socket_client), task["params"]["ResultFeatLabels"])[1][0]
 
             # If our measured energy higher than default best value - add this point to data set and rebuild model.
             #validate false
@@ -168,7 +186,7 @@ class RegressionSweetSpot(Model):
             cur_task = [selector.get_next_point() for x in range(task['params']['step'])]
             if self.solution_features:
                 cur_task.append(self.solution_features)
-            results = repeater.measure_task(cur_task, default_point=default_result[0])
+            results = repeater.measure_task(cur_task, socket_client, default_point=default_result[0])
             new_feature, new_label = split_features_and_labels(results, task["params"]["ResultFeatLabels"])
             features += new_feature
             labels += new_label
@@ -185,8 +203,16 @@ class RegressionSweetSpot(Model):
         pass
 
     def get_result(self, features, repeater, measured_energy):
+
+        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
+        # point, that have less energy consumption, that predicted - report this point instead predicted.
+
+        self.solution_labels = min(self.all_labels)
+        index_of_the_best_labelse = self.all_labels.index(self.solution_labels)
+        self.solution_features = self.all_features[index_of_the_best_labelse]
+
         print("\n\nPredicted energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
         print("Number of measured points: %s" % len(features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Measured energy is: %s" % str(measured_energy[0]))
+        print("Measured energy is: %s" % str(self.solution_labels))
         return self.solution_labels, self.solution_features
