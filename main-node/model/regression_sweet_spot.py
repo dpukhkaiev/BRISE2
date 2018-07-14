@@ -32,16 +32,7 @@ class RegressionSweetSpot(Model):
         self.solution_features = None
         self.solution_labels = None
 
-    def resplitData(self):
-        """
-        Just recreates subsets of features and labels for training and testing from existing features and labels.
-        :return: None
-        """
-
-        self.feature_train, self.feature_test, self.target_train, self.target_test = \
-            model_selection.train_test_split(self.all_features, self.all_labels, test_size=self.test_size)
-
-    def build_model_BRISE(self, degree, score_min, tries=20):
+    def build_model(self, degree=6, score_min=0.85, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -50,7 +41,7 @@ class RegressionSweetSpot(Model):
             self.test_size = init_test_size
             while self.test_size > 0.3:
                 for x in range(tries):
-                    self.resplitData()
+                    self.resplit_data()
                     model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())])
                     model.fit(self.feature_train, self.target_train)
                     score_measured = model.score(self.feature_test, self.target_test)
@@ -58,12 +49,14 @@ class RegressionSweetSpot(Model):
                     if score_measured > best_got:
                         best_got = score_measured
                         best_model = model
-                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (round(score_measured,3), round(self.test_size,2), round(cur_accuracy,2)))
+                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (
+                            round(score_measured, 3), round(self.test_size, 2), round(cur_accuracy, 2)))
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
                     self.accuracy = best_got
-                    print("Regression model built with %s test size and %s accuracy! Verifying.." % (self.test_size, self.accuracy))
+                    print("Regression model built with %s test size and %s accuracy." % (
+                        self.test_size, self.accuracy))
                     return True
                 else:
                     self.test_size -= 0.01
@@ -71,24 +64,20 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def build_model(self, score_min, searchspace, degree=6):
+    def validate_model(self, search_space, degree=6):
 
-        # Build model if was not built.
+        # Check if model was built.
         if not self.model:
-            if not self.build_model_BRISE(degree, score_min=score_min):
-                print("Unable to buld regression model, need more data.")
-                self.solution_ready = False
-                return False
+            return False
 
-        # Build regression.
-        self.solution_labels, self.solution_features = self.find_optimal(searchspace)
-        self.test_model_all_data(searchspace)
+        self.test_model_all_data(search_space)
 
         # Check if the model is adequate - write it.
-        if self.solution_labels[0] >= 0:
+        predicted_labels, predicted_features = self.predict_solution(search_space)
+        if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
-            f.write(str(searchspace)+"\n")
+            f.write(str(search_space) + "\n")
             f.write("Testing size = " + str(self.test_size) + "\n")
             # f.write("Degree = " + str(degree)+ "\n")
             for i in range(degree+1):
@@ -102,23 +91,52 @@ class RegressionSweetSpot(Model):
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_)+"\n")
             f.close()
             self.solution_ready = True
+            print("Built model is valid.")
             return True
         else:
             self.solution_ready = False
-            print("Predicted energy lower than 0: %s. Need more data.." % self.solution_labels[0])
+            print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def find_optimal(self, features):
+    def predict_solution(self, search_space):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
-            :param features: list of data points (each data point is also a list).
+            :param search_space: list of data points (each data point is also a list).
             :return: lowest value, and related features.
             """
-            val, idx = min((val,idx) for (idx,val) in enumerate(self.model.predict(features)))
-            return val, features[idx]
+            label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
+            return label, search_space[index]
 
-    def sum_fact(self, num):
-            return reduce(lambda x,y: x+y, list(range(1 ,num + 1)))
+    def validate_solution(self, task_config, repeater, default_value, predicted_features):
+        # validate() in regression
+        print("Verifying solution that model gave..")
+        solution_candidate = repeater.measure_task([predicted_features])
+        measured_solution_label = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])[1][0]
+        # If our measured energy higher than default best value - add this point to data set and rebuild model.
+        #validate false
+        if measured_solution_label > default_value[0]:
+            print("Predicted energy larger than default.")
+            print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
+                predicted_features[0], measured_solution_label[0], default_value[0][0]))
+            prediction_is_final = False
+        else:
+            print("Solution validation success!")
+            prediction_is_final = True
+        self.solution_labels = measured_solution_label
+        return [self.solution_labels], prediction_is_final
+
+    def resplit_data(self):
+        """
+        Just recreates subsets of features and labels for training and testing from existing features and labels.
+        :return: None
+        """
+
+        self.feature_train, self.feature_test, self.target_train, self.target_test = \
+            model_selection.train_test_split(self.all_features, self.all_labels, test_size=self.test_size)
+
+    @staticmethod
+    def sum_fact(num):
+        return reduce(lambda x, y: x+y, list(range(1, num + 1)))
 
     def test_model_all_data(self, search_space):
         from tools.features_tools import split_features_and_labels
@@ -142,28 +160,6 @@ class RegressionSweetSpot(Model):
 
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
-
-    def predict_and_validate(self, task_config, repeater, default_value):
-        # validate() in regression
-        print("Model build with accuracy: %s" % self.accuracy)
-        print("Verifying solution that model gave..")
-        solution_candidate = repeater.measure_task([self.solution_features])
-        measured_solution_label = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])[1][0]
-        # If our measured energy higher than default best value - add this point to data set and rebuild model.
-        #validate false
-        if measured_solution_label > default_value[0]:
-            print("Predicted energy larger than default.")
-            print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(self.solution_labels[0], measured_solution_label[0], default_value[0][0]))
-            prediction_is_final = False
-        else:
-            print("Verification success!")
-            prediction_is_final = True
-        self.solution_labels = measured_solution_label
-        return [self.solution_features], [self.solution_labels], prediction_is_final
-
-
-    def get_new_point(self):
-        pass
 
     def get_result(self, repeater, features, labels):
 

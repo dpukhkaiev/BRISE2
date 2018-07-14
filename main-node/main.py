@@ -35,7 +35,7 @@ def run(APPI_QUEUE=None):
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
     repeater = get_repeater("default", WS)
 
-    print("Measuring default configuration that we will used in regression to evaluate solution... ", end='')
+    print("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]]) #change it to switch inside and devide to
     default_features, default_value = split_features_and_labels(default_result, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print(default_value)
@@ -52,16 +52,15 @@ def run(APPI_QUEUE=None):
     print("Results got. Building model..")
 
     # The main effort does here.
-    # First - Building model.
-    # Second - Verification of model.
-    # Third a - If all is OK - prediction of best configuration and verification it by measuring.
-    # Third b - If model have not been build - continue making predictions using selector and performing experiments.
-    # Fourth a - Go to First (as new data was already measured in Third a).
-    # Fourth b - Make new prediction and experiment,  go to First.
-    # Fifth - Report results.
+    # 1. Loading and building model.
+    # 2. If model built - validation of model.
+    # 3. If model is valid - prediction solution and verification it by measuring.
+    # 4. If solution is OK - reporting and terminating. If not - add it to all data set and go to 1.
+    # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
     finish = False
     while not finish:
+
         model = get_model(model_creation_config=task_config["ModelCreation"],
                           log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
                                                               task_config["ExperimentsConfiguration"]["FileToRead"],
@@ -69,38 +68,50 @@ def run(APPI_QUEUE=None):
                           features=features,
                           labels=labels)
 
-        successfully_built_model = model.build_model(score_min=0.85,
-                                                     searchspace=search_space)
+        model_built = model.build_model(score_min=task_config["ModelCreation"]["MinimumAccuracy"])
 
-        if not successfully_built_model:
-            print("New data point needed to continue building model. Current number of data points: %s" % str(selector.numOfGeneratedPoints))
-            print('='*100)
-            cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
+        if model_built:
+            model_validated = model.validate_model(search_space=search_space)
 
-            # TODO: Discuss following commented step, because its domain - specific.
-            # if self.solution_features:
-            #     cur_task.append(self.solution_features)
-            results = repeater.measure_task(cur_task, default_point=default_result[0])
-            new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
-            features += new_feature
-            labels += new_label
+            if model_validated:
+                predicted_labels, predicted_features = model.predict_solution(search_space=search_space)
+                print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
+                validated_labels, finish = model.validate_solution(task_config=task_config["ModelCreation"],
+                                                                   repeater=repeater,
+                                                                   default_value=default_value,
+                                                                   predicted_features=predicted_features)
 
-            # If BRISE cannot finish his work properly - terminate it.
-            if len(features) > len(search_space):
-                print("Unable to finish normally, terminating with best of measured results.")
-                model.solution_labels = min(labels)
-                model.solution_features = features[labels.index(model.solution_labels)]
-                print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
-                finish = True
+                features += predicted_features
+                labels += validated_labels
 
-        elif successfully_built_model:
-            predicted_features, predicted_labels, prediction_is_final = model.predict_and_validate(task_config["ModelCreation"], repeater, default_value)
-            features += predicted_features
-            labels += predicted_labels
-            if prediction_is_final:
-                finish = True
+                if finish:
+                    optimal_result, optimal_config = model.get_result(repeater, features, labels)
+                    return optimal_result, optimal_config
 
-    optimal_result, optimal_config = model.get_result(repeater, features, labels)
+                else:
+                    continue
+
+        print("New data point needed to continue process of balancing. "
+              "Number of data points retrieved from the selection algorithm: %s" % str(selector.numOfGeneratedPoints))
+        print('='*120)
+        cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
+
+        # TODO: Discuss following commented step, because its domain - specific.
+        # if self.solution_features:
+        #     cur_task.append(self.solution_features)
+        results = repeater.measure_task(cur_task, default_point=default_result[0])
+        new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
+        features += new_feature
+        labels += new_label
+
+        # If BRISE cannot finish his work properly - terminate it.
+        if len(features) > len(search_space):
+            print("Unable to finish normally, terminating with best of measured results.")
+            model.solution_labels = min(labels)
+            model.solution_features = features[labels.index(model.solution_labels)]
+            print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
+            optimal_result, optimal_config = model.get_result(repeater, features, labels)
+            return optimal_result, optimal_config
 
 if __name__ == "__main__":
     filterwarnings("ignore")    # disable warnings for demonstration.
