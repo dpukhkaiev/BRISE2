@@ -5,8 +5,8 @@ class Model(ABC):
     def build_model(self): pass
 
     @abstractmethod
-    def validate(self): pass
-    
+    def predict_and_validate(self): pass
+
     @abstractmethod
     def get_new_point(self): pass
 

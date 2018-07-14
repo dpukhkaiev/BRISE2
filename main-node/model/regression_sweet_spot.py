@@ -13,10 +13,10 @@ from tools.features_tools import split_features_and_labels
 
 class RegressionSweetSpot(Model):
 
-    def __init__(self, output_filename, test_size, features, labels):
+    def __init__(self, log_file_name, test_size, features, labels):
         """
         Initialization of regression model. It will
-        :param output_filename: - reserved :D
+        :param log_file_name: - string, location of file, which will store results of model creation
         :param test_size: float number, displays size of test data set
         :param features:  features in machine learning meaning selected by Sobol
         :param targets: labels in machine learning meaning selected by Sobol
@@ -25,7 +25,7 @@ class RegressionSweetSpot(Model):
         self.test_size = test_size
         self.all_features = features
         self.all_labels = labels
-        self.filename = output_filename
+        self.log_file_name = log_file_name
         self.model = None
         self.accuracy = 0
         self.solution_ready = False
@@ -71,7 +71,7 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def build_model(self, param, score_min, searchspace, degree=6):
+    def build_model(self, score_min, searchspace, degree=6):
 
         # Build model if was not built.
         if not self.model:
@@ -86,9 +86,9 @@ class RegressionSweetSpot(Model):
 
         # Check if the model is adequate - write it.
         if self.solution_labels[0] >= 0:
-            f = open(self.filename, "a")
-            f.write("Parameters:\n")
-            f.write(str(param)+"\n")
+            f = open(self.log_file_name, "a")
+            f.write("Search space::\n")
+            f.write(str(searchspace)+"\n")
             f.write("Testing size = " + str(self.test_size) + "\n")
             # f.write("Degree = " + str(degree)+ "\n")
             for i in range(degree+1):
@@ -126,7 +126,7 @@ class RegressionSweetSpot(Model):
         from tools.splitter import Splitter
 
         all_data = []
-        file_path = "./csv/" + load_task()["params"]["FileToRead"]
+        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["FileToRead"]
         spl = Splitter(file_path)
 
         for point in self.all_features:
@@ -143,58 +143,47 @@ class RegressionSweetSpot(Model):
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def validate(self, success, task, repeater, selector, default_value, default_result, search_space, features, labels):
-        if success:
-            # validate() in regression
-            print("Model build with accuracy: %s" % self.accuracy)
-            print("Verifying solution that model gave..")
-            real_result = split_features_and_labels(repeater.measure_task([self.solution_features]), task["params"]["ResultFeatLabels"])[1][0]
+    def predict_and_validate(self, task_config, repeater, default_value):
+        # validate() in regression
+        print("Model build with accuracy: %s" % self.accuracy)
+        print("Verifying solution that model gave..")
+        solution_candidate = repeater.measure_task([self.solution_features])
+        measured_solution_label = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])[1][0]
+        # If our measured energy higher than default best value - add this point to data set and rebuild model.
+        #validate false
+        if measured_solution_label > default_value[0]:
+            print("Predicted energy larger than default.")
+            print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(self.solution_labels[0], measured_solution_label[0], default_value[0][0]))
+            prediction_is_final = False
+        else:
+            print("Verification success!")
+            prediction_is_final = True
+        self.solution_labels = measured_solution_label
+        return [self.solution_features], [self.solution_labels], prediction_is_final
 
-            # If our measured energy higher than default best value - add this point to data set and rebuild model.
-            #validate false
-            if real_result > default_value[0]:
-                features += [self.solution_features]
-                labels += [real_result]
-                print("Predicted energy larger than default.")
-                print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(self.solution_labels[0], real_result[0], default_value[0][0]))
-                success = False
-            return features, labels, real_result, success
-
-        if not success:
-            # get new point from selection alg
-            print("New data point needed to continue building regression. Current number of data points: %s" % str(selector.numOfGeneratedPoints))
-            print('='*100)
-            # cur_task = [sobol.getNextPoint()]
-            cur_task = [selector.get_next_point() for x in range(task['params']['step'])]
-            if self.solution_features:
-                cur_task.append(self.solution_features)
-            results = repeater.measure_task(cur_task, default_point=default_result[0])
-            new_feature, new_label = split_features_and_labels(results, task["params"]["ResultFeatLabels"])
-            features += new_feature
-            labels += new_label
-            # fail rip
-            if len(features) > len(search_space):
-                print("Unable to finish normally, terminating with best results")
-                self.solution_labels = min(labels)
-                self.solution_features = features[labels.index(self.solution_labels)]
-                print("Measured best config: %s, energy: %s" % (str(self.solution_features), str(self.solution_labels)))
-                success = True
-            return features, labels, self.solution_labels, success
 
     def get_new_point(self):
         pass
 
-    def get_result(self, features, repeater, measured_energy):
+    def get_result(self, repeater, features, labels):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
 
-        self.solution_labels = min(self.all_labels)
-        index_of_the_best_labelse = self.all_labels.index(self.solution_labels)
-        self.solution_features = self.all_features[index_of_the_best_labelse]
+        print("\n\nFinal report:")
 
-        print("\n\nPredicted energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
-        print("Number of measured points: %s" % len(features))
+        if min(labels) < self.solution_labels:
+            print("Configuration(%s) quality(%s), "
+                  "\nthat model gave worse that one of measured previously, but better than default."
+                  "\nReporting best of measured." %
+                  (self.solution_features, self.solution_labels))
+            self.solution_labels = min(labels)
+            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
+            self.solution_features = self.all_features[index_of_the_best_labels]
+
+        print("ALL MEASURED FEATURES:\n%s" % str(features))
+        print("ALL MEASURED LABELS:\n%s" % str(labels))
+        print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Measured energy is: %s" % str(measured_energy[0]))
+        print("Best found energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
         return self.solution_labels, self.solution_features
