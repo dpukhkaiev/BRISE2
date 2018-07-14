@@ -8,9 +8,7 @@ services:
     environment:
       - workername=alpha
     networks:
-      worker_net:
-        aliases:
-          - alpha
+      - worker_net
     ports:
       - "1831:8080"  # if direct access is required
     # volumes:
@@ -22,9 +20,7 @@ services:
     environment:
       - workername=beta
     networks:
-      worker_net:
-        aliases:
-          - beta
+      - worker_net
     ports:
       - "1832:8080" # if direct access is required
     # volumes:
@@ -35,9 +31,7 @@ services:
      environment:
        - workername=gamma
      networks:
-       worker_net:
-         aliases:
-           - gamma
+       - worker_net
      ports:
        - "1833:8080" # if direct access is required
   #   volumes:
@@ -63,7 +57,6 @@ services:
     environment:
       - FLASK_APP=worker_service/__init__.py
       - FLASK_DEBUG=1
-      - WORKER_COUNT=2 # depends of workers instance. [alpha, beta, gamma, delta]
 
   main_node:
     build: ./main-node/
@@ -71,16 +64,14 @@ services:
     tty: true
     container_name: main-node
     networks:
-      worker_net:
-        aliases:
-          - main-node
+     - worker_net
     ports:
       - "2222:2222"
       - "5000:5000"
     depends_on:
       - "w_service"
-    volumes:
-      - "./main-node/Results:/root/Results"
+#    volumes:
+#      - "./main-node/Results:/root/Results"
 
 networks:
   worker_net:

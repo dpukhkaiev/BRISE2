@@ -1,18 +1,26 @@
 {
-    "task_name"  : "energy_consumption",
-    "params": {
-      "ExperimentNumber"  : 1,
-      "ModelTestSize"     : 0.9,
-      "NumberOfInitialExperiments"   : 10,
-      "step"              : 2,
-      "SelectionType"     : "SobolSequence",
-      "ModelType"         : "regression",
-      "DecisionFunction"  : "student_deviation",
-      "DataFile"          : "./Resources/taskData.json",
-      "FileToRead"        : "Radix-500mio.csv",
-      "FeatureNames"      : ["frequency", "threads"],
-      "ResultStructure"   : ["frequency", "threads", "energy"],
-      "ResultDataTypes"  : ["float", "int", "float"],
-      "ResultFeatLabels"  : ["feature", "feature", "label"]
-    }
+      "DomainDescription":{
+        "FeatureNames"      : ["frequency", "threads"],
+        "DataFile"          : "./Resources/taskData.json",
+        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
+        "DefaultConfiguration": [2900.0, 32]
+
+      },
+      "SelectionAlgorithm":{
+        "SelectionType"     : "SobolSequence",
+        "NumberOfInitialExperiments"   : 10,
+        "Step"              : 1
+      },
+      "ExperimentsConfiguration":{
+        "TaskName"          : "energy_consumption",
+        "FileToRead"        : "Radix-500mio.csv",
+        "ResultStructure"   : ["frequency", "threads", "energy"],
+        "ResultDataTypes"  : ["float", "int", "float"],
+        "RepeaterDecisionFunction"  : "student_deviation"
+      },
+      "ModelCreation":{
+        "ModelTestSize"     : 0.9,
+        "ModelType"         : "regression",
+        "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
+      }
 }

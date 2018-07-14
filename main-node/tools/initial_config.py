@@ -4,53 +4,55 @@ Module to read config and tasks for execute
 import json
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
 
-def readGlobalConfig(fileName):
+
+def read_global_config(global_config_path):
+    """
+    Method reads configuration for BRISE from GlobalConfig.json configuration file.
+    :param global_config_path: sting path to file.
+    :return: dict with configuration for BRISE
+    """
     try:
-        config = load_json_file(fileName)
+        config = load_json_file(global_config_path)
         return config
 
     except IOError as e:
         print('No config file found!')
         print(e)
-        # return {}
         exit(3)
     except ValueError as e:
         print('Invalid config file!')
         print(e)
-        # return {}
         exit(3)
+
 
 def load_task(path_to_file="./Resources/task.json"):
     """
-    Method reads task.json file where task name and task parameters, that are needed to be sent to the workers specified.
+    Method reads task configuration from task.json file.
     :param path_to_file: sting path to task file.
-    :return: dict with task name, task parameters and task data in ndarray
+    :return: dict with task parameters and task data.
     """
     try:
         task = load_json_file(path_to_file)
-        data = load_json_file(task["params"]["DataFile"])
+        data = load_json_file(task["DomainDescription"]["DataFile"])
         taskDataPoints = []
-        for dimension in task["params"]["FeatureNames"]:
-            taskDataPoints.append(data["all_data"][dimension])
+        for dimension in task["DomainDescription"]["FeatureNames"]:
+            taskDataPoints.append(data[dimension])
+        task["DomainDescription"]["AllConfigurations"] = taskDataPoints
     except IOError as e:
         print("Error with reading task.json file: %s" % e)
         exit(1)
     except json.JSONDecodeError as e:
         print("Error with decoding task: %s" % e)
         exit(1)
-    return {"task_name"         : task["task_name"],
-            "params"            : task["params"],
-            "TaskDataPoints"    : taskDataPoints,
-            "default_point"      : data["default_point"]}
+    return task
 
-def initialize_config(globalConfigPath='./GlobalConfig.json', taskPath="./Resources/task.json"):
+def initialize_config(global_config_path='./GlobalConfig.json', taskPath="./Resources/task.json"):
     """
-    Method reads .json file
-    :param path_to_file: sting path to file.
-    :return: object that represent .json file
+    Load global config and task config.
+    :return: (dict globalConfiguration, dict taskConfiguration)
     """
     #   Reading config file 
-    globalConfig = readGlobalConfig(globalConfigPath)
+    globalConfig = read_global_config(global_config_path)
 
     #   Loading task config and creating config points distribution according to Sobol.
     # {"task_name": String, "params": Dict, "taskDataPoints": List of points }
