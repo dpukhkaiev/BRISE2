@@ -1,19 +1,15 @@
-.focus, .stack, .result {
-  display: inline-block;
-  overflow: auto;
-      align-items: baseline;
-}
-.focus {
-    /* position: sticky; */
-    /* bottom:20%; */
-}
-.stack {
-    /* align-items: baseline; */
+.box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: flex-start
 }
 
-/* .mat-grid-tile .mat-figure {
-  height: auto
-} */
+.stack, .result {
+  flex-grow: 2;
+  min-width: 250px;
+}
 
 /* Selected item */
 .selected {

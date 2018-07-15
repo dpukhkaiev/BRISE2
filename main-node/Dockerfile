@@ -27,7 +27,10 @@ RUN apt-get update \
     && python3 -m pip install requests \
     && python3 -m pip install --upgrade pip \
     && python3 -m pip install Flask \
-    && python3 -m pip install flask-cors
+    && python3 -m pip install flask-cors \
+    && python3 -m pip install flask-socketio \
+    && python3 -m pip install python-socketio
+    
 
 
 COPY . /root

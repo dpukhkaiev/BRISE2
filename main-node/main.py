@@ -12,8 +12,36 @@ from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
 from selection.selection_algorithms import get_selector
 
+#####
+import socket
+# def client_connection():
+#     IP = '0.0.0.0'
+#     PORT = 9090
+#     address = (IP, PORT)
+#     socket_client = socket.socket()
+#     socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     socket_client.connect(address)
+#     return socket_client
+
+# def client_stop_connection(socket_client):
+#     socket_client.close()
+
+IP = '0.0.0.0'
+PORT = 9090
+address = (IP, PORT)
+socket_client = socket.socket()
+socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+socket_client.connect(address)
+#####
+
 
 def run(APPI_QUEUE=None):
+
+    # address = (IP, PORT)
+    # socket_client = socket.socket()
+    # socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # socket_client.connect(address)
+
 
     global_config, task_config = initialize_config()
     # Generate whole search space for regression.
@@ -36,8 +64,8 @@ def run(APPI_QUEUE=None):
     repeater = get_repeater("default", WS)
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]]) #change it to switch inside and devide to
-    default_features, default_value = split_features_and_labels(default_result, task_config["ModelCreation"]["FeaturesLabelsStructure"])
+    default_result = repeater.measure_task([task_config["default_point"]], socket_client) #change it to switch inside and devide to
+    default_features, default_value = split_features_and_labels(default_result, task_config["params"]["ResultFeatLabels"])
     print(default_value)
 
     if APPI_QUEUE:
@@ -47,7 +75,7 @@ def run(APPI_QUEUE=None):
           "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"], WS=WS)
-    results = repeater.measure_task(initial_task, default_point=default_result[0])
+    results = repeater.measure_task(initial_task, socket_client, default_point=default_result[0])
     features, labels = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print("Results got. Building model..")
 
@@ -68,7 +96,7 @@ def run(APPI_QUEUE=None):
                           features=features,
                           labels=labels)
 
-        model_built = model.build_model(score_min=task_config["ModelCreation"]["MinimumAccuracy"])
+        model_built = model.build_model(socket_client, score_min=task_config["ModelCreation"]["MinimumAccuracy"])
 
         if model_built:
             model_validated = model.validate_model(search_space=search_space)
@@ -76,7 +104,7 @@ def run(APPI_QUEUE=None):
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(task_config=task_config["ModelCreation"],
+                validated_labels, finish = model.validate_solution(socket_client, task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)

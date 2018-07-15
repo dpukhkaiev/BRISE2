@@ -32,7 +32,7 @@ class RegressionSweetSpot(Model):
         self.solution_features = None
         self.solution_labels = None
 
-    def build_model(self, degree=6, score_min=0.85, tries=20):
+    def build_model(self, socket_client, degree=6, score_min=0.85, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -54,6 +54,10 @@ class RegressionSweetSpot(Model):
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
+
+                    msg = str(best_model).encode()
+                    socket_client.sendall(msg)
+
                     self.accuracy = best_got
                     print("Regression model built with %s test size and %s accuracy." % (
                         self.test_size, self.accuracy))
@@ -98,12 +102,26 @@ class RegressionSweetSpot(Model):
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, search_space):
+    def predict_solution(self, search_space, socket_client):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
             :param search_space: list of data points (each data point is also a list).
             :return: lowest value, and related features.
             """
+
+            msg = str("** Regression").encode()
+            socket_client.sendall(msg)
+
+            for (idx,val) in enumerate(self.model.predict(search_space)):
+                msg = str(search_space[idx]) + str(' = ') + str(val) + "\n"
+                print ("---- reg:  " + msg)
+                msg = msg.encode()
+                socket_client.sendall(msg)
+                msg = ""
+
+            msg = str("** Regression end").encode()
+            socket_client.sendall(msg)
+
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]
 
