@@ -109,7 +109,7 @@ def run(APPI_QUEUE=None):
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
 
-                features += predicted_features
+                features += [predicted_features]
                 labels += validated_labels
 
                 if finish:
