@@ -9,16 +9,30 @@ import { elementEventFullName } from '@angular/compiler/src/view_compiler/view_c
 })
 export class Ch1Component implements OnInit {
 
-  @ViewChild('ch1') el: ElementRef;  
+  @ViewChild('chart1') elem: ElementRef;
+
   constructor() { }
 
   ngOnInit() {
     this.render()
   }
 
+  _normal() {
+    var x = 0,
+      y = 0,
+      rds, c;
+    do {
+      x = Math.random() * 2 - 1;
+      y = Math.random() * 2 - 1;
+      rds = x * x + y * y;
+    } while (rds == 0 || rds > 1);
+    c = Math.sqrt(-2 * Math.log(rds) / rds); // Box-Muller transform
+    return x * c; // throw away extra sample y * c
+  }
+
   render() {
 
-    const element = this.el
+    const element = this.elem.nativeElement
 
     var N = 2000,
       a = -1,
@@ -102,21 +116,10 @@ export class Ch1Component implements OnInit {
       }
     };
 
+
+
     Plotly.newPlot(element, data, layout);
     
   }
 
-
-  _normal() {
-    var x = 0,
-      y = 0,
-      rds, c;
-    do {
-      x = Math.random() * 2 - 1;
-      y = Math.random() * 2 - 1;
-      rds = x * x + y * y;
-    } while (rds == 0 || rds > 1);
-    c = Math.sqrt(-2 * Math.log(rds) / rds); // Box-Muller transform
-    return x * c; // throw away extra sample y * c
-  }
 }
