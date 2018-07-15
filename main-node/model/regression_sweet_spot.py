@@ -56,7 +56,7 @@ class RegressionSweetSpot(Model):
                     self.model = best_model
 
                     msg = str(best_model).encode()
-                    socket_client.sendall(msg)
+                    # socket_client.sendall(msg)
 
                     self.accuracy = best_got
                     print("Regression model built with %s test size and %s accuracy." % (
@@ -68,7 +68,7 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def validate_model(self, search_space, degree=6):
+    def validate_model(self, socket_client, search_space, degree=6):
 
         # Check if model was built.
         if not self.model:
@@ -77,7 +77,7 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space)
 
         # Check if the model is adequate - write it.
-        predicted_labels, predicted_features = self.predict_solution(search_space)
+        predicted_labels, predicted_features = self.predict_solution(socket_client, search_space)
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -102,7 +102,7 @@ class RegressionSweetSpot(Model):
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, search_space, socket_client):
+    def predict_solution(self, socket_client, search_space):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
             :param search_space: list of data points (each data point is also a list).
@@ -110,29 +110,29 @@ class RegressionSweetSpot(Model):
             """
 
             msg = str("** Regression").encode()
-            socket_client.sendall(msg)
+            # socket_client.sendall(msg)
 
             for (idx,val) in enumerate(self.model.predict(search_space)):
                 msg = str(search_space[idx]) + str(' = ') + str(val) + "\n"
-                print ("---- reg:  " + msg)
+                # print ("---- reg:  " + msg)
                 msg = msg.encode()
-                socket_client.sendall(msg)
+                # socket_client.sendall(msg)
                 msg = ""
 
             msg = str("** Regression end").encode()
-            socket_client.sendall(msg)
+            # socket_client.sendall(msg)
 
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]
 
-    def validate_solution(self, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, socket_client, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
-        solution_candidate = repeater.measure_task([predicted_features])
-        measured_solution_label = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])[1][0]
+        solution_candidate = repeater.measure_task([predicted_features], socket_client)
+        measured_solution_label = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])[1]
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
-        if measured_solution_label > default_value[0]:
+        if measured_solution_label > default_value:
             print("Predicted energy larger than default.")
             print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
                 predicted_features[0], measured_solution_label[0], default_value[0][0]))
@@ -140,7 +140,7 @@ class RegressionSweetSpot(Model):
         else:
             print("Solution validation success!")
             prediction_is_final = True
-        self.solution_labels = measured_solution_label
+        self.solution_labels = [measured_solution_label]
         return [self.solution_labels], prediction_is_final
 
     def resplit_data(self):

@@ -58,7 +58,7 @@ class Repeater(ABC):
                     # data = str(socket_client.recv(1024).decode())
                     # if (data == "ready" or data == "got"):
                     msg = str(result).encode()
-                    socket_client.sendall(msg)
+                    # socket_client.sendall(msg)
                     
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result

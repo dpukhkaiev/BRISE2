@@ -31,7 +31,7 @@ PORT = 9090
 address = (IP, PORT)
 socket_client = socket.socket()
 socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-socket_client.connect(address)
+# socket_client.connect(address)
 #####
 
 
@@ -64,8 +64,8 @@ def run(APPI_QUEUE=None):
     repeater = get_repeater("default", WS)
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["default_point"]], socket_client) #change it to switch inside and devide to
-    default_features, default_value = split_features_and_labels(default_result, task_config["params"]["ResultFeatLabels"])
+    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], socket_client) #change it to switch inside and devide to
+    default_features, default_value = split_features_and_labels(default_result, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print(default_value)
 
     if APPI_QUEUE:
@@ -99,10 +99,10 @@ def run(APPI_QUEUE=None):
         model_built = model.build_model(socket_client, score_min=task_config["ModelCreation"]["MinimumAccuracy"])
 
         if model_built:
-            model_validated = model.validate_model(search_space=search_space)
+            model_validated = model.validate_model(socket_client, search_space=search_space)
 
             if model_validated:
-                predicted_labels, predicted_features = model.predict_solution(search_space=search_space)
+                predicted_labels, predicted_features = model.predict_solution(socket_client, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
                 validated_labels, finish = model.validate_solution(socket_client, task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
@@ -127,7 +127,7 @@ def run(APPI_QUEUE=None):
         # TODO: Discuss following commented step, because its domain - specific.
         # if self.solution_features:
         #     cur_task.append(self.solution_features)
-        results = repeater.measure_task(cur_task, default_point=default_result[0])
+        results = repeater.measure_task(cur_task, socket_client, default_point=default_result[0])
         new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
         features += new_feature
         labels += new_label
