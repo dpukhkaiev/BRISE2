@@ -129,19 +129,20 @@ class RegressionSweetSpot(Model):
         # validate() in regression
         print("Verifying solution that model gave..")
         solution_candidate = repeater.measure_task([predicted_features], socket_client)
-        measured_solution_label = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])[1]
+        solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
-        if measured_solution_label > default_value:
+        if solution_labels > default_value:
             print("Predicted energy larger than default.")
             print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
-                predicted_features[0], measured_solution_label[0], default_value[0][0]))
+                predicted_features[0], solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
             print("Solution validation success!")
             prediction_is_final = True
-        self.solution_labels = [measured_solution_label]
-        return [self.solution_labels], prediction_is_final
+        self.solution_labels = solution_labels
+        self.solution_features = solution_feature
+        return self.solution_labels, prediction_is_final
 
     def resplit_data(self):
         """
@@ -186,14 +187,14 @@ class RegressionSweetSpot(Model):
 
         print("\n\nFinal report:")
 
-        if min(labels) < self.solution_labels:
+        if min(labels) < self.solution_labels[0]:
             print("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
                   (self.solution_features, self.solution_labels))
-            self.solution_labels = min(labels)
+            self.solution_labels = [min(labels)]
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
+            self.solution_features = [self.all_features[index_of_the_best_labels]]
 
         print("ALL MEASURED FEATURES:\n%s" % str(features))
         print("ALL MEASURED LABELS:\n%s" % str(labels))
