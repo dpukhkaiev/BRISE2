@@ -105,7 +105,7 @@ def run(APPI_QUEUE=None):
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(socket_client, APPI_QUEUE, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(socket_client, task_config=task_config["ModelCreation"],
+                validated_labels, finish = model.validate_solution(socket_client, APPI_QUEUE, task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
@@ -114,7 +114,7 @@ def run(APPI_QUEUE=None):
                 labels += validated_labels
 
                 if finish:
-                    optimal_result, optimal_config = model.get_result(repeater, features, labels)
+                    optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE)
                     return optimal_result, optimal_config
 
                 else:
@@ -139,8 +139,7 @@ def run(APPI_QUEUE=None):
             model.solution_labels = min(labels)
             model.solution_features = features[labels.index(model.solution_labels)]
             print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
-            optimal_result, optimal_config = model.get_result(repeater, features, labels)
-
+            optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE)
             return optimal_result, optimal_config
 
 if __name__ == "__main__":
