@@ -128,10 +128,10 @@ class RegressionSweetSpot(Model):
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]
 
-    def validate_solution(self, socket_client, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, socket_client, APPI_QUEUE, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
-        solution_candidate = repeater.measure_task([predicted_features], socket_client)
+        solution_candidate = repeater.measure_task([predicted_features], socket_client, APPI_QUEUE)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
@@ -183,7 +183,7 @@ class RegressionSweetSpot(Model):
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def get_result(self, repeater, features, labels):
+    def get_result(self, repeater, features, labels, APPI_QUEUE):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
@@ -204,4 +204,11 @@ class RegressionSweetSpot(Model):
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
+
+        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+        value = round(self.solution_labels[0], 2)
+        if APPI_QUEUE:
+            APPI_QUEUE.put(
+                {"best point": {'configuration': configuration, "result": value}})
+
         return self.solution_labels, self.solution_features
