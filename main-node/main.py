@@ -36,6 +36,7 @@ socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
 def run(APPI_QUEUE=None):
+    filterwarnings("ignore") # disable warnings for demonstration.
 
     # address = (IP, PORT)
     # socket_client = socket.socket()
@@ -96,13 +97,13 @@ def run(APPI_QUEUE=None):
                           features=features,
                           labels=labels)
 
-        model_built = model.build_model(socket_client, score_min=task_config["ModelCreation"]["MinimumAccuracy"])
+        model_built = model.build_model(score_min=task_config["ModelCreation"]["MinimumAccuracy"])
 
         if model_built:
-            model_validated = model.validate_model(socket_client, search_space=search_space)
+            model_validated = model.validate_model(socket_client, APPI_QUEUE, search_space=search_space)
 
             if model_validated:
-                predicted_labels, predicted_features = model.predict_solution(socket_client, search_space=search_space)
+                predicted_labels, predicted_features = model.predict_solution(socket_client, APPI_QUEUE, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
                 validated_labels, finish = model.validate_solution(socket_client, task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
@@ -139,6 +140,7 @@ def run(APPI_QUEUE=None):
             model.solution_features = features[labels.index(model.solution_labels)]
             print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
             optimal_result, optimal_config = model.get_result(repeater, features, labels)
+
             return optimal_result, optimal_config
 
 if __name__ == "__main__":

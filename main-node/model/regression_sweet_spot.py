@@ -32,7 +32,7 @@ class RegressionSweetSpot(Model):
         self.solution_features = None
         self.solution_labels = None
 
-    def build_model(self, socket_client, degree=6, score_min=0.85, tries=20):
+    def build_model(self, degree=6, score_min=0.85, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -54,10 +54,6 @@ class RegressionSweetSpot(Model):
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
-
-                    msg = str(best_model).encode()
-                    # socket_client.sendall(msg)
-
                     self.accuracy = best_got
                     print("Regression model built with %s test size and %s accuracy." % (
                         self.test_size, self.accuracy))
@@ -68,7 +64,7 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def validate_model(self, socket_client, search_space, degree=6):
+    def validate_model(self, socket_client, APPI_QUEUE, search_space, degree=6):
 
         # Check if model was built.
         if not self.model:
@@ -77,7 +73,7 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space)
 
         # Check if the model is adequate - write it.
-        predicted_labels, predicted_features = self.predict_solution(socket_client, search_space)
+        predicted_labels, predicted_features = self.predict_solution(socket_client, APPI_QUEUE, search_space)
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -102,7 +98,7 @@ class RegressionSweetSpot(Model):
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, socket_client, search_space):
+    def predict_solution(self, socket_client, APPI_QUEUE, search_space):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
             :param search_space: list of data points (each data point is also a list).
@@ -116,6 +112,13 @@ class RegressionSweetSpot(Model):
                 msg = str(search_space[idx]) + str(' = ') + str(val) + "\n"
                 # print ("---- reg:  " + msg)
                 msg = msg.encode()
+
+                configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
+                value = round(val[0],2)
+                if APPI_QUEUE:
+                    APPI_QUEUE.put(
+                        {"regression": {'configuration': configuration, "result": value}})
+
                 # socket_client.sendall(msg)
                 msg = ""
 
