@@ -64,7 +64,7 @@ def run(APPI_QUEUE=None):
     repeater = get_repeater("default", WS)
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], socket_client) #change it to switch inside and devide to
+    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], socket_client, APPI_QUEUE) #change it to switch inside and devide to
     default_features, default_value = split_features_and_labels(default_result, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print(default_value)
 
@@ -75,7 +75,7 @@ def run(APPI_QUEUE=None):
           "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"], WS=WS)
-    results = repeater.measure_task(initial_task, socket_client, default_point=default_result[0])
+    results = repeater.measure_task(initial_task, socket_client, APPI_QUEUE, default_point=default_result[0])
     features, labels = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print("Results got. Building model..")
 
@@ -127,7 +127,7 @@ def run(APPI_QUEUE=None):
         # TODO: Discuss following commented step, because its domain - specific.
         # if self.solution_features:
         #     cur_task.append(self.solution_features)
-        results = repeater.measure_task(cur_task, socket_client, default_point=default_result[0])
+        results = repeater.measure_task(cur_task, socket_client, APPI_QUEUE, default_point=default_result[0])
         new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
         features += new_feature
         labels += new_label
