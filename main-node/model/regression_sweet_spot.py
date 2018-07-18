@@ -32,7 +32,7 @@ class RegressionSweetSpot(Model):
         self.solution_features = None
         self.solution_labels = None
 
-    def build_model(self, socket_client, degree=6, score_min=0.85, tries=20):
+    def build_model(self, degree=6, score_min=0.85, tries=20):
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -54,10 +54,6 @@ class RegressionSweetSpot(Model):
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
-
-                    msg = str(best_model).encode()
-                    # socket_client.sendall(msg)
-
                     self.accuracy = best_got
                     print("Regression model built with %s test size and %s accuracy." % (
                         self.test_size, self.accuracy))
@@ -68,7 +64,7 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def validate_model(self, socket_client, search_space, degree=6):
+    def validate_model(self, socket_client, APPI_QUEUE, search_space, degree=6):
 
         # Check if model was built.
         if not self.model:
@@ -77,7 +73,7 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space)
 
         # Check if the model is adequate - write it.
-        predicted_labels, predicted_features = self.predict_solution(socket_client, search_space)
+        predicted_labels, predicted_features = self.predict_solution(socket_client, APPI_QUEUE, search_space)
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -102,33 +98,34 @@ class RegressionSweetSpot(Model):
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, socket_client, search_space):
+    def predict_solution(self, socket_client, APPI_QUEUE, search_space):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
             :param search_space: list of data points (each data point is also a list).
             :return: lowest value, and related features.
             """
 
-            msg = str("** Regression").encode()
-            # socket_client.sendall(msg)
-
             for (idx,val) in enumerate(self.model.predict(search_space)):
-                msg = str(search_space[idx]) + str(' = ') + str(val) + "\n"
-                # print ("---- reg:  " + msg)
-                msg = msg.encode()
-                # socket_client.sendall(msg)
-                msg = ""
 
-            msg = str("** Regression end").encode()
-            # socket_client.sendall(msg)
+                configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
+                value = round(val[0],2)
+                msg = str({
+                    "regression": {'configuration': configuration, "result": value}
+                    }).encode()
+                if socket_client is not None:
+                    socket_client.sendall(msg)
+
+                if APPI_QUEUE:
+                    APPI_QUEUE.put(
+                        {"regression": {'configuration': configuration, "result": value}})
 
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]
 
-    def validate_solution(self, socket_client, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, socket_client, APPI_QUEUE, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
-        solution_candidate = repeater.measure_task([predicted_features], socket_client)
+        solution_candidate = repeater.measure_task([predicted_features], socket_client, APPI_QUEUE)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
@@ -180,7 +177,7 @@ class RegressionSweetSpot(Model):
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def get_result(self, repeater, features, labels):
+    def get_result(self, repeater, features, labels, APPI_QUEUE, socket_client):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
@@ -207,4 +204,17 @@ class RegressionSweetSpot(Model):
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
+
+        configuration = [float(self.solution_features[0][0]), int(self.solution_features[0][1])]
+        value = round(self.solution_labels[0][0], 2)
+
+        msg = str({
+            "best point": {'configuration': configuration, "result": value}
+        }).encode()
+        if socket_client is not None:
+            socket_client.sendall(msg)
+
+        if APPI_QUEUE:
+            APPI_QUEUE.put(
+                {"best point": {'configuration': configuration, "result": value}})
         return self.solution_labels, self.solution_features

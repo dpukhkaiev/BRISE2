@@ -2,8 +2,11 @@ __doc__ = """
 Main module for running BRISE configuration balancing."""
 
 import itertools
+import socket
 from logger.default_logger import Logger
+
 from warnings import filterwarnings
+filterwarnings("ignore")    # disable warnings for demonstration.
 
 from WSClient import WSClient
 from model.model_selection import get_model
@@ -12,38 +15,31 @@ from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
 from selection.selection_algorithms import get_selector
 
-#####
-import socket
-# def client_connection():
-#     IP = '0.0.0.0'
-#     PORT = 9090
-#     address = (IP, PORT)
-#     socket_client = socket.socket()
-#     socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#     socket_client.connect(address)
-#     return socket_client
 
-# def client_stop_connection(socket_client):
-#     socket_client.close()
+def client_connection(connection):
+    # TODO: Make it with Aspects
+    socket_client = None
+    IP = '0.0.0.0'
+    PORT = 9090
 
-IP = '0.0.0.0'
-PORT = 9090
-address = (IP, PORT)
-socket_client = socket.socket()
-socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-# socket_client.connect(address)
-#####
+    if connection is False:
+        return socket_client
+    if connection is True:
+        while socket_client is None:
+            address = (IP, PORT)
+            socket_client = socket.socket()
+            socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            socket_client.connect(address)
+        return socket_client
 
 
 def run(APPI_QUEUE=None):
 
-    # address = (IP, PORT)
-    # socket_client = socket.socket()
-    # socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # socket_client.connect(address)
-
-
     global_config, task_config = initialize_config()
+
+    # Connect to socket server
+    socket_client = client_connection(connection=global_config['frontend'])
+
     # Generate whole search space for regression.
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
 
@@ -64,7 +60,7 @@ def run(APPI_QUEUE=None):
     repeater = get_repeater("default", WS)
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], socket_client) #change it to switch inside and devide to
+    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], socket_client, APPI_QUEUE) #change it to switch inside and devide to
     default_features, default_value = split_features_and_labels(default_result, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print(default_value)
 
@@ -75,7 +71,7 @@ def run(APPI_QUEUE=None):
           "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"], WS=WS)
-    results = repeater.measure_task(initial_task, socket_client, default_point=default_result[0])
+    results = repeater.measure_task(initial_task, socket_client, APPI_QUEUE, default_point=default_result[0])
     features, labels = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print("Results got. Building model..")
 
@@ -96,15 +92,16 @@ def run(APPI_QUEUE=None):
                           features=features,
                           labels=labels)
 
-        model_built = model.build_model(socket_client, score_min=task_config["ModelCreation"]["MinimumAccuracy"])
+        model_built = model.build_model(score_min=task_config["ModelCreation"]["MinimumAccuracy"])
 
         if model_built:
-            model_validated = model.validate_model(socket_client, search_space=search_space)
+            model_validated = model.validate_model(socket_client, APPI_QUEUE, search_space=search_space)
 
             if model_validated:
-                predicted_labels, predicted_features = model.predict_solution(socket_client, search_space=search_space)
+                predicted_labels, predicted_features = model.predict_solution(socket_client, APPI_QUEUE, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(socket_client, task_config=task_config["ModelCreation"],
+                validated_labels, finish = model.validate_solution(socket_client, APPI_QUEUE,
+                                                                   task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
@@ -113,7 +110,7 @@ def run(APPI_QUEUE=None):
                 labels += [validated_labels]
 
                 if finish:
-                    optimal_result, optimal_config = model.get_result(repeater, features, labels)
+                    optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
                     return optimal_result, optimal_config
 
                 else:
@@ -127,7 +124,7 @@ def run(APPI_QUEUE=None):
         # TODO: Discuss following commented step, because its domain - specific.
         # if self.solution_features:
         #     cur_task.append(self.solution_features)
-        results = repeater.measure_task(cur_task, socket_client, default_point=default_result[0])
+        results = repeater.measure_task(cur_task, socket_client, APPI_QUEUE, default_point=default_result[0])
         new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
         features += new_feature
         labels += new_label
@@ -135,9 +132,8 @@ def run(APPI_QUEUE=None):
         # If BRISE cannot finish his work properly - terminate it.
         if len(features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
-            optimal_result, optimal_config = model.get_result(repeater, features, labels)
+            optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
             return optimal_result, optimal_config
 
 if __name__ == "__main__":
-    filterwarnings("ignore")    # disable warnings for demonstration.
     run()
