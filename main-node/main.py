@@ -14,35 +14,44 @@ from selection.selection_algorithms import get_selector
 
 #####
 import socket
+
+def client_connection(connection):
+    socket_client = None
+    IP = '0.0.0.0'
+    PORT = 9090
+
+    if connection is False:
+        return socket_client
+    if connection is True:
+        while socket_client is None:
+            address = (IP, PORT)
+            socket_client = socket.socket()
+            socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            socket_client.connect(address)
+        return socket_client
+
+
 # def client_connection():
-#     IP = '0.0.0.0'
-#     PORT = 9090
-#     address = (IP, PORT)
-#     socket_client = socket.socket()
-#     socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#     socket_client.connect(address)
-#     return socket_client
+    # socket_client.close()
+    # IP = '0.0.0.0'
+    # PORT = 9090
+    # address = (IP, PORT)
+    # socket_client = socket.socket()
+    # socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # # socket_client.connect(address)
+    # return
 
-# def client_stop_connection(socket_client):
-#     socket_client.close()
 
-IP = '0.0.0.0'
-PORT = 9090
-address = (IP, PORT)
-socket_client = socket.socket()
-socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-# socket_client.connect(address)
 #####
 
 
 def run(APPI_QUEUE=None):
     filterwarnings("ignore") # disable warnings for demonstration.
 
-    # address = (IP, PORT)
-    # socket_client = socket.socket()
-    # socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # socket_client.connect(address)
 
+    # Connect to socket server
+
+    socket_client = client_connection(True)
 
     global_config, task_config = initialize_config()
     # Generate whole search space for regression.
