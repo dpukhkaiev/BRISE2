@@ -110,7 +110,7 @@ def run(APPI_QUEUE=None):
                                                                    predicted_features=predicted_features)
 
                 features += [predicted_features]
-                labels += validated_labels
+                labels += [validated_labels]
 
                 if finish:
                     optimal_result, optimal_config = model.get_result(repeater, features, labels)
@@ -135,9 +135,6 @@ def run(APPI_QUEUE=None):
         # If BRISE cannot finish his work properly - terminate it.
         if len(features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
-            model.solution_labels = min(labels)
-            model.solution_features = features[labels.index(model.solution_labels)]
-            print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
             optimal_result, optimal_config = model.get_result(repeater, features, labels)
             return optimal_result, optimal_config
 
