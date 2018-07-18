@@ -42,8 +42,7 @@ def run(APPI_QUEUE=None):
     global_config, task_config = initialize_config()
 
     # Connect to socket server
-    connection_frontend = bool(global_config['frontend'])
-    socket_client = client_connection(connection=connection_frontend)
+    socket_client = client_connection(connection=global_config['frontend'])
 
     # Generate whole search space for regression.
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
