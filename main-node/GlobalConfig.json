@@ -7,5 +7,5 @@
     "logging_level" : "DEBUG",
     "log_filename"  : "BRISE.log",
 
-    "frontend" : "True"
+    "frontend" : false
 }
