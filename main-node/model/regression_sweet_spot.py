@@ -105,25 +105,19 @@ class RegressionSweetSpot(Model):
             :return: lowest value, and related features.
             """
 
-            msg = str("** Regression").encode()
-            if socket_client is not None:
-                socket_client.sendall(msg)
-
             for (idx,val) in enumerate(self.model.predict(search_space)):
-                msg = str(search_space[idx]) + str(' = ') + str(val) + "\n"
-                msg = msg.encode()
-                if socket_client is not None:
-                    socket_client.sendall(msg)
 
                 configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
                 value = round(val[0],2)
+                msg = str({
+                    "regression": {'configuration': configuration, "result": value}
+                    }).encode()
+                if socket_client is not None:
+                    socket_client.sendall(msg)
+
                 if APPI_QUEUE:
                     APPI_QUEUE.put(
                         {"regression": {'configuration': configuration, "result": value}})
-
-            msg = str("** Regression end").encode()
-            if socket_client is not None:
-                socket_client.sendall(msg)
 
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]
@@ -183,7 +177,7 @@ class RegressionSweetSpot(Model):
         score = self.model.score(features, labels)
         print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def get_result(self, repeater, features, labels, APPI_QUEUE):
+    def get_result(self, repeater, features, labels, APPI_QUEUE, socket_client):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
@@ -207,6 +201,13 @@ class RegressionSweetSpot(Model):
 
         configuration = [float(self.solution_features[0][0]), int(self.solution_features[0][1])]
         value = round(self.solution_labels[0][0], 2)
+
+        msg = str({
+            "best point": {'configuration': configuration, "result": value}
+        }).encode()
+        if socket_client is not None:
+            socket_client.sendall(msg)
+
         if APPI_QUEUE:
             APPI_QUEUE.put(
                 {"best point": {'configuration': configuration, "result": value}})

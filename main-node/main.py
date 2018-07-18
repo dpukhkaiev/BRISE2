@@ -16,6 +16,7 @@ from selection.selection_algorithms import get_selector
 import socket
 
 def client_connection(connection):
+    # TODO: Make it with Aspects
     socket_client = None
     IP = '0.0.0.0'
     PORT = 9090
@@ -113,7 +114,7 @@ def run(APPI_QUEUE=None):
                 labels += validated_labels
 
                 if finish:
-                    optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE)
+                    optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
                     return optimal_result, optimal_config
 
                 else:
@@ -138,7 +139,7 @@ def run(APPI_QUEUE=None):
             model.solution_labels = min(labels)
             model.solution_features = features[labels.index(model.solution_labels)]
             print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
-            optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE)
+            optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
             return optimal_result, optimal_config
 
 if __name__ == "__main__":
