@@ -16,6 +16,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+# hide HTTP request logs
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 IP = '0.0.0.0'
 PORT = 9090    
 

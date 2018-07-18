@@ -30,18 +30,6 @@ def client_connection(connection):
             socket_client.connect(address)
         return socket_client
 
-
-# def client_connection():
-    # socket_client.close()
-    # IP = '0.0.0.0'
-    # PORT = 9090
-    # address = (IP, PORT)
-    # socket_client = socket.socket()
-    # socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # # socket_client.connect(address)
-    # return
-
-
 #####
 
 
@@ -49,11 +37,13 @@ def run(APPI_QUEUE=None):
     filterwarnings("ignore") # disable warnings for demonstration.
 
 
-    # Connect to socket server
-
-    socket_client = client_connection(True)
 
     global_config, task_config = initialize_config()
+
+    # Connect to socket server
+    connection_frontend = bool(global_config['frontend'])
+    socket_client = client_connection(connection=connection_frontend)
+
     # Generate whole search space for regression.
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
 
