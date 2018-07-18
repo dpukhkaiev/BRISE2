@@ -55,11 +55,14 @@ class Repeater(ABC):
                 if result:
                     print("Point %s finished after %s measurements. Result: %s" % (str(point), len(self.history.get(point)), str(result)))
 
-                    msg = str(result).encode()
+                    configuration = [result[0], result[1]]
+
+                    msg = str({
+                        "measured task": {'configuration': configuration, "result": result[2]}
+                    }).encode()
                     if socket_client is not None:
                         socket_client.sendall(msg)
 
-                    configuration = [result[0], result[1]]
                     if APPI_QUEUE:
                         APPI_QUEUE.put(
                             {"measured task": {'configuration': configuration, "result": result[2]}})
