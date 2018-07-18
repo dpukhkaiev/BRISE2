@@ -106,12 +106,14 @@ class RegressionSweetSpot(Model):
             """
 
             msg = str("** Regression").encode()
-            # socket_client.sendall(msg)
+            if socket_client is not None:
+                socket_client.sendall(msg)
 
             for (idx,val) in enumerate(self.model.predict(search_space)):
                 msg = str(search_space[idx]) + str(' = ') + str(val) + "\n"
-                # print ("---- reg:  " + msg)
                 msg = msg.encode()
+                if socket_client is not None:
+                    socket_client.sendall(msg)
 
                 configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
                 value = round(val[0],2)
@@ -119,11 +121,9 @@ class RegressionSweetSpot(Model):
                     APPI_QUEUE.put(
                         {"regression": {'configuration': configuration, "result": value}})
 
-                # socket_client.sendall(msg)
-                msg = ""
-
             msg = str("** Regression end").encode()
-            # socket_client.sendall(msg)
+            if socket_client is not None:
+                socket_client.sendall(msg)
 
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]

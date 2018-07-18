@@ -54,15 +54,15 @@ class Repeater(ABC):
                 result = self.decision_function(self.history, point, **decis_func_config)
                 if result:
                     print("Point %s finished after %s measurements. Result: %s" % (str(point), len(self.history.get(point)), str(result)))
-                    
-                    # data = str(socket_client.recv(1024).decode())
-                    # if (data == "ready" or data == "got"):
+
                     msg = str(result).encode()
+                    if socket_client is not None:
+                        socket_client.sendall(msg)
+
                     configuration = [result[0], result[1]]
                     if APPI_QUEUE:
                         APPI_QUEUE.put(
                             {"measured task": {'configuration': configuration, "result": result[2]}})
-                    # socket_client.sendall(msg)
                     
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
