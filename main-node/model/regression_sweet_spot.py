@@ -137,8 +137,8 @@ class RegressionSweetSpot(Model):
         else:
             print("Solution validation success!")
             prediction_is_final = True
-        self.solution_labels = solution_labels
-        self.solution_features = solution_feature
+        self.solution_labels = solution_labels[0]
+        self.solution_features = solution_feature[0]
         return self.solution_labels, prediction_is_final
 
     def resplit_data(self):
@@ -184,23 +184,29 @@ class RegressionSweetSpot(Model):
 
         print("\n\nFinal report:")
 
-        if min(labels) < self.solution_labels[0]:
+        if not self.solution_labels:
+            print("Optimal configuration was not found. Reporting best of the measured.")
+            self.solution_labels = min(labels)
+            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
+            self.solution_features = self.all_features[index_of_the_best_labels]
+
+        elif min(labels) < self.solution_labels:
             print("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
                   (self.solution_features, self.solution_labels))
-            self.solution_labels = [min(labels)]
+            self.solution_labels = min(labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = [self.all_features[index_of_the_best_labels]]
+            self.solution_features = self.all_features[index_of_the_best_labels]
 
         print("ALL MEASURED FEATURES:\n%s" % str(features))
         print("ALL MEASURED LABELS:\n%s" % str(labels))
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Best found energy: %s, with configuration: %s" % (self.solution_labels[0], self.solution_features))
+        print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        configuration = [float(self.solution_features[0][0]), int(self.solution_features[0][1])]
-        value = round(self.solution_labels[0][0], 2)
+        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+        value = round(self.solution_labels[0], 2)
 
         msg = str({
             "best point": {'configuration': configuration, "result": value}
@@ -211,5 +217,4 @@ class RegressionSweetSpot(Model):
         if APPI_QUEUE:
             APPI_QUEUE.put(
                 {"best point": {'configuration': configuration, "result": value}})
-
         return self.solution_labels, self.solution_features

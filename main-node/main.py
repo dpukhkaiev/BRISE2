@@ -2,18 +2,21 @@ __doc__ = """
 Main module for running BRISE configuration balancing."""
 
 import itertools
+import datetime
+import socket
 from logger.default_logger import Logger
+
 from warnings import filterwarnings
+filterwarnings("ignore")    # disable warnings for demonstration.
 
 from WSClient import WSClient
 from model.model_selection import get_model
 from repeater.repeater_selection import get_repeater
 from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
+from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 
-#####
-import socket
 
 def client_connection(connection):
     # TODO: Make it with Aspects
@@ -31,13 +34,9 @@ def client_connection(connection):
             socket_client.connect(address)
         return socket_client
 
-#####
-
 
 def run(APPI_QUEUE=None):
-    filterwarnings("ignore") # disable warnings for demonstration.
-
-
+    time_started = datetime.datetime.now()
 
     global_config, task_config = initialize_config()
 
@@ -104,16 +103,19 @@ def run(APPI_QUEUE=None):
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(socket_client, APPI_QUEUE, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(socket_client, APPI_QUEUE, task_config=task_config["ModelCreation"],
+                validated_labels, finish = model.validate_solution(socket_client, APPI_QUEUE,
+                                                                   task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
 
                 features += [predicted_features]
-                labels += validated_labels
+                labels += [validated_labels]
 
                 if finish:
                     optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
+                    write_results(global_config, task_config, time_started, features, labels,
+                                  repeater.performed_measurements, optimal_config, optimal_result, default_features, default_value)
                     return optimal_result, optimal_config
 
                 else:
@@ -135,12 +137,12 @@ def run(APPI_QUEUE=None):
         # If BRISE cannot finish his work properly - terminate it.
         if len(features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
-            model.solution_labels = min(labels)
-            model.solution_features = features[labels.index(model.solution_labels)]
-            print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
             optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
+            write_results(global_config, task_config, time_started, features, labels,
+                          repeater.performed_measurements, optimal_config, optimal_result, default_features,
+                          default_value)
             return optimal_result, optimal_config
 
+
 if __name__ == "__main__":
-    filterwarnings("ignore")    # disable warnings for demonstration.
     run()
