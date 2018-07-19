@@ -67,11 +67,11 @@ services:
      - worker_net
     ports:
       - "2222:2222"
-      - "5000:5000"
+      - "9000:9000"
     depends_on:
       - "w_service"
-#    volumes:
-#      - "./main-node/Results:/root/Results"
+    volumes:
+      - "./main-node:/root"
 
 networks:
   worker_net:
