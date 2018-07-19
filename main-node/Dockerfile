@@ -29,7 +29,8 @@ RUN apt-get update \
     && python3 -m pip install Flask \
     && python3 -m pip install flask-cors \
     && python3 -m pip install flask-socketio \
-    && python3 -m pip install python-socketio
+    && python3 -m pip install python-socketio \
+    && python3 -m pip install eventlet
     
 
 
@@ -38,7 +39,10 @@ RUN rm /root/Dockerfile
 
 RUN chmod +x /root/configure_sshd.sh
 RUN /root/configure_sshd.sh
+
+WORKDIR /root
+
 EXPOSE 2222
-EXPOSE 5000
+EXPOSE 9000
 
 CMD ["/usr/sbin/sshd", "-D"]

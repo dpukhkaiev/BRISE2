@@ -49,8 +49,10 @@ class RegressionSweetSpot(Model):
                     if score_measured > best_got:
                         best_got = score_measured
                         best_model = model
-                        print('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (
+                        temp_message = ('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (
                             round(score_measured, 3), round(self.test_size, 2), round(cur_accuracy, 2)))
+                        print(temp_message)
+
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
@@ -64,7 +66,7 @@ class RegressionSweetSpot(Model):
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def validate_model(self, socket_client, APPI_QUEUE, search_space, degree=6):
+    def validate_model(self, io, search_space, degree=6):
 
         # Check if model was built.
         if not self.model:
@@ -73,7 +75,7 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space)
 
         # Check if the model is adequate - write it.
-        predicted_labels, predicted_features = self.predict_solution(socket_client, APPI_QUEUE, search_space)
+        predicted_labels, predicted_features = self.predict_solution(io, search_space)
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -92,13 +94,14 @@ class RegressionSweetSpot(Model):
             f.close()
             self.solution_ready = True
             print("Built model is valid.")
+            io.emit('info', {'message': "Built model is valid"})
             return True
         else:
             self.solution_ready = False
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, socket_client, APPI_QUEUE, search_space):
+    def predict_solution(self, io, search_space):
             """
             Takes features, using previously created model makes regression to find labels and return label with the lowest value.
             :param search_space: list of data points (each data point is also a list).
@@ -109,23 +112,19 @@ class RegressionSweetSpot(Model):
 
                 configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
                 value = round(val[0],2)
-                msg = str({
-                    "regression": {'configuration': configuration, "result": value}
-                    }).encode()
-                if socket_client is not None:
-                    socket_client.sendall(msg)
 
-                if APPI_QUEUE:
-                    APPI_QUEUE.put(
-                        {"regression": {'configuration': configuration, "result": value}})
+                if io:
+                    temp = {"regression": {'configuration': configuration, "prediction": value}}
+                    io.emit('regression', temp)
 
             label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
             return label, search_space[index]
 
-    def validate_solution(self, socket_client, APPI_QUEUE, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
-        solution_candidate = repeater.measure_task([predicted_features], socket_client, APPI_QUEUE)
+        io.emit('info', {'message': "Verifying solution that model gave.."})
+        solution_candidate = repeater.measure_task([predicted_features], io=io)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
@@ -136,6 +135,7 @@ class RegressionSweetSpot(Model):
             prediction_is_final = False
         else:
             print("Solution validation success!")
+            io.emit('info', {'message': "Solution validation success!"})
             prediction_is_final = True
         self.solution_labels = solution_labels
         self.solution_features = solution_feature
@@ -175,9 +175,11 @@ class RegressionSweetSpot(Model):
         # from sklearn.model_selection import train_test_split
 
         score = self.model.score(features, labels)
-        print("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
+        temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
+        print(temp_message)
 
-    def get_result(self, repeater, features, labels, APPI_QUEUE, socket_client):
+
+    def get_result(self, repeater, features, labels, io):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
@@ -185,10 +187,14 @@ class RegressionSweetSpot(Model):
         print("\n\nFinal report:")
 
         if min(labels) < self.solution_labels[0]:
-            print("Configuration(%s) quality(%s), "
+            temp_message = ("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
                   (self.solution_features, self.solution_labels))
+            print(temp_message)
+
+            io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+
             self.solution_labels = [min(labels)]
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = [self.all_features[index_of_the_best_labels]]
@@ -202,14 +208,11 @@ class RegressionSweetSpot(Model):
         configuration = [float(self.solution_features[0][0]), int(self.solution_features[0][1])]
         value = round(self.solution_labels[0][0], 2)
 
-        msg = str({
-            "best point": {'configuration': configuration, "result": value}
-        }).encode()
-        if socket_client is not None:
-            socket_client.sendall(msg)
-
-        if APPI_QUEUE:
-            APPI_QUEUE.put(
-                {"best point": {'configuration': configuration, "result": value}})
+        if io:
+            temp = {"best point": {'configuration': configuration, 
+                    "result": value, 
+                    "measured points": self.all_features}
+                }
+            io.emit('best point', temp)
 
         return self.solution_labels, self.solution_features

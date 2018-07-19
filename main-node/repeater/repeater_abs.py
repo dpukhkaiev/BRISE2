@@ -14,7 +14,7 @@ class Repeater(ABC):
     @abstractmethod
     def decision_function(self, history, point, iterations = 3, **configuration): pass
     
-    def measure_task(self, task, socket_client, APPI_QUEUE, **decis_func_config):
+    def measure_task(self, task, io, **decis_func_config):
         # Removing previous measurements
         self.current_measurement.clear()
         self.current_measurement_finished = False
@@ -57,15 +57,11 @@ class Repeater(ABC):
 
                     configuration = [result[0], result[1]]
 
-                    msg = str({
-                        "measured task": {'configuration': configuration, "result": result[2]}
-                    }).encode()
-                    if socket_client is not None:
-                        socket_client.sendall(msg)
 
-                    if APPI_QUEUE:
-                        APPI_QUEUE.put(
-                            {"measured task": {'configuration': configuration, "result": result[2]}})
+                    if io:
+                        temp = {'configuration': configuration, "result": result[2]}
+                        io.emit('task result', temp)
+                        
                     
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
