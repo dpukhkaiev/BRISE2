@@ -2,6 +2,7 @@ __doc__ = """
 Main module for running BRISE configuration balancing."""
 
 import itertools
+import datetime
 import socket
 from logger.default_logger import Logger
 
@@ -13,6 +14,7 @@ from model.model_selection import get_model
 from repeater.repeater_selection import get_repeater
 from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
+from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 
 
@@ -34,6 +36,7 @@ def client_connection(connection):
 
 
 def run(APPI_QUEUE=None):
+    time_started = datetime.datetime.now()
 
     global_config, task_config = initialize_config()
 
@@ -111,6 +114,8 @@ def run(APPI_QUEUE=None):
 
                 if finish:
                     optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
+                    write_results(global_config, task_config, time_started, features, labels,
+                                  repeater.performed_measurements, optimal_config, optimal_result, default_features, default_value)
                     return optimal_result, optimal_config
 
                 else:
@@ -133,7 +138,11 @@ def run(APPI_QUEUE=None):
         if len(features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
             optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
+            write_results(global_config, task_config, time_started, features, labels,
+                          repeater.performed_measurements, optimal_config, optimal_result, default_features,
+                          default_value)
             return optimal_result, optimal_config
+
 
 if __name__ == "__main__":
     run()
