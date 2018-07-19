@@ -27,6 +27,7 @@ import { SocketService } from './services/socket.service';
 import { HeatMapComponent } from './charts/heat-map/heat-map.component';
 import { RegChartComponent } from './charts/reg-chart/reg-chart.component';
 import { Ch1Component } from './charts/ch-1/ch-1.component';
+import { HeatMap2Component } from './charts/heat-map-2/heat-map-2.component';
 
 
 @NgModule({ 
@@ -35,7 +36,8 @@ import { Ch1Component } from './charts/ch-1/ch-1.component';
     TaskListComponent,
     HeatMapComponent,
     RegChartComponent,
-    Ch1Component
+    Ch1Component,
+    HeatMap2Component
   ],
   imports: [
     BrowserModule, HttpModule, 

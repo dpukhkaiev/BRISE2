@@ -14,7 +14,8 @@
 /* Selected item */
 .selected {
     font-weight: 700;
-    border-left: 2px solid rgba(0, 0, 0, 0.9);;
+    border-left: 2px solid rgba(0, 0, 0, 0.9);
+    background: #00000014;
 }
 .selected .mat-list-icon {
   color: rgba(0, 0, 0, 0.9);

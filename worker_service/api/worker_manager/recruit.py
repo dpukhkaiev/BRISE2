@@ -142,6 +142,8 @@ class Recruit():
         if obj['status'] == 'run':
             self.result[obj['task id']]['meta_data']['accept'] = time.time()
             self.result[obj['task id']]['meta_data']['appointment'] = obj['node']
+
+            self.socket.emit('in progress', obj, room='/front-end', namespace='/front-end')
             self.send = True
             self.focus_task = None
         else:
