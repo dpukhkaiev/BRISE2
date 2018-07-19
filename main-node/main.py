@@ -34,10 +34,8 @@ def client_connection(connection):
 #####
 
 
-def run(APPI_QUEUE=None):
+def run(io=None):
     filterwarnings("ignore") # disable warnings for demonstration.
-
-
 
     global_config, task_config = initialize_config()
 
@@ -47,8 +45,11 @@ def run(APPI_QUEUE=None):
     # Generate whole search space for regression.
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
 
-    if APPI_QUEUE:
-        APPI_QUEUE.put({"global_contig": global_config, "task": task_config})
+    if io:
+        # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
+        temp = {"global_config": global_config, "task": task_config}
+        io.emit('main_config', temp)
+        
 
     # Creating instance of selector based on selection type and
     # task data for further uniformly distributed data points generation.
@@ -64,18 +65,20 @@ def run(APPI_QUEUE=None):
     repeater = get_repeater("default", WS)
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], socket_client, APPI_QUEUE) #change it to switch inside and devide to
+    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
     default_features, default_value = split_features_and_labels(default_result, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print(default_value)
 
-    if APPI_QUEUE:
-        APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
+    if io:
+        temp = {'conf': default_features, "result": default_value}
+        io.emit('default conf', temp)
+        # APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
 
     print("Measuring initial number experiments, while it is no sense in trying to create model"
           "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"], WS=WS)
-    results = repeater.measure_task(initial_task, socket_client, APPI_QUEUE, default_point=default_result[0])
+    results = repeater.measure_task(initial_task, io, default_point=default_result[0])
     features, labels = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print("Results got. Building model..")
 
@@ -99,12 +102,12 @@ def run(APPI_QUEUE=None):
         model_built = model.build_model(score_min=task_config["ModelCreation"]["MinimumAccuracy"])
 
         if model_built:
-            model_validated = model.validate_model(socket_client, APPI_QUEUE, search_space=search_space)
+            model_validated = model.validate_model(io=io, search_space=search_space)
 
             if model_validated:
-                predicted_labels, predicted_features = model.predict_solution(socket_client, APPI_QUEUE, search_space=search_space)
+                predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(socket_client, APPI_QUEUE, task_config=task_config["ModelCreation"],
+                validated_labels, finish = model.validate_solution(io=io, task_config=task_config["ModelCreation"],
                                                                    repeater=repeater,
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
@@ -113,7 +116,7 @@ def run(APPI_QUEUE=None):
                 labels += validated_labels
 
                 if finish:
-                    optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
+                    optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
                     return optimal_result, optimal_config
 
                 else:
@@ -127,7 +130,7 @@ def run(APPI_QUEUE=None):
         # TODO: Discuss following commented step, because its domain - specific.
         # if self.solution_features:
         #     cur_task.append(self.solution_features)
-        results = repeater.measure_task(cur_task, socket_client, APPI_QUEUE, default_point=default_result[0])
+        results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
         new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
         features += new_feature
         labels += new_label
@@ -138,7 +141,7 @@ def run(APPI_QUEUE=None):
             model.solution_labels = min(labels)
             model.solution_features = features[labels.index(model.solution_labels)]
             print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
-            optimal_result, optimal_config = model.get_result(repeater, features, labels, APPI_QUEUE, socket_client)
+            optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
             return optimal_result, optimal_config
 
 if __name__ == "__main__":
