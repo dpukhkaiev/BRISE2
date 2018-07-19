@@ -7,7 +7,7 @@
       <mat-list dense role="list" *ngIf=stack>
         <mat-list-item *ngFor="let task of stack" 
           (click)="taskInfo(task.id)" role="listitem" 
-          [class.selected]="task === this.focus">
+          [class.selected]="task.id === this.focus?.id">
           <mat-icon matListIcon>folder</mat-icon>
           <h3 matLine> {{task.id.substr(0, 5)}} </h3>
           <p matLine>
@@ -49,6 +49,11 @@
 
   <mat-card class="focus" *ngIf=focus>
     <!-- FOCUS task. select from lists -->
+    <mat-card-actions>
+      <button mat-icon-button (click)="clearFocus()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-card-actions>
     <mat-card-title color="primary">ID: {{focus.id.substr(0, 5)}}</mat-card-title>
     <mat-tab-group>
       <mat-tab label="Result">

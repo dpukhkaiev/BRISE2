@@ -27,6 +27,10 @@ export class TaskListComponent implements OnInit {
     this.initIoConnection();
   }
 
+  clearFocus():void {
+    this.focus = null
+  }
+
   // --------------------- SOCKET ---------------
   private initIoConnection(): void {
     this.io.initSocket();
@@ -36,13 +40,13 @@ export class TaskListComponent implements OnInit {
       .subscribe((obj: JSON) => {
         var fresh: Task = new Task(obj)
         !this.result.includes(fresh, -1) && this.result.push(fresh);
-        console.log(' Object:', obj);
+        // console.log(' Object:', obj);
       });
     // Rewrite task stack
     this.ioConnection = this.io.stack()
       .subscribe((obj: Array<Object>) => {
         this.stack = obj;
-        console.log(' Stack:', obj);
+        // console.log(' Stack:', obj);
       });
 
     // Observer for stack and all results from workers service

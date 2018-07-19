@@ -7,7 +7,7 @@ export class Task {
         this.id = item.id;
         this.run = item.run;
         this.conf = item.config;
-        this.meta = item.meta;
+        this.meta = item.meta_data;
     }
 
     clear() {
