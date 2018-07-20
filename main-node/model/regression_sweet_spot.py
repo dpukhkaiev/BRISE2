@@ -94,7 +94,8 @@ class RegressionSweetSpot(Model):
             f.close()
             self.solution_ready = True
             print("Built model is valid.")
-            io.emit('info', {'message': "Built model is valid"})
+            if io:
+                io.emit('info', {'message': "Built model is valid"})
             return True
         else:
             self.solution_ready = False
@@ -123,7 +124,8 @@ class RegressionSweetSpot(Model):
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
-        io.emit('info', {'message': "Verifying solution that model gave.."})
+        if io:
+            io.emit('info', {'message': "Verifying solution that model gave.."})
         solution_candidate = repeater.measure_task([predicted_features], io=io)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
@@ -135,7 +137,8 @@ class RegressionSweetSpot(Model):
             prediction_is_final = False
         else:
             print("Solution validation success!")
-            io.emit('info', {'message': "Solution validation success!"})
+            if io:
+                io.emit('info', {'message': "Solution validation success!"})
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
         self.solution_features = solution_feature[0]
@@ -192,8 +195,8 @@ class RegressionSweetSpot(Model):
                   "\nReporting best of measured." %
                   (self.solution_features, self.solution_labels))
             print(temp_message)
-
-            io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+            if io:
+                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
             self.solution_labels = [min(labels)]
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
