@@ -189,7 +189,15 @@ class RegressionSweetSpot(Model):
 
         print("\n\nFinal report:")
 
-        if min(labels) < self.solution_labels[0]:
+        if not self.solution_labels:     
+            temp_message = "Optimal configuration was not found. Reporting best of the measured."         
+            print(temp_message)
+            self.solution_labels = min(labels)	
+            index_of_the_best_labels = self.all_labels.index(self.solution_labels)	
+            self.solution_features = self.all_features[index_of_the_best_labels]
+            if io:
+                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+        elif min(labels) < self.solution_labels[0]:
             temp_message = ("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
@@ -198,7 +206,7 @@ class RegressionSweetSpot(Model):
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
-            self.solution_labels = [min(labels)]
+            self.solution_labels = min(labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
 
