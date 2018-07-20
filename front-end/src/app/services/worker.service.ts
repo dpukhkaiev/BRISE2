@@ -9,7 +9,7 @@ import 'rxjs/add/observable/throw';
 import { Task } from '../data/taskData.model';
 
 import { environment } from '../../environments/environment';
-const API_URL = environment.apiUrl;
+const API_URL = environment.workerService;
 
 @Injectable()
 export class WorkerService {
