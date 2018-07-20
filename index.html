@@ -16,20 +16,20 @@ $(document).ready(function() {
 
     socket.on('main_config', function (msg) {
         $("#messages").append('<li>' + JSON.stringify(msg) + '</li>');
-        console.log('test', msg);
+        console.log('main_config:', msg);
         // {"global_config": global_config, "task": task_config}
         
     })
     socket.on('info', function (msg) {
         $("#messages").append('<li>' + 'info:' + JSON.stringify(msg) + '</li>');
-        console.log('info', msg);
+        console.log('info:', msg);
         // {"global_config": global_config, "task": task_config}
         
     })
 
     socket.on('task result', function(msg) {
         $("#messages").append('<li>'+JSON.stringify(msg)+'</li>');
-        console.log('task result', msg);
+        console.log('task result:', msg);
         // temp = {'configuration': configuration, "result": result[2]}
     });
     
@@ -40,13 +40,13 @@ $(document).ready(function() {
     });
     socket.on('best point', function(msg) {
         $("#messages").append('<li>'+JSON.stringify(msg)+'</li>');
-        console.log('best point', msg);
+        console.log('best point:', msg);
         // temp = {"best point": {'configuration': configuration, "result": value}}
     });
 
     socket.on('default conf', function(msg) {
         $("#messages").append('<li>'+JSON.stringify(msg)+'</li>');
-        console.log('default conf', msg);
+        console.log('default conf:', msg);
         // {'conf': default_features, "result": default_value}
     });
 });
