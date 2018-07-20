@@ -22,6 +22,7 @@ import { MatButtonModule,
 /* Shared Service */
 import { WorkerService } from './services/worker.service';
 import { SocketService } from './services/socket.service';
+import { MainSocketService } from './services/main-socket.service';
 
 /* Charts */ 
 import { HeatMapComponent } from './charts/heat-map/heat-map.component';
@@ -52,7 +53,8 @@ import { HeatMap2Component } from './charts/heat-map-2/heat-map-2.component';
     MatGridListModule
   ],
   providers: [{ provide: WorkerService, useClass: WorkerService },
-    { provide: SocketService, useClass: SocketService }],
+    { provide: SocketService, useClass: SocketService },
+    { provide: MainSocketService, useClass: MainSocketService }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

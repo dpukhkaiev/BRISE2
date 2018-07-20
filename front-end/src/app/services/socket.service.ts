@@ -10,7 +10,7 @@ import { Event } from '../data/client-enums';
 
 // Variables
 import { environment } from '../../environments/environment';
-const SERVER_URL = environment.apiUrl;
+const SERVER_URL = environment.workerService;
 const NAME_SPACE = environment.nameSpace;
 
 
