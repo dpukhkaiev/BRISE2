@@ -36,7 +36,7 @@ def client_connection(connection):
 
 
 def run(io=None):
-    filterwarnings("ignore") # disable warnings for demonstration.
+    time_started = datetime.datetime.now()
 
     global_config, task_config = initialize_config()
 
@@ -118,6 +118,8 @@ def run(io=None):
 
                 if finish:
                     optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
+                    write_results(global_config, task_config, time_started, features, labels,
+                                  repeater.performed_measurements, optimal_config, optimal_result, default_features, default_value)
                     return optimal_result, optimal_config
 
                 else:
@@ -139,10 +141,10 @@ def run(io=None):
         # If BRISE cannot finish his work properly - terminate it.
         if len(features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
-            model.solution_labels = min(labels)
-            model.solution_features = features[labels.index(model.solution_labels)]
-            print("Measured best config: %s, energy: %s" % (str(model.solution_features), str(model.solution_labels)))
             optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
+            write_results(global_config, task_config, time_started, features, labels,
+                          repeater.performed_measurements, optimal_config, optimal_result, default_features,
+                          default_value)
             return optimal_result, optimal_config
 
 

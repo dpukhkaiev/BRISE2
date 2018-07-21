@@ -57,7 +57,6 @@ class Repeater(ABC):
 
                     configuration = [result[0], result[1]]
 
-
                     if io:
                         temp = {'configuration': configuration, "result": result[2]}
                         io.emit('task result', temp)
