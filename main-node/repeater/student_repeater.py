@@ -47,7 +47,7 @@ class StudentRepeater(Repeater):
             all_experiments_np = np.matrix(all_experiments)
             all_dim_avg = all_experiments_np.mean(0)
 
-            # Calculating standard deviation (середнє квадратичне відхилення)
+            # Calculating standard deviation
             all_dim_sko = np.std(all_experiments_np, axis=0)
 
             # Pick the Student's coefficient, if number of experiments is 11 or more - pick coefficient for 11
