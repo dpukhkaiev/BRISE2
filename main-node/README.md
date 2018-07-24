@@ -9,9 +9,12 @@
     - [NumPy](www.numpy.org)
     - [SciPy](https://www.scipy.org/)
     - [Scikit-learn](http://scikit-learn.org/)
+    - [Sobol Sequence](https://pypi.org/project/sobol_seq/)
     - [Flask](http://flask.pocoo.org/docs/0.12/ "Flask")
+    - [Flask-Cors](https://pypi.org/project/Flask-Cors/)
+    - [Flask-SocketIO](https://pypi.org/project/Flask-SocketIO/) 
     - [Requests](http://docs.python-requests.org/en/master/ "Requests")
-    - [Python-sockerio](https://pypi.org/project/python-socketio/)
+    - [Python-SocketIO](https://pypi.org/project/python-socketio/)
     - [Eventlen](https://pypi.org/project/eventlet/)
 - [Worker Service](../worker_service/README.md "Part of this project, performs task distribution and running. See worker_service readme for more details.")
 
