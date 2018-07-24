@@ -18,22 +18,6 @@ from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 
 
-def client_connection(connection):
-    socket_client = None
-    IP = '0.0.0.0'
-    PORT = 9090
-
-    if connection is False:
-        return socket_client
-    if connection is True:
-        while socket_client is None:
-            address = (IP, PORT)
-            socket_client = socket.socket()
-            socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            socket_client.connect(address)
-        return socket_client
-
-
 def run(io=None):
     time_started = datetime.datetime.now()
 
