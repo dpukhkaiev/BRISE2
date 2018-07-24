@@ -1,48 +1,76 @@
-# :carousel_horse: Benchmark 
-###### Early BETA
-> The architecture for testing approaches to reducing a benchmarking costs
+# BRISE 
+##### Benchmark Reduction Via Adaptive Instance Selection
+You could apply this solution for your system or algorithm to find optimal(near) parameters for running.\
+For example, it was used to find `CPU Frequency` and `number of threads`(parameters) used for running 
+different algorithms (data compressing, integers sorting, etc.), that `minimizes energy consumption` 
+(optimization goal) for this job.  
 
-### Basic info
-The objective of this progect is to reduce the amount of effort spent on benchmarking, whilst minimizing the deterioration of result’s quality compared to a full benchmarking process.
+## Getting started
+#### Requirements
+Software requirements:
+- Docker, Docker-compose.
+- Python3.
 
-***
+Hardware requirements:
+- 5 GB HDD, 2 GB RAM, 2x 2.5 GHz CPU + Resources for running  `N` (Equal to number of workers. 3 by default) instances of your system.
 
-## Components
-### Back End
-- [Main thread](./main-node) regresion, experiment selection, assumption
-- [Worker service](./worker_service) experiment managing, encapsulation, result storing 
-- [Worker](./worker) experiment execution
+#### Installing and running basic installation
+To get working instance of BRISE:
+- `git clone` this repository and
+- `docker-compose up --build` BRISE instance in root folder of copied repository.
 
-### Front-end
-- [Front-end](./front-end) monitoring the experiments
-___
-#### Dev instructions. Local environment :computer:
-###### Front-end
+This will create following docker containers:
+- [main-node](./main-node/README.md "Main node Readme.") - for exploring of configuration search space, 
+deciding which configuration should be evaluated (using Worker Service), 
+predicting and validating best configuration.
+- [worker-service](./worker_service/README.md "Worker service Readme.") - for parallelization and orchestration of configuration evaluation between worker nodes.
+- `N` [workers](./worker/README.md) - for evaluation of your system with concrete parameters.
+
+#### Testing installation
+- Get into **main-node**:
+   - If BRISE running locally:\
+    `$ docker exec -it main-node /bin/bash`
+   - If BRISE running remotely - use [openssh server](./main-node/configure_sshd.sh "Configuration of ssh server, adapt it for your requirements!") running inside main node:\
+    `$ ssh root@IP_ADDR -p 2222` \
+    By default, exposed ssh port **from** container is *2222*. Password is "root". You could also add you public key to **configure_sshd.sh** file.
+- Run BRISE by `python3 main.py` inside container. In the end you will see final report for default task. (Searching for best CPU Frequency and number of Threads.)  
+
+## Using BRISE 
+To apply this BRISE for your system, you need to:
+1. Install BRISE.
+2. Describe task of finding configuration for your system in `*.json` [configuration file](./main-node/Resources/task.json "Example of task description for energy consumption"). 
+3. Describe search space of possible configurations in `*.json` [file](./main-node/Resources/taskData.json "Example for energy consumption - possible CPU frequencies and number of thread"). 
+*This files should be inside main-node container (put it in main-node folder).* 
+4. Adapt BRISE system to your optimization goal. 
+Mostly it should be done in validation of predicted configurations by BRISE.
+5. Run BRISE and see results.   
+
+## Dev instructions. Local environment 
+#### Main-node
+> During integration BRISE to your system you should adapt **main node** to your system. 
+Main node have single entry point - **main.py** in a root of main-node folder, so you could easily run it locally,
+after satisfying needed requirements.   
+
+See requirements for running **main-node** logic locally [here](./main-node#dependencies).
+
+#### Front-end
+> Not published yet, under developing.
 1. Install Node.js version 6.9+
 2. Update NPM to version 3.0+
 3. `$ npm install @angular/cli -g`
 4. From front-end root `$ npm install`
 5. Start front-server with `$ ng serve --host 0.0.0.0 --port 4201`
 
-###### Back-end + Docker environment
-1. Install Docker and docker-compose
-3. Install sshpass: 
-   Ubuntu: `$ apt-get install sshpass`
-4. Verify worker-node ip address and change it in **main-node/GlobalConfig.json** (you may do it later).
-5. For starting:
-   `$ ./start.sh`
-   For stopping:
-   `$ ./stop.sh`
 
-###### Main thread
-1. SSH into container: `$ ssh root@localhost -p 2222` (password is "root" or you could add you public key to **configure_sshd.sh** file) 
-2. Run main script: `$ python3 main.py`
-
-### Technologies stack :wrench:
-- Front-end | [Angular-cli](https://cli.angular.io/ "Angular CLI"), [Angular material](https://material.angular.io/ "Angular material")
-- Worker + Worker service | Python 3.6, [Flask](http://flask.pocoo.org/docs/0.12/ "Flask"), [Requests](http://docs.python-requests.org/en/master/ "Requests")
-- Main thread | Python 3.6, [scikit-learn](http://scikit-learn.org/stable/ "Scikit-learn")
-
-___
-
+## Questions, contributing.
 ##### Have questions, proposes? Fill free to contact us via :mailbox_with_mail: 
+
+## Authors
+- **[Dmitrii Pukhkaiev](https://github.com/dpukhkaiev)** - *[initial idea](https://www.researchgate.net/publication/312094017_Energy-efficient_Benchmarking_for_Energy-efficient_Software)*, initial version of BRISE.
+- **[Oleksandr Husak](https://github.com/Valavanca/)** - Worker service and workers, front-end developing.
+- **[Ievgeniia Svetsynska](https://github.com/IevgSvet)** - Front-end APIs, improvements.
+- **[Roman Kosonvnenko](https://github.com/pariom)** - Applying BRISE to different systems, improvements.
+- **[Yevhenii Semendiak](https://github.com/YevheniiSemendiak)** - main node logic.
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
