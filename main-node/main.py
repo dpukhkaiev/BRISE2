@@ -5,7 +5,6 @@ import itertools
 import datetime
 import socket
 from sys import argv
-from logger.default_logger import Logger
 
 from warnings import filterwarnings
 filterwarnings("ignore")    # disable warnings for demonstration.
@@ -17,23 +16,6 @@ from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
-
-
-def client_connection(connection):
-    # TODO: Make it with Aspects
-    socket_client = None
-    IP = '0.0.0.0'
-    PORT = 9090
-
-    if connection is False:
-        return socket_client
-    if connection is True:
-        while socket_client is None:
-            address = (IP, PORT)
-            socket_client = socket.socket()
-            socket_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            socket_client.connect(address)
-        return socket_client
 
 
 def run(io=None):
@@ -133,9 +115,6 @@ def run(io=None):
         print('='*120)
         cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
 
-        # TODO: Discuss following commented step, because its domain - specific.
-        # if self.solution_features:
-        #     cur_task.append(self.solution_features)
         results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
         new_feature, new_label = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
         features += new_feature
