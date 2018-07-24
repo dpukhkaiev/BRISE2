@@ -131,7 +131,6 @@ class Recruit():
         self.send = False  
 
         while self.focus_task and not self.send:
-            # TODO it is necessary to form a structure that monitors free workers
             eventlet.sleep(1)
             if len(self.workers):
                 k = randint(0, 9)%len(self.workers)
