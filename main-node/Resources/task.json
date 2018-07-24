@@ -17,7 +17,7 @@
         "ResultStructure"   : ["frequency", "threads", "energy"],
         "ResultDataTypes"  : ["float", "int", "float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsOfExperiment": 4
+        "MaxRepeatsOfExperiment": 10
       },
       "ModelCreation":{
         "ModelTestSize"     : 0.9,
