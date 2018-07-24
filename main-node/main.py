@@ -4,6 +4,7 @@ Main module for running BRISE configuration balancing."""
 import itertools
 import datetime
 import socket
+from sys import argv
 from logger.default_logger import Logger
 
 from warnings import filterwarnings
@@ -38,7 +39,8 @@ def client_connection(connection):
 def run(io=None):
     time_started = datetime.datetime.now()
 
-    global_config, task_config = initialize_config()
+    # argv is a run parameters for main - using for configuration
+    global_config, task_config = initialize_config(argv)
 
     # Connect to socket server
     socket_client = client_connection(connection=global_config['frontend'])
@@ -63,7 +65,7 @@ def run(io=None):
                   logfile='%s%s_WSClient.csv' % (global_config['results_storage'], task_config["ExperimentsConfiguration"]["FileToRead"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
-    repeater = get_repeater("default", WS)
+    repeater = get_repeater("default", WS, task_config["ExperimentsConfiguration"])
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
@@ -78,7 +80,8 @@ def run(io=None):
     print("Measuring initial number experiments, while it is no sense in trying to create model"
           "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
-    repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"], WS=WS)
+    repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"],
+                            WS=WS, experiments_configuration=task_config["ExperimentsConfiguration"])
     results = repeater.measure_task(initial_task, io, default_point=default_result[0])
     features, labels = split_features_and_labels(results, task_config["ModelCreation"]["FeaturesLabelsStructure"])
     print("Results got. Building model..")

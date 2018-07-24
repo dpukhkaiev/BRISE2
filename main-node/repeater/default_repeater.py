@@ -1,6 +1,6 @@
-__doc__="""
+__doc__ = """
     This module provides class DefaultRepeater inherited from abstract class Repeater (repeater_abs module).
-    Purpoce of this repeater - check, using 'provided history', if specific 'provided point' 
+    Purpose of this repeater - check, using 'provided history', if specific 'provided point' 
     have been measured 'provided number of iterations'."""
 
 from repeater.history import History
@@ -9,19 +9,19 @@ from repeater.repeater_abs import Repeater
 
 class DefaultRepeater(Repeater):
     
-    def decision_function(self, history, point, iterations=10, **configuration):
+    def decision_function(self, history, point, **configuration):
         """
-        Return False while number of measurements less than provided number of iterations.
-        In other case - compute result as avarage between all experiments.
-
-        :param iterations: int, number of times to repeat measurement.
+        Return False while number of measurements less than max_repeats_of_experiment (inherited from abstract class).
+        In other case - compute result as average between all experiments.
+        :param history: history class object that stores all experiments results
+        :param point: concrete experiment configuration that is evaluating
         :return: result or False
         """
 
         # Getting all results from history;
         # all experiments is a list of lists of numbers: [exp1, exp2...], where exp1 = [123.1, 123.4, ...]
         all_experiments = history.get(point)
-        if len(all_experiments) < iterations:
+        if len(all_experiments) < self.max_repeats_of_experiment:
             return False
         else:
             # Summing all results

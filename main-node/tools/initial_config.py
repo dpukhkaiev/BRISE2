@@ -46,12 +46,16 @@ def load_task(path_to_file="./Resources/task.json"):
         exit(1)
     return task
 
-def initialize_config(global_config_path='./GlobalConfig.json', taskPath="./Resources/task.json"):
+def initialize_config(argv):
     """
     Load global config and task config.
     :return: (dict globalConfiguration, dict taskConfiguration)
     """
-    #   Reading config file 
+    taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
+    global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
+    print(taskPath, global_config_path)
+    #   Reading config file
+    print("Global BRISE configuration file: |%s|, task description file: |%s|" % (global_config_path, taskPath))
     globalConfig = read_global_config(global_config_path)
 
     #   Loading task config and creating config points distribution according to Sobol.

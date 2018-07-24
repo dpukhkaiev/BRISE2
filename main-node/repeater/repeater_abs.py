@@ -3,13 +3,14 @@ from repeater.history import History
 import socket
 
 class Repeater(ABC):
-    def __init__(self, WorkerServiceClient):
+    def __init__(self, WorkerServiceClient, ExperimentsConfiguration):
 
         self.WSClient = WorkerServiceClient
         self.history = History()
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
+        self.max_repeats_of_experiment = ExperimentsConfiguration["MaxRepeatsOfExperiment"]
 
     @abstractmethod
     def decision_function(self, history, point, iterations = 3, **configuration): pass
@@ -61,7 +62,6 @@ class Repeater(ABC):
                         temp = {'configuration': configuration, "result": result[2]}
                         io.emit('task result', temp)
                         
-                    
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
