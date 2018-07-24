@@ -10,7 +10,7 @@ class StudentRepeater(Repeater):
 
         # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
-        self.default_repeater = DefaultRepeater(self.WSClient)
+        self.default_repeater = DefaultRepeater(*args, **kwargs)
 
     def decision_function(self, history, point, threshold = 15, **configuration):
 
@@ -38,7 +38,7 @@ class StudentRepeater(Repeater):
         if len(all_experiments) < 2:
             return False
 
-        elif len(all_experiments) >= 10:
+        elif len(all_experiments) >= self.max_repeats_of_experiment:
             return self.default_repeater.decision_function(history, point, **configuration)
 
         else:
