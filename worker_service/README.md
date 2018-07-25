@@ -2,15 +2,48 @@
 
 ###### This folder consist code that encapsulates logic distribution of tasks between workers
 
-- Dependancy: Python 3.6, [Flask](http://flask.pocoo.org/docs/0.12/ "Flask"), [Requests](http://docs.python-requests.org/en/master/ "Requests"), Docker
+#### Dependancy
+Software requirements:
+- Docker
+- Python 3.6
+- [Flask](http://flask.pocoo.org/docs/0.12/ "Flask")
+- [flask-socketio](http://flask-socketio.readthedocs.io/en/latest/ "flask-socketio")
+- [flask-CORS](https://flask-cors.readthedocs.io/en/latest/ "Flask-CORS")
+- [eventlet](http://eventlet.net/doc/index.html/ "eventlet")
 
 - [worker node](Valavanca/benchmark/tree/master/worker/README.md)
 
-![service <==> worker](./service.jpg "dependencies between the workers and the service")
-
+![service <==> worker](./service.png "dependencies between the workers and the service")
+___
 ### API examples
+> Tasks are added to the stack for executing on the workers
 **POST**  http://0.0.0.0:80/task/add
-##### Request V1 
+##### Variant 1 
+```json
+[{
+    "task_name": "random_1",
+    "params": {
+        "threads": "1",
+        "frequency": "2901.0"
+    },
+    "worker_config": {
+        "ws_file": "Radix-1000mio_avg.csv"
+    }
+},
+{
+    "task_name": "random_2",
+    "params": {
+        "threads": "4",
+        "frequency": "1900.0"
+    },
+    "worker_config": {
+        "ws_file": "Radix-1000mio_avg.csv"
+    }
+
+}
+]
+```
+##### Variant 2 
 ```json
 {
   "worker_config": {
@@ -28,33 +61,7 @@
   ]
 }
 ```
-##### Request V2 
-```json
-[{
-		"task_name": "random_1",
-		"params": {
-			"threads": "1",
-			"frequency": "2901.0"
-		},
-		"worker_config": {
-			"ws_file": "Radix-1000mio_avg.csv"
-		}
-
-	},
-	{
-		"task_name": "random_2",
-		"params": {
-			"threads": "4",
-			"frequency": "1900.0"
-		},
-		"worker_config": {
-			"ws_file": "Radix-1000mio_avg.csv"
-		}
-
-	}
-]
-```
-##### Response
+> Response from worker service with identifications of the tasks
 ```json
 {
     "id": [
@@ -69,53 +76,53 @@
 ```
 ___
 
+> Get the current stack of tasks for execution on workers
 **GET**  http://0.0.0.0:80/stack
-##### Get the current stack for execution
 ```json 
 {
-    "data": [
-        {
-            "config": {
-                "ws_file": "Radix-1000mio_avg.csv"
-            },
-            "id": "2f5cc8997f194ed59a5914b1a2304cb7",
-            "meta_data": {
-                "accept": "null",
-                "appointment": "null",
-                "owner": "null",
-                "receive": 1524572775.4672573,
-                "result": "null"
-            },
-            "run": {
-                "method": "random_2",
-                "param": {
-                    "frequency": "1900.0",
-                    "threads": "4"
-                }
+   "data":[
+      {
+         "config":{
+            "ws_file":"Radix-1000mio_avg.csv"
+         },
+         "id":"2f5cc8997f194ed59a5914b1a2304cb7",
+         "meta_data":{
+            "accept":"null",
+            "appointment":"null",
+            "owner":"null",
+            "receive":1524572775.4672573,
+            "result":"null"
+         },
+         "run":{
+            "method":"random_2",
+            "param":{
+               "frequency":"1900.0",
+               "threads":"4"
             }
-        },
-        {
-            "config": {
-                "ws_file": "Radix-1000mio_avg.csv"
-            },
-            "id": "9b205125281149049d16ba4ce87277b8",
-            "meta_data": {
-                "accept": "null",
-                "appointment": "null",
-                "owner": "null",
-                "receive": 1524572775.4672928,
-                "result": "null"
-            },
-            "run": {
-                "method": "random_1",
-                "param": {
-                    "frequency": "2500.0",
-                    "threads": "2"
-                }
+         }
+      },
+      {
+         "config":{
+            "ws_file":"Radix-1000mio_avg.csv"
+         },
+         "id":"9b205125281149049d16ba4ce87277b8",
+         "meta_data":{
+            "accept":"null",
+            "appointment":"null",
+            "owner":"null",
+            "receive":1524572775.4672928,
+            "result":"null"
+         },
+         "run":{
+            "method":"random_1",
+            "param":{
+               "frequency":"2500.0",
+               "threads":"2"
             }
-        }
-    ],
-    "status": "success"
+         }
+      }
+   ],
+   "status":"success"
 }
 ```
 ____
@@ -134,6 +141,11 @@ ____
     }
 ```
 ____
+> Information about clients, current stack, task results, workers
+**GET**  http://0.0.0.0:80/
+___
+> Return the current results of the task
 **GET**  http://0.0.0.0:80/result/<id>
-###### Return the current state of the task
+
+
 
