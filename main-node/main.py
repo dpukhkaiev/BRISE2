@@ -24,9 +24,6 @@ def run(io=None):
     # argv is a run parameters for main - using for configuration
     global_config, task_config = initialize_config(argv)
 
-    # Connect to socket server
-    socket_client = client_connection(connection=global_config['frontend'])
-
     # Generate whole search space for regression.
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
 
