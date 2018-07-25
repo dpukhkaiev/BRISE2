@@ -1,19 +1,11 @@
-import os
-import requests
-import threading
-
 import eventlet
 eventlet.monkey_patch()
 
-# from flask_socketio import SocketIO, send, emit
 import time
 from random import randint
-from concurrent.futures import ThreadPoolExecutor
-
 
 # LOGIN
 import logging
-# logging.basicConfig(filename='recruit.log',level=logging.DEBUG)
 logging.getLogger('socketio').setLevel(logging.DEBUG)
 logging.getLogger('engineio').setLevel(logging.DEBUG)
 
@@ -35,8 +27,6 @@ class Recruit():
 
         eventlet.spawn(self._loop)
 
-    # def __del__(self):
-    #     self._executor.cancel()
 
     def _loop(self):
         while True: 
