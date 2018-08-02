@@ -121,11 +121,11 @@ class Recruit():
         self.send = False  
 
         while self.focus_task and not self.send:
-            eventlet.sleep(1)
             if len(self.workers):
                 k = randint(0, 9)%len(self.workers)
                 print(" Task send to", self.workers[k])
                 self.socket.emit('assign', payload, namespace='/task', room=self.workers[k])
+            eventlet.sleep(1)
 
     def task_confirm(self, obj):
         if obj['status'] == 'run':
