@@ -30,6 +30,7 @@ RUN apt-get update \
     && python3 -m pip install flask-cors \
     && python3 -m pip install flask-socketio \
     && python3 -m pip install python-socketio \
+    && python3 -m pip install socketIO-client \
     && python3 -m pip install eventlet
     
 
