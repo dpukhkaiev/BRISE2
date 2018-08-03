@@ -1,39 +1,68 @@
 from socketIO_client import SocketIO, BaseNamespace
-
+import time
 # import logging
 # logging.getLogger("socketIO-client").setLevel(logging.DEBUG)
 # logging.basicConfig()
 
-class WSClientEventHandler(BaseNamespace):
-    def on_connect(self):
-        print("Successfully connected to Worker Service!")
 
-    def on_reporting_workers(self, *args):
-        print("Worker Service have {0} connected workers: {1}".format(len(args[0]), str(args[0])))
 
-    def on_wrong_task_structure(self, *args):
-        print("Worker Service cannot accept task that were sent because of incorrect structure: ", str(args))
-
-    def on_task_accepted(self, *ids):
-        print("WS accepted tasks with IDs:", ids[0])
-
-    # ----------------- Data processing events
-    def on_get_results(self, *result):
-        print(result)
-
-class WSClient(object):
+class WSClient(SocketIO):
 
     def __init__(self, wsclient):
-        self.ws_socket_connect = SocketIO(wsclient)
-        self.conected = False
-        self.ws_namespace = self.ws_socket_connect.define(WSClientEventHandler, "/main_node")
-        self.ws_namespace.emit('ping')
-        self.ws_socket_connect.wait(0.1)
+        # Creating the SocketIO object and connecting to main node namespace - "/main_node"
+        super().__init__(wsclient)
+        self.ws_namespace = self.define(BaseNamespace, "/main_node")
 
-    def send_task(self, task):
-        print(self.conected)
-        self.ws_namespace.emit('add_tasks', task)
-        self.ws_socket_connect.wait(15)
+        # Defining events that will be processed by the Worker Service Client.
+        self.ws_namespace.on("connect", self.__reconnect)
+        self.ws_namespace.on("ping_response", self.__ping_response)
+        self.ws_namespace.on("task_accepted", self.__task_accepted)
+        self.ws_namespace.on("wrong_task_structure", self.__wrong_task_structure)
+        self.ws_namespace.on("task_results", self.__task_results)
+
+        # Verifying connection by sending "ping" event to Worker Service into main node namespace.
+        # Waiting for response, if response is OK - proceed.
+        self.connection_ok = False
+        while not self.connection_ok:
+            self.ws_namespace.emit('ping')
+            self.wait(0.1)
+
+        # Properties that holds current task data.
+        self.ids = []
+
+    ####################################################################################################################
+    # Private methods that are reacting to the events FROM Worker Service Described below.
+    # They cannot be accessed from outside of the class and manipulates task data stored inside object.
+    #
+    def __reconnect(self):
+        print("Worker Service has been connected!")
+
+    def __ping_response(self, *args):
+        print("Worker Service have {0} connected workers: {1}".format(len(args[0]), str(args[0])))
+        self.connection_ok = True
+
+    def __task_accepted(self, ids):
+        self.ids = ids
+
+    def __wrong_task_structure(self, received_task):
+        self.ws_namespace.disconnect()
+        self.disconnect()
+        raise TypeError("Incorrect task structure:\n%s" % received_task)
+
+    def __task_results(self, results):
+        print(results)
+
+
+    def __perform_cleanup(self):
+        self.ids = []
+
+    ####################################################################################################################
+    # Public methods accessible outside of the class.
+    def send_task(self, task, timeout):
+        self.__perform_cleanup()
+        self.ws_namespace.emit('add_tasks', task) # responce - task_accepted or wrong_task_structure
+        self.wait(timeout)
+        print('finished task')
 
 if __name__ == "__main__":
     wsclient = 'w_service:80'
@@ -52,4 +81,4 @@ if __name__ == "__main__":
          }
     ]
     client = WSClient(wsclient)
-    client.send_task(task_data)
+    client.send_task(task_data, 1)
