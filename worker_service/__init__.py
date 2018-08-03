@@ -19,7 +19,7 @@ def create_app(script_info=None):
     class MainNodeNamespace(Namespace):
         def on_ping(self, *params):
             print("\tReceived ping from main node. Arguments:", params)
-            self.emit("reporting_workers", hr.workers)
+            self.emit("ping_response", hr.workers)
             # return "pong", params
 
         def on_add_tasks(self, *payload):
@@ -230,7 +230,7 @@ def create_app(script_info=None):
     def handle_result(json):
         temp_id = hr.analysis_res(json)
         if temp_id is not None:
-            socketio.emit('get_results', json, namespace='/main_node')
+            socketio.emit('task_results', json, namespace='/main_node')
             socketio.emit('result', hr.result[temp_id], room='/front-end', namespace='/front-end')
 
     @socketio.on('all result', namespace='/front-end')
