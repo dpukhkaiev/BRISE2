@@ -163,7 +163,7 @@ class RegressionSweetSpot(Model):
         from tools.splitter import Splitter
         all_data = []
 
-        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["FileToRead"]
+        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
         for point in self.all_features:
             if point in search_space:
