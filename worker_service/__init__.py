@@ -38,6 +38,11 @@ def create_app(script_info=None):
                     logging.error("Received task: " % payload[0])
                     self.emit("wrong_task_structure", payload[0])
 
+        def on_terminate_tasks(self, ids):
+            print("Terminating tasks: %s" % str(ids))
+            for id in ids:
+                socketio.emit("terminate", id, namespace="/task")
+
     # instantiate the app
     app = Flask(__name__)
     CORS(app) # !!!     
@@ -185,10 +190,12 @@ def create_app(script_info=None):
     @socketio.on('connect', namespace='/status')
     def connected():
         hr.workers.append(request.sid)
+        socketio.emit("ping_response", hr.workers)
 
     @socketio.on('disconnect', namespace='/status')
     def disconnect():
         hr.workers.remove(request.sid)
+        socketio.emit("ping_response", hr.workers)
 
     # --------------------------------------------
     # managing array with curent Front-end clients

@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import time
-from random import randint
+from random import randint, shuffle
 
 # LOGIN
 import logging
@@ -118,13 +118,19 @@ class Recruit():
             self.result[payload['id']] = payload
 
         # success flag
-        self.send = False  
-
+        self.send = False
+        shuffle(self.workers)
+        tmp_worker_iterator = self.workers.__iter__()
         while self.focus_task and not self.send:
             if len(self.workers):
-                k = randint(0, 9)%len(self.workers)
-                print(" Task send to", self.workers[k])
-                self.socket.emit('assign', payload, namespace='/task', room=self.workers[k])
+                try:
+                    chosen = tmp_worker_iterator.__next__()
+                    print(" Task send to", chosen)
+                    self.socket.emit('assign', payload, namespace='/task', room=chosen)
+                except StopIteration:
+                    shuffle(self.workers)
+                    tmp_worker_iterator = self.workers.__iter__()
+                    continue
             eventlet.sleep(1)
 
     def task_confirm(self, obj):
