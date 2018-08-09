@@ -17,6 +17,7 @@ class Workflow():
         self.stack.push(task)
 
     def pull_task(self):
+        # TODO add  priority in the tasks execution.
         # remove from stack
         return self.stack.pop()
 

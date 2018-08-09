@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import time
-from random import randint, shuffle
+from random import shuffle
 
 # LOGIN
 import logging
