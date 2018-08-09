@@ -72,6 +72,8 @@ class RegressionSweetSpot(Model):
         if not self.model:
             return False
 
+        self.test_model_all_data(search_space)
+
         # Check if the model is adequate - write it.
         predicted_labels, predicted_features = self.predict_solution(io, search_space)
         if predicted_labels[0] >= 0:
@@ -154,6 +156,28 @@ class RegressionSweetSpot(Model):
     @staticmethod
     def sum_fact(num):
         return reduce(lambda x, y: x+y, list(range(1, num + 1)))
+
+    def test_model_all_data(self, search_space):
+        from tools.features_tools import split_features_and_labels
+        from tools.initial_config import load_task
+        from tools.splitter import Splitter
+        all_data = []
+
+        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["FileToRead"]
+        spl = Splitter(file_path)
+        for point in self.all_features:
+            if point in search_space:
+                search_space.remove(point)
+        for point in search_space:
+            spl.search(str(point[0]), str(point[1]))
+            all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
+        features, labels = split_features_and_labels(all_data, ['feature', 'feature', 'label'])
+        # from sklearn.model_selection import train_test_split
+        score = self.model.score(features, labels)
+
+
+        temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
+        print(temp_message)
 
     def get_result(self, repeater, features, labels, io):
 

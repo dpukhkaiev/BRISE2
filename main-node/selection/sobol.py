@@ -16,6 +16,7 @@ class SobolSequence(SelectionAlgorithm):
         :param search_space: list of dimensions that describes a
 
         """
+        # TODO: Selection algorithm needs to know measured points by regression model
 
         self.dimensionality = len(search_space)
         self.search_space = search_space
