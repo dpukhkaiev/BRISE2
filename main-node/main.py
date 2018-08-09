@@ -9,7 +9,7 @@ from sys import argv
 from warnings import filterwarnings
 filterwarnings("ignore")    # disable warnings for demonstration.
 
-from WSClient import WSClient
+from WorkerServiceClient.WSClient_sockets import WSClient
 from model.model_selection import get_model
 from repeater.repeater_selection import get_repeater
 from tools.initial_config import initialize_config
@@ -39,9 +39,9 @@ def run(io=None):
                             search_space=task_config["DomainDescription"]["AllConfigurations"])
 
     # Instantiate client for Worker Service, establish connection.
-    WS = WSClient(task_config=task_config,
-                  ws_addr=global_config["WorkerService"]["Address"],
-                  logfile='%s%s_WSClient.csv' % (global_config['results_storage'], task_config["ExperimentsConfiguration"]["FileToRead"]))
+    WS = WSClient(task_config["ExperimentsConfiguration"], global_config["WorkerService"]["Address"],
+                  logfile='%s%s_WSClient.csv' % (global_config['results_storage'],
+                                                 task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
     repeater = get_repeater("default", WS, task_config["ExperimentsConfiguration"])
@@ -77,7 +77,7 @@ def run(io=None):
 
         model = get_model(model_creation_config=task_config["ModelCreation"],
                           log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
-                                                              task_config["ExperimentsConfiguration"]["FileToRead"],
+                                                              task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"],
                                                               task_config["ModelCreation"]["ModelType"]),
                           features=features,
                           labels=labels)

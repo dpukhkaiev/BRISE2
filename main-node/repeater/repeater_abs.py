@@ -75,5 +75,5 @@ class Repeater(ABC):
         # WSClient during initialization stores data types in himself, need to cast results according to that data types.
         return_for_main = []
         for point in results:
-            return_for_main.append(eval(self.WSClient.results_data_types[index])(value) for index, value in enumerate(point))
+            return_for_main.append(eval(self.WSClient._result_data_types[index])(value) for index, value in enumerate(point))
         return return_for_main

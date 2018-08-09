@@ -32,6 +32,6 @@ class DefaultRepeater(Repeater):
 
             # Calculating average.
             for index, value in enumerate(result):
-                result[index] = eval(self.WSClient.results_data_types[index])(round(value / len(all_experiments), 2))
+                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 2))
 
             return result
