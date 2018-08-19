@@ -11,6 +11,13 @@ import csv
 class WSClient(SocketIO):
 
     def __init__(self, experiments_configuration, wsclient_addr, logfile):
+        """
+        Worker Service client, that uses socketIO library to communicate with Worker Service: send task and get results
+        (communication based on events).
+        :param experiments_configuration: Dictionary. Represents "ExperimentsConfiguration" of BRISE configuration file.
+        :param wsclient_addr: String. Network address of Worker Service (including port).
+        :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
+        """
         # Creating the SocketIO object and connecting to main node namespace - "/main_node"
         super().__init__(wsclient_addr)
         self.ws_namespace = self.define(BaseNamespace, "/main_node")
@@ -71,7 +78,8 @@ class WSClient(SocketIO):
             if results['task id'] in ids_of_already_finished_tasks:
                 # Workaround for floating on Worker Service.
                 # It could happens that WorkerService assigns one task on multiple workers.
-                print("Warning - Worker Server reported same task results multiple times!")
+                print("Warning - Worker Server reported same task results multiple times! "
+                      "(Task were running on multiple Worker nodes)")
             else:
                 self.current_results.append(results)
 
@@ -136,10 +144,27 @@ class WSClient(SocketIO):
     ####################################################################################################################
     # Outgoing interface for running task(s)
     def work(self, task):
+        """
+        Prepare and send current task to Worker Service, wait for results, terminate stragglers, report all results back.
+
+        :param task: list of configurations (tasks), e.g. [[123.5, 12, 'normal'], [165, 2, 'linear']...] The structure
+        of each task should correspond specified structure in experiments_configuration["TaskParameters"].
+
+        :return: List with result of running all the experiments. First, each experiment will have a structure,
+        specified in the experiments_configuration["TaskParameters"], next all values will be casted to data types,
+        specified in the experiments_configuration["ResultDataTypes"].
+        """
         self.__perform_cleanup()
         self._send_task(task)
 
-        # Start waiting for results
+        #   Start waiting for result.
+        #   max_given_time_to_run_all_tasks - time to run all current experiments(tasks) on
+        #   all currently available workers(monitored by 'ping_response' event).
+        #
+        #   E.g. we have 7 tasks for 3 workers. Each experiment should run not more than
+        #   5 seconds (specified in self._time_for_one_task_running). Resulting value will be 15 seconds.
+        #   If the tasks were not finished at 15 seconds time interval, they will be terminated.
+
         waiting_started = time()
         max_given_time_to_run_all_tasks = ceil(len(task) / self._number_of_workers) * self._time_for_one_task_running
         while time() - waiting_started < max_given_time_to_run_all_tasks:
@@ -156,6 +181,8 @@ class WSClient(SocketIO):
         self._dump_results_to_csv()
         return self._report_according_to_required_structure()
 
+
+# A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
 if __name__ == "__main__":
     wsclient = 'w_service:80'
     config = {

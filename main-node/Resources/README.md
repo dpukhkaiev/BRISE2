@@ -5,7 +5,9 @@
 Process of finding (near)optimal configuration of target system should be described in 4 general topics (top-level-keys in json file) of the configuration file.
 All other configurations are nested to these as key-value entities.
 
-Possible values of configurations should be provided in separate json file.
+Possible values of configurations for your system should be provided in separate json file.
+
+**All specified here configurations are required.**
 
 - `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
     - `FeatureNames` - `list of strings`. The names of configurations.
