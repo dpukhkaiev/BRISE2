@@ -131,8 +131,7 @@ def task_result(data):
     return {
         'worker status': 'online',
         'node': os.environ['workername'],
-        'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else 'null',
-        'return': str(data),
+        'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else str(data),
         'task id': task_id or 'null'
     }
 
