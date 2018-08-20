@@ -161,26 +161,23 @@ class RegressionSweetSpot(Model):
         from tools.features_tools import split_features_and_labels
         from tools.initial_config import load_task
         from tools.splitter import Splitter
-
         all_data = []
-        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["FileToRead"]
-        spl = Splitter(file_path)
 
+        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
+        spl = Splitter(file_path)
         for point in self.all_features:
             if point in search_space:
                 search_space.remove(point)
-
         for point in search_space:
             spl.search(str(point[0]), str(point[1]))
             all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
-
-        features, labels = split_features_and_labels(all_data, ['feature','feature','label'])
+        features, labels = split_features_and_labels(all_data, ['feature', 'feature', 'label'])
         # from sklearn.model_selection import train_test_split
-
         score = self.model.score(features, labels)
+
+
         temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
         print(temp_message)
-
 
     def get_result(self, repeater, features, labels, io):
 

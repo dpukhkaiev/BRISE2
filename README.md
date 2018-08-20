@@ -1,4 +1,4 @@
-# BRISE 
+# BRISE 2.0.0
 ##### Benchmark Reduction Via Adaptive Instance Selection
 You could apply this solution for your system or algorithm to find optimal(near) parameters for running.\
 For example, it was used to find `CPU Frequency` and `number of threads`(parameters) used for running 

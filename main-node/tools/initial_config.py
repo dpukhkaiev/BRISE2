@@ -53,8 +53,6 @@ def initialize_config(argv):
     """
     taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
-    print(taskPath, global_config_path)
-    #   Reading config file
     print("Global BRISE configuration file: |%s|, task description file: |%s|" % (global_config_path, taskPath))
     globalConfig = read_global_config(global_config_path)
 
