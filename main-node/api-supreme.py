@@ -7,6 +7,7 @@ import logging
 
 # USER
 from main import run as main_run
+# from tools.main_mock import run as main_run
 
 import eventlet
 eventlet.monkey_patch()
@@ -33,7 +34,6 @@ data_header = {
 clients = []
 
 # add clients in room
-# TODO make sockets for worker_service
 front_clients = []
 
 @app.route('/')
