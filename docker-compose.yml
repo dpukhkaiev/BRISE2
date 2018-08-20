@@ -60,7 +60,7 @@ services:
 
   main_node:
     build: ./main-node/
-    command: /usr/sbin/sshd -D
+    command: python3 api-supreme.py
     tty: true
     container_name: main-node
     networks:

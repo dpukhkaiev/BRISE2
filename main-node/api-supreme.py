@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from multiprocessing import Process
 import time
@@ -10,11 +11,14 @@ from main import run as main_run
 import eventlet
 eventlet.monkey_patch()
 
+
 # instance of Flask app
 app = Flask(__name__)
+CORS(app)
 # WebSocket
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, logger=True, engineio_logger=True)
+socketio.heartbeatTimeout = 15000
 logging.getLogger('socketio').setLevel(logging.DEBUG)
 
 # hide HTTP request logs
@@ -38,7 +42,7 @@ def index():
         'index main': 'Hello, %USER_NAME%. You\'re looking well today.', 
         'header': data_header,
         'clients': clients,
-        'socket': str(socketio)
+        'socket': bool(str(socketio))
     }),200
 
 # ---   START
@@ -56,9 +60,10 @@ def main_process_start():
 
     if not MAIN_PROCESS:
         MAIN_PROCESS = eventlet.spawn(main_run, socketio)
+        time.sleep(0.1)
 
     return main_process_status()
-
+ 
 # ---   STATUS
 @app.route('/status')
 def main_process_status():
@@ -68,27 +73,28 @@ def main_process_status():
     :return: JSONIFY OBJECT
     """
     result = {}
-    result['MAIN_PROCESS'] = {"Main process": bool(MAIN_PROCESS),
-                                #  "Exit code": MAIN_PROCESS.exitcode if not MAIN_PROCESS.is_alive() else None,
-                                 "Status": "Running" if MAIN_PROCESS else 'none'}
+    result['MAIN_PROCESS'] = {"main process": bool(MAIN_PROCESS),
+                            "status": "running" if MAIN_PROCESS else 'none'}
     # Probably, we will have more processes at the BG.
     return jsonify(result)
 
 # # ---   STOP
-# @app.route('/main_stop')
-# def main_process_stop():
-#     """
-#     Verifies if main process running and if it is - terminates it using process.join() method with timeout = 5 seconds.
-#     After it returns status of this process (should be terminated).
-#     :return: main_process_status()
-#     """
-#     global MAIN_PROCESS
+@app.route('/main_stop')
+def main_process_stop():
+    """
+    Verifies if main process running and if it is - terminates it using process.join() method with timeout = 5 seconds.
+    After it returns status of this process (should be terminated).
+    :return: main_process_status()
+    """
+    global MAIN_PROCESS
 
-#     if MAIN_PROCESS.is_alive():
-#         MAIN_PROCESS.cancel()
-#         time.sleep(0.5)
+    if MAIN_PROCESS:
+        MAIN_PROCESS.cancel()
+        eventlet.kill(MAIN_PROCESS)
+        MAIN_PROCESS = None
+        time.sleep(0.5)
 
-#     return main_process_status()
+    return main_process_status()
 
 # ---------------------------- Events ------------ 
 @socketio.on('ping')
