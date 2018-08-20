@@ -110,7 +110,7 @@ def create_app(script_info=None):
             response_object['status'] = 'success'
             response_object['response_type'] = 'send_task'
             response_object['id'] = id_list
-            response_object['message'] = f'{len(task_list)} task(s) are accepted!'
+            response_object['message'] = str(len(task_list)) + ' task(s) are accepted!'
             return jsonify(response_object), 201
         else:
             response_object['message'] = 'Sorry. That task can not run.'
