@@ -5,16 +5,18 @@ import { Observer } from 'rxjs/Observer';
 import * as socketIo from 'socket.io-client';
 
 // User
-import { Task } from '../data/taskData.model';
-import { Event } from '../data/client-enums';
+import { Task } from '../../data/taskData.model';
+import { Event } from '../../data/client-enums';
 
 // Variables
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 const SERVER_URL = environment.workerService;
 const NAME_SPACE = environment.nameSpace;
 
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class SocketService {
   private socket;
   constructor() { }

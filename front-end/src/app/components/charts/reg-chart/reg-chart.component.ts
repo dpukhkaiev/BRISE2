@@ -1,6 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 // import { DataService } from 'service'
-import * as _ from 'lodash'
 
 @Component({
   selector: 'reg-chart',

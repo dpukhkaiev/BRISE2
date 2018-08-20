@@ -1,0 +1,147 @@
+
+// Config
+{
+    "task": {
+        "SelectionAlgorithm": {
+            "Step": 1,
+            "SelectionType": "SobolSequence",
+            "NumberOfInitialExperiments": 10
+        },
+        "ExperimentsConfiguration": {
+            "RepeaterDecisionFunction": "student_deviation",
+            "ResultDataTypes": [
+                "float",
+                "int",
+                "float"
+            ],
+            "ResultStructure": [
+                "frequency",
+                "threads",
+                "energy"
+            ],
+            "MaxRepeatsOfExperiment": 4,
+            "TaskName": "energy_consumption",
+            "FileToRead": "Radix-500mio.csv"
+        },
+        "DomainDescription": {
+            "DefaultConfiguration": [
+                2900,
+                32
+            ],
+            "DataFile": "./Resources/taskData.json",
+            "FeatureNames": [
+                "frequency",
+                "threads"
+            ],
+            "AllConfigurations": [
+                [
+                    1200,
+                    1300,
+                    1400,
+                    1600,
+                    1700,
+                    1800,
+                    1900,
+                    2000,
+                    2200,
+                    2300,
+                    2400,
+                    2500,
+                    2700,
+                    2800,
+                    2900,
+                    2901
+                ],
+                [
+                    1,
+                    2,
+                    4,
+                    8,
+                    16,
+                    32
+                ]
+            ]
+        },
+        "ModelCreation": {
+            "ModelTestSize": 0.9,
+            "FeaturesLabelsStructure": [
+                "feature",
+                "feature",
+                "label"
+            ],
+            "MinimumAccuracy": 0.85,
+            "ModelType": "regression"
+        }
+    },
+    "global_config": {
+        "results_storage": "./Results/",
+        "frontend": false,
+        "WorkerService": {
+            "Address": "w_service:80"
+        },
+        "logging_level": "DEBUG",
+        "log_filename": "BRISE.log"
+    }
+}
+
+// Regression
+[["1200,1",1244.11],["1200,2",1218.97],["1200,4",1173],["1200,8",1096.44],["1200,16",989.67],["1200,32",840.15],["1300,1",1273.89],["1300,2",1239.57],["1300,4",1176.92],["1300,8",1073.2],["1300,16",932.81],["1300,32",765.97],["1400,1",1312.56],["1400,2",1266.8],["1400,4",1183.42],["1400,8",1046.13],["1400,16",865.45],["1400,32",687.02],["1600,1",1421.4],["1600,2",1344.74],["1600,4",1205.43],["1600,8",978.41],["1600,16",694.82],["1600,32",521.97],["1700,1",1493.54],["1700,2",1396.73],["1700,4",1221.04],["1700,8",936.11],["1700,16",588.86],["1700,32",440.05],["1800,1",1578.34],["1800,2",1457.76],["1800,4",1239.26],["1800,8",886.51],["1800,16",466.86],["1800,32",361.63],["1900,1",1675.88],["1900,2",1527.57],["1900,4",1259.18],["1900,8",827.81],["1900,16",326.63],["1900,32",289.14],["2000,1",1785.72],["2000,2",1605.32],["2000,4",1279.29],["2000,8",757.6],["2000,16",165.49],["2000,32",225.03],["2200,1",2036.87],["2200,2",1777.68],["2200,4",1310.51],["2200,8",569.35],["2200,16",-233.54],["2200,32",131.28],["2300,1",2173.26],["2300,2",1866.57],["2300,4",1314.53],["2300,8",442.43],["2300,16",-480.4],["2300,32",105.69],["2400,1",2311.77],["2400,2",1951.65],["2400,4",1304.29],["2400,8",285.95],["2400,16",-766.41],["2400,32",96.38],["2500,1",2447],["2500,2",2027.11],["2500,4",1273.3],["2500,8",92.52],["2500,16",-1098.67],["2500,32",104.26],["2700,1",2678.27],["2700,2",2118.16],["2700,4",1115.36],["2700,8",-442.15],["2700,16",-1937.23],["2700,32",171.55],["2800,1",2755.21],["2800,2",2113.84],["2800,4",967.13],["2800,8",-806.24],["2800,16",-2465.13],["2800,32",228.64],["2900,1",2790.25],["2900,2",2059.64],["2900,4",755.18],["2900,8",-1253.38],["2900,16",-3082.87],["2900,32",297.93],["2901,1",2790.34],["2901,2",2058.8],["2901,4",752.69],["2901,8",-1258.32],["2901,16",-3089.55],["2901,32",298.67]]
+
+
+// Points
+[["2900,32",401.28],["2700,4",1123.09],["1400,16",442.26],["2400,2",1632.72],["1600,4",1358.49],["2901,1",3079.24],["1900,4",1119.54],["1700,32",381.07],["2901,32",268.18],["2500,32",162.16],["2000,8",780.65],["1800,2",1877.04]]
+
+// Best
+{"configuration":[2500,32],"result":149.52,"measured points":[[2901,32],[2700,4],[1700,32],[1900,4],[2900,32],[2400,2],[1400,16],[1600,4],[2500,32],[2901,1],[2000,8],[1800,2],[2800,16],[2500,32]]}
+
+
+// x
+[1, 2, 4, 8, 16, 32]
+// y
+[1200, 1300, 1400, 1600, 1700, 1800, 1900, 2000, 2200, 2300, 2400, 2500, 2700, 2800, 2900, 2901]
+
+// Logs
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/wsgi.py", line 545, in handle_one_response
+    result = self.application(self.environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/flask/app.py", line 2309, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/flask_socketio/__init__.py", line 43, in __call__
+    start_response)
+  File "/usr/local/lib/python3.5/dist-packages/engineio/middleware.py", line 47, in __call__
+    return self.engineio_app.handle_request(environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/socketio/server.py", line 360, in handle_request
+    return self.eio.handle_request(environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/engineio/server.py", line 275, in handle_request
+    environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/engineio/socket.py", line 91, in handle_get_request
+    start_response)
+  File "/usr/local/lib/python3.5/dist-packages/engineio/socket.py", line 133, in _upgrade_websocket
+    return ws(environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/engineio/async_eventlet.py", line 19, in __call__
+    return super(WebSocketWSGI, self).__call__(environ, start_response)
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/websocket.py", line 129, in __call__
+    self.handler(ws)
+  File "/usr/local/lib/python3.5/dist-packages/engineio/socket.py", line 158, in _websocket_handler
+    pkt = ws.wait()
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/websocket.py", line 787, in wait
+    for i in self.iterator:
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/websocket.py", line 642, in _iter_frames
+    message = self._recv_frame(message=fragmented_message)
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/websocket.py", line 668, in _recv_frame
+    header = recv(2)
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/websocket.py", line 577, in _get_bytes
+    d = self.socket.recv(numbytes - len(data))
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/greenio/base.py", line 363, in recv
+    return self._recv_loop(self.fd.recv, b'', bufsize, flags)
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/greenio/base.py", line 357, in _recv_loop
+    self._read_trampoline()
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/greenio/base.py", line 328, in _read_trampoline
+    timeout_exc=socket_timeout('timed out'))
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/greenio/base.py", line 207, in _trampoline
+    mark_as_closed=self._mark_as_closed)
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/hubs/__init__.py", line 163, in trampoline
+    return hub.switch()
+  File "/usr/local/lib/python3.5/dist-packages/eventlet/hubs/hub.py", line 295, in switch
+    return self.greenlet.switch()
+socket.timeout: timed out
