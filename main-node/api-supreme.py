@@ -29,7 +29,6 @@ data_header = {
 clients = []
 
 # add clients in room
-# TODO make sockets for worker_service
 front_clients = []
 
 @app.route('/')
