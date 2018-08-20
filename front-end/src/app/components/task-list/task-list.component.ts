@@ -1,18 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 
 // Service
-import { WorkerService } from '../services/worker.service';
-import { SocketService } from '../services/socket.service';
-import { Task } from '../data/taskData.model';
-import { Event } from '../data/client-enums';
+import { WorkerService } from '../../core/services/worker.service';
+import { SocketService } from '../../core/services/socket.service';
+import { Task } from '../../data/taskData.model';
+import { Event } from '../../data/client-enums';
 // import { resolve } from 'path';
 
 @Component({
   selector: 'app-task-list',
   templateUrl: './task-list.component.html',
-  styleUrls: ['./task-list.component.css'],
-  providers: [WorkerService]
-  
+  styleUrls: ['./task-list.component.css']  
 })
 export class TaskListComponent implements OnInit {
   
@@ -60,13 +58,13 @@ export class TaskListComponent implements OnInit {
 
     this.io.onEvent(Event.CONNECT)
       .subscribe(() => {
-        console.log(' Socket: connected');
+        console.log(' task-list: connected');
         // get init data
         this.io.reqForAllRes();
       });
     this.io.onEvent(Event.DISCONNECT)
       .subscribe(() => {
-        console.log(' Socket: disconnected');
+        console.log(' task-list: disconnected');
       });
   }
 
