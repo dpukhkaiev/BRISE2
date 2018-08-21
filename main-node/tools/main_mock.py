@@ -6,8 +6,7 @@ import time
 from os import chdir
 from os.path import abspath
 from sys import path
-# chdir('..')
-# path.append(abspath('.'))
+
 
 
 def run(io=None):
@@ -90,4 +89,6 @@ class A:
 
 
 if __name__ == "__main__":
+    chdir('..')
+    path.append(abspath('.'))
     run(io=A())
