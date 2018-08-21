@@ -2,6 +2,15 @@ from repeater.repeater_abs import Repeater
 from repeater.history import History
 # import WSClient
 
+experiments = {
+        "TaskName": "energy_consumption",
+        "FileToRead": "Radix-500mio.csv",
+        "ResultStructure": ["frequency", "threads", "energy"],
+        "ResultDataTypes": ["float", "int", "float"],
+        "RepeaterDecisionFunction": "student_deviation",
+        "MaxRepeatsOfExperiment": 4
+    }
+
 class My_Repeater(Repeater):
     def decision_function(self, history, point, iterations=10, **configuration):
         all_experiments = history.get(point)
@@ -10,9 +19,9 @@ class My_Repeater(Repeater):
 
 def test_default_Repeater():
     WSClient_exp = "WS"
-    def_Repeater = My_Repeater(WSClient_exp)
+    def_Repeater = My_Repeater(WSClient_exp, experiments)
     assert def_Repeater.WSClient == WSClient_exp
-    assert type(def_Repeater.history) == History
+    assert isinstance(def_Repeater.history, History)
     assert def_Repeater.current_measurement == {}
     assert def_Repeater.current_measurement_finished is False
     assert def_Repeater.performed_measurements == 0

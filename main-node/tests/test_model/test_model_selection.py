@@ -15,8 +15,8 @@ def test_get_model_without_ModelTestSize():
     features = []
     labels = []
 
-    # result = get_model(model_creation_config1, log_file_name, features, labels)
-    # assert type(result) == RegressionSweetSpot
+    with pytest.raises(KeyError):
+        get_model(model_creation_config, log_file_name, features, labels)
 
 def test_get_model_regression():
     model_creation_config = {
@@ -29,7 +29,7 @@ def test_get_model_regression():
     features = []
     labels = []
     result = get_model(model_creation_config, log_file_name, features, labels)
-    assert type(result) == RegressionSweetSpot
+    assert isinstance(result, RegressionSweetSpot)
 
 def test_KeyError():
     log_file_name = "123"

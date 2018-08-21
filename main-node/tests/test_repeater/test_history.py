@@ -10,10 +10,10 @@ def test_get():
     history1 = History()
     for p,v in zip(points,values):
         history1.put(p, v)
-    for i in range(len(values)):
-        values[i] = [values[i]]
-        assert history1.get(points[i]) == values[i]
 
+    for index, value in enumerate(values):
+        value = [value]
+        assert history1.get(points[index]) == value
 
 def test_put():
     point1 = (2900, 32)
@@ -27,8 +27,9 @@ def test_put():
     values = [50, "yui", "ret", 5, [55, 48, 99], 1, ["123", 123]]
     for p,v in zip(points,values):
         history1.put(p, v)
-    for i in range(len(points)):
-        values[i] = [values[i]]
-        assert history1.history[str(points[i])] == values[i]
+
+    for index, point_value in enumerate(points):
+        values[index] = [values[index]]
+        assert history1.history[str(point_value)] == values[index]
 
 # TODO - test "dump" function (write to file)

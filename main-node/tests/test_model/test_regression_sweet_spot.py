@@ -1,4 +1,5 @@
 from model.regression_sweet_spot import RegressionSweetSpot
+import pytest
 
 def test_default_RegressionSweetSpot():
     log_file_name = "file"
@@ -57,7 +58,32 @@ def test_build_model():
     #TODO - resplit_data
 
 
-    #TODO - sum_fact
+def test_sum_fact():
+    log_file_name = "file"
+    model_creation_config = {
+        "ModelTestSize": 0.9,
+        "MinimumAccuracy": 0.85,
+        "ModelType": "regression",
+        "FeaturesLabelsStructure": ["feature", "feature", "label"]
+    }
+    features = [25]
+    labels = [20]
+    sweet_spot = RegressionSweetSpot(log_file_name=log_file_name,
+                                     test_size=model_creation_config["ModelTestSize"],
+                                     features=features,
+                                     labels=labels)
+
+    for i in range(1, 1000):
+        sum_exp = 0
+        for j in range(i + 1):
+            sum_exp = sum_exp + j
+        assert sum_exp == sweet_spot.sum_fact(i)
+
+    # fails, if num = 0 in the "sum_fact()" function
+    with pytest.raises(TypeError):
+        sweet_spot.sum_fact(0)
+    with pytest.raises(TypeError):
+        sweet_spot.sum_fact(-10)
 
 
     #TODO - test_model_all_data
