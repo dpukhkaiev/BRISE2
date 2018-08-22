@@ -6,8 +6,6 @@ import time
 from os import chdir
 from os.path import abspath
 from sys import path
-# chdir('..')
-# path.append(abspath('.'))
 
 
 def run(io=None):
@@ -57,7 +55,7 @@ def run(io=None):
 
         for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"]):
             print("Sending new task to IO.")
-            io.emit('task result', {'configuration': saved_features.pop(0), "result": saved_labels.pop(0)[0]})
+            io.emit('task result', {'configuration': saved_features[x], "result": saved_labels[x][0]})
             time.sleep(sleep_between_messages)
 
         # model validation
@@ -90,4 +88,6 @@ class A:
 
 
 if __name__ == "__main__":
+    chdir('..')
+    path.append(abspath('.'))
     run(io=A())
