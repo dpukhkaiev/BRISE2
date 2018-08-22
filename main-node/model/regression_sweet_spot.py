@@ -109,16 +109,12 @@ class RegressionSweetSpot(Model):
             :return: lowest value, and related features.
             """
 
-            for (idx,val) in enumerate(self.model.predict(search_space)):
-
-                configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
-                value = round(val[0],2)
-
-                if io:
-                    temp = {"regression": {'configuration': configuration, "prediction": value}}
-                    io.emit('regression', temp)
-
-            label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
+            predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+            if io:
+                all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
+                                   for (prediction, index) in predictions]
+                io.emit('regression', {"regression": all_predictions})
+            label, index = min(predictions)
             return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):

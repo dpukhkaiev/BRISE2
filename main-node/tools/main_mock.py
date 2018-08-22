@@ -8,7 +8,6 @@ from os.path import abspath
 from sys import path
 
 
-
 def run(io=None):
     """
     Structure saved data:
@@ -56,7 +55,7 @@ def run(io=None):
 
         for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"]):
             print("Sending new task to IO.")
-            io.emit('task result', {'configuration': saved_features.pop(0), "result": saved_labels.pop(0)[0]})
+            io.emit('task result', {'configuration': saved_features[x], "result": saved_labels[x][0]})
             time.sleep(sleep_between_messages)
 
         # model validation
