@@ -1,15 +1,50 @@
-
-  <!-- <div class="grid-container">
-    <div class="grid-square"></div>
-  </div> -->
-<div class="wrapper">
-  <div class="table-container">
-    <div class="column" *ngFor="let x of param_x" attr.data-x="{{x}}">
-      <div class="cell" *ngFor="let y of param_y" attr.id="{{x}}-{{y}}" attr.data-descr="{{x}}-{{y}}" attr.data-y="{{y}}" matTooltip="{{x}}-{{y}}">
-        <!-- <span>{{x}}-{{y}}</span>  -->
-      </div>
-    </div>
+<mat-card>
+  <div class="button-row">
+    <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
+    <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
+    <mat-progress-bar mode="indeterminate" *ngIf=isRuning></mat-progress-bar>
   </div>
-</div>
+
+  <div class="select-box" *ngIf=y&&x>
+    <!-- select color -->
+    <mat-form-field>
+      <mat-select [(value)]="theme.color" (selectionChange)="render()" placeholder="Color">
+        <mat-option *ngFor="let col of colors" [value]="col">
+          {{col}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <!-- select type -->
+    <mat-form-field>
+      <mat-select [(value)]="theme.type" (selectionChange)="render()" placeholder="Type">
+        <mat-option *ngFor="let t of type" [value]="t">
+          {{t}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <!-- select smooth -->
+    <mat-form-field>
+      <mat-select [(value)]="theme.smooth" (selectionChange)="render()" placeholder="Smooth">
+        <mat-option *ngFor="let s of smooth" [value]="s">
+          {{s}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <!-- ================  Heat map  ================ -->
+  <div #map></div>
+  <!-- ============================================ -->
+</mat-card>
+
+
+<mat-card *ngIf=info class="info">
+  <mat-card-title color="primary"> Info</mat-card-title>
+    {{info | json}}
+</mat-card>
+
+<mat-card *ngIf="(solution | json) != '{}'" class="solution">
+  <mat-card-title color="primary"> Solution </mat-card-title>
+     {{solution | json}}
+</mat-card>
 
 

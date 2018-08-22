@@ -4,6 +4,10 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { MainSocketService } from '../../../core/services/main-socket.service';
 
 import { MainEvent } from '../../../data/client-enums';
+// Plot
+import { PlotType as type } from '../../../data/client-enums';
+import { Color as colors } from '../../../data/client-enums';
+import { Smooth as smooth } from '../../../data/client-enums';
 
 @Component({
   selector: 'hm-reg',
@@ -18,16 +22,84 @@ export class HeatMapRegComponent implements OnInit {
   taskConfig: object
   solution = { 'x': undefined, 'y': undefined }
   measured = {'x': [], 'y': []}
-  theme = 'Portland'
-  type = 'contour'
+
+  @ViewChild('reg') reg: ElementRef;
+
+  // Rendering axises
   y: Array<number>
   x: Array<number>
-  @ViewChild('reg') reg: ElementRef;
+
+  // Default theme
+  theme = {
+    type: type[0],
+    color: colors[0],
+    smooth: smooth[0]
+  }
+  public type = type
+  public colors = colors
+  public smooth = smooth
 
   constructor(private ioMain: MainSocketService) { }
 
   ngOnInit() {
     this.initMainConnection();
+  }
+
+  // Rendering
+  regrRender(): void {
+    console.log("Reg render>", this.prediction)
+    const regresion = this.reg.nativeElement
+    const data = [
+      {
+        // z: [[1, 20, 30], [20, 1, 60], [30, 60, 1]],
+        z: this.zParser(this.prediction),
+        x: this.x.map(String),
+        y: this.y.map(String),
+        type: this.theme.type,
+        colorscale: this.theme.color,
+        zsmooth: this.theme.smooth
+      },
+      {
+        type: 'scatter',
+        mode: 'markers',
+        marker: { color: 'Gold', size: 12, symbol: 'star-open-dot' },
+        x: this.solution.x,
+        y: this.solution.y
+      },
+      {
+        type: 'scatter',
+        mode: 'markers',
+        marker: { color: 'grey', size: 9, symbol: 'cross' },
+        x: this.measured.x,
+        y: this.measured.y
+      }
+    ];
+
+    var layout = {
+      title: 'Regresion',
+      xaxis: { title: "Frequency",
+        type: 'category',
+        autorange: true,
+        range: [Math.min(...this.x), Math.max(...this.x)] 
+      },
+      yaxis: { title: "Threads",
+        type: 'category',
+        autorange: true,
+        range: [Math.min(...this.y), Math.max(...this.y)]  }
+    };
+
+    Plotly.newPlot(regresion, data, layout);
+  }
+  zParser(data: Map<String, Number>): Array<Array<Number>> {
+    var z = []
+    this.y.forEach(y => { // y - threads
+      var row = []
+      this.x.forEach(x => { // x - frequency
+        row.push(data.get(String([x, y])))
+      });
+      z.push(row)
+    });
+    return z
   }
 
   // Init conection
@@ -71,62 +143,6 @@ export class HeatMapRegComponent implements OnInit {
         this.regrRender()
       });
 
-  }
-
-  // Rendering
-  regrRender(): void {
-    console.log("Reg render>", this.prediction)
-    const regresion = this.reg.nativeElement
-    const data = [
-      {
-        // z: [[1, 20, 30], [20, 1, 60], [30, 60, 1]],
-        z: this.zParser(this.prediction),
-        x: this.x.map(String),
-        y: this.y.map(String),
-        type: this.type,
-        colorscale: this.theme
-      },
-      {
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'Gold', size: 12, symbol: 'star-open-dot' },
-        x: this.solution.x,
-        y: this.solution.y
-      },
-      {
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'grey', size: 9, symbol: 'cross' },
-        x: this.measured.x,
-        y: this.measured.y
-      }
-    ];
-
-    var layout = {
-      title: 'Regresion',
-      xaxis: { title: "Frequency",
-        type: 'category',
-        autorange: false,
-        range: [Math.min(...this.x), Math.max(...this.x)] 
-      },
-      yaxis: { title: "Threads",
-        type: 'category',
-        autorange: false,
-        range: [Math.min(...this.y), Math.max(...this.y)]  }
-    };
-
-    Plotly.newPlot(regresion, data, layout);
-  }
-  zParser(data: Map<String, Number>): Array<Array<Number>> {
-    var z = []
-    this.y.forEach(y => { // y - threads
-      var row = []
-      this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([x, y])))
-      });
-      z.push(row)
-    });
-    return z
   }
 
 }
