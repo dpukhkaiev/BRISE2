@@ -1,0 +1,46 @@
+
+<mat-accordion>
+  <!-- Panel 1 -->
+  <mat-expansion-panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Logs
+      </mat-panel-title>
+      <mat-panel-description>
+         Basic information for the workflow of experiments
+         <mat-icon>input</mat-icon>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+        <!-- Logs list  -->
+        <mat-list role="list" *ngIf=news>
+          <!-- <h3 mat-subheader> Info </h3> -->
+          <mat-list-item role="listitem" *ngFor="let info of news">
+            <mat-icon mat-list-icon>done</mat-icon>
+            <p mat-line>{{info.message}}</p>
+            <mat-divider></mat-divider>
+            <p class="time" mat-line> {{info.time | date:'shortTime'}} </p>
+          </mat-list-item>
+        </mat-list>
+  </mat-expansion-panel>
+  <!-- Panel 2 -->
+  <mat-expansion-panel *ngIf=solution>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Solution 
+      </mat-panel-title>
+      <mat-panel-description>
+         A solution that is found by BRISE {{solution ? 'Found' : 'Please stand by'}}
+         <mat-icon>star_rate</mat-icon>
+      </mat-panel-description>
+      {{solution.configuration}}
+      {{solution.result}}
+      {{solution['measured points']}}
+
+    </mat-expansion-panel-header>
+
+
+
+
+
+  </mat-expansion-panel>
+</mat-accordion>

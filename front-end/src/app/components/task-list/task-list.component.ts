@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 
 // Service
-import { WorkerService } from '../../core/services/worker.service';
-import { SocketService } from '../../core/services/socket.service';
+import { RestService } from '../../core/services/rest.service';
+import { WsSocketService } from '../../core/services/ws.socket.service';
 import { Task } from '../../data/taskData.model';
 import { Event } from '../../data/client-enums';
 // import { resolve } from 'path';
@@ -19,7 +19,7 @@ export class TaskListComponent implements OnInit {
   focus
   ioConnection: any;
 
-  constructor(private ws: WorkerService, private io: SocketService) { }
+  constructor(private ws: RestService, private io: WsSocketService) { }
 
   ngOnInit() {
     this.initIoConnection();
