@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
-import { Observer } from 'rxjs/Observer';
+// import { Observer } from 'rxjs/Observer';
 
 import * as socketIo from 'socket.io-client';
 
@@ -17,7 +17,7 @@ const NAME_SPACE = environment.nameSpace;
 @Injectable({
   providedIn: 'root',
 })
-export class SocketService {
+export class WsSocketService {
   private socket;
   constructor() { }
 

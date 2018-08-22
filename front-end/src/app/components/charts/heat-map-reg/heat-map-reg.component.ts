@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 // Service
-import { MainSocketService } from '../../../core/services/main-socket.service';
+import { MainSocketService } from '../../../core/services/main.socket.service';
 
 import { MainEvent } from '../../../data/client-enums';
 // Plot
@@ -138,8 +138,9 @@ export class HeatMapRegComponent implements OnInit {
     this.ioMain.onEvent(MainEvent.REGRESION)
       .subscribe((obj: any) => {
         console.log(' Socket: REGRESION', obj);
-        this.prediction.set(String(obj['regression']['configuration']), obj['regression']['prediction'])
-        // setTimeout(this.regrRender(), 0);
+        obj['regression'].map(point => {
+          this.prediction.set(String(point['configuration']), point['prediction'])
+        })
         this.regrRender()
       });
 

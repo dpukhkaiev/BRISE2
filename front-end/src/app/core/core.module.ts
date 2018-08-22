@@ -2,15 +2,15 @@ import { NgModule, Optional, SkipSelf } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /* Shared Service */
-import { WorkerService } from './services/worker.service';
-import { SocketService } from './services/socket.service';
-import { MainSocketService } from './services/main-socket.service';
+import { RestService } from './services/rest.service';
+import { WsSocketService } from './services/ws.socket.service';
+import { MainSocketService } from './services/main.socket.service';
 
 @NgModule({
   imports: [],
   providers: [
-    { provide: WorkerService, useClass: WorkerService },
-    { provide: SocketService, useClass: SocketService },
+    { provide: RestService, useClass: RestService },
+    { provide: WsSocketService, useClass: WsSocketService },
     { provide: MainSocketService, useClass: MainSocketService }
   ],
   declarations: []

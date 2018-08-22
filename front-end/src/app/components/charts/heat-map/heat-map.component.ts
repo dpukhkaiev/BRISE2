@@ -1,10 +1,10 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 // Service
-// import { WorkerService } from '../../services/worker.service';
-import { SocketService } from '../../../core/services/socket.service';
-import { MainSocketService } from '../../../core/services/main-socket.service';
-import { WorkerService } from '../../../core/services/worker.service';
+// import { RestService } from '../../services/worker.service';
+import { WsSocketService } from '../../../core/services/ws.socket.service';
+import { MainSocketService } from '../../../core/services/main.socket.service';
+import { RestService as mainREST} from '../../../core/services/rest.service';
 
 import { Event } from '../../../data/client-enums';
 import { MainEvent } from '../../../data/client-enums';
@@ -33,7 +33,6 @@ export class HeatMapComponent implements OnInit {
 
   globalConfig: object 
   taskConfig: object
-  info
 
   // Best point 
   solution = { 'x': undefined, 'y': undefined }
@@ -58,8 +57,8 @@ export class HeatMapComponent implements OnInit {
   @ViewChild('map') map: ElementRef;
 
   constructor(
-    private ws: WorkerService, 
-    private io: SocketService, 
+    private mainREST: mainREST, 
+    private ioWs: WsSocketService, 
     private ioMain: MainSocketService,
   ) {  }
 
@@ -136,7 +135,7 @@ export class HeatMapComponent implements OnInit {
   //                              WebSocket
   // --------------------------   Worker-service
   private initWsEvents(): void {
-    this.io.initSocket();
+    this.ioWs.initSocket();
 
     // Fresh updates. Each time +1 task
     // this.ioConnection = this.io.onResults()
@@ -157,12 +156,12 @@ export class HeatMapComponent implements OnInit {
     //     this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
     //   });
 
-    this.io.onEvent(Event.CONNECT)
+    this.ioWs.onEvent(Event.CONNECT)
       .subscribe(() => {
         console.log(' hm2.workerService: connected');
-        this.io.reqForAllRes();
+        this.ioWs.reqForAllRes();
       });
-    this.io.onEvent(Event.DISCONNECT)
+    this.ioWs.onEvent(Event.DISCONNECT)
       .subscribe(() => {
         console.log(' hm2.workerService: disconnected');
     });
@@ -199,7 +198,6 @@ export class HeatMapComponent implements OnInit {
     this.ioMain.onEvent(MainEvent.INFO)
       .subscribe((obj: any) => {
         console.log(' Socket: INFO', obj);
-        this.info = obj
       });
 
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
@@ -224,7 +222,7 @@ export class HeatMapComponent implements OnInit {
   // HTTP: Main-node
   startMain(): any {
     if (this.isRuning == false) {
-      this.ws.startMain()
+      this.mainREST.startMain()
         .subscribe((res) => {
           console.log('Main start:', res)
           this.isRuning = true
@@ -234,7 +232,7 @@ export class HeatMapComponent implements OnInit {
   }
   stopMain(): any {
     if (this.isRuning == true) {
-      this.ws.stopMain()
+      this.mainREST.stopMain()
         .subscribe((res) => {
           console.log('Main stop:', res)
           this.isRuning = false

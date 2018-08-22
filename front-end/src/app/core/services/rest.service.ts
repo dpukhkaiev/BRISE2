@@ -13,7 +13,7 @@ const SERVICE_URL = environment.workerService;
 const MAIN_URL = environment.mainNode;
 
 @Injectable()
-export class WorkerService {
+export class RestService {
 
   tasks: Task[] = [];
 
