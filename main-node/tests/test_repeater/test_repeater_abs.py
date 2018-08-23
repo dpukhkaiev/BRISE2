@@ -1,6 +1,5 @@
 from repeater.repeater_abs import Repeater
 from repeater.history import History
-# import WSClient
 
 experiments = {
         "TaskName": "energy_consumption",

@@ -32,4 +32,13 @@ def test_put():
         values[index] = [values[index]]
         assert history1.history[str(point_value)] == values[index]
 
-# TODO - test "dump" function (write to file)
+def test_dump(tmpdir):
+    history_my = History()
+    points = [(2900, 32), (3000, 48), "123", 0, (3000, 32), [2900, 32], [2900, 16]]
+    values = [50, "yui", "ret", 5, [55, 48, 99], 1, ["123", 123]]
+    for p, v in zip(points, values):
+        history_my.put(p, v)
+    file_path = tmpdir.join('testfile.txt')
+    history_my.dump(file_path)
+    assert history_my.dump(file_path) == True
+    assert file_path.read() == "(2900, 32)(3000, 48)1230(3000, 32)[2900, 32][2900, 16]"
