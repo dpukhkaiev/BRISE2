@@ -18,3 +18,9 @@ export class Task {
     }
 }
 
+export interface Solution {
+    configuration: any;
+    result: any;
+    'measured points': Array<Number>
+} 
+

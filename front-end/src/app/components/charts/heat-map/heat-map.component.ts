@@ -13,12 +13,14 @@ import { MainEvent } from '../../../data/client-enums';
 import { PlotType as type } from '../../../data/client-enums';
 import { Color as colors } from '../../../data/client-enums';
 import { Smooth as smooth } from '../../../data/client-enums';
+import { Solution } from '../../../data/taskData.model';
+
 
 
 @Component({
   selector: 'hm-2',
   templateUrl: './heat-map.component.html',
-  styleUrls: ['./heat-map.component.css']
+  styleUrls: ['./heat-map.component.scss']
 })
 export class HeatMapComponent implements OnInit {
   
@@ -35,9 +37,10 @@ export class HeatMapComponent implements OnInit {
   taskConfig: object
 
   // Best point 
-  solution = { 'x': undefined, 'y': undefined }
+  solution: Solution
   // Measured points for the Regresion model from worker-service
   measPoints: Array<Array<number>> = []
+  default_task = { 'conf': '', 'result': 0}
 
   // Rendering axises
   y: Array<number>
@@ -95,8 +98,8 @@ export class HeatMapComponent implements OnInit {
         type: 'scatter',
         mode: 'markers',
         marker: { color: 'Gold', size: 16, symbol: 'star-dot' },
-        x: [this.solution.x],
-        y: [this.solution.y]
+        x: this.solution && [this.solution.configuration[0]],
+        y: this.solution && [this.solution.configuration[1]]
       },
       { // Measured points
         type: 'scatter',
@@ -184,14 +187,16 @@ export class HeatMapComponent implements OnInit {
     this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
       .subscribe((obj: any) => {
         console.log(' Socket: DEFAULT_task', obj);
+        this.default_task.conf = obj['conf']
+        this.default_task.result = obj['result']
+        this.result.set(String(obj['conf']), obj['result'])
         this.measPoints.push(obj['conf'])
         this.render()
       });
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
         console.log(' Socket: BEST', obj);
-        this.solution.x = obj['best point']['configuration'][0]
-        this.solution.y = obj['best point']['configuration'][1]
+        this.solution = obj['best point']
         this.render()
       });
 
@@ -207,8 +212,6 @@ export class HeatMapComponent implements OnInit {
         this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
         this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
         console.log(' Socket: MAIN_CONF', obj);
-        console.log(' MAIN_CONF: this.x', this.x);
-        console.log(' MAIN_CONF: this.y', this.y);
       });
     this.ioMain.onEvent(MainEvent.TASK_RESULT)
       .subscribe((obj: any) => {

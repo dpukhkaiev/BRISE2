@@ -1,46 +1,71 @@
-
 <mat-accordion>
   <!-- Panel 1 -->
-  <mat-expansion-panel>
+  <mat-expansion-panel [disabled]="!news">
     <mat-expansion-panel-header>
       <mat-panel-title>
-        Logs
+        Info messages
       </mat-panel-title>
       <mat-panel-description>
-         Basic information for the workflow of experiments
-         <mat-icon>input</mat-icon>
+         Basic information from the workflow of experiments ({{news ? news.size : '0'}})
+         <mat-icon 
+          matBadge='news.size' 
+          matBadgeColor="accent" 
+          matBadgePosition="above befor">
+          input
+          </mat-icon>
       </mat-panel-description>
     </mat-expansion-panel-header>
-        <!-- Logs list  -->
-        <mat-list role="list" *ngIf=news>
-          <!-- <h3 mat-subheader> Info </h3> -->
-          <mat-list-item role="listitem" *ngFor="let info of news">
-            <mat-icon mat-list-icon>done</mat-icon>
-            <p mat-line>{{info.message}}</p>
-            <mat-divider></mat-divider>
-            <p class="time" mat-line> {{info.time | date:'shortTime'}} </p>
-          </mat-list-item>
-        </mat-list>
+    <!-- Logs list  -->
+    <ng-template matExpansionPanelContent>
+      <mat-list dense role="list" *ngIf=news>
+        <mat-list-item role="listitem" *ngFor="let info of news">
+          <mat-icon mat-list-icon>done</mat-icon>
+          <p mat-line>{{info.message}}</p>
+          <mat-divider></mat-divider>
+          <p class="time" mat-line> {{info.time | date:'shortTime'}} </p>
+        </mat-list-item>
+      </mat-list>
+    </ng-template>
   </mat-expansion-panel>
+
   <!-- Panel 2 -->
-  <mat-expansion-panel *ngIf=solution>
+  <mat-expansion-panel [disabled]="!solution">
     <mat-expansion-panel-header>
       <mat-panel-title>
         Solution 
       </mat-panel-title>
       <mat-panel-description>
-         A solution that is found by BRISE {{solution ? 'Found' : 'Please stand by'}}
+         A solution that is found by BRISE ({{solution ? 'Done' : 'Please stand by..'}})
          <mat-icon>star_rate</mat-icon>
       </mat-panel-description>
-      {{solution.configuration}}
-      {{solution.result}}
-      {{solution['measured points']}}
-
     </mat-expansion-panel-header>
-
-
-
-
-
+    <ng-template matExpansionPanelContent>
+      <mat-list class="solution">
+        <mat-list-item>
+          <mat-icon matListIcon>outlined_flag</mat-icon>
+          <span class="desc">Configuration: </span> <span>{{solution.configuration}}</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>grade</mat-icon>
+          <span class="desc">Result: </span> <span>{{solution.result}}</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>network_check</mat-icon>
+          <span class="desc">Deviation result from default: </span> <span>{{100*(solution.result - default_task.result)/default_task.result | number:'2.0-0'}}%</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>blur_on</mat-icon>
+          <span class="desc">Measured points: </span> <span>{{solution['measured points'].length}}</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>sentiment_satisfied_alt</mat-icon>
+          <span class="desc">Saved efforts: </span> <span>
+            {{
+              (1 - solution['measured points'].length/(taskConfig['DomainDescription']['AllConfigurations'][0].length*taskConfig['DomainDescription']['AllConfigurations'][1].length))*100 |number:'2.0-0'
+            }}%
+        </span>
+        </mat-list-item>
+      </mat-list>
+    </ng-template>
   </mat-expansion-panel>
 </mat-accordion>
