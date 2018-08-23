@@ -110,11 +110,10 @@ class RegressionSweetSpot(Model):
             """
 
             for (idx,val) in enumerate(self.model.predict(search_space)):
-
-                configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
-                value = round(val[0],2)
-
                 if io:
+                    configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
+                    value = round(val[0], 2)
+
                     temp = {"regression": {'configuration': configuration, "prediction": value}}
                     io.emit('regression', temp)
 
