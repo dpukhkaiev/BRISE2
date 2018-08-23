@@ -31,6 +31,7 @@ def run(io=None):
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
         temp = {"global_config": global_config, "task": task_config}
         io.emit('main_config', temp)
+        io.sleep(0)
         
 
     # Creating instance of selector based on selection type and
@@ -54,6 +55,7 @@ def run(io=None):
     if io:
         temp = {'conf': default_features, "result": default_value}
         io.emit('default conf', temp)
+        io.sleep(0)
         # APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
 
     print("Measuring initial number experiments, while it is no sense in trying to create model"

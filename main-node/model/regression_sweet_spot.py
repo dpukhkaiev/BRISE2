@@ -96,6 +96,7 @@ class RegressionSweetSpot(Model):
             print("Built model is valid.")
             if io:
                 io.emit('info', {'message': "Built model is valid"})
+                io.sleep(0)
             return True
         else:
             self.solution_ready = False
@@ -114,6 +115,7 @@ class RegressionSweetSpot(Model):
                 all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
                                    for (prediction, index) in predictions]
                 io.emit('regression', {"regression": all_predictions})
+                io.sleep(0)
             label, index = min(predictions)
             return label, search_space[index]
 
@@ -122,6 +124,7 @@ class RegressionSweetSpot(Model):
         print("Verifying solution that model gave..")
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
+            io.sleep(0)
         solution_candidate = repeater.measure_task([predicted_features], io=io)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
@@ -135,6 +138,7 @@ class RegressionSweetSpot(Model):
             print("Solution validation success!")
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
+                io.sleep(0)
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
         self.solution_features = solution_feature[0]
@@ -190,6 +194,7 @@ class RegressionSweetSpot(Model):
             self.solution_features = self.all_features[index_of_the_best_labels]
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.sleep(0)
 
         elif min(labels) < self.solution_labels:
             temp_message = ("Configuration(%s) quality(%s), "
@@ -199,6 +204,7 @@ class RegressionSweetSpot(Model):
             print(temp_message)
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.sleep(0)
 
             self.solution_labels = min(labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
@@ -219,5 +225,6 @@ class RegressionSweetSpot(Model):
                     "measured points": self.all_features}
                 }
             io.emit('best point', temp)
-
+            io.sleep(0)
+            
         return self.solution_labels, self.solution_features

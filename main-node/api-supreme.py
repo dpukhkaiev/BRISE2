@@ -1,4 +1,6 @@
 from flask import Flask, jsonify, request
+from flask import render_template, send_from_directory
+
 from flask_cors import CORS
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from multiprocessing import Process
@@ -14,10 +16,10 @@ eventlet.monkey_patch()
 
 
 # instance of Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', template_folder="static")
 CORS(app)
 # WebSocket
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = 'galamaga'
 socketio = SocketIO(app, logger=True, engineio_logger=True)
 socketio.heartbeatTimeout = 15000
 logging.getLogger('socketio').setLevel(logging.DEBUG)
@@ -38,12 +40,7 @@ front_clients = []
 
 @app.route('/')
 def index():
-    return jsonify({
-        'index main': 'Hello, %USER_NAME%. You\'re looking well today.', 
-        'header': data_header,
-        'clients': clients,
-        'socket': bool(str(socketio))
-    }),200
+    return render_template('index.html'), 200
 
 # ---   START
 @app.route('/main_start')
@@ -135,4 +132,6 @@ def front_disconnect():
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', debug=True, port=9000)
+    socketio.run(app, host='0.0.0.0',debug=True, port=9000)
+
+    # debug=True
