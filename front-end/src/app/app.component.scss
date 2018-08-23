@@ -1,0 +1,13 @@
+@import '~variables.scss';
+
+.wrapper {
+    max-width: 1200px;
+    margin: 10px auto;
+}
+
+h1 {
+    color: $primary-color
+}
+h4 {
+    color: $accent-color
+}

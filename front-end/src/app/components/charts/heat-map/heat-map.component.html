@@ -1,4 +1,5 @@
 <mat-card>
+  <h3>Experiment:</h3>
   <div class="button-row">
     <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
     <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
@@ -30,6 +31,11 @@
         </mat-option>
       </mat-select>
     </mat-form-field>
+    <mat-card *ngIf="solution" class="chart-solution">
+      <mat-icon matListIcon>star</mat-icon>
+      <span>Solution: </span> <h3>{{solution.configuration}}</h3>
+      <span>Result deviation: </span> <h3>{{(solution.result/default_task.result-1)*100 | number:'2.0-0'}}%</h3>
+    </mat-card>
   </div>
   <!-- ================  Heat map  ================ -->
   <div #map></div>
@@ -37,14 +43,5 @@
 </mat-card>
 
 
-<mat-card *ngIf=info class="info">
-  <mat-card-title color="primary"> Info</mat-card-title>
-    {{info | json}}
-</mat-card>
-
-<mat-card *ngIf="(solution | json) != '{}'" class="solution">
-  <mat-card-title color="primary"> Solution </mat-card-title>
-     {{solution | json}}
-</mat-card>
 
 

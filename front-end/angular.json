@@ -21,7 +21,7 @@
               "src/favicon.ico"
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
             "scripts": [
               "node_modules/plotly.js/dist/plotly.min.js"
@@ -75,7 +75,7 @@
               "node_modules/plotly.js/dist/plotly.min.js"
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
             "assets": [
               "src/assets",

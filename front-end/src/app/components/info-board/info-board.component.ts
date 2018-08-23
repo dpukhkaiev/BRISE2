@@ -8,6 +8,7 @@ import { MainSocketService } from '../../core/services/main.socket.service';
 
 // Constant
 import { MainEvent } from '../../data/client-enums';
+import { Solution } from '../../data/taskData.model';
 
 
 @Component({
@@ -22,7 +23,8 @@ export class InfoBoardComponent implements OnInit {
   // Information log
   news = new Set()
   
-  solution 
+  solution: Solution
+  default_task: any
 
   globalConfig: object
   taskConfig: object
@@ -52,8 +54,9 @@ export class InfoBoardComponent implements OnInit {
     // ----                     Main events
     this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
       .subscribe((obj: any) => {
+        this.default_task = obj
         let temp = { 'time': Date.now(), 'message': 'Measured default configuration'}
-        this.snackBar.open(temp['message'], 'Undo', {
+        this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp) 
@@ -65,7 +68,7 @@ export class InfoBoardComponent implements OnInit {
           'time': Date.now(), 
           'message': '★★★ The optimum result is found. The best point is reached ★★★'
         }
-        this.snackBar.open(temp['message'], 'Undo', {
+        this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp)
@@ -75,7 +78,7 @@ export class InfoBoardComponent implements OnInit {
       .subscribe((obj: any) => {
         console.log(' Socket: INFO', obj);
         let temp = { 'time': Date.now(), 'message': obj['message'] }
-        this.snackBar.open(temp['message'], 'Undo', {
+        this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp)
@@ -89,7 +92,7 @@ export class InfoBoardComponent implements OnInit {
           'time': Date.now(), 
           'message': 'The main configurations of the experiment are obtained.Let\'s go!'
         }
-        this.snackBar.open(temp['message'], 'Undo', {
+        this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp) 
@@ -100,7 +103,7 @@ export class InfoBoardComponent implements OnInit {
           'time': Date.now(), 
           'message': 'New results for ' + String(obj['configuration']) 
         }
-        this.snackBar.open(temp['message'], 'Undo', {
+        this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp)
@@ -111,7 +114,7 @@ export class InfoBoardComponent implements OnInit {
           'time': Date.now(), 
           'message': 'Regression obtained. ' + obj['regression'].length + ' predictions' 
         }
-        this.snackBar.open(temp['message'], 'Undo', {
+        this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp)
