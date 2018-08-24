@@ -31,8 +31,9 @@ RUN apt-get update \
     && python3 -m pip install flask-socketio \
     && python3 -m pip install python-socketio \
     && python3 -m pip install eventlet
-    
 
+# Install pytest for covering code by tests
+RUN python3 -m pip install pytest
 
 COPY . /root
 RUN rm /root/Dockerfile
