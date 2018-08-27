@@ -1,20 +1,20 @@
 from repeater.default_repeater import DefaultRepeater
 
-experiments = {
+EXPERIMENTS = {
         "TaskName": "energy_consumption",
         "FileToRead": "Radix-500mio.csv",
         "ResultStructure": ["frequency", "threads", "energy"],
         "ResultDataTypes": ["float", "int", "float"],
         "RepeaterDecisionFunction": "student_deviation",
         "MaxRepeatsOfExperiment": 4
-    }
+}
+WS = "should be WS"
+
 
 def test_decision_function():
-    WS = "WS"
-    def_repeater = DefaultRepeater(WS, experiments)
+    def_repeater = DefaultRepeater(WS, EXPERIMENTS)
     result = def_repeater.decision_function(def_repeater.history, (1200, 32)) #history is empty
-    result_exp = False
-    assert result_exp == result
+    assert result is False
 
 
 # TODO - make history with 10+ elements (WSClient)
