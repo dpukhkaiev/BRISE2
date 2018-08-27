@@ -109,15 +109,12 @@ class RegressionSweetSpot(Model):
             :return: lowest value, and related features.
             """
 
-            for (idx,val) in enumerate(self.model.predict(search_space)):
-                if io:
-                    configuration = [float(search_space[idx][0]), int(search_space[idx][1])]
-                    value = round(val[0], 2)
-
-                    temp = {"regression": {'configuration': configuration, "prediction": value}}
-                    io.emit('regression', temp)
-
-            label, index = min((label, index) for (index, label) in enumerate(self.model.predict(search_space)))
+            predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+            if io:
+                all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
+                                   for (prediction, index) in predictions]
+                io.emit('regression', {"regression": all_predictions})
+            label, index = min(predictions)
             return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
@@ -160,26 +157,23 @@ class RegressionSweetSpot(Model):
         from tools.features_tools import split_features_and_labels
         from tools.initial_config import load_task
         from tools.splitter import Splitter
-
         all_data = []
-        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["FileToRead"]
-        spl = Splitter(file_path)
 
+        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
+        spl = Splitter(file_path)
         for point in self.all_features:
             if point in search_space:
                 search_space.remove(point)
-
         for point in search_space:
             spl.search(str(point[0]), str(point[1]))
             all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
-
-        features, labels = split_features_and_labels(all_data, ['feature','feature','label'])
+        features, labels = split_features_and_labels(all_data, ['feature', 'feature', 'label'])
         # from sklearn.model_selection import train_test_split
-
         score = self.model.score(features, labels)
+
+
         temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
         print(temp_message)
-
 
     def get_result(self, repeater, features, labels, io):
 
@@ -216,9 +210,10 @@ class RegressionSweetSpot(Model):
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
+        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+        value = round(self.solution_labels[0], 2)
+
         if io:
-            configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
-            value = round(self.solution_labels[0], 2)
             temp = {"best point": {'configuration': configuration, 
                     "result": value, 
                     "measured points": self.all_features}
