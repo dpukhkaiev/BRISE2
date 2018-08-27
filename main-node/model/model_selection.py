@@ -11,6 +11,8 @@ def get_model(model_creation_config, log_file_name, features, labels):
     :return: Instantiated object of prediction model.
     """
 
+
+
     if model_creation_config["ModelType"] == "regression":
         return RegressionSweetSpot(log_file_name=log_file_name,
                                    test_size=model_creation_config["ModelTestSize"],
