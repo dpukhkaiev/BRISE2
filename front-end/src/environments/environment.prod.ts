@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
-
-  apiUrl: 'http://0.0.0.0:80'
+  workerService: 'http://0.0.0.0:80',
+  mainNode: 'http://0.0.0.0:9000',
+  nameSpace: '/front-end'
 };
