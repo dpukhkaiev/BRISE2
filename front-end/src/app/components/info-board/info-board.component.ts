@@ -76,7 +76,6 @@ export class InfoBoardComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.INFO)
       .subscribe((obj: any) => {
-        console.log(' Socket: INFO', obj);
         let temp = { 'time': Date.now(), 'message': obj['message'] }
         this.snackBar.open(temp['message'], '×', {
           duration: 3000

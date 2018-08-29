@@ -70,8 +70,8 @@ services:
       - "9000:9000"
     depends_on:
       - "w_service"
-#    volumes:
-#      - "./main-node/Results:/root/Results"
+    volumes:
+      - "./front-end/dist:/root/static"
 
 networks:
   worker_net:

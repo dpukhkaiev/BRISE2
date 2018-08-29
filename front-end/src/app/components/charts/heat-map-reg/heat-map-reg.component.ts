@@ -47,7 +47,6 @@ export class HeatMapRegComponent implements OnInit {
 
   // Rendering
   regrRender(): void {
-    console.log("Reg render>", this.prediction)
     const regresion = this.reg.nativeElement
     const data = [
       {
@@ -117,7 +116,6 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
-        console.log(' Socket: BEST', obj);
         this.solution.x = obj['best point']['configuration'][0]
         this.solution.y = obj['best point']['configuration'][1]
 
@@ -137,7 +135,6 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.REGRESION)
       .subscribe((obj: any) => {
-        console.log(' Socket: REGRESION', obj);
         obj['regression'].map(point => {
           this.prediction.set(String(point['configuration']), point['prediction'])
         })
