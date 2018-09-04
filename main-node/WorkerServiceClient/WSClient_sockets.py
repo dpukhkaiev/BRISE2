@@ -166,6 +166,7 @@ class WSClient(SocketIO):
         #   If the tasks were not finished at 15 seconds time interval, they will be terminated.
 
         waiting_started = time()
+        # BUG Throw the Error if no workers at all. Division by zero
         max_given_time_to_run_all_tasks = ceil(len(task) / self._number_of_workers) * self._time_for_one_task_running
         while time() - waiting_started < max_given_time_to_run_all_tasks:
             self.wait(0.5)
@@ -184,7 +185,7 @@ class WSClient(SocketIO):
 
 # A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
 if __name__ == "__main__":
-    wsclient = 'w_service:80'
+    wsclient = 'w_service:8080'
     config = {
         "TaskName"          : "energy_consumption",
         "WorkerConfiguration": {

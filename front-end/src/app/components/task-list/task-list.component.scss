@@ -5,22 +5,34 @@
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: space-around;
-  align-items: flex-start
+  align-items: flex-start;
+  .tasks {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-start;
+    
+    .stack, .result {
+      flex-grow: 2;
+      min-width: 250px;
+    }
+    .length {
+      color: $secondary-text-color;
+    }
+  }
 }
 
-.stack, .result {
-  flex-grow: 2;
-  min-width: 250px;
-}
+
 
 /* Selected item */
 .selected {
     font-weight: 700;
-    border-left: 2px solidr rgba( $accent-color, .9 );
-    background: #00000014;
+    border-left: 2px solid $accent-color;
+    background: rgba($divider-color, .2);
 }
 .selected .mat-list-icon {
-  color: rgba(0, 0, 0, 0.9);
+  color: $primary-text-color;
 }
 mat-tab-body mat-grid-tile {
   height: 100%;
@@ -29,13 +41,13 @@ mat-tab-body mat-grid-tile {
 
 /* Icons */
 .mat-list-icon {
-  color: rgba( $divider-color, .5 );
+  color: darken($divider-color, 15% )
 }
 .mat-icon {
-  color: rgba( $divider-color, .5 );
+  color: darken($divider-color, 15% )
 }
 .mat-icon + span {
-  color: rgba( $divider-color, .5 );
+  color: darken($divider-color, 15% );
   font-size: .95em;
   vertical-align: middle;
   margin-right: 5px;

@@ -43,6 +43,7 @@ export class HeatMapRegComponent implements OnInit {
 
   ngOnInit() {
     this.initMainConnection();
+    // window.onresize = () => Plotly.Plots.resize(Plotly.d3.select("#reg").node())
   }
 
   // Rendering
@@ -76,6 +77,7 @@ export class HeatMapRegComponent implements OnInit {
 
     var layout = {
       title: 'Regresion',
+      autosize: true,
       xaxis: { title: "Frequency",
         type: 'category',
         autorange: true,
@@ -116,11 +118,11 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
-        this.solution.x = obj['best point']['configuration'][0]
-        this.solution.y = obj['best point']['configuration'][1]
+        this.solution.x = obj['best point']['configuration'][0] // frequency
+        this.solution.y = obj['best point']['configuration'][1] // threads
 
-        this.measured.x = obj['best point']['measured points'].map(arr => arr[0])
-        this.measured.y = obj['best point']['measured points'].map(arr => arr[1])
+        this.measured.x = obj['best point']['measured points'].map(arr => arr[0]) // frequency
+        this.measured.y = obj['best point']['measured points'].map(arr => arr[1]) // threads
         console.log("Measured", this.measured.x, this.measured.y)
         this.regrRender()
       });
@@ -135,6 +137,7 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.REGRESION)
       .subscribe((obj: any) => {
+        console.log(" Regresion points:", obj['regression'].length)
         obj['regression'].map(point => {
           this.prediction.set(String(point['configuration']), point['prediction'])
         })

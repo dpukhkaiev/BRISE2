@@ -23,6 +23,9 @@ export class ImpResComponent implements OnInit {
   // Best point 
   solution: Solution
 
+  // The initialization time
+  private startTime = new Date()
+
   // poiner to DOM element #map
   @ViewChild('improvement') impr: ElementRef;
 
@@ -30,6 +33,7 @@ export class ImpResComponent implements OnInit {
 
   ngOnInit() {
     this.initMainEvents();
+    // window.onresize = () => Plotly.Plots.resize(Plotly.d3.select("#improvement").node())
   }
   //                              WebSocket
   // --------------------------   Main-node
@@ -38,22 +42,24 @@ export class ImpResComponent implements OnInit {
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
         this.solution = obj['best point']
-        let time = new Date()
+        let min = new Date().getMinutes()
+        let sec = new Date().getSeconds()
         let temp: PointExp = {
           'configuration': obj['best point']['configuration'],
           'result': obj['best point']['result'],
-          'time': time.getMinutes() + 'min ' + time.getSeconds()
+          'time': min + 'm ' + sec + 's'
         } 
-        this.bestRes.add(temp) // There is no check if this solution is the best decision
+        this.bestRes.add(temp) // There is no check if this solution is the best decision 
         this.render() // Render chart when all points got
       });
     this.ioMain.onEvent(MainEvent.TASK_RESULT)
       .subscribe((obj: any) => {
-        let time = new Date()
+        let min = new Date().getMinutes()
+        let sec = new Date().getSeconds()
         let temp: PointExp = {
           'configuration': obj['configuration'],
           'result': obj['result'],
-          'time': time.getMinutes() + 'min ' + time.getSeconds()
+          'time': min + 'm ' + sec + 's'
         } 
 
         this.bestRes.forEach(function(resItem){
@@ -64,6 +70,7 @@ export class ImpResComponent implements OnInit {
         })  
 
         this.bestRes.add(temp)
+        this.render()
       });
   }
 
@@ -76,11 +83,8 @@ export class ImpResComponent implements OnInit {
     // Results
     const yData = Array.from(this.bestRes).map(i => i["result"]);
 
-    console.log(" - X", xData)
-    console.log(" - Y", yData)
-
-
-    var colors = ['rgba(67,67,67,1)'];
+    // console.log(" - X", xData)
+    // console.log(" - Y", yData)
 
     const data = [ // Full data set
       {
@@ -88,7 +92,7 @@ export class ImpResComponent implements OnInit {
         y: yData,
         type: 'scatter',
         mode: 'lines',
-        line: { color: colors[0], width: 2 }
+        line: { color: 'rgba(67,67,67,1)', width: 2 }
       },
       {
         x: [xData[0], xData[xData.length-1]],
@@ -101,7 +105,8 @@ export class ImpResComponent implements OnInit {
 
     var layout = {
       showlegend: false,
-      title: 'Best results for time',
+      title: 'The best results in time',
+      autosize: true,
       xaxis: {
         showline: true,
         showgrid: false,
@@ -125,7 +130,6 @@ export class ImpResComponent implements OnInit {
         showline: false,
         showticklabels: false
       },
-      // autosize: false,
       // margin: {
       //   autoexpand: false,
       //   l: 100,

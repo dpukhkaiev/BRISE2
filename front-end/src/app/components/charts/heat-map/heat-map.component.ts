@@ -15,7 +15,10 @@ import { Color as colors } from '../../../data/client-enums';
 import { Smooth as smooth } from '../../../data/client-enums';
 import { Solution } from '../../../data/taskData.model';
 
-
+interface Configuration {
+  configuration: Array<any>;
+  result: any;
+}
 
 @Component({
   selector: 'hm-2',
@@ -40,7 +43,7 @@ export class HeatMapComponent implements OnInit {
   solution: Solution
   // Measured points for the Regresion model from worker-service
   measPoints: Array<Array<number>> = []
-  default_task = { 'conf': '', 'result': 0}
+  default_task: Configuration
 
   // Rendering axises
   y: Array<number>
@@ -68,6 +71,8 @@ export class HeatMapComponent implements OnInit {
   ngOnInit() {
     this.initWsEvents();
     this.initMainEvents();
+
+    // window.onresize = () => Plotly.Plots.resize(Plotly.d3.select("#map").node())
   }
 
   zParser(data: Map<String,Number>): Array<Array<Number>> {
@@ -112,6 +117,7 @@ export class HeatMapComponent implements OnInit {
 
     var layout = {
       title: 'Heat map results',
+      autosize: true,
       showlegend: false,
       xaxis: {
         title: "Frequency",
@@ -184,15 +190,6 @@ export class HeatMapComponent implements OnInit {
       });
 
     // ----                     Main events
-    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
-      .subscribe((obj: any) => {
-        console.log(' Socket: DEFAULT_task', obj);
-        this.default_task.conf = obj['conf']
-        this.default_task.result = obj['result']
-        this.result.set(String(obj['conf']), obj['result'])
-        this.measPoints.push(obj['conf'])
-        this.render()
-      });
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
         console.log(' Socket: BEST', obj);
@@ -212,6 +209,14 @@ export class HeatMapComponent implements OnInit {
         this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
         this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
         console.log(' Socket: MAIN_CONF', obj);
+      });
+    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
+      .subscribe((obj: any) => {
+        console.log(' Socket: DEFAULT_task', obj);
+        this.default_task = obj
+        this.result.set(String(obj['configuration']), obj['result'])
+        this.measPoints.push(obj['configuration'])
+        this.render()
       });
     this.ioMain.onEvent(MainEvent.TASK_RESULT)
       .subscribe((obj: any) => {

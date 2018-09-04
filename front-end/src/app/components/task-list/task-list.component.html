@@ -1,52 +1,53 @@
 <div class="box">
-  <mat-card class="stack">                                     <!-- STACK list -->
-    <mat-card-header>
-      <h3>Stack {{stack?.length}}</h3>
-    </mat-card-header> 
-    <mat-card-content>
-      <mat-list dense role="list" *ngIf=stack>
-        <mat-list-item *ngFor="let task of stack" 
-          (click)="taskInfo(task.id)" role="listitem" 
-          [class.selected]="task.id === this.focus?.id">
-          <mat-icon matListIcon>folder</mat-icon>
-          <h3 matLine> {{task.id.substr(0, 5)}} </h3>
-          <p matLine>
-            <span> {{task.run.param.frequency}} </span>
-            <span class="demo-2"> -- {{task.run.param.threads}} </span>
-          </p>
-          <button mat-icon-button (click)="taskInfo(task.id)">
-            <mat-icon>info</mat-icon>
-          </button>
-        </mat-list-item>
-      </mat-list>
-    </mat-card-content>
-  </mat-card>  <!-- end stack -->
-
-  <!-- RESULT list -->
-  <mat-card class="result">   
-    <mat-card-header>
-      <h3>Result {{result?.length}}</h3>
-    </mat-card-header> 
-    <mat-card-content>
-      <mat-list dense role="list">
-        <mat-list-item *ngFor="let item of result" 
-            (click)="taskInfo(item.id)" 
-            role="listitem"
-            [class.selected]="item.id === this.focus?.id">
+  <div class="tasks">
+    <mat-card class="stack">                                     <!-- STACK list -->
+      <mat-card-header>
+        <h3>Stack <span class="length">({{stack?.length}})</span></h3>
+      </mat-card-header> 
+      <mat-card-content>
+        <mat-list dense role="list" *ngIf=stack>
+          <mat-list-item *ngFor="let task of stack" 
+            (click)="taskInfo(task.id)" role="listitem" 
+            [class.selected]="task.id === this.focus?.id">
             <mat-icon matListIcon>folder</mat-icon>
-            <h3 matLine> {{item.id.substr(0, 5)}} </h3>
+            <h3 matLine> {{task.id.substr(0, 5)}} </h3>
             <p matLine>
-              <span> {{item.run.param.frequency}} </span>
-              <span class="demo-2"> -- {{item.run.param.threads}} </span>
+              <span> {{task.run.param.frequency}} </span>
+              <span class="demo-2"> -- {{task.run.param.threads}} </span>
             </p>
-            <button mat-icon-button (click)="taskInfo(item.id)">
+            <button mat-icon-button (click)="taskInfo(task.id)">
               <mat-icon>info</mat-icon>
             </button>
-        </mat-list-item>
-      </mat-list>
-    </mat-card-content>
-  </mat-card>  <!-- end results -->
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>  <!-- end stack -->
 
+    <!-- RESULT list -->
+    <mat-card class="result">   
+      <mat-card-header>
+        <h3>Result <span class="length">({{result?.length}})</span></h3>
+      </mat-card-header> 
+      <mat-card-content>
+        <mat-list dense role="list">
+          <mat-list-item *ngFor="let item of result" 
+              (click)="taskInfo(item.id)" 
+              role="listitem"
+              [class.selected]="item.id === this.focus?.id">
+              <mat-icon matListIcon>folder</mat-icon>
+              <h3 matLine> {{item.id.substr(0, 5)}} </h3>
+              <p matLine>
+                <span> {{item.run.param.frequency}} </span>
+                <span class="demo-2"> -- {{item.run.param.threads}} </span>
+              </p>
+              <button mat-icon-button (click)="taskInfo(item.id)">
+                <mat-icon>info</mat-icon>
+              </button>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>  <!-- end results -->
+  </div>
   <mat-card class="focus" *ngIf=focus>
     <!-- FOCUS task. select from lists -->
     <mat-card-actions>
@@ -81,7 +82,7 @@
           <mat-list-item role="listitem">
             <mat-icon>timer</mat-icon>
             <span>Time: </span>
-            <span> {{focus.meta_data.result.time}}</span>
+            <span> {{ (focus.meta_data?.result.time > 0) ? (focus.meta_data.result.time | date: 'mm:ss') : ""}}</span>
           </mat-list-item>
         </mat-list>
       </mat-tab>
@@ -95,12 +96,12 @@
           <mat-list-item role="listitem">
             <mat-icon>list</mat-icon>
             <span>Accept:</span>
-            <span>{{focus.meta_data.accept}}</span>
+            <span>{{ (focus.meta_data?.accept > 0) ? (focus.meta_data.accept | date: 'mm:ss') : ""}}</span>
           </mat-list-item>
           <mat-list-item role="listitem">
             <mat-icon>directions</mat-icon>
             <span>Receive:</span>
-            <span>{{focus.meta_data.receive}}</span>
+            <span>{{ (focus.meta_data?.receive > 0) ? (focus.meta_data.receive | date: 'mm:ss') : ""}}</span>
           </mat-list-item>
         </mat-list>
       </mat-tab>

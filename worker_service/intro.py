@@ -11,4 +11,4 @@ socketio, app = create_app()
 
 # Run server
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', debug=True, port=80)
+    socketio.run(app, host='0.0.0.0', debug=True, port=8080)
