@@ -37,7 +37,7 @@ class TaskNamespace(BaseNamespace):
         print(':: task pong', args)
 # -----------------------------------------------
 # Connect to worker service
-socketIO = SocketIO('w_service', 80, BaseNamespace)
+socketIO = SocketIO('w_service', 8080, BaseNamespace)
  
 status = socketIO.define(StatusNamespace, '/status')
 task = socketIO.define(TaskNamespace, '/task')

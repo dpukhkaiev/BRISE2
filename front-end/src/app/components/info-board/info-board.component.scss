@@ -22,6 +22,12 @@ mat-panel-description {
     color: $accent-color
   }
 }
+.info {
+  .mat-content {
+    overflow: visible;
+  }
+}
+
 mat-list-item {
   mat-icon {
     color: $secondary-text-color

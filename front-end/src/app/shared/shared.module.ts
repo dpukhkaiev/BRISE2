@@ -21,6 +21,8 @@ import {
   MatBadgeModule
 } from '@angular/material';
 
+import { LoaderComponent } from './loader/loader.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -39,7 +41,7 @@ import {
     MatExpansionModule,
     MatBadgeModule
   ],
-  declarations: [],
+  declarations: [LoaderComponent],
   exports: [
     CommonModule,
     BrowserAnimationsModule,
@@ -54,6 +56,9 @@ import {
     MatProgressBarModule,
     MatSelectModule,
     MatSnackBarModule,
-    MatExpansionModule]
+    MatExpansionModule,
+    MatBadgeModule,
+    LoaderComponent
+  ]
 })
 export class SharedModule { }

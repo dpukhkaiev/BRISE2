@@ -47,7 +47,7 @@ def run(io=None):
         time.sleep(sleep_between_messages)
 
         # from main.py
-        io.emit('default conf', {'conf': [[2900.0, 32]], "result": [[309.05]]})
+        io.emit('default conf', {'configuration': [2900.0, 32], "result": 309.05})
         time.sleep(sleep_between_messages)
 
         print("Measuring initial number experiments, while it is no sense in trying to create model"

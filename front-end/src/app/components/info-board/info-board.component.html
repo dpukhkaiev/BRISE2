@@ -2,16 +2,13 @@
 <mat-accordion>
   <!-- Panel 1 -->
   <mat-expansion-panel [disabled]="!news">
-    <mat-expansion-panel-header>
+    <mat-expansion-panel-header class="info">
       <mat-panel-title>
         Info messages
       </mat-panel-title>
-      <mat-panel-description>
-         Basic information from the workflow of experiments ({{news ? news.size : '0'}})
-         <mat-icon 
-          matBadge='news.size' 
-          matBadgeColor="accent" 
-          matBadgePosition="above befor">
+      <mat-panel-description >
+         Basic information from the workflow of experiments ({{news ? news.size : "0"}})
+         <mat-icon>
           input
           </mat-icon>
       </mat-panel-description>

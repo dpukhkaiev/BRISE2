@@ -53,7 +53,9 @@ def run(io=None):
     print(default_value)
 
     if io:
-        temp = {'conf': default_features, "result": default_value}
+        # TODO An array in the array with one value. 
+        # Events 'default conf' and 'task result' must be similar
+        temp = {'configuration': default_features[0], "result": default_value[0][0]}
         io.emit('default conf', temp)
         io.sleep(0)
         # APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})

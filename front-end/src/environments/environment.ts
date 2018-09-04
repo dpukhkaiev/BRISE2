@@ -5,7 +5,7 @@
 
 export const environment = {
   production: false,
-  workerService: 'http://0.0.0.0:80',
-  mainNode: 'http://0.0.0.0:9000',
+  workerService: 'http://0.0.0.0:8080',
+  mainNode: 'http://0.0.0.0:80',
   nameSpace: '/front-end'
 };
