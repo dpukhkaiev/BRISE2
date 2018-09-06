@@ -24,6 +24,9 @@ def test_get():
         value = [value]
         assert history1.get(points[index]) == value
 
+    point = (1, 1)
+    assert history1.get(point) == []
+
 
 def check_point_is_tuple(point_value):
     if isinstance(point_value, tuple) and (all(isinstance(list_item, int) for list_item in point_value)):

@@ -28,10 +28,8 @@ def test_default_repeater():
     assert def_repeater.performed_measurements == 0
     assert def_repeater.max_repeats_of_experiment == EXPERIMENTS["MaxRepeatsOfExperiment"]
 
-# TODO - ??? test abstract method "decision_function"
 
-# TODO - line 46, 78 (repeater_abs.py) there is WSClient
-
+# TODO - line 47, 78 (repeater_abs.py) there is WSClient
 # def test_mesuare_task():
 #     WSClient_exp = WSClient()
 #     def_Repeater = My_Repeater(WSClient_exp)
@@ -40,3 +38,7 @@ def test_default_repeater():
 #     io = "io"
 #     result = def_Repeater.measure_task(task, io)
 #     assert result == result_exp
+
+
+# TODO - "cast_results" function , WSClient - line 80
+# def test_cast_results():

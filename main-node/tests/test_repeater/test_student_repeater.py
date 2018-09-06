@@ -13,12 +13,13 @@ EXPERIMENTS = {
     "MaxRepeatsOfExperiment": 4
 }
 
+
 def test_default_student_repeater():
     student_repeater = StudentRepeater(WS, EXPERIMENTS)
     assert isinstance(student_repeater.default_repeater, DefaultRepeater)
 
-def test_decision_function():
 
+def test_decision_function():
     student_repeater = StudentRepeater(WS, EXPERIMENTS)
     test_history = History()
     point = (2900, 32)
@@ -30,12 +31,11 @@ def test_decision_function():
     result = student_repeater.decision_function(test_history, point)
     assert result is False  # if test_history has one element
 
-
-    #TODO - problem with WSClient
+    # TODO - problem with WSClient
     # test_history.put(point, values[1])
     # result = student_repeater.decision_function(test_history, point)
     # #if test_history has two elements
     # assert result ==
 
-
-    #TODO - if test_history has more than (equals) 10 elements
+    # TODO - if test_history has more than (equals) "MaxRepeatsOfExperiment": 4 elements (WSClient)
+    values = [1, 50, 60, 45, 56]
