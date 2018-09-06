@@ -9,6 +9,9 @@ import { PlotType as type } from '../../../data/client-enums';
 import { Color as colors } from '../../../data/client-enums';
 import { Smooth as smooth } from '../../../data/client-enums';
 
+import { Solution } from '../../../data/taskData.model';
+
+
 @Component({
   selector: 'hm-reg',
   templateUrl: './heat-map-reg.component.html',
@@ -18,13 +21,21 @@ export class HeatMapRegComponent implements OnInit {
 
   // Variables
   prediction = new Map()
-  globalConfig: object
-  taskConfig: object
-  solution = { 'x': undefined, 'y': undefined }
-  measured = {'x': [], 'y': []}
+  solution: Solution
+  measPoints: Array<Array<number>> = []
+  
+  resetRes() {
+    this.prediction.clear()
+    this.solution = undefined
+    this.measPoints = []
+    this.prediction.size && this.regrRender()
+  }
+
 
   @ViewChild('reg') reg: ElementRef;
 
+  globalConfig: object
+  taskConfig: object
   // Rendering axises
   y: Array<number>
   x: Array<number>
@@ -43,7 +54,7 @@ export class HeatMapRegComponent implements OnInit {
 
   ngOnInit() {
     this.initMainConnection();
-    // window.onresize = () => Plotly.Plots.resize(Plotly.d3.select("#reg").node())
+    window.onresize = () => Plotly.relayout(this.reg.nativeElement, {})
   }
 
   // Rendering
@@ -51,7 +62,6 @@ export class HeatMapRegComponent implements OnInit {
     const regresion = this.reg.nativeElement
     const data = [
       {
-        // z: [[1, 20, 30], [20, 1, 60], [30, 60, 1]],
         z: this.zParser(this.prediction),
         x: this.x.map(String),
         y: this.y.map(String),
@@ -63,15 +73,15 @@ export class HeatMapRegComponent implements OnInit {
         type: 'scatter',
         mode: 'markers',
         marker: { color: 'Gold', size: 12, symbol: 'star-open-dot' },
-        x: this.solution.x,
-        y: this.solution.y
+        x: this.solution && this.solution.configuration[0],
+        y: this.solution && this.solution.configuration[1]
       },
       {
         type: 'scatter',
         mode: 'markers',
         marker: { color: 'grey', size: 9, symbol: 'cross' },
-        x: this.measured.x,
-        y: this.measured.y
+        x: this.measPoints.map(arr => arr[0]),
+        y: this.measPoints.map(arr => arr[1]) 
       }
     ];
 
@@ -89,7 +99,7 @@ export class HeatMapRegComponent implements OnInit {
         range: [Math.min(...this.y), Math.max(...this.y)]  }
     };
 
-    Plotly.newPlot(regresion, data, layout);
+    Plotly.react(regresion, data, layout);
   }
   zParser(data: Map<String, Number>): Array<Array<Number>> {
     var z = []
@@ -118,13 +128,11 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
-        this.solution.x = obj['best point']['configuration'][0] // frequency
-        this.solution.y = obj['best point']['configuration'][1] // threads
-
-        this.measured.x = obj['best point']['measured points'].map(arr => arr[0]) // frequency
-        this.measured.y = obj['best point']['measured points'].map(arr => arr[1]) // threads
-        console.log("Measured", this.measured.x, this.measured.y)
-        this.regrRender()
+        this.solution = obj['best point']
+        this.measPoints.push(obj['configuration'])
+        this.measPoints = obj['best point']['measured points']
+        console.log("Measured", this.measPoints.length)
+        this.prediction.size && this.regrRender()
       });
 
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
@@ -133,6 +141,7 @@ export class HeatMapRegComponent implements OnInit {
         this.taskConfig = obj['task']
         this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
         this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.resetRes() // Clear the old data and results
       });
 
     this.ioMain.onEvent(MainEvent.REGRESION)
@@ -141,7 +150,7 @@ export class HeatMapRegComponent implements OnInit {
         obj['regression'].map(point => {
           this.prediction.set(String(point['configuration']), point['prediction'])
         })
-        this.regrRender()
+        this.prediction.size && this.regrRender()
       });
 
   }

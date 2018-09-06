@@ -49,12 +49,23 @@ export class HeatMapComponent implements OnInit {
   y: Array<number>
   x: Array<number>
 
+  resetRes() {
+    this.result.clear()
+    this.prediction.clear()
+    this.solution = undefined
+    this.measPoints = []
+    this.default_task = undefined
+  }
+
+
   // Default theme
   theme = {
     type: type[0],
     color: colors[0],
     smooth: smooth[0]
   }
+
+  // Values that possible to use
   public type = type
   public colors = colors
   public smooth = smooth
@@ -72,7 +83,7 @@ export class HeatMapComponent implements OnInit {
     this.initWsEvents();
     this.initMainEvents();
 
-    // window.onresize = () => Plotly.Plots.resize(Plotly.d3.select("#map").node())
+    window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
   }
 
   zParser(data: Map<String,Number>): Array<Array<Number>> {
@@ -135,7 +146,7 @@ export class HeatMapComponent implements OnInit {
       }
     };
 
-    Plotly.newPlot(element, data, layout);
+    Plotly.react(element, data, layout);
   }
 
 
@@ -145,26 +156,6 @@ export class HeatMapComponent implements OnInit {
   // --------------------------   Worker-service
   private initWsEvents(): void {
     this.ioWs.initSocket();
-
-    // Fresh updates. Each time +1 task
-    // this.ioConnection = this.io.onResults()
-    //   .subscribe((obj: JSON) => {
-    //     var fresh: Task = new Task(obj)
-
-    //     var r = fresh.hasOwnProperty('meta') && fresh['meta']['result']
-    //     var delta = !!r && [r['threads'], r['frequency'], r['energy']]
-    //     !this.result.includes(delta, -1) && this.result.push(delta);
-    //     // console.log("---- Delta", delta)
-    //   });
-
-    // Observer for stack and all results from workers service
-    // this.ioConnection = this.io.onAllResults()
-    //   .subscribe((obj: any) => {
-    //     console.log("onAllResults ::", JSON.parse(obj))
-    //     var data = JSON.parse(obj)
-    //     this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
-    //   });
-
     this.ioWs.onEvent(Event.CONNECT)
       .subscribe(() => {
         console.log(' hm2.workerService: connected');
@@ -195,6 +186,7 @@ export class HeatMapComponent implements OnInit {
         console.log(' Socket: BEST', obj);
         this.solution = obj['best point']
         this.render()
+        this.isRuning = false 
       });
 
     this.ioMain.onEvent(MainEvent.INFO)
@@ -208,6 +200,7 @@ export class HeatMapComponent implements OnInit {
         this.taskConfig = obj['task']
         this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
         this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.resetRes() // Clear the old data and results
         console.log(' Socket: MAIN_CONF', obj);
       });
     this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
@@ -230,6 +223,7 @@ export class HeatMapComponent implements OnInit {
   // HTTP: Main-node
   startMain(): any {
     if (this.isRuning == false) {
+      this.stopMain(); // Сlean the old tread experiment
       this.mainREST.startMain()
         .subscribe((res) => {
           console.log('Main start:', res)

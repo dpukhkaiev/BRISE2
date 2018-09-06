@@ -1,60 +1,11 @@
 <div class="box">
-  <div class="tasks">
-    <mat-card class="stack">                                     <!-- STACK list -->
-      <mat-card-header>
-        <h3>Stack <span class="length">({{stack?.length}})</span></h3>
-      </mat-card-header> 
-      <mat-card-content>
-        <mat-list dense role="list" *ngIf=stack>
-          <mat-list-item *ngFor="let task of stack" 
-            (click)="taskInfo(task.id)" role="listitem" 
-            [class.selected]="task.id === this.focus?.id">
-            <mat-icon matListIcon>folder</mat-icon>
-            <h3 matLine> {{task.id.substr(0, 5)}} </h3>
-            <p matLine>
-              <span> {{task.run.param.frequency}} </span>
-              <span class="demo-2"> -- {{task.run.param.threads}} </span>
-            </p>
-            <button mat-icon-button (click)="taskInfo(task.id)">
-              <mat-icon>info</mat-icon>
-            </button>
-          </mat-list-item>
-        </mat-list>
-      </mat-card-content>
-    </mat-card>  <!-- end stack -->
-
-    <!-- RESULT list -->
-    <mat-card class="result">   
-      <mat-card-header>
-        <h3>Result <span class="length">({{result?.length}})</span></h3>
-      </mat-card-header> 
-      <mat-card-content>
-        <mat-list dense role="list">
-          <mat-list-item *ngFor="let item of result" 
-              (click)="taskInfo(item.id)" 
-              role="listitem"
-              [class.selected]="item.id === this.focus?.id">
-              <mat-icon matListIcon>folder</mat-icon>
-              <h3 matLine> {{item.id.substr(0, 5)}} </h3>
-              <p matLine>
-                <span> {{item.run.param.frequency}} </span>
-                <span class="demo-2"> -- {{item.run.param.threads}} </span>
-              </p>
-              <button mat-icon-button (click)="taskInfo(item.id)">
-                <mat-icon>info</mat-icon>
-              </button>
-          </mat-list-item>
-        </mat-list>
-      </mat-card-content>
-    </mat-card>  <!-- end results -->
-  </div>
   <mat-card class="focus" *ngIf=focus>
     <!-- FOCUS task. select from lists -->
-    <mat-card-actions>
-      <button mat-icon-button (click)="clearFocus()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </mat-card-actions>
+  
+    <button mat-icon-button (click)="clearFocus()" class="focus-clear">
+      <mat-icon>close</mat-icon>
+    </button>
+  
     <mat-card-title color="primary">ID: {{focus.id.substr(0, 5)}}</mat-card-title>
     <mat-tab-group>
       <mat-tab label="Result">
@@ -107,6 +58,57 @@
       </mat-tab>
     </mat-tab-group>
   </mat-card>
-      <!-- end focus -->
+  <!-- end focus -->
+
+
+  <div class="tasks">
+    <mat-card class="stack">                                     <!-- STACK list -->
+      <mat-card-header>
+        <h3>Stack <span class="length">({{stack?.length}})</span></h3>
+      </mat-card-header> 
+      <mat-card-content>
+        <mat-list dense role="list" *ngIf=stack>
+          <mat-list-item *ngFor="let task of stack" 
+            (click)="taskInfo(task.id)" role="listitem" 
+            [class.selected]="task.id === this.focus?.id">
+            <mat-icon matListIcon>folder</mat-icon>
+            <h3 matLine> {{task.id.substr(0, 5)}} </h3>
+            <p matLine>
+              <span> {{task.run.param.frequency}} </span>
+              <span class="demo-2"> -- {{task.run.param.threads}} </span>
+            </p>
+            <button mat-icon-button (click)="taskInfo(task.id)">
+              <mat-icon>info</mat-icon>
+            </button>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>  <!-- end stack -->
+
+    <!-- RESULT list -->
+    <mat-card class="result">   
+      <mat-card-header>
+        <h3>Result <span class="length">({{result?.length}})</span></h3>
+      </mat-card-header> 
+      <mat-card-content>
+        <mat-list dense role="list">
+          <mat-list-item *ngFor="let item of result" 
+              (click)="taskInfo(item.id)" 
+              role="listitem"
+              [class.selected]="item.id === this.focus?.id">
+              <mat-icon matListIcon>folder</mat-icon>
+              <h3 matLine> {{item.id.substr(0, 5)}} </h3>
+              <p matLine>
+                <span> {{item.run.param.frequency}} </span>
+                <span class="demo-2"> -- {{item.run.param.threads}} </span>
+              </p>
+              <button mat-icon-button (click)="taskInfo(item.id)">
+                <mat-icon>info</mat-icon>
+              </button>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>  <!-- end results -->
+  </div>
 
 </div>
