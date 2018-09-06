@@ -130,6 +130,7 @@ chdir('..')
 path.append(abspath('.'))
     """
     from time import time
+    from random import choice
 
 
     def test_for_duplicates(generated_configs):
@@ -145,22 +146,32 @@ path.append(abspath('.'))
                   [x / 10 for x in range(8)],
                   [x * 10 for x in range(8)]]  # 3D search space with 512 points in it.
 
+    print("Testing the basic functionality for retrieving an unique points.")
     started = time()
     sobol = SobolSequence(None, test_space)
     generated_configs = [sobol.get_next_point() for _ in range(len(list(product(*test_space))))]
     assert test_for_duplicates(generated_configs) is False, 'Got duplicates in normal search space.'
-    print(generated_configs)
     print("Time to generate all(%s) points in these search space: %s " % (len(generated_configs), time() - started))
 
+    print("Testing basic functionality for retrieving more points that the search space contains. Duplicates appears.")
     sobol = SobolSequence(None, test_space)
     generated_configs = [sobol.get_next_point() for _ in range(len(list(product(*test_space))) + 1)]
     assert test_for_duplicates(generated_configs) is True, 'Unique configs with exceeding search space, investigate.'
 
+    print("Testing disabling the same point multiple times and further proper work of the Sobol.")
     sobol = SobolSequence(None, test_space)
-    configuration = [1, 0.1]
+    configuration = choice(list(product(*test_space)))
     assert sobol.disable_point(configuration) is True, "Unable to disable configuration!"
     assert sobol.disable_point(configuration) is False, "Able to disable same configuration twice!"
     generated_configs = [sobol.get_next_point() for _ in range(len(list(product(*test_space))) - 1)]
-    assert test_for_duplicates(generated_configs) is False, "Got duplicates in search space with disabled " \
-                                                            "configurations."
+    assert test_for_duplicates(generated_configs) is False, "Got duplicates in search space with disabled configurations."
+
+    print("Testing the multiple points disabling and further proper work of the Sobol.")
+    sobol = SobolSequence(None, test_space)
+    for point in list(product(*test_space))[0: int(len(list(product(*test_space)))/3)]:
+        sobol.disable_point(point)
+    generated_configs = [sobol.get_next_point() for _ in range(int(len(list(product(*test_space)))/3))]
+    assert test_for_duplicates(generated_configs) is False, \
+        "Got duplicates with multiple (%s) disabled points!" % len(sobol.returned_points)
+
     print("\nUnit test pass.")
