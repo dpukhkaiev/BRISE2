@@ -1,7 +1,8 @@
-
+import traceback
 
 import numpy as np
 import statsmodels.api as sm
+import scipy.stats as sps
 
 
 
@@ -144,10 +145,7 @@ class BayesianOptimization(Model):
 
         if sample is None:
             try:
-            
-                # sample from largest budget
-                budget = max(self.kde_models.keys())
-
+                
                 l = self.model['good'].pdf
                 g = self.model['bad'].pdf
 
