@@ -1,9 +1,8 @@
 __doc__ = """
-Module to read data from files. Each function = 1 file type. 
-"""
-
+    Module to read data from files. Each function = 1 file type."""
 import json
 from os import path, makedirs
+
 
 def load_json_file(path_to_file="./task.json"):
     """
@@ -17,6 +16,7 @@ def load_json_file(path_to_file="./task.json"):
             return jsonFile
     except IOError as e:
         raise e
+
 
 def create_folder_if_not_exists(folderPath):
     """
