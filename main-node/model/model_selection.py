@@ -1,4 +1,5 @@
 from model.regression_sweet_spot import RegressionSweetSpot
+from model.bayesian_optimization import BayesianOptimization
 
 
 def get_model(model_creation_config, log_file_name, features, labels):
@@ -16,6 +17,8 @@ def get_model(model_creation_config, log_file_name, features, labels):
                                    test_size=model_creation_config["ModelTestSize"],
                                    features=features,
                                    labels=labels)
+    if model_creation_config["ModelType"] == "BO":
+        return BayesianOptimization()
     else:
         print("ERROR: Configuration Error - model type not supported.")
         raise KeyError
