@@ -6,7 +6,7 @@
     <mat-progress-bar mode="indeterminate" *ngIf=isRuning></mat-progress-bar>
   </div>
 
-  <div class="select-box" *ngIf=y&&x>
+  <div class="select-box" *ngIf=y&&x [hidden]='result'>
     <!-- select color -->
     <mat-form-field>
       <mat-select [(value)]="theme.color" (selectionChange)="render()" placeholder="Color">
@@ -31,7 +31,7 @@
         </mat-option>
       </mat-select>
     </mat-form-field>
-    <mat-card *ngIf="solution" class="chart-solution">
+    <mat-card *ngIf=solution class="chart-solution">
       <mat-icon matListIcon>star</mat-icon>
       <span>Solution: </span> <h3>{{solution.configuration}}</h3>
       <span>Result deviation: </span> <h3>{{(solution.result/default_task.result-1)*100 | number:'2.0-0'}}%</h3>

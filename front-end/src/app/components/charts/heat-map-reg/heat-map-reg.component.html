@@ -1,5 +1,5 @@
-<mat-card *ngIf=y&&x>
-    <div class="select-box">
+<mat-card *ngIf=y&&x >
+    <div class="select-box" [hidden]='prediction'>
         <!-- select color -->
         <mat-form-field>
             <mat-select [(value)]="theme.color" (selectionChange)="regrRender()" placeholder="Color">

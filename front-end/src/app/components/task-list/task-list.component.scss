@@ -52,3 +52,14 @@ mat-tab-body mat-grid-tile {
   vertical-align: middle;
   margin-right: 5px;
 }
+
+/* Focus */
+.focus {
+  position: sticky;
+  top: 20px;
+  .focus-clear {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}

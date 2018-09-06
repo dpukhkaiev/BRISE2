@@ -15,10 +15,7 @@ export class MainSocketService {
   private socket;
 
   constructor() {
-    this.socket = socketIo(SERVER_URL, {
-      upgrade: false,
-      transports: ['websocket']
-    });
+    this.socket = socketIo(SERVER_URL);
   }
 
   public onEvent(event: MainEvent): Observable<any> {

@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  workerService: 'http://0.0.0.0:8080',
-  mainNode: 'http://0.0.0.0:80',
+  workerService: 'http://localhost:8080',
+  mainNode: 'http://localhost:80',
   nameSpace: '/front-end'
 };
