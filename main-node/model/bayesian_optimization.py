@@ -1,50 +1,54 @@
 import traceback
 
 import numpy as np
-import statsmodels.api as sm
+# TODO: Need to uncomment it!
+# import statsmodels.api as sm
 import scipy.stats as sps
 
-
+import logging
 
 
 from model.model_abs import Model
 
 
 class BayesianOptimization(Model):
-    def __init__(self, configspace, min_points_in_model = None,
-				 top_n_percent=15, num_samples = 64, random_fraction=1/3,
-				 bandwidth_factor=3, min_bandwidth=1e-3,
-				**kwargs):
+    def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=15, num_samples=64, random_fraction=1/3,
+                 bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
+
         self.model = None
         self.top_n_percent = top_n_percent
-        self.configspace = configspace
+
+        # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
+        self.task_config = whole_task_config
+
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
 
-        self.min_points_in_model = min_points_in_model
-        if min_points_in_model is None:
-            self.min_points_in_model = len(self.configspace.get_hyperparameters())+1
+        if "logger" not in dir(self):
+            self.logger = logging.getLogger(__name__)
 
-        if self.min_points_in_model < len(self.configspace.get_hyperparameters())+1:
+        if min_points_in_model is None:
+            self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
+        elif min_points_in_model < len(self.task_config["DomainDescription"]["AllConfigurations"])+1:
             self.logger.warning('Invalid min_points_in_model value. Setting it to %i' % (
-                len(self.configspace.get_hyperparameters())+1))
-            self.min_points_in_model = len(self.configspace.get_hyperparameters())+1
+                len(self.task_config["DomainDescription"]["AllConfigurations"])+1))
+            self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
 
         self.num_samples = num_samples
         self.random_fraction = random_fraction
 
-        hps = self.configspace.get_hyperparameters()
+        hps = self.self.task_config["DomainDescription"]["AllConfigurations"]
 
         self.kde_vartypes = ""
         self.vartypes = []
 
         for h in hps:
-            if hasattr(h, 'choices'):
-                self.kde_vartypes += 'u'
-                self.vartypes += [len(h.choices)]
-            else:
-                self.kde_vartypes += 'c'
-                self.vartypes += [0]
+            # if hasattr(h, 'choices'):
+            self.kde_vartypes += 'u'
+            self.vartypes += [len(h)]
+            # else:
+            #     self.kde_vartypes += 'c'
+            #     self.vartypes += [0]
 
         self.vartypes = np.array(self.vartypes, dtype=int)
 
