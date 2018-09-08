@@ -30,7 +30,7 @@ Possible values of configurations for your system should be provided in separate
     - `MaxRepeatsOfExperiment` - `int`. Maximum times to run each experiment. 
     - `MaxTimeToRunExperiment` - `float`. Maximum time to run each experiment in seconds. In case of exceeding the experiment will be terminated.
     
-- `ModelCreation` - section with the configuration related to the prediction model creating process.
+- `ModelConfiguration` - section with the configuration related to the prediction model creating process.
     - `ModelTestSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
     - `MinimumAccuracy` - `float`. A minimum accuracy that model should provide before making any predictions/testing.
     - `ModelType` - `string`. Type of prediction model. Currently available `regression`.
@@ -63,7 +63,7 @@ Possible values of configurations for your system should be provided in separate
         "MaxRepeatsOfExperiment": 10,
         "MaxTimeToRunExperiment": 10
       },
-      "ModelCreation":{
+      "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
         "ModelType"         : "regression",
