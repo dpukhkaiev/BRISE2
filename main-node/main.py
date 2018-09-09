@@ -67,7 +67,7 @@ def run(io=None):
     model = get_model(model_config=task_config["ModelConfiguration"],
                       log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
                                                           task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"],
-                                                          task_config["ModelConfiguration"]["ModelType"]))
+                                                          task_config["ModelConfiguration"]["ModelType"]), task_config=task_config)
 
     # The main effort does here.
     # 1. Building model.
@@ -78,8 +78,8 @@ def run(io=None):
     #
     finish = False
     while not finish:
-
-        model_built = model.build_model(features, labels)
+        model.add_data(features, labels)
+        model_built = model.build_model()
 
         if model_built:
             model_validated = model.validate_model(io=io, search_space=search_space)
