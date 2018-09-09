@@ -15,3 +15,6 @@ class Model(ABC):
 
     @abstractmethod
     def get_result(self): pass
+    
+    @abstractmethod
+    def add_data(self): pass
