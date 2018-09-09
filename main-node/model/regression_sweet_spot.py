@@ -37,43 +37,16 @@ class RegressionSweetSpot(Model):
         self.solution_features = []
         self.solution_labels = []
 
-    def build_model(self, features, labels, degree=6, tries=20):
+    def build_model(self, degree=6, tries=20):
         """
 
-        Method adds new features and labels to whole set of features and labels.
-        Afterwards - tries to build the new regression model.
+        Tries to build the new regression model.
 
-        :param features: List. features in machine learning meaning selected by Sobol
-        :param labels: List. labels in machine learning meaning selected by Sobol
         :param degree: Int. scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
         :param tries: Int. Number of tries to build the model in each step of decreasing test size.
         :return: Boolean. True if the model was successfully built.
                           False if the input data didn`t pass the validation OR the model was not built successfully.
         """
-
-        # An input validation and updating of the features and labels set.
-        # 1. Tests if lists of features and labels are same length.
-        # 2. Tests if all lists are nested.
-        # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
-        # These all(all(...)..) returns true if all data
-        try:
-
-            assert len(features) == len(labels) > 0, \
-                "Incorrect length!\nFeatures:%s\nLabels:%s" % (str(features), str(labels))
-
-            assert all(all(isinstance(value, (int, float)) for value in feature) for feature in features), \
-                "Incorrect data types in features: %s" % str(features)
-
-            assert all(all(isinstance(value, (int, float)) for value in label) for label in labels), \
-                "Incorrect data types in features: %s" % str(labels)
-
-            self.all_features += features
-            self.all_labels += labels
-
-        except AssertionError as err:
-            # TODO: replace with logger.
-            print("ERROR! Regression input validation error:\n%s" % err)
-            return False
 
         # Building model
         cur_accuracy = 0.99
@@ -267,3 +240,34 @@ class RegressionSweetSpot(Model):
             io.emit('best point', temp)
 
         return self.solution_labels, self.solution_features
+    
+    def add_data(self, features, labels): 
+        """
+        
+        Method adds new features and labels to whole set of features and labels.
+
+        :param features: List. features in machine learning meaning selected by Sobol
+        :param labels: List. labels in machine learning meaning selected by Sobol
+        """
+        # An input validation and updating of the features and labels set.
+        # 1. Tests if lists of features and labels are same length.
+        # 2. Tests if all lists are nested.
+        # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
+        # These all(all(...)..) returns true if all data
+        try:
+
+            assert len(features) == len(labels) > 0, \
+                "Incorrect length!\nFeatures:%s\nLabels:%s" % (str(features), str(labels))
+
+            assert all(all(isinstance(value, (int, float)) for value in feature) for feature in features), \
+                "Incorrect data types in features: %s" % str(features)
+
+            assert all(all(isinstance(value, (int, float)) for value in label) for label in labels), \
+                "Incorrect data types in labels: %s" % str(labels)
+
+            self.all_features += features
+            self.all_labels += labels
+
+        except AssertionError as err:
+            # TODO: replace with logger.
+            print("ERROR! Regression input validation error:\n%s" % err)
