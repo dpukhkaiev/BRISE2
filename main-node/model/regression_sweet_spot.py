@@ -44,8 +44,7 @@ class RegressionSweetSpot(Model):
 
         :param degree: Int. scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
         :param tries: Int. Number of tries to build the model in each step of decreasing test size.
-        :return: Boolean. True if the model was successfully built.
-                          False if the input data didn`t pass the validation OR the model was not built successfully.
+        :return: Boolean. True if the model was successfully built, otherwise - False.
         """
 
         # Building model

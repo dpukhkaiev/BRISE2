@@ -67,7 +67,8 @@ def run(io=None):
     model = get_model(model_config=task_config["ModelConfiguration"],
                       log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
                                                           task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"],
-                                                          task_config["ModelConfiguration"]["ModelType"]), task_config=task_config)
+                                                          task_config["ModelConfiguration"]["ModelType"]),
+                      task_config=task_config)
 
     # The main effort does here.
     # 1. Building model.
@@ -92,8 +93,8 @@ def run(io=None):
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
 
-                features += [predicted_features]
-                labels += [validated_labels]
+                features = [predicted_features]
+                labels = [validated_labels]
 
                 if finish:
                     optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
