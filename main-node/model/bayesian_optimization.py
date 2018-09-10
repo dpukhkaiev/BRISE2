@@ -11,9 +11,11 @@ import logging
 from model.model_abs import Model
 from tools.features_tools import split_features_and_labels
 
+
 class BayesianOptimization(Model):
+
     def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=15, num_samples=64, random_fraction=1/3,
-                 bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
+                 bandwidth_factor=3, min_bandwidth=10, **kwargs):
 
         self.model = None
         self.top_n_percent = top_n_percent
@@ -62,14 +64,12 @@ class BayesianOptimization(Model):
         self.solution_labels = []
         self.good_config_rankings = dict()
 
-
     def build_model(self, update_model=True):
         """
 
         Tries to build the new Bayesian Optimization model.
 
-        :return: Boolean. True if the model was successfully built.
-                          False if the input data didn`t pass the validation OR the model was not built successfully.
+        :return: Boolean. True if the model was successfully built, otherwise - False.
         """
 
         # Building model
@@ -96,7 +96,7 @@ class BayesianOptimization(Model):
         n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100)
 
         # Refit KDE for the current budget
-        idx = np.argsort(train_labels)
+        idx = np.argsort(train_labels, axis=0)
 
         train_data_good = self.impute_conditional_data(train_features[idx[:n_good]])
         train_data_bad  = self.impute_conditional_data(train_features[idx[n_good:n_good+n_bad]])
@@ -149,7 +149,7 @@ class BayesianOptimization(Model):
                 l = self.model['good'].pdf
                 g = self.model['bad'].pdf
 
-                minimize_me = lambda x: max(1e-32, g(x))/max(l(x),1e-32)
+                minimize_me = lambda x: max(1e-32, g(x))/max(l(x), 1e-32)
 
                 kde_good = self.model['good']
                 kde_bad = self.model['bad']
@@ -201,6 +201,11 @@ class BayesianOptimization(Model):
                     info_dict['model_based_pick'] = False
                 else:
                     self.logger.debug('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
+                    sample = []
+                    for index, dimension in enumerate(self.task_config["DomainDescription"]["AllConfigurations"]):
+                        sample.append(dimension[best_vector[index]])
+
+
                     # for i, hp_value in enumerate(best_vector):
                     #     if isinstance(
                     #         self.configspace.get_hyperparameter(
@@ -232,7 +237,7 @@ class BayesianOptimization(Model):
 
 
         self.logger.debug('done sampling a new configuration.')
-        return sample, info_dict
+        return [best], sample
 
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
@@ -245,9 +250,7 @@ class BayesianOptimization(Model):
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels > default_value:
-            print("Predicted energy larger than default.")
-            print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
-                predicted_features[0], solution_labels[0][0], default_value[0][0]))
+            print("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
             print("Solution validation success!")
@@ -258,7 +261,8 @@ class BayesianOptimization(Model):
         self.solution_features = solution_feature[0]
         return self.solution_labels, prediction_is_final
 
-    def get_result(self, repeater, features, labels, io): 
+    def get_result(self, repeater, features, labels, io):
+        # TODO: need to review a way of features and labels addition here.
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
 
