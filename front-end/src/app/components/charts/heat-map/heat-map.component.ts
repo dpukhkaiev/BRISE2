@@ -110,19 +110,19 @@ export class HeatMapComponent implements OnInit {
         colorscale: this.theme.color,
         zsmooth: this.theme.smooth
       }, 
-      { // Best point. Solution
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'Gold', size: 16, symbol: 'star-dot' },
-        x: this.solution && [this.solution.configuration[0]],
-        y: this.solution && [this.solution.configuration[1]]
-      },
       { // Measured points
         type: 'scatter',
         mode: 'markers',
         marker: { color: 'grey', size: 7, symbol: 'cross' },
         x: this.measPoints.map(arr => arr[0]),
         y: this.measPoints.map(arr => arr[1]) 
+      },
+      { // Best point. Solution
+        type: 'scatter',
+        mode: 'markers',
+        marker: { color: 'Gold', size: 16, symbol: 'star' },
+        x: this.solution && [this.solution.configuration[0]],
+        y: this.solution && [this.solution.configuration[1]]
       }
     ];
 

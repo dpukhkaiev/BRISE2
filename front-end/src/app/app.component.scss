@@ -4,6 +4,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    // background-color: $divider-color;
     .brise {
         display: flex;
         flex-direction: column;
@@ -13,6 +14,9 @@
         color: $accent-color;
         font-size: .8em;
         margin-top: -10px;
+    }
+    svg {
+        margin-left: 5px;
     }
 }
 #logo {
@@ -24,8 +28,10 @@
 }
 
 .wrapper {
-    max-width: 1200px;
-    margin: 10px auto;
+    padding: 0 calc((100% - #{$break-large})/2);
+}
+.content {
+    flex: 1;
 }
 
 h1 {
@@ -35,4 +41,13 @@ h1 {
         color: $secondary-text-color;
         font-size: .6em;
     }
+}
+
+.footer {
+    // background-color: $divider-color;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    margin-top: 50px;
+
 }
