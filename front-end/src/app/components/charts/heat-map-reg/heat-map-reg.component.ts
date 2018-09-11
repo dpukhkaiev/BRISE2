@@ -28,7 +28,6 @@ export class HeatMapRegComponent implements OnInit {
     this.prediction.clear()
     this.solution = undefined
     this.measPoints = []
-    this.prediction.size && this.regrRender()
   }
 
 
@@ -72,22 +71,25 @@ export class HeatMapRegComponent implements OnInit {
       {
         type: 'scatter',
         mode: 'markers',
-        marker: { color: 'Gold', size: 12, symbol: 'star-open-dot' },
-        x: this.solution && this.solution.configuration[0],
-        y: this.solution && this.solution.configuration[1]
+        name: 'measured points',
+        marker: { color: 'grey', size: 8, symbol: 'x' },
+        x: this.measPoints.map(arr => arr[0]),
+        y: this.measPoints.map(arr => arr[1]) 
       },
       {
         type: 'scatter',
         mode: 'markers',
-        marker: { color: 'grey', size: 9, symbol: 'cross' },
-        x: this.measPoints.map(arr => arr[0]),
-        y: this.measPoints.map(arr => arr[1]) 
+        name: 'solution',
+        marker: { color: 'Gold', size: 16, symbol: 'star' },
+        x: this.solution && [this.solution.configuration[0]],
+        y: this.solution && [this.solution.configuration[1]]
       }
     ];
 
     var layout = {
       title: 'Regresion',
       autosize: true,
+      showlegend: false,
       xaxis: { title: "Frequency",
         type: 'category',
         autorange: true,

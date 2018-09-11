@@ -15,6 +15,7 @@ import { HeatMapRegComponent } from './components/charts/heat-map-reg/heat-map-r
 import { TaskListComponent } from './components/task-list/task-list.component';
 import { InfoBoardComponent } from './components/info-board/info-board.component';
 import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
+import { FooterComponent } from './components/footer/footer.component';
 
 
 @NgModule({ 
@@ -25,7 +26,8 @@ import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
     HeatMapComponent,
     HeatMapRegComponent,
     InfoBoardComponent,
-    ImpResComponent
+    ImpResComponent,
+    FooterComponent
   ],
   imports: [
     BrowserModule, HttpModule,

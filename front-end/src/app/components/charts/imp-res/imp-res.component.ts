@@ -55,12 +55,17 @@ export class ImpResComponent implements OnInit {
       .subscribe((obj: any) => {
         let min = new Date().getMinutes()
         let sec = new Date().getSeconds()
+        this.allRes.add({
+          'configuration': obj['configuration'],
+          'result': obj['result'],
+          'time': min + 'm ' + sec + 's'
+        }) // Add new point(result)
+
         let temp: PointExp = {
           'configuration': obj['configuration'],
           'result': obj['result'],
           'time': min + 'm ' + sec + 's'
         } 
-        this.allRes.add(temp)
 
         // Check the best available point
         this.bestRes && this.bestRes.forEach(function(resItem){
@@ -69,12 +74,13 @@ export class ImpResComponent implements OnInit {
             temp.configuration = resItem.configuration
           }
         })  
-        this.bestRes.add(temp)
+        this.bestRes.add(temp) // Add the best available point(result)
         this.bestRes.size>2 && this.render()
       });
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
       .subscribe((obj: any) => {
         this.bestRes.clear()
+        this.allRes.clear()
         this.solution = undefined
       });
   }
@@ -87,44 +93,46 @@ export class ImpResComponent implements OnInit {
     const xBest = Array.from(this.bestRes).map(i => i["time"]);
     // Results
     const yBest = Array.from(this.bestRes).map(i => i["result"]);
-
-    // console.log(" - X", xData)
-    // console.log(" - Y", yData)
-
-    const data = [ 
-      { // Data for the best available results 
-        x: xBest,
-        y: yBest,
-        type: 'scatter',
-        mode: 'lines+markers',
-        line: { color: 'rgba(67,67,67,1)', width: 2, shape: 'spline', symbol: 'x' },
-        name: 'best point in time',
-        marker: { size: 6 }
+    
+    var allResultSet = { // Data for all results
+      x: Array.from(this.allRes).map(i => i["time"]),
+      y: Array.from(this.allRes).map(i => i["result"]),
+      type: 'scatter',
+      mode: 'lines+markers',
+      line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline', dash: 'dot' },
+      text: Array.from(this.allRes).map(i => String(i["configuration"])),
+      marker: {
+        color: 'rgba(255,64,129,1)',
+        size: 8,
+        symbol: 'x'
       },
-      { // Data for all results
-        x: Array.from(this.allRes).map(i => i["time"]),
-        y: Array.from(this.allRes).map(i => i["result"]),
-        type: 'scatter',
-        mode: 'lines+markers',
-        line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline', dash: 'dot', symbol: 'x' },
-        marker: {
-          color: 'rgb(219, 64, 82)',
-          size: 12
-        },
-        name: 'results'
-      },
-      { // Start & Finish markers
-        x: [xBest[0], xBest[xBest.length-1]],
-        y: [yBest[0], yBest[yBest.length-1]],
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'rgba(255,64,129,1)', size: 10 }
-      }
-    ];
+      name: 'results'
+    }
+    var bestPointSet = { // Data for the best available results 
+      x: xBest,
+      y: yBest,
+      type: 'scatter',
+      mode: 'lines+markers',
+      line: { color: 'rgba(67,67,67,1)', width: 2, shape: 'spline' },
+      name: 'best point',
+      marker: { size: 6, symbol: 'x', color: 'rgba(67,67,67,1)' }
+    }
+
+    var startEndPoint = { // Start & Finish markers
+      x: [xBest[0], xBest[xBest.length - 1]],
+      y: [yBest[0], yBest[yBest.length - 1]],
+      type: 'scatter',
+      mode: 'markers',
+      hoverinfo: 'none',
+      showlegend: false,
+      marker: { color: 'rgba(255,64,129,1)', size: 10 }
+    }
+
+    let data = [allResultSet, bestPointSet, startEndPoint];
 
     var layout = {
       title: 'The best results in time',
-      showlegend: false,
+      showlegend: true,
       autosize: true,
       xaxis: {
         title: "Time",
@@ -153,7 +161,7 @@ export class ImpResComponent implements OnInit {
         showticklabels: true,
         ticks: 'outside',
         tickcolor: 'rgb(204,204,204)',
-        ticklen: 3,
+        ticklen: 5,
         tickfont: {
           family: 'Roboto',
           size: 12,
