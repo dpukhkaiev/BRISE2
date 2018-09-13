@@ -9,3 +9,6 @@ class SelectionAlgorithm(ABC):
 
     @abstractclassmethod
     def get_next_point(self): pass
+
+    @abstractclassmethod
+    def disable_point(self): pass

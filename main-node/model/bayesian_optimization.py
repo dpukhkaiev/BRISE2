@@ -44,8 +44,8 @@ from tools.features_tools import split_features_and_labels
 
 class BayesianOptimization(Model):
 
-    def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=15, num_samples=64, random_fraction=1/3,
-                 bandwidth_factor=3, min_bandwidth=10, **kwargs):
+    def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=30, num_samples=96, random_fraction=1/3,
+                 bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
 
         self.model = None
         self.top_n_percent = top_n_percent
@@ -76,6 +76,10 @@ class BayesianOptimization(Model):
 
         for h in hps:
             # if hasattr(h, 'choices'):
+            # Ordered, cause our data is ordered, possible variants:
+            #             - c : continuous
+            #             - u : unordered (discrete)
+            #             - o : ordered (discrete)
             self.kde_vartypes += 'u'
             self.vartypes += [len(h)]
             # else:
@@ -94,6 +98,40 @@ class BayesianOptimization(Model):
         self.solution_labels = []
         self.good_config_rankings = dict()
 
+    def _idx_to_config(self, indexes):
+        """
+        Helper function to transform list of indexes in search space of configurations to the real configurations
+        :param indexes: List. indexes (integers)
+        :return: List. Target system configurations.
+        """
+        configurations = []
+
+        for cur_index in indexes:
+            configuration = []
+            for hyperparam_index, index in enumerate(cur_index):
+                hyperparam_value = self.task_config["DomainDescription"]["AllConfigurations"][hyperparam_index][index]
+                configuration.insert(hyperparam_index, hyperparam_value)
+            configurations.append(configuration)
+
+        return configurations
+
+    def _config_to_idx(self, configs):
+        """
+        Helper function to real configuration to its indexes in the search space.
+        :param config: List. Target system configurations.
+        :return: List. Indexes (integers).
+        """
+        indexes = []
+
+        for config in configs:
+            cur_indexes = []
+            for hyperparam_index, value in enumerate(config):
+                param_index = self.task_config["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
+                cur_indexes.insert(hyperparam_index, param_index)
+            indexes.append(cur_indexes)
+
+        return indexes
+
     def build_model(self, update_model=True):
         """
 
@@ -102,27 +140,29 @@ class BayesianOptimization(Model):
         :return: Boolean. True if the model was successfully built, otherwise - False.
         """
 
-        # Building model
+        # Skip model building:
 
-        #probability that we will pick random point
+        # a) With the certain probability at all (to continue with picking a random point).
         if np.random.rand() < self.random_fraction:
             return False
 
-        # skip model building:
-        #a) if not enough points are available
+        # b) if not enough points are available
         if len(self.all_features) <= self.min_points_in_model-1:
             self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"%(len(self.all_features), self.min_points_in_model+1))
             return False
 
-        #b) during warnm starting when we feed previous results in and only update once
+        # c) during warnm starting when we feed previous results in and only update once
+        # TODO: The 'warm startup' feature not implemented yet.
         if not update_model:
             return False
 
-        train_features = np.array(self.all_features)
-        train_labels =  np.array(self.all_labels)
+        print("INFO: Building the Bayesian optimization models..")
 
-        n_good= max(self.min_points_in_model, (self.top_n_percent * train_features.shape[0])//100 )
-        #n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100), 10)
+        train_features = np.array(self.all_features)
+        train_labels = np.array(self.all_labels)
+
+        n_good = max(self.min_points_in_model, (self.top_n_percent * train_features.shape[0])//100)
+        # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100), 10)
         n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100)
 
         # Refit KDE for the current budget
@@ -136,21 +176,24 @@ class BayesianOptimization(Model):
         if train_data_bad.shape[0] <= train_data_bad.shape[1]:
             return False
 
-        #more expensive crossvalidation method
-        #bw_estimation = 'cv_ls'
-
-        # quick rule of thumb
+        # Bandwidth selection method. There are 3 possible variants:
+        # 'cv_ml' - cross validation maximum likelihood
+        # 'cv_ls' - cross validation least squares, more expensive crossvalidation method
+        # 'normal_reference' - default, quick, rule of thumb
         bw_estimation = 'normal_reference'
 
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,  var_type=self.kde_vartypes, bw=bw_estimation)
         good_kde = sm.nonparametric.KDEMultivariate(data=train_data_good, var_type=self.kde_vartypes, bw=bw_estimation)
 
+        print("INFO: The models built with bandwidth: good - %s, bad - %s. Minimum from the configurations %s"
+              % (good_kde.bw, bad_kde.bw, self.min_bandwidth))
+
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth,None)
         good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth,None)
 
         self.model = {
-        	'good': good_kde,
-        	'bad' : bad_kde
+            'good': good_kde,
+            'bad' : bad_kde
         }
 
         # update probs for the categorical parameters for later sampling
@@ -366,7 +409,7 @@ class BayesianOptimization(Model):
                 # assign a +inf loss and count them as bad configurations
                 self.all_labels += np.inf
             else:
-                self.all_features += features
+                self.all_features += self._config_to_idx(features)
                 self.all_labels += labels
 
         except AssertionError as err:
