@@ -78,6 +78,9 @@ def run(io=None):
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
     finish = False
+    cur_stats_message = "\nNew data point needed to continue process of balancing. " \
+                        "%s configuration points of %s was evaluated. %s retrieved from the selection algorithm.\n" \
+                        + '='*120
     while not finish:
         model.add_data(features, labels)
         model_built = model.build_model()
@@ -95,6 +98,7 @@ def run(io=None):
 
                 features = [predicted_features]
                 labels = [validated_labels]
+                selector.disable_point(predicted_features)
 
                 if finish:
                     optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
@@ -103,18 +107,19 @@ def run(io=None):
                     return optimal_result, optimal_config
 
                 else:
+                    print(cur_stats_message % (len(model.all_features),
+                                               len(search_space),
+                                               str(selector.numOfGeneratedPoints)))
                     continue
 
-        print("New data point needed to continue process of balancing. "
-              "Number of data points retrieved from the selection algorithm: %s" % str(selector.numOfGeneratedPoints))
-        print('='*120)
+        print(cur_stats_message % (len(model.all_features), len(search_space), str(selector.numOfGeneratedPoints)))
         cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
 
         results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
         features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
 
         # If BRISE cannot finish his work properly - terminate it.
-        if len(features) > len(search_space):
+        if len(model.all_features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
             optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
             write_results(global_config, task_config, time_started, features, labels,
