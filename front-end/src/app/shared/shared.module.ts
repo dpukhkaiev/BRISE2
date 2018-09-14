@@ -19,7 +19,11 @@ import {
   MatSnackBarModule,
   MatExpansionModule,
   MatBadgeModule,
-  MatSlideToggleModule
+  MatSlideToggleModule,
+  MatTableModule,
+  MatInputModule,
+  MatPaginatorModule,
+  MatSortModule
 } from '@angular/material';
 
 import { LoaderComponent } from './loader/loader.component';
@@ -41,7 +45,11 @@ import { LoaderComponent } from './loader/loader.component';
     MatSnackBarModule,
     MatExpansionModule,
     MatBadgeModule,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    MatTableModule,
+    MatInputModule,
+    MatPaginatorModule,
+    MatSortModule
   ],
   declarations: [LoaderComponent],
   exports: [
@@ -61,7 +69,11 @@ import { LoaderComponent } from './loader/loader.component';
     MatExpansionModule,
     MatBadgeModule,
     LoaderComponent,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    MatTableModule,
+    MatInputModule,
+    MatPaginatorModule,
+    MatSortModule
   ]
 })
 export class SharedModule { }

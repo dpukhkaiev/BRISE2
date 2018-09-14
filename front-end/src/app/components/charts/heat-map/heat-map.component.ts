@@ -92,7 +92,7 @@ export class HeatMapComponent implements OnInit {
     this.y.forEach(y => { // y - threads
       var row = [] 
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([x, y])))
+        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
       });
       z.push(row)
     });
@@ -114,15 +114,15 @@ export class HeatMapComponent implements OnInit {
         type: 'scatter',
         mode: 'markers',
         marker: { color: 'grey', size: 7, symbol: 'cross' },
-        x: this.measPoints.map(arr => arr[0]),
-        y: this.measPoints.map(arr => arr[1]) 
+        x: this.measPoints.map(arr => arr[1]),
+        y: this.measPoints.map(arr => arr[0]) 
       },
       { // Best point. Solution
         type: 'scatter',
         mode: 'markers',
         marker: { color: 'Gold', size: 16, symbol: 'star' },
-        x: this.solution && [this.solution.configuration[0]],
-        y: this.solution && [this.solution.configuration[1]]
+        x: this.solution && [this.solution.configuration[1]],
+        y: this.solution && [this.solution.configuration[0]]
       }
     ];
 
@@ -131,14 +131,14 @@ export class HeatMapComponent implements OnInit {
       autosize: true,
       showlegend: false,
       xaxis: {
-        title: "Frequency",
+        title: "Threads",
         type: 'category',
         autorange: true,
         range: [Math.min(...this.x), Math.max(...this.x)],
         showgrid: true
       },
       yaxis: {
-        title: "Threads",
+        title: "Frequency",
         type: 'category',
         autorange: true,
         range: [Math.min(...this.y), Math.max(...this.y)],
@@ -198,8 +198,8 @@ export class HeatMapComponent implements OnInit {
       .subscribe((obj: any) => {
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
         console.log(' Socket: MAIN_CONF', obj);
       });
