@@ -1,4 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+
+import { MatPaginator, MatTable, MatSort, MatTableDataSource } from '@angular/material';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 
 // Service
 import { RestService } from '../../core/services/rest.service';
@@ -10,23 +13,72 @@ import { Event } from '../../data/client-enums';
 @Component({
   selector: 'app-task-list',
   templateUrl: './task-list.component.html',
-  styleUrls: ['./task-list.component.scss']  
+  styleUrls: ['./task-list.component.scss'],
+  animations: [
+    trigger('detailExpand', [
+      state('collapsed', style({ height: '0px', minHeight: '0', display: 'none' })),
+      state('expanded', style({ height: '*' })),
+      transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
+    ]),
+  ],  
 })
 export class TaskListComponent implements OnInit {
+
+  @ViewChild('table') table: MatTable<Element>;
+  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
   
-  stack = []
-  result = [] 
-  focus
+  stack: Array<any> = []
+  result: Array<Task> = []
+  // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
+  // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
+  focus: any
+  displayedColumns: string[] = ['id', 'run', 'file', 'result', 'time'];
   ioConnection: any;
 
-  constructor(private ws: RestService, private io: WsSocketService) { }
+  public resultData: MatTableDataSource<Task>
+
+  constructor(private ws: RestService, private io: WsSocketService) {
+    this.resultData = new MatTableDataSource(this.result);
+
+    this.resultData.filterPredicate = (task, filter) => {
+      const dataStr = task.id + 
+      task.run.param.frequency + 
+      task.run.param.threads + 
+      task.config.ws_file + 
+      task.meta.result.energy +
+      task.meta.result.time;
+      // JSON.stringify(task).includes(filter)
+      return dataStr.indexOf(filter) != -1;
+    }
+  }
 
   ngOnInit() {
+    this.resultData.paginator = this.paginator;
+    this.resultData.sort = this.sort;
+    this.resultData.sortingDataAccessor = this.sortingDataAccessor;
     this.initIoConnection();
   }
 
   clearFocus():void {
     this.focus = null
+  }
+  applyFilter(filterValue: string) {
+    this.resultData.filter = filterValue.trim().toLowerCase();
+
+    if (this.resultData.paginator) {
+      this.resultData.paginator.firstPage();
+    }
+  }
+  sortingDataAccessor(data, sortHeaderId) {
+    switch (sortHeaderId) {
+      case 'id': return data.id ? data.id : null;
+      case 'run': return data.run.param.frequency ? data.run.param.frequency : null;
+      case 'file': return data.config.ws_file ? data.config.ws_file : null;
+      case 'result': return data.meta ? Number(data.meta.result.energy) : null;
+      case 'time': return data.meta ? String(data.meta.result.time) : null;
+      default: return data[sortHeaderId];
+    }
   }
 
   // --------------------- SOCKET ---------------
@@ -38,12 +90,14 @@ export class TaskListComponent implements OnInit {
       .subscribe((obj: JSON) => {
         var fresh: Task = new Task(obj)
         !this.result.includes(fresh, -1) && this.result.push(fresh);
-        // console.log(' Object:', obj);
+
+        this.resultData.data = this.result;
+        // this.table.renderRows();
       });
     // Rewrite task stack
     this.ioConnection = this.io.stack()
       .subscribe((obj: Array<Object>) => {
-        this.stack = obj;
+        this.stack = obj.map(i => new Task(i));
         // console.log(' Stack:', obj);
       });
 
@@ -52,7 +106,7 @@ export class TaskListComponent implements OnInit {
       .subscribe((obj: any) => {
         console.log("onAllResults ::", JSON.parse(obj))
         var data = JSON.parse(obj)
-        this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
+        // this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
         this.stack = (data.hasOwnProperty('stack') && data['stack'].length) ? data['stack'].map((t) => new Task(t)) : [];
       });
 

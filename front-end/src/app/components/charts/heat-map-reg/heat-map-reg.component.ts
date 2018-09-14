@@ -15,7 +15,7 @@ import { Solution } from '../../../data/taskData.model';
 @Component({
   selector: 'hm-reg',
   templateUrl: './heat-map-reg.component.html',
-  styleUrls: ['./heat-map-reg.component.css']
+  styleUrls: ['./heat-map-reg.component.scss']
 })
 export class HeatMapRegComponent implements OnInit {
 
@@ -58,7 +58,7 @@ export class HeatMapRegComponent implements OnInit {
 
   // Rendering
   regrRender(): void {
-    const regresion = this.reg.nativeElement
+    const regression = this.reg.nativeElement
     const data = [
       {
         z: this.zParser(this.prediction),
@@ -73,42 +73,42 @@ export class HeatMapRegComponent implements OnInit {
         mode: 'markers',
         name: 'measured points',
         marker: { color: 'grey', size: 8, symbol: 'x' },
-        x: this.measPoints.map(arr => arr[0]),
-        y: this.measPoints.map(arr => arr[1]) 
+        x: this.measPoints.map(arr => arr[1]),
+        y: this.measPoints.map(arr => arr[0]) 
       },
       {
         type: 'scatter',
         mode: 'markers',
         name: 'solution',
         marker: { color: 'Gold', size: 16, symbol: 'star' },
-        x: this.solution && [this.solution.configuration[0]],
-        y: this.solution && [this.solution.configuration[1]]
+        x: this.solution && [this.solution.configuration[1]],
+        y: this.solution && [this.solution.configuration[0]]
       }
     ];
 
     var layout = {
-      title: 'Regresion',
+      title: 'Regression',
       autosize: true,
       showlegend: false,
-      xaxis: { title: "Frequency",
+      xaxis: { title: "Threads",
         type: 'category',
         autorange: true,
         range: [Math.min(...this.x), Math.max(...this.x)] 
       },
-      yaxis: { title: "Threads",
+      yaxis: { title: "Frequency",
         type: 'category',
         autorange: true,
         range: [Math.min(...this.y), Math.max(...this.y)]  }
     };
 
-    Plotly.react(regresion, data, layout);
+    Plotly.react(regression, data, layout);
   }
   zParser(data: Map<String, Number>): Array<Array<Number>> {
     var z = []
     this.y.forEach(y => { // y - threads
       var row = []
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([x, y])))
+        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
       });
       z.push(row)
     });
@@ -141,8 +141,8 @@ export class HeatMapRegComponent implements OnInit {
       .subscribe((obj: any) => {
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
       });
 
