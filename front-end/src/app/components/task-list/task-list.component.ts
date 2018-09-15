@@ -81,6 +81,29 @@ export class TaskListComponent implements OnInit {
     }
   }
 
+  searchTasks(search: Array<any>) {
+    let select:Array<Task> = [] 
+    if (arguments.length && this.result.length) {
+      this.result.map(task => {
+        let paramsValues = task.meta && Object.values(task.meta.result) 
+        let union = new Set(paramsValues.concat(search))
+        if (union.size == paramsValues.length) { // all or more searching parametrs in task
+          select.push(task)
+        }
+      })
+    } 
+    return select 
+  }
+
+  getAverageResult(search: Array<any>) {
+    let sum: Array<number> = []
+    let select = this.searchTasks(search)
+    select && select.map(task => {
+      task.meta && sum.push(Number(task.meta.result.energy))
+    })
+    return sum && sum.reduce((a, b) => a + b, 0)/sum.length
+  }
+
   // --------------------- SOCKET ---------------
   private initIoConnection(): void {
     this.io.initSocket();

@@ -76,7 +76,8 @@ tr.example-detail-row {
 }
 
 tr.example-element-row:not(.example-expanded-row):hover {
-  background: $divider-color;
+  background: rgba($divider-color, .4);
+  border-left: 2px solid $accent-color;
 }
 
 tr.example-element-row:not(.example-expanded-row):active {
