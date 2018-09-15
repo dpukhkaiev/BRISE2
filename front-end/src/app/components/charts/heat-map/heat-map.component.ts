@@ -89,6 +89,8 @@ export class HeatMapComponent implements OnInit {
   zParser(data: Map<String,Number>): Array<Array<Number>> {
     // Parse the answears in to array of Y rows
     var z = []
+    this.x && 
+    this.y && 
     this.y.forEach(y => { // y - threads
       var row = [] 
       this.x.forEach(x => { // x - frequency
