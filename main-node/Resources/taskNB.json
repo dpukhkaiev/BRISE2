@@ -1,18 +1,32 @@
 {
-  "task_name"  : "taskNB", 
-  "params": {
-    "ExperimentNumber"  : 1,
-    "ModelTestSize"  : 0.9,
-    "NumberOfInitialExperiments" : 10,
-    "step": 2,
-    "SelectionType"     : "SobolSequence",
-    "StopCondition"     : "regression",
-    "DecisionFunction"  : "student_deviation",
-    "DataFile"        : "./taskNBData.json",
-    "FileToRead"          : "",
-    "FeatureNames"  : ["laplace correction", "estimation mode", "bandwidth selection", "bandwidth", "minimum bandwidth", "number of kernels", "use application grid", "application grid size"],
-    "ResultStructure"  : ["laplace correction", "estimation mode", "bandwidth selection", "bandwidth", "minimum bandwidth", "number of kernels", "use application grid", "application grid size", "accuracy"],
-    "ResultDataTypes"  : ["float", "int", "float"],
-    "ResultFeatLabels" : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
-  }
+      "DomainDescription":{
+        "FeatureNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
+        "DataFile"          : "./Resources/taskNBData.json",
+        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
+        "DefaultConfiguration": [false, "full", "heuristic", null, null, null, false, null]
+
+      },
+      "SelectionAlgorithm":{
+        "SelectionType"     : "SobolSequence",
+        "NumberOfInitialExperiments"   : 10,
+        "Step"              : 1
+      },
+      "ExperimentsConfiguration":{
+        "TaskName"          : "taskNB",
+        "WorkerConfiguration":{
+          "ws_file": ""
+        },
+        "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
+        "ResultStructure"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size", "accuracy"],
+        "ResultDataTypes"  : ["bool", "str", "str", "float", "float", "int", "bool", "int", "float"],
+        "RepeaterDecisionFunction"  : "student_deviation",
+        "MaxRepeatsOfExperiment": 10,
+        "MaxTimeToRunExperiment": 10
+      },
+      "ModelConfiguration":{
+        "ModelTestSize"     : 0.9,
+        "MinimumAccuracy"   : 0.85,
+        "ModelType"         : "BO",
+        "FeaturesLabelsStructure"  : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
+      }
 }
