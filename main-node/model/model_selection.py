@@ -1,5 +1,3 @@
-from model.regression_sweet_spot import RegressionSweetSpot
-from model.bayesian_optimization import BayesianOptimization
 
 
 def get_model(model_config, log_file_name, task_config=None):
@@ -12,9 +10,11 @@ def get_model(model_config, log_file_name, task_config=None):
     """
 
     if model_config["ModelType"] == "regression":
+        from model.regression_sweet_spot import RegressionSweetSpot
         return RegressionSweetSpot(log_file_name=log_file_name,
                                    model_config=model_config)
     if model_config["ModelType"] == "BO":
+        from model.bayesian_optimization import BayesianOptimization
         return BayesianOptimization(task_config)
     else:
         print("ERROR: Configuration Error - model type not supported.")
