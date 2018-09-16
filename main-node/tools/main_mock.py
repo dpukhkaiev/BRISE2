@@ -2,11 +2,13 @@ __doc__ = """
 Mock for main module for running BRISE configuration balancing."""
 
 import pickle
-import time
 from os import chdir
 from os.path import abspath
 from sys import path
+chdir('..')
+path.append(abspath('.'))
 
+from WorkerServiceClient.WSClient_sockets import WSClient
 
 def run(io=None):
     """
@@ -44,12 +46,17 @@ def run(io=None):
     # ------------------------------------------------------
 
     if io:
+        # Sasha asked also to send each 'measuring' point to Worker Service.
+        wsc = WSClient(mock_data["Task config"]["ExperimentsConfiguration"],
+                       mock_data["Global config"]["WorkerService"]["Address"],
+                       "MOCK_WSC.log")
         # Sending global and task config
         temp = {"global_config": mock_data["Global config"], "task": mock_data["Task config"]}
         io.emit('main_config', temp)
         time.sleep(sleep_between_messages)
         print("Measuring default configuration that we will used in regression to evaluate solution... ")
         # Sending default configuration (like from the repeater).
+        wsc._send_task(mock_data["Default configuration"][0])
         io.emit('task result', {'configuration': mock_data["Default configuration"][0][0],
                                 "result": mock_data["Default configuration"][1][0][0]})
         time.sleep(sleep_between_messages)
@@ -61,7 +68,8 @@ def run(io=None):
         print("Measuring initial number experiments, while it is no sense in trying to create model"
               "\n(because there is no data)...")
         for feature, label in zip(mock_data["Features1"], mock_data["Labels1"]):
-            print("Sending new task to IO.")
+            print("Sending new task to IO.", end=' ')
+            wsc._send_task([feature])
             io.emit('task result', {'configuration': feature, "result": label[0]})
             time.sleep(sleep_between_messages)
 
@@ -79,7 +87,8 @@ def run(io=None):
         add_features = [config for config in mock_data["Final feature set"] if config not in mock_data["Features1"]]
         add_labels = [result for result in mock_data["Final label set"] if result not in mock_data["Labels1"]]
         for feature, label in zip(add_features, add_labels):
-            print("Sending new task to IO.")
+            print("Sending new task to IO.", end=' ')
+            wsc._send_task([feature])
             io.emit('task result', {'configuration': feature, 'result': label[0]})
             time.sleep(sleep_between_messages)
 
@@ -91,6 +100,7 @@ def run(io=None):
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
+        wsc._send_task([mock_data["Solution"][1]])
         io.emit('task result', {'configuration': mock_data["Solution"][1], "result": mock_data["Solution"][0][0]})
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Solution validation success!"})
@@ -110,8 +120,6 @@ class A:
 
 if __name__ == "__main__":
     import time
-    chdir('..')
-    path.append(abspath('.'))
     start = time.time()
     run(io=A())
     print("\n\nMock running time: %s(sec)." % round(time.time() - start))
