@@ -3,7 +3,7 @@
         "FeatureNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
         "DataFile"          : "./Resources/taskNBData.json",
         "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-        "DefaultConfiguration": [false, "full", "heuristic", null, null, null, false, null]
+        "DefaultConfiguration": [true, "full", "heuristic", null, null, null, false, null]
 
       },
       "SelectionAlgorithm":{
