@@ -144,6 +144,7 @@ class BayesianOptimization(Model):
 
         # a) With the certain probability at all (to continue with picking a random point).
         if np.random.rand() < self.random_fraction:
+            print("INFO: Skipping building the model in order to pick a random configuration point.")
             return False
 
         # b) if not enough points are available
