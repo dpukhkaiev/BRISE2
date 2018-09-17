@@ -23,10 +23,10 @@
         "MaxRepeatsOfExperiment": 10,
         "MaxTimeToRunExperiment": 10
       },
-      "ModelCreation":{
+      "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression",
+        "ModelType"         : "BO",
         "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
       }
 }

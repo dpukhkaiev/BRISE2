@@ -19,8 +19,10 @@ class WSClient(SocketIO):
         :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
         # Creating the SocketIO object and connecting to main node namespace - "/main_node"
+        print('INFO: Connecting to the Worker Service at "%s" ...' % wsclient_addr)
         super().__init__(wsclient_addr)
         self.ws_namespace = self.define(BaseNamespace, "/main_node")
+        print('INFO: Connect OK!')
 
         # Properties that holds general task configuration (shared between task runs).
         self._exp_config = experiments_configuration
