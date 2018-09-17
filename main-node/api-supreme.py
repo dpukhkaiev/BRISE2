@@ -8,7 +8,7 @@ import time
 import logging
 
 # USER
-# from main import run as main_run
+#from main import run as main_run
 from tools.main_mock import run as main_run
 
 import eventlet
@@ -132,6 +132,4 @@ def front_disconnect():
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0',debug=True, port=9000)
-
-    # debug=True
+    socketio.run(app, host='0.0.0.0', debug=True, port=9000)
