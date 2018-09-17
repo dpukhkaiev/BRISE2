@@ -1,5 +1,10 @@
 def split_features_and_labels(data, structure):
+    """
 
+    :param data:
+    :param structure: list with
+    :return:
+    """
     # need to rewrite it in normal way..
 
     results = {"features": [],
