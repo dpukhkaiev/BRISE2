@@ -39,6 +39,19 @@ class Splitter:
             'energy': self.new_data[0]["EN"], 
             'time': self.new_data[0]["TIM"]
         } if self.new_data else {"worker": "Error! Incorect worker config"}
+
+    def searchNB(self, LC, EM, BwS, Bw, MBw, NoK, UAG, AGS):
+        del self.new_data[:]
+        if self.data:
+            for i in self.data:
+                if i['LC'] == LC and i['EM'] == EM and i['BwS'] == BwS and i['Bw'] == Bw and i['MBw'] == MBw and i['NoK'] == NoK and i['UAG'] == UAG and i['AGS'] == AGS:
+                    self.new_data.append(i)
+        if self.new_data[0] == None: return {
+            'PREC_AT_99_REC': str(0.7566)
+        } 
+        return {
+            'PREC_AT_99_REC': self.new_data[0]["PREC_AT_99_REC"]
+        } if self.new_data else {"worker": "Error! Incorect worker config"}
                 
 
     def make_csv(self, name, data_type):
