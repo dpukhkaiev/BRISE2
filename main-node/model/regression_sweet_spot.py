@@ -4,8 +4,6 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import Pipeline
 
 from functools import reduce
-import sobol_seq
-import numpy
 
 from model.model_abs import Model
 from tools.features_tools import split_features_and_labels
@@ -19,7 +17,9 @@ class RegressionSweetSpot(Model):
         :param log_file_name: - string, location of file, which will store results of model creation
         :param test_size: float number, displays size of test data set
         :param features:  features in machine learning meaning selected by Sobol
-        :param targets: labels in machine learning meaning selected by Sobol
+                          TODO - shape of features
+        :param labels: labels in machine learning meaning selected by Sobol
+                       TODO - shape of labels
         """
 
         self.test_size = test_size
@@ -33,6 +33,13 @@ class RegressionSweetSpot(Model):
         self.solution_labels = None
 
     def build_model(self, degree=6, score_min=0.85, tries=20):
+        """
+        Return False, if it is impossible to build the model, and True, if the model was built successfully
+        :param degree:
+        :param score_min:
+        :param tries:
+        :return: True or False
+        """
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
@@ -42,7 +49,8 @@ class RegressionSweetSpot(Model):
             while self.test_size > 0.3:
                 for x in range(tries):
                     self.resplit_data()
-                    model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())])
+                    model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)),
+                                      ('reg', Ridge())])
                     model.fit(self.feature_train, self.target_train)
                     score_measured = model.score(self.feature_test, self.target_test)
 
@@ -67,7 +75,19 @@ class RegressionSweetSpot(Model):
         return False
 
     def validate_model(self, io, search_space, degree=6):
-
+        """
+        Return True, if the model have built, and False, if the model can not build or the model already exists
+        :param io: id using for web-sockets
+        :param search_space: list of dimensions for this experiment
+                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
+                                     if there is such search space in "taskData.json" :
+                                         {
+                                             "threads": [1, 2, 4, 8, 16, 32],
+                                             "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
+                                         }
+        :param degree:
+        :return: True or False
+        """
         # Check if model was built.
         if not self.model:
             return False
@@ -105,30 +125,36 @@ class RegressionSweetSpot(Model):
 
     def predict_solution(self, io, search_space):
             """
-            Takes features, using previously created model makes regression to find labels and return label with the lowest value.
+            Takes features, using previously created model makes regression to find labels
+            and return label with the lowest value.
             :param search_space: list of data points (each data point is also a list).
+            :param io: id using for web-sockets
             :return: lowest value, and related features.
             """
-
             predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+
             if io:
                 all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
                                    for (prediction, index) in predictions]
                 io.emit('regression', {"regression": all_predictions})
                 io.sleep(0)
+
             label, index = min(predictions)
             return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
+
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
             io.sleep(0)
+
         solution_candidate = repeater.measure_task([predicted_features], io=io)
-        solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
+        solution_feature, solution_labels = split_features_and_labels(solution_candidate,
+                                                                      task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
-        #validate false
+        # validate false
         if solution_labels > default_value:
             print("Predicted energy larger than default.")
             print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
@@ -136,9 +162,11 @@ class RegressionSweetSpot(Model):
             prediction_is_final = False
         else:
             print("Solution validation success!")
+
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
                 io.sleep(0)
+
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
         self.solution_features = solution_feature[0]
@@ -149,15 +177,29 @@ class RegressionSweetSpot(Model):
         Just recreates subsets of features and labels for training and testing from existing features and labels.
         :return: None
         """
-
         self.feature_train, self.feature_test, self.target_train, self.target_test = \
             model_selection.train_test_split(self.all_features, self.all_labels, test_size=self.test_size)
 
     @staticmethod
     def sum_fact(num):
+        """
+        Return the sum of all numbers from 1 till 'num'
+        :param num: int
+        :return:
+        """
         return reduce(lambda x, y: x+y, list(range(1, num + 1)))
 
     def test_model_all_data(self, search_space):
+        """
+
+        :param search_space: list of dimensions for this experiment
+                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
+                                     if there is such search space in "taskData.json" :
+                                         {
+                                             "threads": [1, 2, 4, 8, 16, 32],
+                                             "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
+                                         }
+        """
         from tools.features_tools import split_features_and_labels
         from tools.initial_config import load_task
         from tools.splitter import Splitter
@@ -175,12 +217,20 @@ class RegressionSweetSpot(Model):
         # from sklearn.model_selection import train_test_split
         score = self.model.score(features, labels)
 
-
         temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
         print(temp_message)
 
     def get_result(self, repeater, features, labels, io):
+        """
 
+        :param repeater:
+        :param features: list of all currently discovered features.
+                         TODO - shape of features
+        :param labels: list of all currently discovered labels.
+                       TODO - shape of labels
+        :param io: id using for web-sockets
+        :return: solution_labels, solution_features
+        """
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
 
@@ -197,10 +247,10 @@ class RegressionSweetSpot(Model):
                 io.sleep(0)
 
         elif min(labels) < self.solution_labels:
-            temp_message = ("Configuration(%s) quality(%s), "
-                  "\nthat model gave worse that one of measured previously, but better than default."
-                  "\nReporting best of measured." %
-                  (self.solution_features, self.solution_labels))
+            temp_message = ("Configuration(%s) quality(%s), \
+                             \nthat model gave worse that one of measured previously, but better than default.\
+                             \nReporting best of measured." %
+                            (self.solution_features, self.solution_labels))
             print(temp_message)
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
@@ -216,14 +266,16 @@ class RegressionSweetSpot(Model):
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
-        value = round(self.solution_labels[0], 2)
-
         if io:
-            temp = {"best point": {'configuration': configuration, 
-                    "result": value, 
-                    "measured points": self.all_features}
+            configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+            value = round(self.solution_labels[0], 2)
+            temp = {
+                'best point': {
+                    'configuration': configuration,
+                    'result': value,
+                    'measured points': self.all_features
                 }
+            }
             io.emit('best point', temp)
             io.sleep(0)
             
