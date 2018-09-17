@@ -16,6 +16,7 @@ import { TaskListComponent } from './components/task-list/task-list.component';
 import { InfoBoardComponent } from './components/info-board/info-board.component';
 import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
 import { FooterComponent } from './components/footer/footer.component';
+import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.component';
 
 
 @NgModule({ 
@@ -27,7 +28,8 @@ import { FooterComponent } from './components/footer/footer.component';
     HeatMapRegComponent,
     InfoBoardComponent,
     ImpResComponent,
-    FooterComponent
+    FooterComponent,
+    MultiDimComponent
   ],
   imports: [
     BrowserModule, HttpModule,
