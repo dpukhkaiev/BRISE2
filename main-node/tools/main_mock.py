@@ -44,7 +44,7 @@ def run(io=None):
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
         wsc = WSClient(mock_data["Task config"]["ExperimentsConfiguration"],
-                       mock_data["Global config"]["WorkerService"]["Address"],
+                       'w_service:8080',
                        "MOCK_WSC.log")
         # Sending global and task config
         temp = {"global_config": mock_data["Global config"], "task": mock_data["Task config"]}
@@ -58,7 +58,7 @@ def run(io=None):
         time.sleep(sleep_between_messages)
 
         # Sending results of default configuration measurement (like from the main).
-        io.emit('default conf', {'configuration': mock_data["Default configuration"][0], "result": mock_data["Default configuration"][1]})
+        io.emit('default conf', {'configuration': mock_data["Default configuration"][0][0], "result": mock_data["Default configuration"][1][0][0]})
         time.sleep(sleep_between_messages)
 
         print("Measuring initial number experiments, while it is no sense in trying to create model"

@@ -122,6 +122,8 @@ export class HeatMapComponent implements OnInit {
       { // Best point. Solution
         type: 'scatter',
         mode: 'markers',
+        hoverinfo: 'none',
+        showlegend: false,
         marker: { color: 'Gold', size: 16, symbol: 'star' },
         x: this.solution && [this.solution.configuration[1]],
         y: this.solution && [this.solution.configuration[0]]
@@ -217,7 +219,7 @@ export class HeatMapComponent implements OnInit {
       .subscribe((obj: any) => {
         this.result.set(String(obj['configuration']), obj['result'])
         this.measPoints.push(obj['configuration'])
-
+        console.log('TaskRes:', obj)
         this.render()
       });
   }
