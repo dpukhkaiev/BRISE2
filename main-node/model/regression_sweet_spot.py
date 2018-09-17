@@ -130,6 +130,7 @@ class RegressionSweetSpot(Model):
                                    for (prediction, index) in predictions]
                 io.emit('regression', {"regression": all_predictions})
             label, index = min(predictions)
+            label = list(label)
             return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
@@ -193,7 +194,7 @@ class RegressionSweetSpot(Model):
         temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
         print(temp_message)
 
-    def get_result(self, repeater, features, labels, io):
+    def get_result(self, repeater, io):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
@@ -203,13 +204,13 @@ class RegressionSweetSpot(Model):
         if not self.solution_labels:
             temp_message = "Optimal configuration was not found. Reporting best of the measured."
             print(temp_message)
-            self.solution_labels = min(labels)
+            self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
-        elif min(labels) < self.solution_labels:
+        elif min(self.all_labels) < self.solution_labels:
             temp_message = ("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
@@ -218,12 +219,12 @@ class RegressionSweetSpot(Model):
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
-            self.solution_labels = min(labels)
+            self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
 
-        print("ALL MEASURED FEATURES:\n%s" % str(features))
-        print("ALL MEASURED LABELS:\n%s" % str(labels))
+        print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
+        print("ALL MEASURED LABELS:\n%s" % str(self.all_features))
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
