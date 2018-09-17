@@ -13,7 +13,7 @@ class History:
         try:
             return self.history[str(point)]
         except KeyError:
-            return []
+            return {}
 
     def put(self, point, value):
         """
