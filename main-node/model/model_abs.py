@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-class Model(ABC):
 
+
+class Model(ABC):
     @abstractmethod
     def build_model(self): pass
 

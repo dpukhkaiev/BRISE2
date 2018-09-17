@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from repeater.history import History
-import socket
+
 
 class Repeater(ABC):
     def __init__(self, WorkerServiceClient, ExperimentsConfiguration):
@@ -13,9 +13,16 @@ class Repeater(ABC):
         self.max_repeats_of_experiment = ExperimentsConfiguration["MaxRepeatsOfExperiment"]
 
     @abstractmethod
-    def decision_function(self, history, point, iterations = 3, **configuration): pass
+    def decision_function(self, history, point, iterations=3, **configuration): pass
     
     def measure_task(self, task, io, **decis_func_config):
+        """
+
+        :param task:
+                     TODO - shape
+        :param io: id using for web-sockets
+        :return: result
+        """
         # Removing previous measurements
         self.current_measurement.clear()
         self.current_measurement_finished = False
@@ -54,7 +61,9 @@ class Repeater(ABC):
             for point in cur_task:
                 result = self.decision_function(self.history, point, **decis_func_config)
                 if result:
-                    print("Point %s finished after %s measurements. Result: %s" % (str(point), len(self.history.get(point)), str(result)))
+                    print("Point %s finished after %s measurements. Result: %s" % (str(point),
+                                                                                   len(self.history.get(point)),
+                                                                                   str(result)))
 
                     configuration = [result[0], result[1]]
 
@@ -72,9 +81,15 @@ class Repeater(ABC):
         return results
     
     def cast_results(self, results):
+        """
 
-        # WSClient during initialization stores data types in himself, need to cast results according to that data types.
+        :param results:
+                        TODO - shape
+        :return:
+        """
+        # WSClient during initialization stores data types in himself, need to cast results according to that data types
         return_for_main = []
         for point in results:
-            return_for_main.append(eval(self.WSClient._result_data_types[index])(value) for index, value in enumerate(point))
+            return_for_main.append(eval(self.WSClient._results_data_types[index])(value)
+                                   for index, value in enumerate(point))
         return return_for_main
