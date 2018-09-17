@@ -1,9 +1,10 @@
 {
-  "all_data": {
-    "laplace_correction": [true, false],
-    "estimation_mode": ["full"],
-    "bandwidth_selection": ["heuristic"],
-    "use_application_grid": [ false]
-  },
-  "default_point": [false, "full", "heuristic",  false]
+  "laplace correction": [true],
+  "estimation mode": ["full"],
+  "bandwidth selection": ["heuristic", "fix"],
+  "bandwidth": [0.001, 0.5, 1, 5, 50, 100, 1000],
+  "minimum bandwidth": [0.001, 0.5, 5, 50, 100, 1000],
+  "number of kernels": [1, 4, 50, 100, 1000],
+  "use application grid": [true, false],
+  "application grid size": [10, 200, 1000, 10000]
 }
