@@ -7,7 +7,9 @@ def get_model(model_creation_config, log_file_name, features, labels):
     :param model_creation_config: "ModelCreation" dict of parameters from task description file.
     :param log_file_name: String, file where to store results of model creation.
     :param features: list of all currently discovered features.
+                     TODO - shape of features
     :param labels: list of all currently discovered labels.
+                   TODO - shape of labels
     :return: Instantiated object of prediction model.
     """
 
