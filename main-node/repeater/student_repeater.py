@@ -76,6 +76,6 @@ class StudentRepeater(Repeater):
                     return False
             # print(all_dim_avg.tolist()[0])
             # eval(self...)(value) - process of casting according to ResultDataTypes in task.json
-            result = [eval(self.WSClient._results_data_types[index])(round(value, 2))
+            result = [eval(self.WSClient._result_data_types[index])(round(value, 2))
                       for index, value in enumerate(all_dim_avg.tolist()[0])]
             return result
