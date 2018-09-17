@@ -11,65 +11,82 @@ from tools.features_tools import split_features_and_labels
 
 class RegressionSweetSpot(Model):
 
-    def __init__(self, log_file_name, test_size, features, labels):
+    def __init__(self, log_file_name, model_config):
         """
-        Initialization of regression model. It will
+        Initialization of regression model
         :param log_file_name: - string, location of file, which will store results of model creation
         :param test_size: float number, displays size of test data set
         :param features:  features in machine learning meaning selected by Sobol
                           TODO - shape of features
         :param labels: labels in machine learning meaning selected by Sobol
                        TODO - shape of labels
+        :param model_config: float number, displays size of test data set
         """
 
-        self.test_size = test_size
-        self.all_features = features
-        self.all_labels = labels
+        # Model configuration - related fields.
+        self.model_config = model_config
+        self.initial_test_size = model_config["ModelTestSize"]
         self.log_file_name = log_file_name
-        self.model = None
-        self.accuracy = 0
-        self.solution_ready = False
-        self.solution_features = None
-        self.solution_labels = None
 
-    def build_model(self, degree=6, score_min=0.85, tries=20):
+        # Built model - related fields.
+        self.model = None
+        self.minimum_model_accuracy = model_config["MinimumAccuracy"]
+        self.built_model_accuracy = 0
+        self.built_model_test_size = 0.0
+
+        # Data holding fields.
+        self.all_features = []
+        self.all_labels = []
+        self.solution_features = []
+        self.solution_labels = []
+
+    def build_model(self, degree=6, tries=20):
         """
         Return False, if it is impossible to build the model, and True, if the model was built successfully
         :param degree:
         :param score_min:
         :param tries:
         :return: True or False
+       
+        Tries to build the new regression model.
+
+        :param degree: Int. scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
+        :param tries: Int. Number of tries to build the model in each step of decreasing test size.
+        :return: Boolean. True if the model was successfully built, otherwise - False.
         """
+
+        # Building model
         cur_accuracy = 0.99
         best_got = -10e10
         best_model = None
-        init_test_size = self.test_size
-        while cur_accuracy > score_min:
-            self.test_size = init_test_size
-            while self.test_size > 0.3:
+        while cur_accuracy > self.minimum_model_accuracy:
+            current_test_size = self.initial_test_size
+            while current_test_size > 0.3:
                 for x in range(tries):
-                    self.resplit_data()
-                    model = Pipeline([('poly', PolynomialFeatures(degree=degree, interaction_only=False)),
-                                      ('reg', Ridge())])
-                    model.fit(self.feature_train, self.target_train)
-                    score_measured = model.score(self.feature_test, self.target_test)
+                    feature_train, feature_test, target_train, target_test = self.resplit_data(current_test_size)
+                    model = Pipeline(
+                        [('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())]
+                    )
+                    model.fit(feature_train, target_train)
+                    score_measured = model.score(feature_test, target_test)
 
                     if score_measured > best_got:
                         best_got = score_measured
                         best_model = model
                         temp_message = ('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (
-                            round(score_measured, 3), round(self.test_size, 2), round(cur_accuracy, 2)))
+                            round(score_measured, 3), round(current_test_size, 2), round(cur_accuracy, 2)))
                         print(temp_message)
 
                     # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
-                    self.accuracy = best_got
+                    self.built_model_accuracy = best_got
+                    self.built_model_test_size = current_test_size
                     print("Regression model built with %s test size and %s accuracy." % (
-                        self.test_size, self.accuracy))
+                        current_test_size, best_got))
                     return True
                 else:
-                    self.test_size -= 0.01
+                    current_test_size -= 0.01
             cur_accuracy -= 0.01
         print("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
@@ -100,7 +117,7 @@ class RegressionSweetSpot(Model):
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
             f.write(str(search_space) + "\n")
-            f.write("Testing size = " + str(self.test_size) + "\n")
+            f.write("Testing size = " + str(self.built_model_test_size) + "\n")
             # f.write("Degree = " + str(degree)+ "\n")
             for i in range(degree+1):
                 if i == 0:
@@ -109,17 +126,15 @@ class RegressionSweetSpot(Model):
                     for j in range(i+1):
                         f.write("(TR ^ " + str(i - j) + ") * (FR ^ " + str(j) + ") = " + \
                                 str(self.model.named_steps['reg'].coef_[0][self.sum_fact(i)+j])+ "\n")
-            f.write("R^2 = " + str(self.model.score(self.feature_test, self.target_test))+"\n")
+            f.write("R^2 = " + str(self.built_model_accuracy)+"\n")
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_)+"\n")
             f.close()
-            self.solution_ready = True
             print("Built model is valid.")
             if io:
                 io.emit('info', {'message': "Built model is valid"})
                 io.sleep(0)
             return True
         else:
-            self.solution_ready = False
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
@@ -172,13 +187,17 @@ class RegressionSweetSpot(Model):
         self.solution_features = solution_feature[0]
         return self.solution_labels, prediction_is_final
 
-    def resplit_data(self):
+    def resplit_data(self, test_size):
         """
         Just recreates subsets of features and labels for training and testing from existing features and labels.
+        :param test_size: Float. Indicates the amount of data that will be used to test the model.
         :return: None
         """
-        self.feature_train, self.feature_test, self.target_train, self.target_test = \
-            model_selection.train_test_split(self.all_features, self.all_labels, test_size=self.test_size)
+
+        feature_train, feature_test, target_train, target_test = \
+            model_selection.train_test_split(self.all_features, self.all_labels, test_size=test_size)
+
+        return feature_train, feature_test, target_train, target_test
 
     @staticmethod
     def sum_fact(num):
@@ -277,6 +296,36 @@ class RegressionSweetSpot(Model):
                 }
             }
             io.emit('best point', temp)
-            io.sleep(0)
-            
+
         return self.solution_labels, self.solution_features
+    
+    def add_data(self, features, labels): 
+        """
+        
+        Method adds new features and labels to whole set of features and labels.
+
+        :param features: List. features in machine learning meaning selected by Sobol
+        :param labels: List. labels in machine learning meaning selected by Sobol
+        """
+        # An input validation and updating of the features and labels set.
+        # 1. Tests if lists of features and labels are same length.
+        # 2. Tests if all lists are nested.
+        # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
+        # These all(all(...)..) returns true if all data
+        try:
+
+            assert len(features) == len(labels) > 0, \
+                "Incorrect length!\nFeatures:%s\nLabels:%s" % (str(features), str(labels))
+
+            assert all(all(isinstance(value, (int, float)) for value in feature) for feature in features), \
+                "Incorrect data types in features: %s" % str(features)
+
+            assert all(all(isinstance(value, (int, float)) for value in label) for label in labels), \
+                "Incorrect data types in labels: %s" % str(labels)
+
+            self.all_features += features
+            self.all_labels += labels
+
+        except AssertionError as err:
+            # TODO: replace with logger.
+            print("ERROR! Regression input validation error:\n%s" % err)

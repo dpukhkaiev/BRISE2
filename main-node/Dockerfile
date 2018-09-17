@@ -32,7 +32,7 @@ RUN apt-get update \
     && python3 -m pip install python-socketio \
     && python3 -m pip install socketIO-client \
     && python3 -m pip install eventlet \
-    && python3 -m pip install python-engineio
+    && python3 -m pip install statsmodels
     
 
 
