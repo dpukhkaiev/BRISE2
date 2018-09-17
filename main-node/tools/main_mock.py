@@ -2,11 +2,7 @@ __doc__ = """
 Mock for main module for running BRISE configuration balancing."""
 
 import pickle
-from os import chdir
-from os.path import abspath
-from sys import path
-chdir('..')
-path.append(abspath('.'))
+import time
 
 from WorkerServiceClient.WSClient_sockets import WSClient
 
@@ -119,7 +115,14 @@ class A:
 
 
 if __name__ == "__main__":
-    import time
+    """
+    For the unit tests running - put following statements above WSClient importing:
+from os import chdir
+from os.path import abspath
+from sys import path
+chdir('..')
+path.append(abspath('.'))
+    """
     start = time.time()
     run(io=A())
     print("\n\nMock running time: %s(sec)." % round(time.time() - start))
