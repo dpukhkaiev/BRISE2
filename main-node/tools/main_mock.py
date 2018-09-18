@@ -6,6 +6,7 @@ import time
 import random
 
 from WorkerServiceClient.WSClient_sockets import WSClient
+from tools.file_system_io import create_folder_if_not_exists
 
 def run(io=None):
     """
@@ -28,7 +29,7 @@ def run(io=None):
         print("Unable to load saved MOCK data: %s" % e)
         exit(1)
 
-    sleep_between_messages = 2  # In seconds. One second + ~25 seconds to overall running for current version of mock.
+    sleep_between_messages = 0  # In seconds. One second + ~25 seconds to overall running for current version of mock.
     # ------------------------------------------------------
     # Scenario:
     # 1. Initial emits (the global and task configurations, the default configuration measurements results).
@@ -40,10 +41,11 @@ def run(io=None):
     # 7. Prediction and validation of the solution.
     # 8. Reporting the results.
     # ------------------------------------------------------
-    repetitions = 4
+    repetitions = 0
     tresholds = {'good': (4, 8),
                  'mid': (3, 4),
                  'bad': (2, 3)}
+    create_folder_if_not_exists('./Results/')
 
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
@@ -57,7 +59,7 @@ def run(io=None):
         print("Measuring default configuration that we will used in regression to evaluate solution... ")
         # Sending default configuration (like from the repeater) 10 times.
         for x in range(10):
-            wsc._send_task(mock_data["Default configuration"][0])
+            wsc.work(mock_data["Default configuration"][0])
             repetitions += 1
         io.emit('task result', {'configuration': mock_data["Default configuration"][0][0],
                                 "result": mock_data["Default configuration"][1][0][0]})
@@ -76,8 +78,7 @@ def run(io=None):
             else: bounds = tresholds['bad']
             repits = random.randint(*bounds) 
             repetitions += repits
-            wsc._send_task([feature for x in range(repits)])
-            while wsc.current_results < repits: time.sleep(0.2)
+            wsc.work([feature for x in range(repits)])
             io.emit('task result', {'configuration': feature, "result": label[0]})
             time.sleep(sleep_between_messages)
 
@@ -101,8 +102,7 @@ def run(io=None):
             else: bounds = tresholds['bad']
             repits = random.randint(*bounds)
             repetitions += repits
-            wsc._send_task([feature for x in range(repits)])
-            while wsc.current_results < repits: time.sleep(0.2)
+            wsc.work([feature for x in range(repits)])
             io.emit('task result', {'configuration': feature, 'result': label[0]})
             time.sleep(sleep_between_messages)
 
