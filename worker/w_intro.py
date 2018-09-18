@@ -4,7 +4,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from socketIO_client import SocketIO, BaseNamespace # GitHub - https://github.com/invisibleroads/socketIO-client
-from worker import work, random_1, random_2, energy_consumption # available workers methods
+from worker import work, random_1, random_2, energy_consumption, taskNB # available workers methods
 
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
@@ -21,6 +21,7 @@ menu = {
     'random_1': random_1,
     'random_2': random_2,
     'energy_consumption': energy_consumption,
+    'taskNB': taskNB,
     'work': work
 }
 
