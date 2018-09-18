@@ -53,7 +53,7 @@ export class HeatMapRegComponent implements OnInit {
 
   ngOnInit() {
     this.initMainConnection();
-    window.onresize = () => Plotly.relayout(this.reg.nativeElement, {})
+    // window.onresize = () => Plotly.relayout(this.reg.nativeElement, {})
   }
 
   // Rendering

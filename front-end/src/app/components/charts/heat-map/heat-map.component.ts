@@ -83,7 +83,7 @@ export class HeatMapComponent implements OnInit {
     this.initWsEvents();
     this.initMainEvents();
 
-    window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
+    // window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
   }
 
   zParser(data: Map<String,Number>): Array<Array<Number>> {
