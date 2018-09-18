@@ -78,6 +78,7 @@ def run(io=None):
             repits = random.randint(*bounds)
             repetitions += repits
             wsc._send_task([feature for x in range(repits)])
+            while wsc.current_results < repits: time.sleep(0.2)
             io.emit('task result', {'configuration': feature, "result": label[0]})
             time.sleep(sleep_between_messages)
 
@@ -102,6 +103,7 @@ def run(io=None):
             repits = random.randint(*bounds)
             repetitions += repits
             wsc._send_task([feature for x in range(repits)])
+            while wsc.current_results < repits: time.sleep(0.2)
             io.emit('task result', {'configuration': feature, 'result': label[0]})
             time.sleep(sleep_between_messages)
 
