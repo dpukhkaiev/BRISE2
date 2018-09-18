@@ -103,8 +103,8 @@ def run(io=None):
         time.sleep(sleep_between_messages)
         # reporting results
         repeater = A() # Just for reporting results. Fake object, in reporting only one field used.
-        repeater.performed_measurements = 65    # Just for reporting results. These field used in reporting.
-        mock_data["Final model"].get_result(repeater, mock_data["Final feature set"], mock_data["Final label set"], io)
+        repeater.performed_measurements = mock_data["Number of measurements"]    # Just for reporting results. These field used in reporting.
+        mock_data["Final model"].get_result(repeater, io)
 
 
 class A:
