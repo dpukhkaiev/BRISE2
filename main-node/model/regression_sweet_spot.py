@@ -89,7 +89,7 @@ class RegressionSweetSpot(Model):
         if not self.model:
             return False
 
-        self.test_model_all_data(search_space)
+        self.test_model_all_data(search_space.copy())
 
         # Check if the model is adequate - write it.
         predicted_labels, predicted_features = self.predict_solution(io, search_space)
@@ -99,15 +99,15 @@ class RegressionSweetSpot(Model):
             f.write(str(search_space) + "\n")
             f.write("Testing size = " + str(self.built_model_test_size) + "\n")
             # f.write("Degree = " + str(degree)+ "\n")
-            for i in range(degree+1):
+            for i in range(degree + 1):
                 if i == 0:
                     f.write("(TR ^ 0) * (FR ^ 0) = " + str(self.model.named_steps['reg'].coef_[i]) + "\n")
                 else:
-                    for j in range(i+1):
+                    for j in range(i + 1):
                         f.write("(TR ^ " + str(i - j) + ") * (FR ^ " + str(j) + ") = " + \
-                                str(self.model.named_steps['reg'].coef_[0][self.sum_fact(i)+j])+ "\n")
-            f.write("R^2 = " + str(self.built_model_accuracy)+"\n")
-            f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_)+"\n")
+                                str(self.model.named_steps['reg'].coef_[0][self.sum_fact(i) + j]) + "\n")
+            f.write("R^2 = " + str(self.built_model_accuracy) + "\n")
+            f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_) + "\n")
             f.close()
             print("Built model is valid.")
             if io:
@@ -118,20 +118,20 @@ class RegressionSweetSpot(Model):
             return False
 
     def predict_solution(self, io, search_space):
-            """
-            Takes features, using previously created model makes regression to find labels and return label with the lowest value.
-            :param search_space: list of data points (each data point is also a list).
-            :return: lowest value, and related features.
-            """
+        """
+        Takes features, using previously created model makes regression to find labels and return label with the lowest value.
+        :param search_space: list of data points (each data point is also a list).
+        :return: lowest value, and related features.
+        """
 
-            predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
-            if io:
-                all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
-                                   for (prediction, index) in predictions]
-                io.emit('regression', {"regression": all_predictions})
-            label, index = min(predictions)
-            label = list(label)
-            return label, search_space[index]
+        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+        if io:
+            all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
+                               for (prediction, index) in predictions]
+            io.emit('regression', {"regression": all_predictions})
+        label, index = min(predictions)
+        label = list(label)
+        return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         # validate() in regression
@@ -139,12 +139,13 @@ class RegressionSweetSpot(Model):
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
         solution_candidate = repeater.measure_task([predicted_features], io=io)
-        solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
+        solution_feature, solution_labels = split_features_and_labels(solution_candidate,
+                                                                      task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
-        #validate false
+        # validate false
         if solution_labels > default_value:
             print("Predicted energy larger than default.")
-            print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
+            print("Predicted energy: %s. Measured: %s. Default configuration: %s" % (
                 predicted_features[0], solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
@@ -170,7 +171,7 @@ class RegressionSweetSpot(Model):
 
     @staticmethod
     def sum_fact(num):
-        return reduce(lambda x, y: x+y, list(range(1, num + 1)))
+        return reduce(lambda x, y: x + y, list(range(1, num + 1)))
 
     def test_model_all_data(self, search_space):
         from tools.features_tools import split_features_and_labels
@@ -190,7 +191,6 @@ class RegressionSweetSpot(Model):
         # from sklearn.model_selection import train_test_split
         score = self.model.score(features, labels)
 
-
         temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
         print(temp_message)
 
@@ -208,23 +208,25 @@ class RegressionSweetSpot(Model):
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
             if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.emit('info',
+                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
         elif min(self.all_labels) < self.solution_labels:
             temp_message = ("Configuration(%s) quality(%s), "
-                  "\nthat model gave worse that one of measured previously, but better than default."
-                  "\nReporting best of measured." %
-                  (self.solution_features, self.solution_labels))
+                            "\nthat model gave worse that one of measured previously, but better than default."
+                            "\nReporting best of measured." %
+                            (self.solution_features, self.solution_labels))
             print(temp_message)
             if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.emit('info',
+                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
 
         print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
-        print("ALL MEASURED LABELS:\n%s" % str(self.all_features))
+        print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
@@ -233,17 +235,17 @@ class RegressionSweetSpot(Model):
         value = round(self.solution_labels[0], 2)
 
         if io:
-            temp = {"best point": {'configuration': configuration, 
-                    "result": value, 
-                    "measured points": self.all_features}
-                }
+            temp = {"best point": {'configuration': configuration,
+                                   "result": value,
+                                   "measured points": self.all_features}
+                    }
             io.emit('best point', temp)
 
         return self.solution_labels, self.solution_features
-    
-    def add_data(self, features, labels): 
+
+    def add_data(self, features, labels):
         """
-        
+
         Method adds new features and labels to whole set of features and labels.
 
         :param features: List. features in machine learning meaning selected by Sobol
