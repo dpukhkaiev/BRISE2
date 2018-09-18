@@ -1,4 +1,4 @@
-<div>
+<div *ngIf="isModelType('regression')">
     <div class="select-box" *ngIf=y&&x&&prediction.size>
         <!-- select color -->
         <mat-form-field>
