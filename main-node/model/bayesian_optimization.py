@@ -176,15 +176,17 @@ class BayesianOptimization(Model):
             return False
         if train_data_bad.shape[0] <= train_data_bad.shape[1]:
             return False
-
+        if len(train_data_bad) <= self.min_points_in_model-1:
+            return False
         # Bandwidth selection method. There are 3 possible variants:
         # 'cv_ml' - cross validation maximum likelihood
         # 'cv_ls' - cross validation least squares, more expensive crossvalidation method
         # 'normal_reference' - default, quick, rule of thumb
         bw_estimation = 'normal_reference'
 
-        bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,  var_type=self.kde_vartypes, bw=bw_estimation)
         good_kde = sm.nonparametric.KDEMultivariate(data=train_data_good, var_type=self.kde_vartypes, bw=bw_estimation)
+        bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,  var_type=self.kde_vartypes, bw=bw_estimation)
+        
 
         print("INFO: The models built with bandwidth: good - %s, bad - %s. Minimum from the configurations %s"
               % (good_kde.bw, bad_kde.bw, self.min_bandwidth))
