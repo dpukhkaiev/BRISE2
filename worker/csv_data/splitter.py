@@ -47,7 +47,8 @@ class Splitter:
                 if i['laplace_correction'] == LC and i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and i['bandwidth'] == Bw and i['minimum_bandwidth'] == MBw and i['number_of_kernels'] == NoK and i['use_application_grid'] == UAG and i['application_grid_size'] == AGS:
                     self.new_data.append(i)
         if self.new_data == []: 
-            self.new_data.append(str(0.7566))
+            self.new_data.append({})
+            self.new_data[0]["PREC_AT_99_REC"] = (str(0.7566))
             return {
                 'PREC_AT_99_REC': str(0.7566)
             } 
