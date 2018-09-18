@@ -119,6 +119,9 @@ class WSClient(SocketIO):
         for one_task_result in self.current_results:
             current_task = []
             for index, parameter in enumerate(self._result_structure):
+                if self._result_data_types[index] == 'str':
+                    current_task.append(one_task_result["result"][parameter])
+                    continue
                 current_task.append(eval("{datatype}({value})".format(datatype=self._result_data_types[index],
                                                                       value=one_task_result["result"][parameter])))
             results_to_report.append(current_task)
