@@ -38,6 +38,6 @@ class DefaultRepeater(Repeater):
                 if type(value) not in [int, float]:
                     result[index] = value
                 else:
-                    result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 2))
+                    result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
 
             return result
