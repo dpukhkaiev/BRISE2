@@ -28,10 +28,16 @@ class DefaultRepeater(Repeater):
             result = [0 for x in range(len(all_experiments[0]))]
             for experiment in all_experiments:
                 for index, value in enumerate(experiment):
-                    result[index] += value
+                    if type(value) not in [int, float]:
+                        result[index] = value
+                    else:
+                        result[index] += value
 
             # Calculating average.
             for index, value in enumerate(result):
-                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 2))
+                if type(value) not in [int, float]:
+                    result[index] = value
+                else:
+                    result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 2))
 
             return result
