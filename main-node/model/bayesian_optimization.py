@@ -337,7 +337,7 @@ class BayesianOptimization(Model):
         self.solution_features = solution_feature[0]
         return self.solution_labels, prediction_is_final
 
-    def get_result(self, repeater, features, labels, io):
+    def get_result(self, repeater, io):
         # TODO: need to review a way of features and labels addition here.
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
@@ -347,13 +347,13 @@ class BayesianOptimization(Model):
         if not self.solution_labels:
             temp_message = "Optimal configuration was not found. Reporting best of the measured."
             print(temp_message)
-            self.solution_labels = min(labels)
+            self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
-        elif min(labels) < self.solution_labels:
+        elif min(self.all_labels) < self.solution_labels:
             temp_message = ("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
@@ -362,12 +362,12 @@ class BayesianOptimization(Model):
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
-            self.solution_labels = min(labels)
+            self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
 
-        print("ALL MEASURED FEATURES:\n%s" % str(features))
-        print("ALL MEASURED LABELS:\n%s" % str(labels))
+        print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
+        print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
