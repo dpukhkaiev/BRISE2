@@ -6,6 +6,7 @@ import time
 import random
 
 from WorkerServiceClient.WSClient_sockets import WSClient
+from tools.file_system_io import create_folder_if_not_exists
 
 def run(io=None):
     """
@@ -44,6 +45,7 @@ def run(io=None):
     tresholds = {'good': (4, 8),
                  'mid': (3, 4),
                  'bad': (2, 3)}
+    create_folder_if_not_exists('./Results/')
 
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
