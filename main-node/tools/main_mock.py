@@ -3,6 +3,7 @@ Mock for main module for running BRISE configuration balancing."""
 
 import pickle
 import time
+import random
 
 from WorkerServiceClient.WSClient_sockets import WSClient
 
@@ -27,8 +28,7 @@ def run(io=None):
         print("Unable to load saved MOCK data: %s" % e)
         exit(1)
 
-    sleep_between_messages = 5  # In seconds. One second + ~ 25 seconds to overall running for current version of mock.
-
+    sleep_between_messages = 2  # In seconds. One second + ~25 seconds to overall running for current version of mock.
     # ------------------------------------------------------
     # Scenario:
     # 1. Initial emits (the global and task configurations, the default configuration measurements results).
@@ -40,6 +40,10 @@ def run(io=None):
     # 7. Prediction and validation of the solution.
     # 8. Reporting the results.
     # ------------------------------------------------------
+    repetitions = 4
+    tresholds = {'good': (4, 8),
+                 'mid': (3, 4),
+                 'bad': (2, 3)}
 
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
@@ -51,21 +55,29 @@ def run(io=None):
         io.emit('main_config', temp)
         time.sleep(sleep_between_messages)
         print("Measuring default configuration that we will used in regression to evaluate solution... ")
-        # Sending default configuration (like from the repeater).
-        wsc._send_task(mock_data["Default configuration"][0])
+        # Sending default configuration (like from the repeater) 10 times.
+        for x in range(10):
+            wsc._send_task(mock_data["Default configuration"][0])
+            repetitions += 1
         io.emit('task result', {'configuration': mock_data["Default configuration"][0][0],
                                 "result": mock_data["Default configuration"][1][0][0]})
         time.sleep(sleep_between_messages)
 
         # Sending results of default configuration measurement (like from the main).
-        io.emit('default conf', {'conf': mock_data["Default configuration"][0], "result": mock_data["Default configuration"][1]})
+        io.emit('default conf', {'conf': mock_data["Default configuration"][0],
+                                 "result": mock_data["Default configuration"][1]})
         time.sleep(sleep_between_messages)
 
         print("Measuring initial number experiments, while it is no sense in trying to create model"
               "\n(because there is no data)...")
         for feature, label in zip(mock_data["Features1"], mock_data["Labels1"]):
             print("Sending new task to IO.", end=' ')
-            wsc._send_task([feature])
+            if label < [406.12]: bounds = tresholds['good']
+            elif label < [1083.67]: bounds = tresholds['mid']
+            else: bounds = tresholds['bad']
+            repits = random.randint(*bounds)
+            repetitions += repits
+            wsc._send_task([feature for x in range(repits)])
             io.emit('task result', {'configuration': feature, "result": label[0]})
             time.sleep(sleep_between_messages)
 
@@ -84,7 +96,12 @@ def run(io=None):
         add_labels = [result for result in mock_data["Final label set"] if result not in mock_data["Labels1"]]
         for feature, label in zip(add_features, add_labels):
             print("Sending new task to IO.", end=' ')
-            wsc._send_task([feature])
+            if label < [406.12]: bounds = tresholds['good']
+            elif label < [1083.67]: bounds = tresholds['mid']
+            else: bounds = tresholds['bad']
+            repits = random.randint(*bounds)
+            repetitions += repits
+            wsc._send_task([feature for x in range(repits)])
             io.emit('task result', {'configuration': feature, 'result': label[0]})
             time.sleep(sleep_between_messages)
 
@@ -96,14 +113,16 @@ def run(io=None):
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
-        wsc._send_task([mock_data["Solution"][1]])
+        repits = random.randint(*tresholds['good'])
+        [wsc._send_task([mock_data["Solution"][1]]) for x in range(repits)]
+        repetitions += repits
         io.emit('task result', {'configuration': mock_data["Solution"][1], "result": mock_data["Solution"][0][0]})
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Solution validation success!"})
         time.sleep(sleep_between_messages)
         # reporting results
         repeater = A() # Just for reporting results. Fake object, in reporting only one field used.
-        repeater.performed_measurements = mock_data["Number of measurements"]    # Just for reporting results. These field used in reporting.
+        repeater.performed_measurements = repetitions    # Just for reporting results. These field used in reporting.
         mock_data["Final model"].get_result(repeater, io)
 
 
