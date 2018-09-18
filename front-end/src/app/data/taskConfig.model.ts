@@ -1,7 +1,7 @@
 export interface TaskConfig {
     DomainDescription: DomainDescription
     ExperimentsConfiguration: ExperimentsConfiguration
-    ModelCreation: ModelCreation
+    ModelConfiguration: ModelCreation
     SelectionAlgorithm: SelectionAlgorithm
 }
 
@@ -25,7 +25,7 @@ interface ModelCreation {
     FeaturesLabelsStructure: Array<String>
     MinimumAccuracy: number
     ModelTestSize: number
-    ModelType: String
+    ModelType: String // "regression" or "BO"
 
 }
 interface SelectionAlgorithm {

@@ -7,7 +7,7 @@
   </div>
 
   <div class="heatmap">
-    <div class="results">
+    <div class="results" *ngIf="isModelType('regression')">
       <div class="select-box" *ngIf=y&&x [hidden]='result'>
         <!-- select color -->
         <mat-form-field>
@@ -40,6 +40,10 @@
     </div>
     
     <hm-reg class="regression"></hm-reg>
+  </div>
+
+  <div *ngIf="isModelType('BO')">
+    <imp-res></imp-res>
   </div>
   
   <!--         Solution         -->
