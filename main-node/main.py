@@ -25,7 +25,7 @@ def run(io=None):
     global_config, task_config = initialize_config(argv)
 
     # Generate whole search space for regression.
-    search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
+    search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]
 
     if io:
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
@@ -104,7 +104,8 @@ def run(io=None):
                 selector.disable_point(predicted_features)
 
                 if finish:
-                    optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
+                    model.add_data(features, labels)
+                    optimal_result, optimal_config = model.get_result(repeater, io=io)
                     write_results(global_config, task_config, time_started, features, labels,
                                   repeater.performed_measurements, optimal_config, optimal_result, default_features, default_value)
                     return optimal_result, optimal_config
@@ -124,7 +125,8 @@ def run(io=None):
         # If BRISE cannot finish his work properly - terminate it.
         if len(model.all_features) > len(search_space):
             print("Unable to finish normally, terminating with best of measured results.")
-            optimal_result, optimal_config = model.get_result(repeater, features, labels, io=io)
+            model.add_data(features, labels)
+            optimal_result, optimal_config = model.get_result(repeater, io=io)
             write_results(global_config, task_config, time_started, features, labels,
                           repeater.performed_measurements, optimal_config, optimal_result, default_features,
                           default_value)

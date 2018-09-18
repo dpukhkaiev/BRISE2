@@ -109,7 +109,7 @@ class RegressionSweetSpot(Model):
         if not self.model:
             return False
 
-        self.test_model_all_data(search_space)
+        self.test_model_all_data(search_space.copy())
 
         # Check if the model is adequate - write it.
         predicted_labels, predicted_features = self.predict_solution(io, search_space)
@@ -119,15 +119,15 @@ class RegressionSweetSpot(Model):
             f.write(str(search_space) + "\n")
             f.write("Testing size = " + str(self.built_model_test_size) + "\n")
             # f.write("Degree = " + str(degree)+ "\n")
-            for i in range(degree+1):
+            for i in range(degree + 1):
                 if i == 0:
                     f.write("(TR ^ 0) * (FR ^ 0) = " + str(self.model.named_steps['reg'].coef_[i]) + "\n")
                 else:
-                    for j in range(i+1):
+                    for j in range(i + 1):
                         f.write("(TR ^ " + str(i - j) + ") * (FR ^ " + str(j) + ") = " + \
-                                str(self.model.named_steps['reg'].coef_[0][self.sum_fact(i)+j])+ "\n")
-            f.write("R^2 = " + str(self.built_model_accuracy)+"\n")
-            f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_)+"\n")
+                                str(self.model.named_steps['reg'].coef_[0][self.sum_fact(i) + j]) + "\n")
+            f.write("R^2 = " + str(self.built_model_accuracy) + "\n")
+            f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_) + "\n")
             f.close()
             print("Built model is valid.")
             if io:
@@ -139,23 +139,20 @@ class RegressionSweetSpot(Model):
             return False
 
     def predict_solution(self, io, search_space):
-            """
-            Takes features, using previously created model makes regression to find labels
-            and return label with the lowest value.
-            :param search_space: list of data points (each data point is also a list).
-            :param io: id using for web-sockets
-            :return: lowest value, and related features.
-            """
-            predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+        """
+        Takes features, using previously created model makes regression to find labels and return label with the lowest value.
+        :param search_space: list of data points (each data point is also a list).
+        :return: lowest value, and related features.
+        """
 
-            if io:
-                all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
-                                   for (prediction, index) in predictions]
-                io.emit('regression', {"regression": all_predictions})
-                io.sleep(0)
-
-            label, index = min(predictions)
-            return label, search_space[index]
+        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+        if io:
+            all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
+                               for (prediction, index) in predictions]
+            io.emit('regression', {"regression": all_predictions})
+        label, index = min(predictions)
+        label = list(label)
+        return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         # validate() in regression
@@ -172,7 +169,7 @@ class RegressionSweetSpot(Model):
         # validate false
         if solution_labels > default_value:
             print("Predicted energy larger than default.")
-            print("Predicted energy: %s. Measured: %s. Default configuration: %s" %(
+            print("Predicted energy: %s. Measured: %s. Default configuration: %s" % (
                 predicted_features[0], solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
@@ -239,17 +236,8 @@ class RegressionSweetSpot(Model):
         temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
         print(temp_message)
 
-    def get_result(self, repeater, features, labels, io):
-        """
+    def get_result(self, repeater, io):
 
-        :param repeater:
-        :param features: list of all currently discovered features.
-                         TODO - shape of features
-        :param labels: list of all currently discovered labels.
-                       TODO - shape of labels
-        :param io: id using for web-sockets
-        :return: solution_labels, solution_features
-        """
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
 
@@ -258,29 +246,31 @@ class RegressionSweetSpot(Model):
         if not self.solution_labels:
             temp_message = "Optimal configuration was not found. Reporting best of the measured."
             print(temp_message)
-            self.solution_labels = min(labels)
+            self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
             if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.emit('info',
+                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
                 io.sleep(0)
 
-        elif min(labels) < self.solution_labels:
-            temp_message = ("Configuration(%s) quality(%s), \
-                             \nthat model gave worse that one of measured previously, but better than default.\
-                             \nReporting best of measured." %
+        elif min(self.all_labels) < self.solution_labels:
+            temp_message = ("Configuration(%s) quality(%s), "
+                            "\nthat model gave worse that one of measured previously, but better than default."
+                            "\nReporting best of measured." %
                             (self.solution_features, self.solution_labels))
             print(temp_message)
             if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.emit('info',
+                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
                 io.sleep(0)
-
-            self.solution_labels = min(labels)
+                
+            self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
 
-        print("ALL MEASURED FEATURES:\n%s" % str(features))
-        print("ALL MEASURED LABELS:\n%s" % str(labels))
+        print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
+        print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
@@ -298,10 +288,10 @@ class RegressionSweetSpot(Model):
             io.emit('best point', temp)
 
         return self.solution_labels, self.solution_features
-    
-    def add_data(self, features, labels): 
+
+    def add_data(self, features, labels):
         """
-        
+
         Method adds new features and labels to whole set of features and labels.
 
         :param features: List. features in machine learning meaning selected by Sobol
