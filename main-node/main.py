@@ -31,6 +31,8 @@ def run(io=None):
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
         temp = {"global_config": global_config, "task": task_config}
         io.emit('main_config', temp)
+        io.sleep(0)
+        
 
     # Creating instance of selector based on selection type and
     # task data for further uniformly distributed data points generation.
@@ -51,8 +53,11 @@ def run(io=None):
     print(default_value)
 
     if io:
-        temp = {'conf': default_features, "result": default_value}
+        # TODO An array in the array with one value. 
+        # Events 'default conf' and 'task result' must be similar
+        temp = {'configuration': default_features[0], "result": default_value[0][0]}
         io.emit('default conf', temp)
+        io.sleep(0)
         # APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
 
     print("Measuring initial number experiments, while it is no sense in trying to create model"

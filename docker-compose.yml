@@ -9,8 +9,8 @@ services:
       - workername=alpha
     networks:
       - worker_net
-    ports:
-      - "1831:8080"  # if direct access is required
+    # ports:
+    #   - "1831:8080"  # if direct access is required
     # volumes:
     #   - "./rapid_miner_worker:/usr/src/app"
   w_beta:
@@ -21,8 +21,8 @@ services:
       - workername=beta
     networks:
       - worker_net
-    ports:
-      - "1832:8080" # if direct access is required
+    # ports:
+    #   - "1832:8080" # if direct access is required
     # volumes:
     #   - "./worker:/usr/src/app"
   w_gamma:
@@ -32,8 +32,8 @@ services:
        - workername=gamma
      networks:
        - worker_net
-     ports:
-       - "1833:8080" # if direct access is required
+    #  ports:
+    #    - "1833:8080" # if direct access is required
   #   volumes:
   #     - "./rapid_miner_worker:/usr/src/app"
   w_service:
@@ -48,7 +48,7 @@ services:
         aliases:
           - w_service
     ports:
-      - "80:80"
+      - "8080:8080"
     volumes:
       - "./worker_service:/usr/src/app"
     # depends_on:
@@ -60,18 +60,18 @@ services:
 
   main_node:
     build: ./main-node/
-    command: /usr/sbin/sshd -D
+    command: python3 api-supreme.py
     tty: true
     container_name: main-node
     networks:
      - worker_net
     ports:
       - "2222:2222"
-      - "9000:9000"
+      - "80:9000"
     depends_on:
       - "w_service"
-#    volumes:
-#      - "./main-node/Results:/root/Results"
+    volumes:
+      - "./front-end/dist:/root/static"
 
 networks:
   worker_net:

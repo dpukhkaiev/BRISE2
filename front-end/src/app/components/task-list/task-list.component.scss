@@ -1,0 +1,65 @@
+@import '~variables.scss';
+
+.box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: flex-start;
+  .tasks {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-start;
+    
+    .stack, .result {
+      flex-grow: 2;
+      min-width: 250px;
+    }
+    .length {
+      color: $secondary-text-color;
+    }
+  }
+}
+
+
+
+/* Selected item */
+.selected {
+    font-weight: 700;
+    border-left: 2px solid $accent-color;
+    background: rgba($divider-color, .2);
+}
+.selected .mat-list-icon {
+  color: $primary-text-color;
+}
+mat-tab-body mat-grid-tile {
+  height: 100%;
+}
+
+
+/* Icons */
+.mat-list-icon {
+  color: darken($divider-color, 15% )
+}
+.mat-icon {
+  color: darken($divider-color, 15% )
+}
+.mat-icon + span {
+  color: darken($divider-color, 15% );
+  font-size: .95em;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+/* Focus */
+.focus {
+  position: sticky;
+  top: 20px;
+  .focus-clear {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}

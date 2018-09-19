@@ -60,6 +60,7 @@ class Repeater(ABC):
                         configuration = [result[0], result[1]]
                         temp = {'configuration': configuration, "result": result[2]}
                         io.emit('task result', temp)
+                        io.sleep(0)
                         
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
