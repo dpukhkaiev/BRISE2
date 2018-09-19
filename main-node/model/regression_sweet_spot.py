@@ -282,7 +282,8 @@ class RegressionSweetSpot(Model):
                 'best point': {
                     'configuration': configuration,
                     'result': value,
-                    'measured points': self.all_features
+                    'measured points': self.all_features,
+                    'performed measurements': repeater.performed_measurements
                 }
             }
             io.emit('best point', temp)
