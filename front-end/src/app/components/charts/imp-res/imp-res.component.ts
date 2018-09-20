@@ -6,6 +6,8 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 import { Solution } from '../../../data/taskData.model';
 import { MainEvent } from '../../../data/client-enums';
 
+import { TaskConfig } from '../../../data/taskConfig.model';
+
 interface PointExp {
   configuration: any;
   result: any;
@@ -24,6 +26,8 @@ export class ImpResComponent implements OnInit {
   // Best point 
   solution: Solution
 
+  taskConfig: TaskConfig
+
   // poiner to DOM element #map
   @ViewChild('improvement') impr: ElementRef;
 
@@ -36,6 +40,10 @@ export class ImpResComponent implements OnInit {
   //                              WebSocket
   // --------------------------   Main-node
   private initMainEvents(): void {
+    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+      .subscribe((obj: any) => {
+        this.taskConfig = obj['task']
+      });
 
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
@@ -130,83 +138,88 @@ export class ImpResComponent implements OnInit {
 
     let data = [allResultSet, bestPointSet, startEndPoint];
 
-    var layout = {
-      title: 'The best results in time',
-      showlegend: true,
-      autosize: true,
-      xaxis: {
-        title: "Time",
-        showline: true,
-        showgrid: false,
-        showticklabels: true,
-        linecolor: 'rgb(204,204,204)',
-        linewidth: 2,
-        autotick: false,
-        ticks: 'outside',
-        tickcolor: 'rgb(204,204,204)',
-        tickwidth: 2,
-        ticklen: 5,
-        tickfont: {
-          family: 'Roboto',
-          size: 12,
-          color: 'rgb(82, 82, 82)'
-        }
-      },
-      yaxis: {
-        title: "Energy",
-        showgrid: false,
-        zeroline: false,
-        showline: true,
-        linecolor: 'rgb(204,204,204)',
-        showticklabels: true,
-        ticks: 'outside',
-        tickcolor: 'rgb(204,204,204)',
-        ticklen: 5,
-        tickfont: {
-          family: 'Roboto',
-          size: 12,
-          color: 'rgb(82, 82, 82)'
-        }
+    if (this.taskConfig.ModelConfiguration.ModelType == "BO") {
+      var layout = {
+        title: 'The best results in time',
+        showlegend: true,
+        autosize: true,
+        xaxis: {
+          title: "Time",
+          showline: true,
+          showgrid: false,
+          showticklabels: true,
+          linecolor: 'rgb(204,204,204)',
+          linewidth: 2,
+          autotick: false,
+          ticks: 'outside',
+          tickcolor: 'rgb(204,204,204)',
+          tickwidth: 2,
+          ticklen: 5,
+          tickfont: {
+            family: 'Roboto',
+            size: 12,
+            color: 'rgb(82, 82, 82)'
+          }
+        },
+        yaxis: {
+          title: "Accuracy",
+          showgrid: false,
+          zeroline: false,
+          showline: true,
+          linecolor: 'rgb(204,204,204)',
+          showticklabels: true,
+          ticks: 'outside',
+          tickcolor: 'rgb(204,204,204)',
+          ticklen: 5,
+          tickfont: {
+            family: 'Roboto',
+            size: 12,
+            color: 'rgb(82, 82, 82)'
+          }
+        },
+      };
+    };
 
-      },
-      // margin: {
-      //   autoexpand: false,
-      //   l: 100,
-      //   r: 20,
-      //   t: 100
-      // },
-      // annotations: [
-        // {
-        //   xref: 'paper',
-        //   yref: 'paper',
-        //   x: 0.05,
-        //   y: 1.05,
-        //   xanchor: 'center',
-        //   yanchor: 'bottom',
-        //   text: 'Best results for time',
-        //   font: {
-        //     family: 'Roboto',
-        //     size: 20,
-        //     color: 'rgb(37,37,37)'
-        //   },
-        //   showarrow: false
-        // },
-        // {
-        //   xref: 'paper',
-        //   yref: 'paper',
-        //   x: 0.5,
-        //   y: -0.1,
-        //   xanchor: 'center',
-        //   yanchor: 'top',
-        //   text: 'Time',
-        //   showarrow: false,
-        //   font: {
-        //     family: 'Roboto',
-        //     size: 15,
-        //     color: 'rgb(150,150,150)'
-        //   }
-        // }
-      // ]
+    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+      var layout = {
+        title: 'The best results in time',
+        showlegend: true,
+        autosize: true,
+        xaxis: {
+          title: "Time",
+          showline: true,
+          showgrid: false,
+          showticklabels: true,
+          linecolor: 'rgb(204,204,204)',
+          linewidth: 2,
+          autotick: false,
+          ticks: 'outside',
+          tickcolor: 'rgb(204,204,204)',
+          tickwidth: 2,
+          ticklen: 5,
+          tickfont: {
+            family: 'Roboto',
+            size: 12,
+            color: 'rgb(82, 82, 82)'
+          }
+        },
+        yaxis: {
+          title: "Energy",
+          showgrid: false,
+          zeroline: false,
+          showline: true,
+          linecolor: 'rgb(204,204,204)',
+          showticklabels: true,
+          ticks: 'outside',
+          tickcolor: 'rgb(204,204,204)',
+          ticklen: 5,
+          tickfont: {
+            family: 'Roboto',
+            size: 12,
+            color: 'rgb(82, 82, 82)'
+          }
+        },
+      };
     };
 
     Plotly.react(element, data, layout);
