@@ -372,7 +372,9 @@ class BayesianOptimization(Model):
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+        configuration = []
+        for i in range(len(self.solution_features)):
+            configuration.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.solution_features[i]])
         value = round(self.solution_labels[0], 2)
 
         if io:
