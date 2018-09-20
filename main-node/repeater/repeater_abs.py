@@ -66,8 +66,7 @@ class Repeater(ABC):
                                                                                    str(result)))
 
                     if io:
-                        configuration = [result[0], result[1]]
-                        temp = {'configuration': configuration, "result": result[2]}
+                        temp = {'configuration': point, "result": list(set(result) - set(point))[0]}
                         io.emit('task result', temp)
                         io.sleep(0)
                         
