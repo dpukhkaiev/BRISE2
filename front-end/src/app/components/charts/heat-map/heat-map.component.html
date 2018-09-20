@@ -1,11 +1,4 @@
 <mat-card>
-  <h3>Experiment:</h3>
-  <div class="button-row">
-    <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
-    <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
-    <mat-progress-bar mode="indeterminate" *ngIf=isRuning></mat-progress-bar>
-  </div>
-
   <div class="heatmap">
     <div class="results" *ngIf="isModelType('regression')">
       <div class="select-box" *ngIf=y&&x [hidden]='result'>
