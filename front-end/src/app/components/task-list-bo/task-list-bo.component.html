@@ -21,9 +21,10 @@
             <ng-container matColumnDef="run">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
                 Configuration
+                <!-- laplace_correction, estimation_mode, bandwidth_selection, bandwidth, minimum_bandwidth, number_of_kernels, use_application_grid, application_grid_size  -->
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.run?.param?.frequency}} - {{task.run?.param?.threads}}
+                {{task.run?.param?.laplace_correction}} - {{task.run?.param?.estimation_mode}} - {{task.run?.param?.bandwidth_selection}} - {{task.run?.param?.bandwidth}} - {{task.run?.param?.minimum_bandwidth}} - {{task.run?.param?.number_of_kernels}} - {{task.run?.param?.use_application_grid}} - {{task.run?.param?.application_grid_size}}
                 <!-- <p>{{task.run?.method}}</p> -->
               </td>
             </ng-container>
@@ -41,43 +42,14 @@
             <!-- Result Column -->
             <ng-container matColumnDef="result">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                Energy
+                Accuracy
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.meta?.result?.energy}}
+                {{task.meta?.result?.accuracy}}
               </td>
             </ng-container>
         
-            <!-- Application_grid_size Column -->
-            <ng-container matColumnDef="application_grid_size">
-              <th mat-header-cell *matHeaderCellDef>
-                 Application grid size
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ task.meta?.result?.application_grid_size }}
-              </td>
-            </ng-container>
-        
-            <!-- Number_of_kernels Column -->
-            <ng-container matColumnDef="application_grid_size">
-              <th mat-header-cell *matHeaderCellDef>
-                 Number of kernels
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ task.meta?.result?.number_of_kernels }}
-              </td>
-            </ng-container>
-        
-            <!-- Number_of_kernels Column -->
-            <ng-container matColumnDef="minimum_bandwidth">
-              <th mat-header-cell *matHeaderCellDef>
-                 Minimum bandwidth
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ task.meta?.result?.minimum_bandwidth }}
-              </td>
-            </ng-container>
-
+            
             <!-- Expanded Content Column - 
               The detail row is made up of this one column that spans across all columns -->
             <ng-container matColumnDef="expandedDetail">

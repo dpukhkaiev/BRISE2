@@ -40,7 +40,7 @@ export class TaskListBoComponent implements OnInit {
   // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
   // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
   focus: any
-  displayedColumns: string[] = ['id', 'run', 'file', 'result', 'application_grid_size', 'number_of_kernels', 'minimum_bandwidth'];
+  displayedColumns: string[] = ['id', 'run', 'file', 'result'];
   ioConnection: any;
   taskConfig: TaskConfig
 
