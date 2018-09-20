@@ -13,19 +13,25 @@ import { HeatMapComponent } from './components/charts/heat-map/heat-map.componen
 import { HeatMapRegComponent } from './components/charts/heat-map-reg/heat-map-reg.component';
 
 import { TaskListComponent } from './components/task-list/task-list.component';
+import { TaskListBoComponent } from './components/task-list-bo/task-list-bo.component';
 import { InfoBoardComponent } from './components/info-board/info-board.component';
 import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
+import { FooterComponent } from './components/footer/footer.component';
+import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.component';
 
 
 @NgModule({ 
   declarations: [
     AppComponent,
     TaskListComponent,
+    TaskListBoComponent,
     HeatMapComponent,
     HeatMapComponent,
     HeatMapRegComponent,
     InfoBoardComponent,
-    ImpResComponent
+    ImpResComponent,
+    FooterComponent,
+    MultiDimComponent
   ],
   imports: [
     BrowserModule, HttpModule,

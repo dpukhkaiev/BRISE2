@@ -5,6 +5,10 @@ def get_model(model_config, log_file_name, task_config=None):
     Instantiates need prediction model.
     :param model_config: Dict. "ModelConfiguration" dict of parameters from task description file.
     :param log_file_name: String, file where to store results of model creation.
+    :param features: list of all currently discovered features.
+                     TODO - shape of features
+    :param labels: list of all currently discovered labels.
+                   TODO - shape of labels
     :param task_config: Dict. Describes task configuration including search space.
     :return: Instantiated object of prediction model.
     """

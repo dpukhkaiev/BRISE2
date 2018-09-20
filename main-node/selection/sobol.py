@@ -1,5 +1,5 @@
 __doc__ = """
-Describes logic of selection algorithm based on Sobol sequences in Sobol space."""
+    Describes logic of selection algorithm based on Sobol sequences in Sobol space."""
 
 import sobol_seq
 from selection.selection_algorithm_abs import SelectionAlgorithm
@@ -8,12 +8,18 @@ from itertools import product
 
 
 class SobolSequence(SelectionAlgorithm):
-
     def __init__(self, selection_algorithm_config, search_space):
         """
         Creates SobolSequence instance that stores information about number of generated points
         :param selection_algorithm_config: Dict with configuration of selection algorithm.
         :param search_space: list of dimensions that describes a
+                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
+                                 if there is such search space in "taskData.json" :
+                                     {
+                                         "threads": [1, 2, 4, 8, 16, 32],
+                                         "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
+                                     }
+
         """
 
         self.dimensionality = len(search_space)
@@ -22,8 +28,8 @@ class SobolSequence(SelectionAlgorithm):
         self.returned_points = []  # Storing previously returned points.
         self.hypercube_coordinates = []
 
-        # Need to use floating numbers of indexes
-        # for searching distances between target point and other points in hypercube.
+        # Need to use floating numbers of indexes for searching distances between target point
+        # and other points in hypercube
         for dimension in search_space:
             dim_indexes = [float(x) for x in range(len(dimension))]
             self.hypercube_coordinates.append(dim_indexes)
@@ -45,6 +51,11 @@ class SobolSequence(SelectionAlgorithm):
 
     def __impose_point_to_search_space(self, point):
         """
+            Generates sobol sequence of uniformly distributed data points in N dimensional space.
+            :param number_of_data_points: int - number of points that needed to be generated in this iteration
+            :param skip: int - number of points to skip from the beginning of sequence,
+                               because sobol_seq.i4_sobol_generate stateless.
+            :return: sobol sequence as numpy array.
             Takes point with coordinates of exact configuration from search space and retrieves real configuration.
         :param point: list.
         :return: list. Configuration from search space.

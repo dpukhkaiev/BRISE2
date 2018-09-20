@@ -8,6 +8,7 @@ import { RestService as mainREST} from '../../../core/services/rest.service';
 
 import { Event } from '../../../data/client-enums';
 import { MainEvent } from '../../../data/client-enums';
+import { TaskConfig } from '../../../data/taskConfig.model';
 
 // Plot
 import { PlotType as type } from '../../../data/client-enums';
@@ -37,7 +38,7 @@ export class HeatMapComponent implements OnInit {
   isRuning: boolean = false
 
   globalConfig: object 
-  taskConfig: object
+  taskConfig: TaskConfig
 
   // Best point 
   solution: Solution
@@ -83,16 +84,21 @@ export class HeatMapComponent implements OnInit {
     this.initWsEvents();
     this.initMainEvents();
 
-    window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
+    // window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
+  }
+  isModelType(type: String) {
+    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
   }
 
   zParser(data: Map<String,Number>): Array<Array<Number>> {
     // Parse the answears in to array of Y rows
     var z = []
+    this.x && 
+    this.y && 
     this.y.forEach(y => { // y - threads
       var row = [] 
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([x, y])))
+        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
       });
       z.push(row)
     });
@@ -100,53 +106,57 @@ export class HeatMapComponent implements OnInit {
   }
   
   render(): void {
-    const element = this.map.nativeElement
-    const data = [
-      { // defined X and Y axises with data, type and color
-        z: this.zParser(this.result),
-        x: this.x.map(String),
-        y: this.y.map(String),
-        type: this.theme.type,
-        colorscale: this.theme.color,
-        zsmooth: this.theme.smooth
-      }, 
-      { // Best point. Solution
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'Gold', size: 16, symbol: 'star-dot' },
-        x: this.solution && [this.solution.configuration[0]],
-        y: this.solution && [this.solution.configuration[1]]
-      },
-      { // Measured points
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'grey', size: 7, symbol: 'cross' },
-        x: this.measPoints.map(arr => arr[0]),
-        y: this.measPoints.map(arr => arr[1]) 
-      }
-    ];
+    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+      const element = this.map.nativeElement
+      const data = [
+        { // defined X and Y axises with data, type and color
+          z: this.zParser(this.result),
+          x: this.x.map(String),
+          y: this.y.map(String),
+          type: this.theme.type,
+          colorscale: this.theme.color,
+          zsmooth: this.theme.smooth
+        }, 
+        { // Measured points
+          type: 'scatter',
+          mode: 'markers',
+          marker: { color: 'grey', size: 7, symbol: 'cross' },
+          x: this.measPoints.map(arr => arr[1]),
+          y: this.measPoints.map(arr => arr[0]) 
+        },
+        { // Best point. Solution
+          type: 'scatter',
+          mode: 'markers',
+          hoverinfo: 'none',
+          showlegend: false,
+          marker: { color: 'Gold', size: 16, symbol: 'star' },
+          x: this.solution && [this.solution.configuration[1]],
+          y: this.solution && [this.solution.configuration[0]]
+        }
+      ];
 
-    var layout = {
-      title: 'Heat map results',
-      autosize: true,
-      showlegend: false,
-      xaxis: {
-        title: "Frequency",
-        type: 'category',
-        autorange: true,
-        range: [Math.min(...this.x), Math.max(...this.x)],
-        showgrid: true
-      },
-      yaxis: {
-        title: "Threads",
-        type: 'category',
-        autorange: true,
-        range: [Math.min(...this.y), Math.max(...this.y)],
-        showgrid: true
-      }
-    };
+      var layout = {
+        title: 'Heat map results',
+        autosize: true,
+        showlegend: false,
+        xaxis: {
+          title: "Threads",
+          type: 'category',
+          autorange: true,
+          range: [Math.min(...this.x), Math.max(...this.x)],
+          showgrid: true
+        },
+        yaxis: {
+          title: "Frequency",
+          type: 'category',
+          autorange: true,
+          range: [Math.min(...this.y), Math.max(...this.y)],
+          showgrid: true
+        }
+      };
 
-    Plotly.react(element, data, layout);
+      Plotly.react(element, data, layout);
+    }
   }
 
 
@@ -198,8 +208,8 @@ export class HeatMapComponent implements OnInit {
       .subscribe((obj: any) => {
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
         console.log(' Socket: MAIN_CONF', obj);
       });
@@ -215,7 +225,7 @@ export class HeatMapComponent implements OnInit {
       .subscribe((obj: any) => {
         this.result.set(String(obj['configuration']), obj['result'])
         this.measPoints.push(obj['configuration'])
-
+        console.log('TaskRes:', obj)
         this.render()
       });
   }

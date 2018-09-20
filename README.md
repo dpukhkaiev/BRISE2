@@ -54,13 +54,15 @@ after satisfying needed requirements.
 See requirements for running **main-node** logic locally [here](./main-node#dependencies).
 
 #### Front-end
-> Not published yet, under developing.
+There is already built version at the start of containers. Just go to [localhost](http://localhost/).
+
+If require to make own front-end build:
 1. Install Node.js version 6.9+
 2. Update NPM to version 3.0+
 3. `$ npm install @angular/cli -g`
 4. From front-end root `$ npm install`
 5. Start front-server with `$ ng serve --host 0.0.0.0 --port 4201`
-
+6. Go to [localhost:4201](http://localhost:4201)
 
 ## Questions, contributing.
 ##### Have questions, proposes? Fill free to contact us via :mailbox_with_mail: 

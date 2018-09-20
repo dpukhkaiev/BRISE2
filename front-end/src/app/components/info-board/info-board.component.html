@@ -53,13 +53,13 @@
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>blur_on</mat-icon>
-          <span class="desc">Measured points: </span> <span>{{solution['measured points'].length}}</span>
+          <span class="desc">Performed measurements: </span> <span>{{solution['performed measurements']}}</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>sentiment_satisfied_alt</mat-icon>
           <span class="desc">Saved efforts: </span> <span>
             {{
-              (1 - solution['measured points'].length/(taskConfig['DomainDescription']['AllConfigurations'][0].length*taskConfig['DomainDescription']['AllConfigurations'][1].length))*100 |number:'2.0-0'
+              (1 - solution['performed measurements'] / (taskConfig['DomainDescription']['AllConfigurations'][0].length * taskConfig['DomainDescription']['AllConfigurations'][1].length * taskConfig['ExperimentsConfiguration']['MaxRepeatsOfExperiment'])) * 100 |number:'2.0-0'
             }}%
         </span>
         </mat-list-item>

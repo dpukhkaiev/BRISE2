@@ -3,7 +3,10 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 // Service
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
+// Model
 import { MainEvent } from '../../../data/client-enums';
+import { TaskConfig } from '../../../data/taskConfig.model';
+
 // Plot
 import { PlotType as type } from '../../../data/client-enums';
 import { Color as colors } from '../../../data/client-enums';
@@ -15,7 +18,7 @@ import { Solution } from '../../../data/taskData.model';
 @Component({
   selector: 'hm-reg',
   templateUrl: './heat-map-reg.component.html',
-  styleUrls: ['./heat-map-reg.component.css']
+  styleUrls: ['./heat-map-reg.component.scss']
 })
 export class HeatMapRegComponent implements OnInit {
 
@@ -28,14 +31,13 @@ export class HeatMapRegComponent implements OnInit {
     this.prediction.clear()
     this.solution = undefined
     this.measPoints = []
-    this.prediction.size && this.regrRender()
   }
 
 
   @ViewChild('reg') reg: ElementRef;
 
   globalConfig: object
-  taskConfig: object
+  taskConfig: TaskConfig
   // Rendering axises
   y: Array<number>
   x: Array<number>
@@ -54,59 +56,68 @@ export class HeatMapRegComponent implements OnInit {
 
   ngOnInit() {
     this.initMainConnection();
-    window.onresize = () => Plotly.relayout(this.reg.nativeElement, {})
+    // window.onresize = () => Plotly.relayout(this.reg.nativeElement, {})
+  }
+
+  isModelType(type: String) {
+    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
   }
 
   // Rendering
   regrRender(): void {
-    const regresion = this.reg.nativeElement
-    const data = [
-      {
-        z: this.zParser(this.prediction),
-        x: this.x.map(String),
-        y: this.y.map(String),
-        type: this.theme.type,
-        colorscale: this.theme.color,
-        zsmooth: this.theme.smooth
-      },
-      {
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'Gold', size: 12, symbol: 'star-open-dot' },
-        x: this.solution && this.solution.configuration[0],
-        y: this.solution && this.solution.configuration[1]
-      },
-      {
-        type: 'scatter',
-        mode: 'markers',
-        marker: { color: 'grey', size: 9, symbol: 'cross' },
-        x: this.measPoints.map(arr => arr[0]),
-        y: this.measPoints.map(arr => arr[1]) 
-      }
-    ];
+    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+      let regression = this.reg.nativeElement
+      const data = [
+        {
+          z: this.zParser(this.prediction),
+          x: this.x.map(String),
+          y: this.y.map(String),
+          type: this.theme.type,
+          colorscale: this.theme.color,
+          zsmooth: this.theme.smooth
+        },
+        {
+          type: 'scatter',
+          mode: 'markers',
+          name: 'measured points',
+          marker: { color: 'grey', size: 8, symbol: 'x' },
+          x: this.measPoints.map(arr => arr[1]),
+          y: this.measPoints.map(arr => arr[0]) 
+        },
+        {
+          type: 'scatter',
+          mode: 'markers',
+          name: 'solution',
+          marker: { color: 'Gold', size: 16, symbol: 'star' },
+          x: this.solution && [this.solution.configuration[1]],
+          y: this.solution && [this.solution.configuration[0]]
+        }
+      ];
 
-    var layout = {
-      title: 'Regresion',
-      autosize: true,
-      xaxis: { title: "Frequency",
-        type: 'category',
-        autorange: true,
-        range: [Math.min(...this.x), Math.max(...this.x)] 
-      },
-      yaxis: { title: "Threads",
-        type: 'category',
-        autorange: true,
-        range: [Math.min(...this.y), Math.max(...this.y)]  }
-    };
+      var layout = {
+        title: 'Regression',
+        autosize: true,
+        showlegend: false,
+        xaxis: { title: "Threads",
+          type: 'category',
+          autorange: true,
+          range: [Math.min(...this.x), Math.max(...this.x)] 
+        },
+        yaxis: { title: "Frequency",
+          type: 'category',
+          autorange: true,
+          range: [Math.min(...this.y), Math.max(...this.y)]  }
+      };
 
-    Plotly.react(regresion, data, layout);
+      Plotly.react(regression, data, layout);
+    }
   }
   zParser(data: Map<String, Number>): Array<Array<Number>> {
     var z = []
     this.y.forEach(y => { // y - threads
       var row = []
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([x, y])))
+        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
       });
       z.push(row)
     });
@@ -139,8 +150,8 @@ export class HeatMapRegComponent implements OnInit {
       .subscribe((obj: any) => {
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
       });
 

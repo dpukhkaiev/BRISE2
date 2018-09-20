@@ -4,8 +4,6 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import Pipeline
 
 from functools import reduce
-import sobol_seq
-import numpy
 
 from model.model_abs import Model
 from tools.features_tools import split_features_and_labels
@@ -17,6 +15,11 @@ class RegressionSweetSpot(Model):
         """
         Initialization of regression model
         :param log_file_name: - string, location of file, which will store results of model creation
+        :param test_size: float number, displays size of test data set
+        :param features:  features in machine learning meaning selected by Sobol
+                          TODO - shape of features
+        :param labels: labels in machine learning meaning selected by Sobol
+                       TODO - shape of labels
         :param model_config: float number, displays size of test data set
         """
 
@@ -39,6 +42,11 @@ class RegressionSweetSpot(Model):
 
     def build_model(self, degree=6, tries=20):
         """
+        Return False, if it is impossible to build the model, and True, if the model was built successfully
+        :param degree:
+        :param score_min:
+        :param tries:
+        :return: True or False
 
         Tries to build the new regression model.
 
@@ -84,7 +92,19 @@ class RegressionSweetSpot(Model):
         return False
 
     def validate_model(self, io, search_space, degree=6):
-
+        """
+        Return True, if the model have built, and False, if the model can not build or the model already exists
+        :param io: id using for web-sockets
+        :param search_space: list of dimensions for this experiment
+                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
+                                     if there is such search space in "taskData.json" :
+                                         {
+                                             "threads": [1, 2, 4, 8, 16, 32],
+                                             "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
+                                         }
+        :param degree:
+        :return: True or False
+        """
         # Check if model was built.
         if not self.model:
             return False
@@ -125,21 +145,23 @@ class RegressionSweetSpot(Model):
         :return: lowest value, and related features.
         """
 
-            predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
-            if io:
-                all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
-                                   for (prediction, index) in predictions]
-                io.emit('regression', {"regression": all_predictions})
-                io.sleep(0)
-            label, index = min(predictions)
-            return label, search_space[index]
+        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+        if io:
+            all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
+                               for (prediction, index) in predictions]
+            io.emit('regression', {"regression": all_predictions})
+            io.sleep(0)
+        label, index = min(predictions)
+        return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         # validate() in regression
         print("Verifying solution that model gave..")
+
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
             io.sleep(0)
+
         solution_candidate = repeater.measure_task([predicted_features], io=io)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate,
                                                                       task_config["FeaturesLabelsStructure"])
@@ -152,9 +174,11 @@ class RegressionSweetSpot(Model):
             prediction_is_final = False
         else:
             print("Solution validation success!")
+
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
                 io.sleep(0)
+
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
         self.solution_features = solution_feature[0]
@@ -174,9 +198,24 @@ class RegressionSweetSpot(Model):
 
     @staticmethod
     def sum_fact(num):
-        return reduce(lambda x, y: x + y, list(range(1, num + 1)))
+        """
+        Return the sum of all numbers from 1 till 'num'
+        :param num: int
+        :return:
+        """
+        return reduce(lambda x, y: x+y, list(range(1, num + 1)))
 
     def test_model_all_data(self, search_space):
+        """
+
+        :param search_space: list of dimensions for this experiment
+                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
+                                     if there is such search space in "taskData.json" :
+                                         {
+                                             "threads": [1, 2, 4, 8, 16, 32],
+                                             "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
+                                         }
+        """
         from tools.features_tools import split_features_and_labels
         from tools.initial_config import load_task
         from tools.splitter import Splitter
@@ -211,7 +250,8 @@ class RegressionSweetSpot(Model):
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
             if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.emit('info',
+                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
                 io.sleep(0)
 
         elif min(self.all_labels) < self.solution_labels:
@@ -221,7 +261,8 @@ class RegressionSweetSpot(Model):
                             (self.solution_features, self.solution_labels))
             print(temp_message)
             if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                io.emit('info',
+                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
                 io.sleep(0)
 
             self.solution_labels = min(self.all_labels)
@@ -234,17 +275,20 @@ class RegressionSweetSpot(Model):
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
-        value = round(self.solution_labels[0], 2)
-
         if io:
-            temp = {"best point": {'configuration': configuration,
-                                   "result": value,
-                                   "measured points": self.all_features}
-                    }
+            configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+            value = round(self.solution_labels[0], 2)
+            temp = {
+                'best point': {
+                    'configuration': configuration,
+                    'result': value,
+                    'measured points': self.all_features,
+                    'performed measurements': repeater.performed_measurements
+                }
+            }
             io.emit('best point', temp)
             io.sleep(0)
-            
+
         return self.solution_labels, self.solution_features
 
     def add_data(self, features, labels):
@@ -277,4 +321,3 @@ class RegressionSweetSpot(Model):
         except AssertionError as err:
             # TODO: replace with logger.
             print("ERROR! Regression input validation error:\n%s" % err)
-

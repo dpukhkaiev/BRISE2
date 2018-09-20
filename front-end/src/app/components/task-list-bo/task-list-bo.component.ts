@@ -11,16 +11,16 @@ import { MainSocketService } from '../../core/services/main.socket.service';
 
 import { Task } from '../../data/taskData.model';
 import { Event } from '../../data/client-enums';
-import { TaskConfig } from '../../data/taskConfig.model';
-
 import { MainEvent } from '../../data/client-enums';
 
 // import { resolve } from 'path';
+import { TaskConfig } from '../../data/taskConfig.model';
+
 
 @Component({
-  selector: 'app-task-list',
-  templateUrl: './task-list.component.html',
-  styleUrls: ['./task-list.component.scss'],
+  selector: 'task-list-bo',
+  templateUrl: './task-list-bo.component.html',
+  styleUrls: ['./task-list-bo.component.scss'],
   animations: [
     trigger('detailExpand', [
       state('collapsed', style({ height: '0px', minHeight: '0', display: 'none' })),
@@ -29,7 +29,7 @@ import { MainEvent } from '../../data/client-enums';
     ]),
   ],  
 })
-export class TaskListComponent implements OnInit {
+export class TaskListBoComponent implements OnInit {
 
   @ViewChild('table') table: MatTable<Element>;
   @ViewChild(MatPaginator) paginator: MatPaginator;
@@ -40,9 +40,8 @@ export class TaskListComponent implements OnInit {
   // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
   // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
   focus: any
-  displayedColumns: string[] = ['id', 'run', 'file', 'result', 'time'];
+  displayedColumns: string[] = ['id', 'run', 'file', 'result', 'application_grid_size', 'number_of_kernels', 'minimum_bandwidth'];
   ioConnection: any;
-
   taskConfig: TaskConfig
 
   public resultData: MatTableDataSource<Task>
@@ -51,31 +50,23 @@ export class TaskListComponent implements OnInit {
     this.resultData = new MatTableDataSource(this.result);
 
     this.resultData.filterPredicate = (task, filter) => {
-      const dataStr = task.id + 
-      task.run.param.frequency + 
-      task.run.param.threads + 
-      task.config.ws_file + 
-      task.meta.result.energy +
-      task.meta.result.time;
-      // JSON.stringify(task).includes(filter)
-      return dataStr.indexOf(filter) != -1;
+      return JSON.stringify(task).includes(filter)
     }
   }
 
   ngOnInit() {
     this.resultData.paginator = this.paginator;
     this.resultData.sort = this.sort;
-    this.resultData.sortingDataAccessor = this.sortingDataAccessor;
     this.initIoConnection();
     this.initMainEvents()
+  }
 
+  isModelType(type: String) {
+    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
   }
 
   clearFocus():void {
     this.focus = null
-  }
-  isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
   }
   applyFilter(filterValue: string) {
     this.resultData.filter = filterValue.trim().toLowerCase();
@@ -84,39 +75,7 @@ export class TaskListComponent implements OnInit {
       this.resultData.paginator.firstPage();
     }
   }
-  sortingDataAccessor(data, sortHeaderId) {
-    switch (sortHeaderId) {
-      case 'id': return data.id ? data.id : null;
-      case 'run': return data.run.param.frequency ? data.run.param.frequency : null;
-      case 'file': return data.config.ws_file ? data.config.ws_file : null;
-      case 'result': return data.meta ? Number(data.meta.result.energy) : null;
-      case 'time': return data.meta ? String(data.meta.result.time) : null;
-      default: return data[sortHeaderId];
-    }
-  }
 
-  searchTasks(search: Array<any>) {
-    let select:Array<Task> = [] 
-    if (arguments.length && this.result.length) {
-      this.result.map(task => {
-        let paramsValues = task.meta && Object.values(task.meta.result) 
-        let union = new Set(paramsValues.concat(search))
-        if (union.size == paramsValues.length) { // all or more searching parametrs in task
-          select.push(task)
-        }
-      })
-    } 
-    return select 
-  }
-
-  getAverageResult(search: Array<any>) {
-    let sum: Array<number> = []
-    let select = this.searchTasks(search)
-    select && select.map(task => {
-      task.meta && sum.push(Number(task.meta.result.energy))
-    })
-    return sum && sum.reduce((a, b) => a + b, 0)/sum.length
-  }
 
   // --------------------- SOCKET ---------------
   private initMainEvents(): void {

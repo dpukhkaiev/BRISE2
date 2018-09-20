@@ -1,5 +1,5 @@
-<mat-card *ngIf=y&&x >
-    <div class="select-box" [hidden]='prediction'>
+<div *ngIf="isModelType('regression')">
+    <div class="select-box" *ngIf=y&&x&&prediction.size>
         <!-- select color -->
         <mat-form-field>
             <mat-select [(value)]="theme.color" (selectionChange)="regrRender()" placeholder="Color">
@@ -26,4 +26,4 @@
         </mat-form-field>
     </div>
     <div #reg></div>
-</mat-card>
+</div>
