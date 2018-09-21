@@ -162,7 +162,7 @@ export class ImpResComponent implements OnInit {
           }
         },
         yaxis: {
-          title: "Accuracy",
+          title: "PREC_AT_99_REC",
           showgrid: false,
           zeroline: false,
           showline: true,
