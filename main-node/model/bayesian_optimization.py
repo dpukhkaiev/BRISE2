@@ -380,7 +380,8 @@ class BayesianOptimization(Model):
         if io:
             temp = {"best point": {'configuration': configuration, 
                     "result": value, 
-                    "measured points": self.all_features}
+                    "measured points": self.all_features,
+                    'performed measurements': repeater.performed_measurements}
                 }
             io.emit('best point', temp)
 
