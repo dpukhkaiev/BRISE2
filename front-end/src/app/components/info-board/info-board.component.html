@@ -58,8 +58,11 @@
         <mat-list-item>
           <mat-icon matListIcon>sentiment_satisfied_alt</mat-icon>
           <span class="desc">Saved efforts: </span> <span>
+            <!--{{-->
+              <!--(1 - solution['performed measurements'] / ( 3600 * taskConfig['ExperimentsConfiguration']['MaxRepeatsOfExperiment'])) * 100 |number:'2.0-2'-->
+            <!--}}%-->
             {{
-              (1 - solution['performed measurements'] / (taskConfig['DomainDescription']['AllConfigurations'][0].length * taskConfig['DomainDescription']['AllConfigurations'][1].length * taskConfig['ExperimentsConfiguration']['MaxRepeatsOfExperiment'])) * 100 |number:'2.0-0'
+              (1 - solution['performed measurements'] / ( taskConfig['DomainDescription']['AllConfigurations'][0].length * taskConfig['DomainDescription']['AllConfigurations'][1].length * taskConfig['DomainDescription']['AllConfigurations'][2].length * taskConfig['DomainDescription']['AllConfigurations'][3].length * taskConfig['DomainDescription']['AllConfigurations'][4].length * taskConfig['DomainDescription']['AllConfigurations'][5].length * taskConfig['DomainDescription']['AllConfigurations'][6].length * taskConfig['DomainDescription']['AllConfigurations'][7].length * taskConfig['ExperimentsConfiguration']['MaxRepeatsOfExperiment'])) * 100 |number:'2.0-2'
             }}%
         </span>
         </mat-list-item>
