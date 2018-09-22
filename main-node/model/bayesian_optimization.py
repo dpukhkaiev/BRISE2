@@ -349,7 +349,9 @@ class BayesianOptimization(Model):
             print(temp_message)
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
+            self.solution_features = [] 
+            for i in range(len(self.all_features[index_of_the_best_labels])):
+                self.solution_features.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.all_features[index_of_the_best_labels][i]])
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
@@ -364,7 +366,9 @@ class BayesianOptimization(Model):
 
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
+            self.solution_features = [] 
+            for i in range(len(self.all_features[index_of_the_best_labels])):
+                self.solution_features.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.all_features[index_of_the_best_labels][i]])
 
         print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
         print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
@@ -372,9 +376,6 @@ class BayesianOptimization(Model):
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        # configuration = []
-        # for i in range(len(self.solution_features)):
-        #     configuration.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.solution_features[i]])
 
         if io:
             temp = {"best point": {'configuration': self.solution_features, 
