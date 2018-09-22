@@ -29,6 +29,8 @@ export class ImpResComponent implements OnInit {
 
   taskConfig: TaskConfig
 
+  curr_max_x: any
+
   // poiner to DOM element #map
   @ViewChild('improvement') impr: ElementRef;
 
@@ -77,7 +79,8 @@ export class ImpResComponent implements OnInit {
           'result': obj['result'],
           'time': min + 'm ' + sec + 's',
           'number_of_configs': obj['number_of_configs']
-        } 
+        }
+        this.curr_max_x = obj['number_of_configs'] + 1
 
         // Check the best available point
         this.bestRes && this.bestRes.forEach(function(resItem){
@@ -149,6 +152,7 @@ export class ImpResComponent implements OnInit {
         showlegend: true,
         autosize: true,
         xaxis: {
+          range: [0, this.curr_max_x],
           title: "Number of measured configurations",
           showline: true,
           showgrid: false,
@@ -168,6 +172,7 @@ export class ImpResComponent implements OnInit {
           }
         },
         yaxis: {
+          range: [0, 1],
           title: "PREC_AT_99_REC",
           showgrid: false,
           zeroline: false,
@@ -192,6 +197,7 @@ export class ImpResComponent implements OnInit {
         showlegend: true,
         autosize: true,
         xaxis: {
+          range: [0, this.curr_max_x],
           title: "Time",
           showline: true,
           showgrid: false,
@@ -211,6 +217,7 @@ export class ImpResComponent implements OnInit {
           }
         },
         yaxis: {
+          range: [0, 1],
           title: "Energy",
           showgrid: false,
           zeroline: false,
