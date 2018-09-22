@@ -26,15 +26,7 @@ def run(io=None):
     global_config, task_config = initialize_config(argv)
 
     # Generate whole search space for regression.
-    search_space = []
-    with open("csv/taskNB1.csv", 'r') as csv_file:
-                reader = csv.DictReader(csv_file)
-                for row in reader: 
-                    search_space.append([bool(row['laplace_correction']), row['estimation_mode'], 
-                      row['bandwidth_selection'], float(row['bandwidth']), 
-                      float(row['minimum_bandwidth']), int(row['number_of_kernels']),
-                      bool(row['use_application_grid']), int(row['application_grid_size'])])
-    # search_space = [list(tup for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]
+    search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]
 
     if io:
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
