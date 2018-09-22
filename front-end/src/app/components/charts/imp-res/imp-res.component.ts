@@ -68,7 +68,7 @@ export class ImpResComponent implements OnInit {
           'result': obj['result'],
           'time': min + 'm ' + sec + 's'
         }) // Add new point(result)
-
+        this.render() // Render chart
         let temp: PointExp = {
           'configuration': obj['configuration'],
           'result': obj['result'],
@@ -83,6 +83,7 @@ export class ImpResComponent implements OnInit {
           }
         })  
         this.bestRes.add(temp) // Add the best available point(result)
+        this.render() // Render chart
         this.bestRes.size>2 && this.render()
       });
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
