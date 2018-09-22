@@ -58,7 +58,8 @@ export class ImpResComponent implements OnInit {
           'result': obj['best point']['result'],
           'time': min + 'm ' + sec + 's',
           'number_of_configs': obj['best point']['measured points']
-        } 
+        }
+        this.curr_max_x = obj['best point']['measured points'] + 1
         this.allRes.add(temp) 
         this.bestRes.add(temp) // There is no check if this solution is the best decision 
         this.render() // Render chart when all points got
@@ -84,7 +85,7 @@ export class ImpResComponent implements OnInit {
 
         // Check the best available point
         this.bestRes && this.bestRes.forEach(function(resItem){
-          if (temp.result > resItem.result) {
+          if (temp.result < resItem.result) {
             temp.result = resItem.result
             temp.configuration = resItem.configuration
           }
