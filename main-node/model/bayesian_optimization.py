@@ -326,7 +326,7 @@ class BayesianOptimization(Model):
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels >= default_value:
-            print("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
+            print("Predicted energy larger or equal default: %s >= %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
             print("Solution validation success!")
@@ -341,7 +341,7 @@ class BayesianOptimization(Model):
         # TODO: need to review a way of features and labels addition here.
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
-
+        maximize_done = False
         print("\n\nFinal report:")
 
         if not self.solution_labels:
@@ -349,6 +349,9 @@ class BayesianOptimization(Model):
             print(temp_message)
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
+            if not self.task_config['ModelConfiguration']['MinimizationTask'] and not maximize_done:
+                self.solution_labels[0] = 1 - self.solution_labels[0]
+                maximize_done = True
             self.solution_features = [] 
             for i in range(len(self.all_features[index_of_the_best_labels])):
                 self.solution_features.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.all_features[index_of_the_best_labels][i]])
@@ -356,6 +359,14 @@ class BayesianOptimization(Model):
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
 
         elif min(self.all_labels) < self.solution_labels:
+            self.solution_labels = min(self.all_labels)
+            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
+            if not self.task_config['ModelConfiguration']['MinimizationTask'] and not maximize_done:
+                self.solution_labels[0] = 1 - self.solution_labels[0]
+                maximize_done = True
+            self.solution_features = [] 
+            for i in range(len(self.all_features[index_of_the_best_labels])):
+                self.solution_features.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.all_features[index_of_the_best_labels][i]])
             temp_message = ("Configuration(%s) quality(%s), "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
@@ -363,19 +374,14 @@ class BayesianOptimization(Model):
             print(temp_message)
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-
-            self.solution_labels = min(self.all_labels)
-            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = [] 
-            for i in range(len(self.all_features[index_of_the_best_labels])):
-                self.solution_features.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.all_features[index_of_the_best_labels][i]])
-
+        if not self.task_config['ModelConfiguration']['MinimizationTask'] and not maximize_done:
+                self.solution_labels[0] = 1 - self.solution_labels[0]
+                maximize_done = True
         print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
         print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
         print("Number of measured points: %s" % len(self.all_features))
         print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
-
+        print("Best found value: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
         if io:
             temp = {"best point": {'configuration': self.solution_features, 
