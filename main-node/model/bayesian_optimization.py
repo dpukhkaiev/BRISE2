@@ -325,7 +325,7 @@ class BayesianOptimization(Model):
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
-        if solution_labels > default_value:
+        if solution_labels >= default_value:
             print("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
@@ -372,14 +372,13 @@ class BayesianOptimization(Model):
         print("Number of performed measurements: %s" % repeater.performed_measurements)
         print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        configuration = []
-        for i in range(len(self.solution_features)):
-            configuration.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.solution_features[i]])
-        value = round(self.solution_labels[0], 2)
+        # configuration = []
+        # for i in range(len(self.solution_features)):
+        #     configuration.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.solution_features[i]])
 
         if io:
-            temp = {"best point": {'configuration': configuration, 
-                    "result": value, 
+            temp = {"best point": {'configuration': self.solution_features, 
+                    "result": round(self.solution_labels[0], 2), 
                     "measured points": self.all_features,
                     'performed measurements': repeater.performed_measurements}
                 }
