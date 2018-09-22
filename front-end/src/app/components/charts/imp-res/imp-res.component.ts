@@ -12,6 +12,7 @@ interface PointExp {
   configuration: any;
   result: any;
   time: any;
+  number_of_configs: any;
 } 
 
 @Component({
@@ -53,7 +54,8 @@ export class ImpResComponent implements OnInit {
         let temp: PointExp = {
           'configuration': obj['best point']['configuration'],
           'result': obj['best point']['result'],
-          'time': min + 'm ' + sec + 's'
+          'time': min + 'm ' + sec + 's',
+          'number_of_configs': obj['best point']['measured points']
         } 
         this.allRes.add(temp) 
         this.bestRes.add(temp) // There is no check if this solution is the best decision 
@@ -66,13 +68,15 @@ export class ImpResComponent implements OnInit {
         this.allRes.add({
           'configuration': obj['configuration'],
           'result': obj['result'],
-          'time': min + 'm ' + sec + 's'
+          'time': min + 'm ' + sec + 's',
+          'number_of_configs': obj['number_of_configs']
         }) // Add new point(result)
         this.render() // Render chart
         let temp: PointExp = {
           'configuration': obj['configuration'],
           'result': obj['result'],
-          'time': min + 'm ' + sec + 's'
+          'time': min + 'm ' + sec + 's',
+          'number_of_configs': obj['number_of_configs']
         } 
 
         // Check the best available point
@@ -99,12 +103,12 @@ export class ImpResComponent implements OnInit {
     const element = this.impr.nativeElement
 
     // X-axis data
-    const xBest = Array.from(this.bestRes).map(i => i["time"]);
+    const xBest = Array.from(this.bestRes).map(i => i["number_of_configs"]);
     // Results
     const yBest = Array.from(this.bestRes).map(i => i["result"]);
     
     var allResultSet = { // Data for all results
-      x: Array.from(this.allRes).map(i => i["time"]),
+      x: Array.from(this.allRes).map(i => i["number_of_configs"]),
       y: Array.from(this.allRes).map(i => i["result"]),
       type: 'scatter',
       mode: 'lines+markers',
@@ -141,13 +145,14 @@ export class ImpResComponent implements OnInit {
 
     if (this.taskConfig.ModelConfiguration.ModelType == "BO") {
       var layout = {
-        title: 'The best results in time',
+        title: 'The best results',
         showlegend: true,
         autosize: true,
         xaxis: {
-          title: "Time",
+          title: "Number of measured configurations",
           showline: true,
           showgrid: false,
+          zeroline: false,
           showticklabels: true,
           linecolor: 'rgb(204,204,204)',
           linewidth: 2,
@@ -190,6 +195,7 @@ export class ImpResComponent implements OnInit {
           title: "Time",
           showline: true,
           showgrid: false,
+          zeroline: false,
           showticklabels: true,
           linecolor: 'rgb(204,204,204)',
           linewidth: 2,
