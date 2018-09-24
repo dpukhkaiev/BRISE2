@@ -4,7 +4,6 @@ Main module for running BRISE configuration balancing."""
 import itertools
 import datetime
 import socket
-import csv
 from sys import argv
 
 from warnings import filterwarnings
@@ -34,7 +33,6 @@ def run(io=None):
         io.emit('main_config', temp)
         io.sleep(0)
         
-
     # Creating instance of selector based on selection type and
     # task data for further uniformly distributed data points generation.
     selector = get_selector(selection_algorithm_config=task_config["SelectionAlgorithm"],
