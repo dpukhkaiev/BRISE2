@@ -46,6 +46,7 @@ def run(io=None):
                  'mid': (3, 4),
                  'bad': (2, 3)}
     create_folder_if_not_exists('./Results/')
+    number_of_measured_configs = 0
 
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
@@ -61,8 +62,11 @@ def run(io=None):
         for x in range(10):
             wsc.work(mock_data["Default configuration"][0])
             repetitions += 1
+        number_of_measured_configs += 1
         io.emit('task result', {'configuration': mock_data["Default configuration"][0][0],
-                                "result": mock_data["Default configuration"][1][0][0]})
+                                "result": mock_data["Default configuration"][1][0][0],
+                                'number_of_configs': number_of_measured_configs
+                                })
         time.sleep(sleep_between_messages)
 
         # Sending results of default configuration measurement (like from the main).
@@ -79,7 +83,10 @@ def run(io=None):
             repits = random.randint(*bounds) 
             repetitions += repits
             wsc.work([feature for x in range(repits)])
-            io.emit('task result', {'configuration': feature, "result": label[0]})
+            number_of_measured_configs += 1
+            io.emit('task result', {'configuration': feature,
+                                    "result": label[0],
+                                    'number_of_configs': number_of_measured_configs})
             time.sleep(sleep_between_messages)
 
         # First model validation.
@@ -103,7 +110,12 @@ def run(io=None):
             repits = random.randint(*bounds)
             repetitions += repits
             wsc.work([feature for x in range(repits)])
-            io.emit('task result', {'configuration': feature, 'result': label[0]})
+            number_of_measured_configs += 1
+            io.emit('task result', {
+                'configuration': feature,
+                'result': label[0],
+                'number_of_configs': number_of_measured_configs
+            })
             time.sleep(sleep_between_messages)
 
         # Second (and final) model creation, validation, solution prediction.
@@ -117,7 +129,11 @@ def run(io=None):
         repits = random.randint(*tresholds['good'])
         [wsc._send_task([mock_data["Solution"][1]]) for x in range(repits)]
         repetitions += repits
-        io.emit('task result', {'configuration': mock_data["Solution"][1], "result": mock_data["Solution"][0][0]})
+        number_of_measured_configs += 1
+        io.emit('task result', {'configuration': mock_data["Solution"][1],
+                                "result": mock_data["Solution"][0][0],
+                                'number_of_configs': number_of_measured_configs
+                                })
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Solution validation success!"})
         time.sleep(sleep_between_messages)
