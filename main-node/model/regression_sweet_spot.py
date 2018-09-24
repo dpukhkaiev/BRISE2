@@ -278,11 +278,17 @@ class RegressionSweetSpot(Model):
         if io:
             configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
             value = round(self.solution_labels[0], 2)
+
+            measured_points = len(self.all_features)
+            # TODO: generalize, workaround
+            if self.all_features.__contains__([2900, 32]):
+                measured_points += 1
+
             temp = {
                 'best point': {
                     'configuration': configuration,
                     'result': value,
-                    'measured points': self.all_features,
+                    'measured points': measured_points,
                     'performed measurements': repeater.performed_measurements
                 }
             }

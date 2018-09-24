@@ -11,6 +11,7 @@ class Repeater(ABC):
         self.current_measurement_finished = False
         self.performed_measurements = 0
         self.max_repeats_of_experiment = ExperimentsConfiguration["MaxRepeatsOfExperiment"]
+        self.number_of_measured_configs = 0
 
     @abstractmethod
     def decision_function(self, history, point, iterations=3, **configuration): pass
@@ -65,13 +66,19 @@ class Repeater(ABC):
                                                                                    len(self.history.get(point)),
                                                                                    str(result)))
 
-                    configuration = [result[0], result[1]]
 
+                    configuration = [result[0], result[1]]
+                    self.number_of_measured_configs += 1
+                    print("Current number of measured configs: ", self.number_of_measured_configs)
                     if io:
-                        temp = {'configuration': configuration, "result": result[2]}
+                        temp = {
+                            'configuration': configuration,
+                            "result": result[2],
+                            'number_of_configs': self.number_of_measured_configs
+                        }
                         io.emit('task result', temp)
                         io.sleep(0)
-                        
+
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
