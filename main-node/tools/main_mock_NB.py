@@ -71,7 +71,7 @@ def run(io=None):
         time.sleep(sleep_between_messages)
 
         # Sending results of default configuration measurement (like from the main).
-        # io.emit('default conf', {'configuration': mock_data["Default config"][0][0], "result": mock_data["Default config"][1][0][0]})
+        io.emit('default conf', {'configuration': mock_data["Default config"][0][0], "result": mock_data["Default config"][1][0][0]})
         time.sleep(sleep_between_messages)
 
         print("Measuring initial number experiments, while it is no sense in trying to create model"
