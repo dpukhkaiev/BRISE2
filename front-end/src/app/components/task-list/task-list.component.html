@@ -140,7 +140,7 @@
             <!-- Time Column -->
             <ng-container matColumnDef="time">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                Time (m:ss:SS)
+                Time (m:ss`SS)
               </th>
               <td mat-cell *matCellDef="let task">
                 {{ (task.meta?.result?.time > 0) ? (task.meta?.result?.time | date: 'mm:ss`SS') : ""}}

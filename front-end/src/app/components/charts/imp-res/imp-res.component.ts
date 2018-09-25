@@ -70,14 +70,14 @@ export class ImpResComponent implements OnInit {
         let sec = new Date().getSeconds()
         this.allRes.add({
           'configuration': obj['configuration'],
-          'result': obj['result'],
+          'result': (1-obj['result']),
           'time': min + 'm ' + sec + 's',
           'number_of_configs': obj['number_of_configs']
         }) // Add new point(result)
         this.render() // Render chart
         let temp: PointExp = {
           'configuration': obj['configuration'],
-          'result': obj['result'],
+          'result': (1-obj['result']),
           'time': min + 'm ' + sec + 's',
           'number_of_configs': obj['number_of_configs']
         }

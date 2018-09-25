@@ -47,6 +47,7 @@ def run(io=None):
                  'mid': (3, 4),
                  'bad': (2, 3)}
     create_folder_if_not_exists('./Results/')
+    number_of_measured_configs = 0
 
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
@@ -59,28 +60,35 @@ def run(io=None):
         time.sleep(sleep_between_messages)
         print("Measuring default configuration that we will used in regression to evaluate solution... ")
         # Sending default configuration (like from the repeater) 10 times.
-        for x in range(10):
+        for x in range(2):
             wsc.work(mock_data["Default config"][0])
             repetitions += 1
+        number_of_measured_configs += 1
         io.emit('task result', {'configuration': mock_data["Default config"][0][0],
-                                "result": mock_data["Default config"][1][0][0]})
+                                "result": mock_data["Default config"][1][0][0],
+                                'number_of_configs': number_of_measured_configs
+                                },)
         time.sleep(sleep_between_messages)
 
         # Sending results of default configuration measurement (like from the main).
-        io.emit('default conf', {'configuration': mock_data["Default config"][0][0], "result": mock_data["Default config"][1][0][0]})
+        # io.emit('default conf', {'configuration': mock_data["Default config"][0][0], "result": mock_data["Default config"][1][0][0]})
         time.sleep(sleep_between_messages)
 
         print("Measuring initial number experiments, while it is no sense in trying to create model"
               "\n(because there is no data)...")
         for feature, label in zip(mock_data["Features1"], mock_data["Labels1"]):
             print("Sending new task to IO.", end=' ')
-            if label < [406.12]: bounds = tresholds['good']
-            elif label < [1083.67]: bounds = tresholds['mid']
-            else: bounds = tresholds['bad']
-            repits = random.randint(*bounds) 
+            # if label < [406.12]: bounds = tresholds['good']
+            # elif label < [1083.67]: bounds = tresholds['mid']
+            # else: bounds = tresholds['bad']
+            # repits = random.randint(*bounds)
+            repits = 2
             repetitions += repits
             wsc.work([feature for x in range(repits)])
-            io.emit('task result', {'configuration': feature, "result": label[0]})
+            number_of_measured_configs += 1
+            io.emit('task result', {'configuration': feature,
+                                    "result": label[0],
+                                    'number_of_configs': number_of_measured_configs})
             time.sleep(sleep_between_messages)
 
         model = get_model(model_config=mock_data["Task config"]["ModelConfiguration"],
@@ -111,7 +119,10 @@ def run(io=None):
             repits = random.randint(*bounds)
             repetitions += repits
             wsc.work([feature for x in range(repits)])
-            io.emit('task result', {'configuration': feature, 'result': label[0]})
+            number_of_measured_configs += 1
+            io.emit('task result', {'configuration': feature,
+                                    'result': label[0],
+                                    'number_of_configs': number_of_measured_configs})
             time.sleep(sleep_between_messages)
 
         # Second (and final) model creation, validation, solution prediction.
@@ -133,7 +144,12 @@ def run(io=None):
         repits = random.randint(*tresholds['good'])
         [wsc._send_task([mock_data["Solution"][1]]) for x in range(repits)]
         repetitions += repits
-        io.emit('task result', {'configuration': mock_data["Solution"][1], "result": mock_data["Solution"][0][0]})
+        number_of_measured_configs += 1
+        io.emit('task result', {
+            'configuration': mock_data["Solution"][1],
+            "result": mock_data["Solution"][0][0],
+            'number_of_configs': number_of_measured_configs
+        })
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Solution validation success!"})
         time.sleep(sleep_between_messages)

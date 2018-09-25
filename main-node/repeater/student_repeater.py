@@ -11,6 +11,7 @@ class StudentRepeater(Repeater):
         # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
         self.default_repeater = DefaultRepeater(*args, **kwargs)
+        self.number_of_measured_configs = 1
 
     def decision_function(self, history, point, threshold=15, **configuration):
         """
