@@ -43,9 +43,6 @@ def run(io=None):
     # 8. Reporting the results.
     # ------------------------------------------------------
     repetitions = 0
-    tresholds = {'good': (4, 8),
-                 'mid': (3, 4),
-                 'bad': (2, 3)}
     create_folder_if_not_exists('./Results/')
     number_of_measured_configs = 0
 

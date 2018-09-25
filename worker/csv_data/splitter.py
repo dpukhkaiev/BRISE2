@@ -44,7 +44,7 @@ class Splitter:
         del self.new_data[:]
         if self.data:
             for i in self.data:
-                if bool(i['laplace_correction']) == bool(LC) and i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and i['bandwidth'] == Bw and i['minimum_bandwidth'] == MBw and i['number_of_kernels'] == NoK and bool(i['use_application_grid']) == bool(UAG) and i['application_grid_size'] == AGS:
+                if bool(i['laplace_correction']) == bool(LC) and i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and float(i['bandwidth']) == float(Bw) and float(i['minimum_bandwidth']) == float(MBw) and i['number_of_kernels'] == NoK and bool(i['use_application_grid']) == bool(UAG) and i['application_grid_size'] == AGS:
                     self.new_data.append(i)
         if self.new_data == []: 
             self.new_data.append({})
