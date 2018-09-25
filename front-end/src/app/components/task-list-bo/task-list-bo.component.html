@@ -45,7 +45,7 @@
                 PREC_AT_99_REC
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.meta?.result?.accuracy}}
+                {{1-task.meta?.result?.accuracy | number:'.0-3'}}
               </td>
             </ng-container>
         

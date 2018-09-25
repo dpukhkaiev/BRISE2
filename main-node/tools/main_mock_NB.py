@@ -109,14 +109,13 @@ def run(io=None):
         time.sleep(sleep_between_messages)
 
         # Sending additional configurations (including predicted configuration.
-        add_features = [config for config in mock_data["Final feature set"] if config not in mock_data["Features1"]]
-        add_labels = [result for result in mock_data["Final label set"] if result not in mock_data["Labels1"]]
+        add_features = mock_data["Final feature set"][len(mock_data["Features1"]):len(mock_data["Final feature set"])-1]
+        add_labels = mock_data["Final label set"][len(mock_data["Labels1"]):len(mock_data["Final label set"])-1]
         for feature, label in zip(add_features, add_labels):
             print("Sending new task to IO.", end=' ')
-            if label < [406.12]: bounds = tresholds['good']
-            elif label < [1083.67]: bounds = tresholds['mid']
-            else: bounds = tresholds['bad']
-            repits = random.randint(*bounds)
+            # if label < [406.12]: bounds = tresholds['good']
+            # elif label < [1083.67]: bounds = tresholds['mid']
+            # else: bounds = tresholds['bad']
             repetitions += repits
             wsc.work([feature for x in range(repits)])
             number_of_measured_configs += 1
@@ -141,7 +140,6 @@ def run(io=None):
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
-        repits = random.randint(*tresholds['good'])
         [wsc._send_task([mock_data["Solution"][1]]) for x in range(repits)]
         repetitions += repits
         number_of_measured_configs += 1
