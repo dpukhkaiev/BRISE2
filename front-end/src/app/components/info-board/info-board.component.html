@@ -49,7 +49,7 @@
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>network_check</mat-icon>
-          <span class="desc">Deviation result from default: </span> <span>{{100*(default_task.result - solution.result)/solution.result | number:'2.0-2'}}%</span>
+          <span class="desc">Quality gain: </span> <span>{{100*(solution.result - (1-default_task.result))/(1-default_task.result) | number:'2.0-2'}}%</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>blur_on</mat-icon>
