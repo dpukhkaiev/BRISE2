@@ -13,7 +13,7 @@ def write_results(global_config, task_config, time_started, features, labels, pe
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
 
     file_path = "%sBRISE_Results_for_%s.txt" % (global_config["results_storage"],
-                                                task_config["ExperimentsConfiguration"]["FileToRead"])
+                                                task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"])
     try:
         with open(file_path, 'a') as results_file:
             results_file.write("####: START results of BRISE run at %s. ####\n" % time_started.strftime("%d.%m.%Y - %H:%M:%S"))

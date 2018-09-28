@@ -1,18 +1,33 @@
 {
-  "task_name"  : "taskNB", 
-  "params": {
-    "ExperimentNumber"  : 1,
-    "ModelTestSize"  : 0.9,
-    "NumberOfInitialExperiments" : 10,
-    "step": 2,
+  "DomainDescription":{
+    "FeatureNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
+    "DataFile"          : "./Resources/NB/taskNB1Data.json",
+    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
+    "DefaultConfiguration": [true, "full", "heuristic", 0.1, 0.4, 4, true, 200]
+
+  },
+  "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
-    "StopCondition"     : "regression",
-    "DecisionFunction"  : "student_deviation",
-    "DataFile"        : "./Resources/NB/taskNB1Data.json",
-    "FileToRead"          : "",
-    "FeatureNames"  : ["laplace_correction", "estimation_mode", "bandwidth_selection", "use_application_grid"],
-    "ResultStructure"  : ["laplace_correction", "estimation_mode", "bandwidth_selection", "use_application_grid", "accuracy"],
-    "ResultDataTypes"  : ["bool", "string", "string", "bool", "float"],
-    "ResultFeatLabels" : ["feature", "feature", "feature", "feature", "label"]
+    "NumberOfInitialExperiments"   : 10,
+    "Step"              : 1
+  },
+  "ExperimentsConfiguration":{
+    "TaskName"          : "taskNB",
+    "WorkerConfiguration":{
+      "ws_file": "taskNB1.csv"
+    },
+    "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
+    "ResultStructure"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size", "accuracy"],
+    "ResultDataTypes"  : ["bool", "str", "str", "float", "float", "int", "bool", "int", "float"],
+    "RepeaterDecisionFunction"  : "student_deviation",
+    "MaxRepeatsOfExperiment": 10,
+    "MaxTimeToRunExperiment": 10
+  },
+  "ModelConfiguration":{
+    "ModelTestSize"     : 0.9,
+    "MinimumAccuracy"   : 0.85,
+    "ModelType"         : "BO",
+    "MinimizationTask"  : false,
+    "FeaturesLabelsStructure"  : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
   }
 }

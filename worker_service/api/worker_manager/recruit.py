@@ -1,18 +1,11 @@
-import os
-import threading
-
 import eventlet
 eventlet.monkey_patch()
 
-# from flask_socketio import SocketIO, send, emit
 import time
-from random import randint
-from concurrent.futures import ThreadPoolExecutor
-
+from random import shuffle
 
 # LOGIN
 import logging
-# logging.basicConfig(filename='recruit.log',level=logging.DEBUG)
 logging.getLogger('socketio').setLevel(logging.DEBUG)
 logging.getLogger('engineio').setLevel(logging.DEBUG)
 
@@ -34,8 +27,6 @@ class Recruit():
 
         eventlet.spawn(self._loop)
 
-    # def __del__(self):
-    #     self._executor.cancel()
 
     def _loop(self):
         while True: 
@@ -127,15 +118,20 @@ class Recruit():
             self.result[payload['id']] = payload
 
         # success flag
-        self.send = False  
-
+        self.send = False
+        shuffle(self.workers)
+        tmp_worker_iterator = self.workers.__iter__()
         while self.focus_task and not self.send:
-            # TODO it is necessary to form a structure that monitors free workers
-            eventlet.sleep(1)
             if len(self.workers):
-                k = randint(0, 9)%len(self.workers)
-                print(" Task send to", self.workers[k])
-                self.socket.emit('assign', payload, namespace='/task', room=self.workers[k])
+                try:
+                    chosen = tmp_worker_iterator.__next__()
+                    print(" Task send to", chosen)
+                    self.socket.emit('assign', payload, namespace='/task', room=chosen)
+                except StopIteration:
+                    shuffle(self.workers)
+                    tmp_worker_iterator = self.workers.__iter__()
+                    continue
+            eventlet.sleep(1)
 
     def task_confirm(self, obj):
         if obj['status'] == 'run':

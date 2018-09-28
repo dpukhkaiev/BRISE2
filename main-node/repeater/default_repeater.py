@@ -3,7 +3,6 @@ __doc__ = """
     Purpose of this repeater - check, using 'provided history', if specific 'provided point' 
     have been measured 'provided number of iterations'."""
 
-from repeater.history import History
 from repeater.repeater_abs import Repeater
 
 
@@ -15,6 +14,7 @@ class DefaultRepeater(Repeater):
         In other case - compute result as average between all experiments.
         :param history: history class object that stores all experiments results
         :param point: concrete experiment configuration that is evaluating
+                      shape - tuple, e.g. ``(1200, 32)``
         :return: result or False
         """
 
@@ -28,10 +28,16 @@ class DefaultRepeater(Repeater):
             result = [0 for x in range(len(all_experiments[0]))]
             for experiment in all_experiments:
                 for index, value in enumerate(experiment):
-                    result[index] += value
+                    if type(value) not in [int, float]:
+                        result[index] = value
+                    else:
+                        result[index] += value
 
             # Calculating average.
             for index, value in enumerate(result):
-                result[index] = eval(self.WSClient.results_data_types[index])(round(value / len(all_experiments), 2))
+                if type(value) not in [int, float]:
+                    result[index] = value
+                else:
+                    result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
 
             return result

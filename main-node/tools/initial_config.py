@@ -1,6 +1,5 @@
 __doc__ = """
-Module to read config and tasks for execute
-"""
+    Module to read config and tasks for execute."""
 import json
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
 
@@ -45,6 +44,7 @@ def load_task(path_to_file="./Resources/task.json"):
         print("Error with decoding task: %s" % e)
         exit(1)
     return task
+
 
 def initialize_config(argv):
     """

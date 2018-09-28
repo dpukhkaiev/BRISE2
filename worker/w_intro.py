@@ -4,7 +4,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from socketIO_client import SocketIO, BaseNamespace # GitHub - https://github.com/invisibleroads/socketIO-client
-from worker import work, random_1, random_2, energy_consumption # available workers methods
+from worker import work, random_1, random_2, energy_consumption, taskNB # available workers methods
 
 logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
 logging.basicConfig()
@@ -21,6 +21,7 @@ menu = {
     'random_1': random_1,
     'random_2': random_2,
     'energy_consumption': energy_consumption,
+    'taskNB': taskNB,
     'work': work
 }
 
@@ -37,7 +38,7 @@ class TaskNamespace(BaseNamespace):
         print(':: task pong', args)
 # -----------------------------------------------
 # Connect to worker service
-socketIO = SocketIO('w_service', 80, BaseNamespace)
+socketIO = SocketIO('w_service', 8080, BaseNamespace)
  
 status = socketIO.define(StatusNamespace, '/status')
 task = socketIO.define(TaskNamespace, '/task')
@@ -131,8 +132,7 @@ def task_result(data):
     return {
         'worker status': 'online',
         'node': os.environ['workername'],
-        'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else 'null',
-        'return': str(data),
+        'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else str(data),
         'task id': task_id or 'null'
     }
 

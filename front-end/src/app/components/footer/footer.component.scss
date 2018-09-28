@@ -1,0 +1,159 @@
+@import "~variables.scss";
+
+.footer-distributed{
+	box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin: 5px;
+    font-size: 12px;
+    color: $secondary-text-color;
+    & .footer-right,.footer-center,.footer-left {
+        display: flex;
+        flex-direction: column;
+    }
+    & .footer-links{
+        color:  $primary-text-color;
+        margin: 2px 0 12px;
+        padding: 0;
+        & a {
+            display: flex;
+            line-height: 1.8;
+            font-weight: 400;
+            text-decoration: none;
+            color:  inherit;
+        }
+    }
+
+    & .footer-company-name{
+        color: $accent-color;
+        font-size: 12px;
+        font-weight: normal;
+        margin: 0;
+    }
+}
+
+
+/* Footer Center */
+
+
+.footer-center {
+    i {
+        background-color: $primary-text-color;
+        color: $primary-color-text;
+        font-size: 15px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 20px;
+        margin: 4px 15px;
+        vertical-align: middle;
+        &.fa-envelope{
+            font-size: 14px;
+            line-height: 21px;
+        }
+    }
+    p {
+        display: inline-block;
+        color: $primary-text-color;
+        font-weight:400;
+        vertical-align: middle;
+        margin:0;
+        span {
+            display:block;
+            font-weight: normal;
+            font-size:14px;
+            line-height:2;
+        }
+        a {
+            color:  $primary-color-dark;
+            text-decoration: none;
+            &:before {
+                content: "|";
+                font-weight:300;
+                font-size: 20px;
+                left: 0;
+                color: $primary-text-color;
+                display: inline-block;
+                padding-right: 5px;
+            }
+        }
+    }
+}
+
+
+.footer-distributed .footer-links .link-1:before {
+  content: none;
+}
+
+/* Footer Right */
+
+.footer-distributed .footer-right{
+	max-width: 40%;
+}
+
+.footer-distributed .footer-company-about{
+	line-height: 20px;
+	color:  $divider-color;
+	// font-size: 13px;
+	font-weight: normal;
+	margin: 0;
+}
+
+.footer-distributed .footer-company-about span{
+	display: block;
+	color:  $accent-color;
+	font-size: 1.2em;
+	font-weight: bold;
+	margin-bottom: 4px;
+}
+
+.footer-distributed .footer-icons{
+	margin-top: 15px;
+}
+
+.footer-distributed .footer-icons a{
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
+	// background-color:  #33383b;
+	border-radius: 2px;
+    text-align: center;
+	font-size: 15px;
+	color: $primary-text-color;
+	line-height: 22px;
+
+	margin-right: 3px;
+    margin-bottom: 5px;
+    transition: background-color, ease, .5s;
+    &:hover {
+      background-color: $secondary-text-color;  
+    }
+}
+
+/* If you don't want the footer to be responsive, remove these media queries */
+
+// @media (max-width: 880px) {
+
+// 	.footer-distributed{
+// 		font: bold 14px sans-serif;
+// 	}
+
+// 	.footer-distributed .footer-left,
+// 	.footer-distributed .footer-center,
+// 	.footer-distributed .footer-right{
+// 		display: block;
+// 		width: 100%;
+// 		margin-bottom: 40px;
+// 		text-align: center;
+// 	}
+
+// 	.footer-distributed .footer-center i{
+// 		margin-left: 0;
+// 	}
+
+// }

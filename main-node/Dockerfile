@@ -30,7 +30,14 @@ RUN apt-get update \
     && python3 -m pip install flask-cors \
     && python3 -m pip install flask-socketio \
     && python3 -m pip install python-socketio \
+<<<<<<< HEAD
     && python3 -m pip install eventlet
+=======
+    && python3 -m pip install socketIO-client \
+    && python3 -m pip install eventlet \
+    && python3 -m pip install statsmodels
+    
+>>>>>>> dev
 
 # Install pytest for covering code by tests
 RUN python3 -m pip install pytest

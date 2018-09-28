@@ -2,7 +2,7 @@ import os
 import json
 
 from flask import Flask, jsonify, request
-from flask_socketio import SocketIO, send, emit, join_room, leave_room
+from flask_socketio import SocketIO, send, emit, join_room, leave_room, Namespace
 from flask_cors import CORS
 import time
 
@@ -12,8 +12,37 @@ from api.worker_manager.recruit import Recruit
 
 # Logging
 import logging
+logging.getLogger('flask.app').setLevel(logging.DEBUG)
 
 def create_app(script_info=None):
+
+    class MainNodeNamespace(Namespace):
+        def on_ping(self, *params):
+            print("\tReceived ping from main node. Arguments:", params)
+            self.emit("ping_response", hr.workers)
+            # return "pong", params
+
+        def on_add_tasks(self, *payload):
+            if len(payload) > 0:
+                print('Received new tasks: %s' % len(payload[0]))
+                try:
+                    id_list, task_list = t_parser(payload[0])
+
+                    for item in task_list:
+                        hr.new_task(item)
+                    socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
+                    self.emit('task_accepted', id_list)
+
+                except Exception as e:
+                    logging.error("ERROR '%s' in parsing received task, nothing will be added to task stack. " % e)
+                    logging.error("Received task: " % payload[0])
+                    self.emit("wrong_task_structure", payload[0])
+
+        def on_terminate_tasks(self, ids):
+            print("Terminating tasks: %s" % str(ids))
+            for id in ids:
+                socketio.emit("terminate", id, namespace="/task")
+
     # instantiate the app
     app = Flask(__name__)
     CORS(app) # !!!     
@@ -21,7 +50,7 @@ def create_app(script_info=None):
     # WebSocket
     app.config['SECRET_KEY'] = 'secret!'
     socketio = SocketIO(app, logger=True, engineio_logger=True)
-    logging.getLogger('socketio').setLevel(logging.DEBUG)
+    socketio.on_namespace(MainNodeNamespace("/main_node"))
 
     # workflow instance with tasks stack
     flow = Workflow()
@@ -36,8 +65,8 @@ def create_app(script_info=None):
     # ---------------------------------------- HTTP
     @app.route('/')
     def index():
-        return jsonify({'index': 'Please stand by!', 
-        'workers': str(hr.workers), 
+        return jsonify({'index': 'Please stand by!',
+        'workers': str(hr.workers),
         "results": hr.result,
         'stack': hr.flow.get_stack(),
         'front-end': front_clients
@@ -92,14 +121,14 @@ def create_app(script_info=None):
 
         # try:
         # parse data in to task list
-        if 'request_type' in post_data and post_data['request_type'] == 'send_task': 
-            id_list, task_list = t_parser_2(post_data) 
-        else: 
+        if 'request_type' in post_data and post_data['request_type'] == 'send_task':
+            id_list, task_list = t_parser_2(post_data)
+        else:
             id_list, task_list = t_parser(post_data)
-            
 
-        print(" New tasks:", len(task_list))     
-        
+
+        print(" New tasks:", len(task_list))
+
         if bool(task_list):
             for item in task_list:
                 hr.new_task(item)
@@ -110,7 +139,7 @@ def create_app(script_info=None):
             response_object['status'] = 'success'
             response_object['response_type'] = 'send_task'
             response_object['id'] = id_list
-            response_object['message'] = f'{len(task_list)} task(s) are accepted!'
+            response_object['message'] = str(len(task_list)) + ' task(s) are accepted!'
             return jsonify(response_object), 201
         else:
             response_object['message'] = 'Sorry. That task can not run.'
@@ -126,7 +155,7 @@ def create_app(script_info=None):
         # request data
         post_data = request.get_json()
         # default response
-        response_object = { 
+        response_object = {
             'status': 'fail',
             'message': 'invalid payload.'
         }
@@ -154,17 +183,19 @@ def create_app(script_info=None):
             }
             return jsonify(response_object), 200
 
-    # ---------------------------- Events ------------ 
-    # 
+    # ---------------------------- Events ------------
+    #
 
     # managing array with curent workers
-    @socketio.on('connect', namespace='/status') 
+    @socketio.on('connect', namespace='/status')
     def connected():
         hr.workers.append(request.sid)
+        socketio.emit("ping_response", hr.workers)
 
     @socketio.on('disconnect', namespace='/status')
     def disconnect():
         hr.workers.remove(request.sid)
+        socketio.emit("ping_response", hr.workers)
 
     # --------------------------------------------
     # managing array with curent Front-end clients
@@ -206,12 +237,13 @@ def create_app(script_info=None):
     def handle_result(json):
         temp_id = hr.analysis_res(json)
         if temp_id is not None:
+            socketio.emit('task_results', json, namespace='/main_node')
             socketio.emit('result', hr.result[temp_id], room='/front-end', namespace='/front-end')
 
     @socketio.on('all result', namespace='/front-end')
     def all_result():
-        emit('all result', 
-        json.dumps({'res': list(hr.result.values()), 'stack': hr.flow.get_stack()}), 
+        emit('all result',
+        json.dumps({'res': list(hr.result.values()), 'stack': hr.flow.get_stack()}),
         namespace='/front-end')
 
     return socketio, app

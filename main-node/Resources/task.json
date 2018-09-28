@@ -13,16 +13,21 @@
       },
       "ExperimentsConfiguration":{
         "TaskName"          : "energy_consumption",
-        "FileToRead"        : "Radix-500mio.csv",
+        "WorkerConfiguration":{
+          "ws_file": "Radix-500mio.csv"
+        },
+        "TaskParameters"   : ["frequency", "threads"],
         "ResultStructure"   : ["frequency", "threads", "energy"],
         "ResultDataTypes"  : ["float", "int", "float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsOfExperiment": 4
+        "MaxRepeatsOfExperiment": 10,
+        "MaxTimeToRunExperiment": 10
       },
-      "ModelCreation":{
+      "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression",
+        "ModelType"         : "BO",
+        "MinimizationTask"  : true,
         "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
       }
 }
