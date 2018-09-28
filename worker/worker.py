@@ -51,7 +51,7 @@ def taskNB(param):
             'number_of_kernels': str(param["number_of_kernels"]),
             'use_application_grid': str(param["use_application_grid"]),
             'application_grid_size': str(param["application_grid_size"]),
-            'prec_at_99_rec': result["PREC_AT_99_REC"]
+            'accuracy': result["PREC_AT_99_REC"]
         }
     except Exception as e:
         print("ERROR IN WORKER during performing energy consumption with parameters: %s" %param)

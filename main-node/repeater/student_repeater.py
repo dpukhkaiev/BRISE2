@@ -2,6 +2,7 @@ from repeater.repeater_abs import Repeater
 from repeater.default_repeater import DefaultRepeater
 import numpy as np
 from math import exp
+import copy
 
 
 class StudentRepeater(Repeater):
@@ -48,6 +49,25 @@ class StudentRepeater(Repeater):
             return self.default_repeater.decision_function(history, point, **configuration)
 
         else:
+            default_not_digit_parameters = {}
+            not_digit_parameters = {}
+            for i in range(len(all_experiments[0])):
+                if type(all_experiments[0][i]) not in [int, float]:
+                    not_digit_parameters[i] = all_experiments[0][i]
+
+            for index in not_digit_parameters.keys():
+                default_not_digit_parameters[index] = all_experiments[0][index]
+
+            not_digit_parameters_indexes = list(not_digit_parameters.keys())
+            not_digit_parameters_indexes.sort(reverse=True)
+            for experiment in all_experiments:
+                for index in not_digit_parameters_indexes:
+                    experiment.pop(index)
+
+            default_point_backup = copy.deepcopy(default_point)
+            if default_point is not None:
+                for index in not_digit_parameters_indexes:
+                        default_point_backup.pop(index)
 
             # Calculating average for all dimensions
             all_experiments_np = np.matrix(all_experiments)
@@ -76,6 +96,11 @@ class StudentRepeater(Repeater):
                     return False
             # print(all_dim_avg.tolist()[0])
             # eval(self...)(value) - process of casting according to ResultDataTypes in task.json
-            result = [eval(self.WSClient._result_data_types[index])(round(value, 2))
-                      for index, value in enumerate(all_dim_avg.tolist()[0])]
+            result_data_types_short = copy.deepcopy(self.WSClient._result_data_types)
+            for index in not_digit_parameters_indexes:
+                    result_data_types_short.pop(index)
+            result = [eval(result_data_types_short[index])(round(value, 3)) for index, value in enumerate(all_dim_avg.tolist()[0])]
+            not_digit_parameters_indexes.sort()
+            for index in not_digit_parameters_indexes:
+                result.insert(index, not_digit_parameters[index]) 
             return result

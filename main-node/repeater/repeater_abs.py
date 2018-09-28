@@ -65,9 +65,8 @@ class Repeater(ABC):
                                                                                    len(self.history.get(point)),
                                                                                    str(result)))
 
-                    configuration = [result[0], result[1]]
-
                     if io:
+                        configuration = [result[0], result[1]]
                         temp = {'configuration': configuration, "result": result[2]}
                         io.emit('task result', temp)
                         io.sleep(0)
