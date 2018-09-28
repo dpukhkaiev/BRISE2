@@ -19,8 +19,10 @@ class WSClient(SocketIO):
         :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
         # Creating the SocketIO object and connecting to main node namespace - "/main_node"
+        print('INFO: Connecting to the Worker Service at "%s" ...' % wsclient_addr)
         super().__init__(wsclient_addr)
         self.ws_namespace = self.define(BaseNamespace, "/main_node")
+        print('INFO: Connect OK!')
 
         # Properties that holds general task configuration (shared between task runs).
         self._exp_config = experiments_configuration
@@ -117,6 +119,9 @@ class WSClient(SocketIO):
         for one_task_result in self.current_results:
             current_task = []
             for index, parameter in enumerate(self._result_structure):
+                if self._result_data_types[index] == 'str':
+                    current_task.append(one_task_result["result"][parameter])
+                    continue
                 current_task.append(eval("{datatype}({value})".format(datatype=self._result_data_types[index],
                                                                       value=one_task_result["result"][parameter])))
             results_to_report.append(current_task)
@@ -166,6 +171,7 @@ class WSClient(SocketIO):
         #   If the tasks were not finished at 15 seconds time interval, they will be terminated.
 
         waiting_started = time()
+        # BUG Throw the Error if no workers at all. Division by zero
         max_given_time_to_run_all_tasks = ceil(len(task) / self._number_of_workers) * self._time_for_one_task_running
         while time() - waiting_started < max_given_time_to_run_all_tasks:
             self.wait(0.5)
@@ -184,7 +190,7 @@ class WSClient(SocketIO):
 
 # A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
 if __name__ == "__main__":
-    wsclient = 'w_service:80'
+    wsclient = 'w_service:8080'
     config = {
         "TaskName"          : "energy_consumption",
         "WorkerConfiguration": {

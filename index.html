@@ -7,7 +7,7 @@
 <body>
 <script type="text/javascript">
 $(document).ready(function() {
-    var socket = io.connect('http://0.0.0.0:9000');
+    var socket = io.connect('http://0.0.0.0:80');
     socket.on('connect', function() {
         socket.send('User has connected!');
         console.log('Connect to main node');
