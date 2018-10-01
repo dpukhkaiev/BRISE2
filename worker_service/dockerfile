@@ -14,6 +14,6 @@ RUN apk add --no-cache curl build-base && \
  pip install flask-socketio && \
  pip install eventlet
  
-EXPOSE 8080
+EXPOSE 49153
 CMD [ "python", "-u", "./intro.py" ]
 # CMD [ "sh" ]

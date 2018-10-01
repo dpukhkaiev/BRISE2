@@ -1,63 +1,6 @@
 # Launch & Build a bunch containers with workers and one service for them.
 version: "2"
 services: 
-  w_alpha:
-#    build: ./rapid_miner_worker/
-    build: ./worker/
-    container_name: w_alpha
-    environment:
-      - workername=alpha
-    networks:
-      - worker_net
-    # ports:
-    #   - "1831:8080"  # if direct access is required
-    # volumes:
-    #   - "./rapid_miner_worker:/usr/src/app"
-  w_beta:
-#    build: ./rapid_miner_worker/
-    build: ./worker/
-    container_name: w_beta
-    environment:
-      - workername=beta
-    networks:
-      - worker_net
-    # ports:
-    #   - "1832:8080" # if direct access is required
-    # volumes:
-    #   - "./worker:/usr/src/app"
-  w_gamma:
-     build: ./worker/
-     container_name: w_gamma
-     environment:
-       - workername=gamma
-     networks:
-       - worker_net
-    #  ports:
-    #    - "1833:8080" # if direct access is required
-  #   volumes:
-  #     - "./rapid_miner_worker:/usr/src/app"
-  w_service:
-    build: ./worker_service/
-    command: python3 intro.py
-    # command: sh
-    stdin_open: true
-    tty: true
-    container_name: w_service
-    networks:
-      worker_net:
-        aliases:
-          - w_service
-    ports:
-      - "8080:8080"
-    volumes:
-      - "./worker_service:/usr/src/app"
-    # depends_on:
-    #     - "w_alpha"
-    #     - "w_beta"
-    environment:
-      - FLASK_APP=worker_service/__init__.py
-      - FLASK_DEBUG=1
-
   main_node:
     build: ./main-node/
     command: python3 api-supreme.py
@@ -67,11 +10,28 @@ services:
      - worker_net
     ports:
       - "2222:2222"
+      - "49152:49152"
     depends_on:
       - "w_service"
+
+  w_service:
+    build: ./worker_service/
+    command: python3 intro.py
+    stdin_open: true
+    tty: true
+    container_name: w_service
+    networks:
+      worker_net:
+        aliases:
+          - w_service
+    ports:
+      - "49153:49153"
     volumes:
-      - "./front-end/dist:/root/static"
-  
+      - "./worker_service:/usr/src/app"
+    environment:
+      - FLASK_APP=worker_service/__init__.py
+      - FLASK_DEBUG=1
+
   front-end:
     build: ./front-end/
     container_name: front-end
@@ -80,6 +40,30 @@ services:
      - worker_net
     ports:
       - "80:80"
+
+  w_alpha:
+    build: ./worker/
+    container_name: w_alpha
+    environment:
+      - workername=alpha
+    networks:
+      - worker_net
+
+  w_beta:
+    build: ./worker/
+    container_name: w_beta
+    environment:
+      - workername=beta
+    networks:
+      - worker_net
+
+  w_gamma:
+     build: ./worker/
+     container_name: w_gamma
+     environment:
+       - workername=gamma
+     networks:
+       - worker_net
 
 networks:
   worker_net:
