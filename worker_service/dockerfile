@@ -15,5 +15,3 @@ RUN apk add --no-cache curl build-base && \
  pip install eventlet
  
 EXPOSE 49153
-CMD [ "python", "-u", "./intro.py" ]
-# CMD [ "sh" ]

@@ -46,7 +46,4 @@ RUN /root/configure_sshd.sh
 
 WORKDIR /root
 
-EXPOSE 2222
 EXPOSE 49152
-
-CMD ["/usr/sbin/sshd", "-D"]
