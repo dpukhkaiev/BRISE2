@@ -7,7 +7,6 @@ RUN apt-get update \
     && apt-get install -y python3 \
     && apt-get install -y    python3-pip \
     && apt-get install -y    rsync \
-    && apt-get install -y    openssh-server \
     && apt-get install -y    vim
 
 # Replacing default python2 to python3
