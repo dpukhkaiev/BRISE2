@@ -40,9 +40,6 @@ RUN python3 -m pip install pytest
 COPY . /root
 RUN rm /root/Dockerfile
 
-RUN chmod +x /root/configure_sshd.sh
-RUN /root/configure_sshd.sh
-
 WORKDIR /root
 
 EXPOSE 49152
