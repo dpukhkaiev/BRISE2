@@ -190,7 +190,7 @@ class WSClient(SocketIO):
 
 # A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
 if __name__ == "__main__":
-    wsclient = 'w_service:8080'
+    wsclient = 'w_service:49153'
     config = {
         "TaskName"          : "energy_consumption",
         "WorkerConfiguration": {

@@ -1,6 +1,6 @@
 {
     "WorkerService": {
-      "Address" : "w_service:8080"
+      "Address" : "w_service:49153"
     },
 
     "results_storage" : "./Results/",

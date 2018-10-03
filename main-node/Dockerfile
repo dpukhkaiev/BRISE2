@@ -7,7 +7,6 @@ RUN apt-get update \
     && apt-get install -y python3 \
     && apt-get install -y    python3-pip \
     && apt-get install -y    rsync \
-    && apt-get install -y    openssh-server \
     && apt-get install -y    vim
 
 # Replacing default python2 to python3
@@ -41,12 +40,6 @@ RUN python3 -m pip install pytest
 COPY . /root
 RUN rm /root/Dockerfile
 
-RUN chmod +x /root/configure_sshd.sh
-RUN /root/configure_sshd.sh
-
 WORKDIR /root
 
-EXPOSE 2222
-EXPOSE 9000
-
-CMD ["/usr/sbin/sshd", "-D"]
+EXPOSE 49152
