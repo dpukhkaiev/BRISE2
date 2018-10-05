@@ -132,7 +132,6 @@ class RegressionSweetSpot(Model):
             print("Built model is valid.")
             if io:
                 io.emit('info', {'message': "Built model is valid"})
-                io.sleep(0)
             return True
         else:
             print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
@@ -160,7 +159,6 @@ class RegressionSweetSpot(Model):
 
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
-            io.sleep(0)
 
         solution_candidate = repeater.measure_task([predicted_features], io=io)
         solution_feature, solution_labels = split_features_and_labels(solution_candidate,
@@ -177,7 +175,6 @@ class RegressionSweetSpot(Model):
 
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
-                io.sleep(0)
 
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
@@ -252,7 +249,6 @@ class RegressionSweetSpot(Model):
             if io:
                 io.emit('info',
                         {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-                io.sleep(0)
 
         elif min(self.all_labels) < self.solution_labels:
             temp_message = ("Configuration(%s) quality(%s), "
@@ -263,7 +259,6 @@ class RegressionSweetSpot(Model):
             if io:
                 io.emit('info',
                         {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-                io.sleep(0)
                 
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)

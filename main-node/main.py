@@ -55,8 +55,6 @@ def run(io=None):
         # Events 'default conf' and 'task result' must be similar
         temp = {'configuration': default_features[0], "result": default_value[0][0]}
         io.emit('default conf', temp)
-        io.sleep(0)
-        # APPI_QUEUE.put({"default configuration": {'configuration': default_features, "result": default_value}})
 
     print("Measuring initial number experiments, while it is no sense in trying to create model"
           "\n(because there is no data)...")
