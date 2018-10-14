@@ -70,7 +70,7 @@ class Repeater(ABC):
                     if io:
                         temp = {
                             'configuration': point, 
-                            'result': list(set(result) - set(point)), #TODO maybe need [0]
+                            'result': list(set(result) - set(point)).pop(),
                             'number_of_configs': self.number_of_measured_configs
                         } 
                         io.emit('task result', temp)
