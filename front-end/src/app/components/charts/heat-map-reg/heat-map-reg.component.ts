@@ -65,7 +65,7 @@ export class HeatMapRegComponent implements OnInit {
 
   // Rendering
   regrRender(): void {
-    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+    // if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
       let regression = this.reg.nativeElement
       const data = [
         {
@@ -110,7 +110,7 @@ export class HeatMapRegComponent implements OnInit {
       };
 
       Plotly.react(regression, data, layout);
-    }
+    // }
   }
   zParser(data: Map<String, Number>): Array<Array<Number>> {
     var z = []
@@ -148,6 +148,7 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
       .subscribe((obj: any) => {
+        console.log(' Socket reg: MAIN_CONF', obj);
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
         this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency

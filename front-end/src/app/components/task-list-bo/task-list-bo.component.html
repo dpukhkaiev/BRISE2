@@ -21,9 +21,10 @@
             <ng-container matColumnDef="run">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
                 Configuration
+                <!-- laplace_correction, estimation_mode, bandwidth_selection, bandwidth, minimum_bandwidth, number_of_kernels, use_application_grid, application_grid_size  -->
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.run?.param?.frequency}} - {{task.run?.param?.threads}}
+                {{task.run?.param?.laplace_correction}} - {{task.run?.param?.estimation_mode}} - {{task.run?.param?.bandwidth_selection}} - {{task.run?.param?.bandwidth}} - {{task.run?.param?.minimum_bandwidth}} - {{task.run?.param?.number_of_kernels}} - {{task.run?.param?.use_application_grid}} - {{task.run?.param?.application_grid_size}}
                 <!-- <p>{{task.run?.method}}</p> -->
               </td>
             </ng-container>
@@ -41,43 +42,14 @@
             <!-- Result Column -->
             <ng-container matColumnDef="result">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                Energy
+                  PREC_AT_99_REC
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.meta?.result?.energy}}
+                {{task.meta?.result?.accuracy | number:'.0-3'}}
               </td>
             </ng-container>
         
-            <!-- Application_grid_size Column -->
-            <ng-container matColumnDef="application_grid_size">
-              <th mat-header-cell *matHeaderCellDef>
-                 Application grid size
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ task.meta?.result?.application_grid_size }}
-              </td>
-            </ng-container>
-        
-            <!-- Number_of_kernels Column -->
-            <ng-container matColumnDef="application_grid_size">
-              <th mat-header-cell *matHeaderCellDef>
-                 Number of kernels
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ task.meta?.result?.number_of_kernels }}
-              </td>
-            </ng-container>
-        
-            <!-- Number_of_kernels Column -->
-            <ng-container matColumnDef="minimum_bandwidth">
-              <th mat-header-cell *matHeaderCellDef>
-                 Minimum bandwidth
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ task.meta?.result?.minimum_bandwidth }}
-              </td>
-            </ng-container>
-
+            
             <!-- Expanded Content Column - 
               The detail row is made up of this one column that spans across all columns -->
             <ng-container matColumnDef="expandedDetail">
@@ -95,31 +67,55 @@
                       <span>Worker:</span>
                       <span>{{task?.meta?.appointment}}</span>
                     </mat-list-item>
-                  </mat-list>
-                  <mat-list dense role="list">
                     <mat-list-item role="listitem">
-                      <mat-icon>list</mat-icon>
-                      <span>Accept:</span>
-                      <span>{{ (task?.meta?.accept > 0) ? (task.meta?.accept | date: 'EEEE, h:mm:ss`S') : ""}}</span>
-                    </mat-list-item>
-                    <mat-list-item role="listitem">
-                      <mat-icon>directions</mat-icon>
-                      <span>Receive:</span>
-                      <span>{{ (task?.meta?.receive > 0) ? (task.meta?.receive | date: 'EEEE, h:mm:ss`SS') : ""}}</span>
+                      <mat-icon></mat-icon>
+                      <span> </span>
+                      <span> </span>
                     </mat-list-item>
                   </mat-list>
                   <mat-list dense role="list">
                     <mat-list-item role="listitem">
-                      <mat-icon>list</mat-icon>
-                      <span>Laplace correction:</span>
-                      <span>{{ task?.meta?.laplace_correction }}</span>
-                    </mat-list-item>
-                    <mat-list-item role="listitem">
                       <mat-icon>directions</mat-icon>
-                      <span>Estimation mode:</span>
-                      <span>{{ task?.meta?.estimation_mode }}</span>
+                      <span>Configuration details:</span>
+                      <span></span>
+                    </mat-list-item>
+
+                    <mat-list-item role="listitem">
+                      <mat-icon></mat-icon>
+                      <span></span>
+                      <span>1. Laplace correction: <strong>{{task.run?.param?.laplace_correction}}</strong><br>
+                        2. Estimation mode: <strong>{{task.run?.param?.estimation_mode}}</strong><br>
+                        3. Bandwidth selection: <strong>{{task.run?.param?.bandwidth_selection}}</strong></span>
                     </mat-list-item>
                   </mat-list>
+                  <mat-list dense role="list">
+                    <mat-list-item role="listitem">
+                      <mat-icon></mat-icon>
+                      <span> </span>
+                      <span> </span>
+                    </mat-list-item>
+                    <mat-list-item role="listitem">
+                      <mat-icon></mat-icon>
+                      <span></span>
+                      <span>4. Bandwidth: <strong>{{task.run?.param?.bandwidth}}</strong><br>
+                        5. Minimum bandwidth: <strong>{{task.run?.param?.minimum_bandwidth}}</strong><br>
+                        6. Number of kernels: <strong>{{task.run?.param?.number_of_kernels}}</strong></span>
+                    </mat-list-item>
+                  </mat-list>
+                  <mat-list dense role="list">
+                    <mat-list-item role="listitem">
+                      <mat-icon></mat-icon>
+                      <span> </span>
+                      <span> </span>
+                    </mat-list-item>
+                    <mat-list-item role="listitem">
+                      <mat-icon></mat-icon>
+                      <span></span>
+                      <span>7. Use application grid: <strong>{{task.run?.param?.use_application_grid}}</strong><br>
+                        8. Application grid size: <strong>{{task.run?.param?.application_grid_size}}</strong></span>
+                    </mat-list-item>
+                  </mat-list>
+
                 </div>
               </td>
             </ng-container>
@@ -139,4 +135,3 @@
     </mat-card>  <!-- end results -->
 
 </div>
-

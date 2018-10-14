@@ -1,11 +1,4 @@
-<mat-card>
-  <h3>Experiment:</h3>
-  <div class="button-row">
-    <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
-    <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
-    <mat-progress-bar mode="indeterminate" *ngIf=isRuning></mat-progress-bar>
-  </div>
-
+<mat-card *ngIf="isModelType('regression')">
   <div class="heatmap">
     <div class="results" *ngIf="isModelType('regression')">
       <div class="select-box" *ngIf=y&&x [hidden]='result'>
@@ -55,7 +48,3 @@
     <h3>{{(solution.result/default_task.result-1)*100 | number:'2.0-0'}}%</h3>
   </mat-card>
 </mat-card>
-
-
-
-
