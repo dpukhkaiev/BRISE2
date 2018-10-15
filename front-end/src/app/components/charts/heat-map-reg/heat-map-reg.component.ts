@@ -65,7 +65,7 @@ export class HeatMapRegComponent implements OnInit {
 
   // Rendering
   regrRender(): void {
-    // if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
       let regression = this.reg.nativeElement
       const data = [
         {
@@ -110,7 +110,7 @@ export class HeatMapRegComponent implements OnInit {
       };
 
       Plotly.react(regression, data, layout);
-    // }
+    }
   }
   zParser(data: Map<String, Number>): Array<Array<Number>> {
     var z = []

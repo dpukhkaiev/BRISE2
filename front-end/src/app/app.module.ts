@@ -26,7 +26,6 @@ import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.compo
     TaskListComponent,
     TaskListBoComponent,
     HeatMapComponent,
-    HeatMapComponent,
     HeatMapRegComponent,
     InfoBoardComponent,
     ImpResComponent,
