@@ -8,7 +8,7 @@
     </mat-list-item>
     <mat-list-item>
       <mat-icon matListIcon>network_check</mat-icon>
-      <span class="desc">Quality gain: </span> <span>{{100*(solution.result - (1-default_task.result))/(1-default_task.result) | number:'2.0-2'}}%</span>
+      <span class="desc">Quality gain: </span> <span>{{100*(solution.result - (default_task.result))/(default_task.result) | number:'2.0-2'}}%</span>
     </mat-list-item>
 
   </mat-card>

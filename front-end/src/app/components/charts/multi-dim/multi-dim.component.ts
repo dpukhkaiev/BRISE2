@@ -156,7 +156,7 @@ export class MultiDimComponent implements OnInit {
           'use_application_grid': this.ranges['use_application_grid']['parameters_names'].indexOf(obj['configuration'][6]),
           'application_grid_size': obj['configuration'][7],
 
-          'accuracy': (1-obj['result'])
+          'accuracy': (obj['result'])
         }
         this.allRes.add(tmp)
         this.render()
