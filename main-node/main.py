@@ -16,13 +16,19 @@ from tools.initial_config import initialize_config
 from tools.features_tools import split_features_and_labels
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
+from logger.default_logger import BRISELogConfigurator
 
 
 def run(io=None):
     time_started = datetime.datetime.now()
 
+    logger = BRISELogConfigurator().get_logger(__name__)
+    logger.info("Starting BRISE...")
+    if not io:
+        logger.warning("Running BRISE without provided API object.")
     # argv is a run parameters for main - using for configuration
     global_config, task_config = initialize_config(argv)
+    exit(123)
 
     # Generate whole search space for regression.
     search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]

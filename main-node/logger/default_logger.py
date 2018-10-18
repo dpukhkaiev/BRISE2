@@ -29,7 +29,7 @@ class BRISELogConfigurator:
             self.__create_logging_folder(debug_log_folder[:debug_log_folder.rfind("/")])
             self.__create_logging_folder(error_log_folder[:error_log_folder.rfind("/")])
 
-            self.configure_logging(dict_configuration=config)
+            self.__configure_logging(dict_configuration=config)
 
         else:
             # Using default configuration.
@@ -37,7 +37,7 @@ class BRISELogConfigurator:
             logging.basicConfig(level=logging.DEBUG)
 
     @staticmethod
-    def configure_logging(dict_configuration):
+    def __configure_logging(dict_configuration):
         """
         Configuring logging system according to provided configuration in dictionary/
         :param dict_configuration: Python Dict. according to
