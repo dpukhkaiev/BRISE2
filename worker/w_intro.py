@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from socketIO_client import SocketIO, BaseNamespace # GitHub - https://github.com/invisibleroads/socketIO-client
 from worker import work, random_1, random_2, energy_consumption, taskNB # available workers methods
 
-logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
+logging.getLogger('socketIO-client').setLevel(logging.INFO)
 logging.basicConfig()
 
 executor = ThreadPoolExecutor(1) # DOCS https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
