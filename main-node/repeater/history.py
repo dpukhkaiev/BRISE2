@@ -1,6 +1,13 @@
+__doc__="""History represents key-value data structure within simple class with a put, get and dump methods for
+storing, retrieving and saving history object to the file.  
+"""
+import logging
+import pickle
+
 class History:
     def __init__(self):
         self.history = {}
+        self.logger = logging.getLogger(__name__)
 
     def get(self, point):
         """
@@ -34,12 +41,33 @@ class History:
         :return: True
         """
         try:
-            lines = 0
-            with open(filename, "w") as f:
-                for key in self.history.keys():
-                    f.write(key)
-                    lines += 1
-            print("History dumped. Number of written points: %s" % lines)
+            with open(filename, "wb") as f:
+                pickle.dump(self.history, f)
+            self.logger.info("History saved. Number of written points: %s" % len(self.history))
             return True
         except Exception as e:
-            print("Failed to write results. Exception: %s" % e)
+            self.logger.error("Failed to write results. Exception: %s" % e, exc_info=True)
+
+    def load(self, filename, flush=False):
+        """
+        Loads history object from the saved history file.
+        :param filename: String. Path to the target file, where history was saved
+        :param flush: Bool. Drop all currently saved objects to history before loading, or not.
+        :return: Boolean True in case of success.
+        """
+        try:
+            with open(filename, 'rb') as f:
+                data = pickle.loads(f.read())
+                if type(data) != dict:
+                    raise TypeError("Incorrect object type(%s) provided in file:%s" % (type(data), filename))
+        except IOError or pickle.UnpicklingError or TypeError as error:
+            self.logger.error("Unable to load history from the file: %s" % error, exc_info=True)
+            return False
+        except Exception as e:
+            self.logger.error("Unexpected error:%s" %e, exc_info=True)
+            return False
+        if flush:
+            self.history.clear()
+
+        self.history.update(data)
+        return True
