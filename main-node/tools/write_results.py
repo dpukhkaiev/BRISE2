@@ -3,12 +3,15 @@ Writing results of BRISE run to the output file."""
 
 import datetime
 import itertools
+import logging
+
 from tools.file_system_io import create_folder_if_not_exists
 
 
 def write_results(global_config, task_config, time_started, features, labels, performed_measurements, optimal_config,
                   optimal_result, default_features, default_value):
 
+    logger = logging.getLogger(__name__)
     create_folder_if_not_exists(global_config["results_storage"])
     search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
 
@@ -29,4 +32,4 @@ def write_results(global_config, task_config, time_started, features, labels, pe
             results_file.write("BRISE optimal configuration results : %s\n" % optimal_result)
             results_file.write("####: END results of BRISE run.                 ####\n\n\n\n")
     except IOError as e:
-        print("ERROR: %s occurred when tried to write final report to file." % e)
+        logger.error("ERROR: %s occurred when tried to write final report to file." % e, exc_info=True)

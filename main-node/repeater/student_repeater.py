@@ -91,10 +91,8 @@ class StudentRepeater(Repeater):
                 threshold = 100/(1+exp(-float((all_dim_avg.tolist()[0][index] / default_point[index]))+3.3))\
                             + len(all_experiments) - 2 if default_point else threshold + len(all_experiments)
                 # If for any dimension relative error is > that threshold - abort
-                # print("student_deviation - need more: %s" % str(relative_errors))
                 if error > threshold:
                     return False
-            # print(all_dim_avg.tolist()[0])
             # eval(self...)(value) - process of casting according to ResultDataTypes in task.json
             result_data_types_short = copy.deepcopy(self.WSClient._result_data_types)
             for index in not_digit_parameters_indexes:
