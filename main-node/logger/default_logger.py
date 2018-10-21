@@ -8,36 +8,23 @@ import os
 
 class BRISELogConfigurator:
 
-    def __init__(self, config_file="logger/logging_config.yaml"):
+    def __init__(self, config_file: str="logger/logging_config.yaml"):
         """
         Loads YAML logging configuration file and applies configurations.
         :param config_file: String. Represents path to the configuration file.
         """
-        if os.path.exists(config_file):
-            # Loading configuration provided in yaml file.
-            with open(config_file) as f:
-                try:
-                    config = yaml.safe_load(f.read())
-                except YAMLError as e:
-                    config = {'version': 1}
-                    logging.error("Unable to read the logging configuration file!"
-                                  "An error occurs: %s" % e, exc_info=True)
-                    logging.basicConfig(level=logging.DEBUG)
+        self.__config_file_path = config_file
 
-            debug_log_folder = config['handlers']['debug_file_handler']['filename']
-            error_log_folder = config['handlers']['error_file_handler']['filename']
-            self.__create_logging_folder(debug_log_folder[:debug_log_folder.rfind("/")])
-            self.__create_logging_folder(error_log_folder[:error_log_folder.rfind("/")])
+        config = self.load_dict_from_yaml(self.__config_file_path)
 
-            self.__configure_logging(dict_configuration=config)
-
-        else:
-            # Using default configuration.
-            logging.error("Unable to locate a logging configuration file!")
-            logging.basicConfig(level=logging.DEBUG)
+        debug_log_folder = config['handlers']['debug_file_handler']['filename']
+        error_log_folder = config['handlers']['error_file_handler']['filename']
+        self.__create_logging_folder(debug_log_folder[:debug_log_folder.rfind("/")])
+        self.__create_logging_folder(error_log_folder[:error_log_folder.rfind("/")])
+        self.__configure_logging(dict_configuration=config)
 
     @staticmethod
-    def __configure_logging(dict_configuration):
+    def __configure_logging(dict_configuration: dict) -> bool:
         """
         Configuring logging system according to provided configuration in dictionary/
         :param dict_configuration: Python Dict. according to
@@ -54,7 +41,25 @@ class BRISELogConfigurator:
             return False
 
     @staticmethod
-    def get_logger(name):
+    def load_dict_from_yaml(file_path: str) -> dict:
+        """
+        Loads YAML logging configuration file and transforms it to dictionary object.
+        :param file_path: String. Represents path to the configuration file.
+        :return: Dictionary with configuration
+        """
+        # Loading configuration provided in yaml file.
+        with open(file_path) as f:
+            try:
+                config = yaml.safe_load(f.read())
+            except YAMLError or OSError as e:
+                config = {'version': 1}
+                logging.error("Unable to read the logging configuration file!"
+                              "An error occurs: %s" % e, exc_info=True)
+                logging.basicConfig(level=logging.DEBUG)
+        return config
+
+    @staticmethod
+    def get_logger(name: str) -> logging.Logger:
         """
         Returns logger object with provided name.
         :param name: String, representing logger name.
@@ -63,7 +68,7 @@ class BRISELogConfigurator:
         return logging.getLogger(name)
 
     @staticmethod
-    def __create_logging_folder(path):
+    def __create_logging_folder(path: str) -> None:
         """
         Creates folder with logs
         :param path: String. Represents folder path where logs are stored.
