@@ -281,31 +281,6 @@ class BayesianOptimization(Model):
                     for index, dimension in enumerate(self.task_config["DomainDescription"]["AllConfigurations"]):
                         sample.append(dimension[best_vector[index]])
 
-
-                    # for i, hp_value in enumerate(best_vector):
-                    #     if isinstance(
-                    #         self.configspace.get_hyperparameter(
-                    #             self.configspace.get_hyperparameter_by_idx(i)
-                    #         ),
-                    #         ConfigSpace.hyperparameters.CategoricalHyperparameter
-                    #     ):
-                    #         best_vector[i] = int(np.rint(best_vector[i]))
-                    # sample = ConfigSpace.Configuration(self.configspace, vector=best_vector).get_dictionary()
-
-                    # try:
-                    #     sample = ConfigSpace.util.deactivate_inactive_hyperparameters(
-                    #         configuration_space=self.configspace,
-                    #         configuration=sample
-                    #         )
-                        # info_dict['model_based_pick'] = True
-
-                    # except Exception as e:
-                    #     self.logger.warning(("="*50 + "\n")*3 +\
-                    #         "Error converting configuration:\n%s" % sample +\
-                    #         "\n here is a traceback:" +\
-                    #         traceback.format_exc())
-                    #     raise(e)
-
             except:
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
                                     "Using random configuration" % (self.num_samples, traceback.format_exc()))
@@ -324,7 +299,7 @@ class BayesianOptimization(Model):
         solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
-        if solution_labels > default_value:
+        if solution_labels >= default_value:
             self.logger.info("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
@@ -371,16 +346,12 @@ class BayesianOptimization(Model):
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        configuration = []
-        for i in range(len(self.solution_features)):
-            configuration.append(self.task_config['DomainDescription']['AllConfigurations'][i][self.solution_features[i]])
-        value = round(self.solution_labels[0], 2)
-
         if io:
-            temp = {"best point": {'configuration': configuration, 
-                    "result": value, 
-                    "measured points": self.all_features}
-                }
+            temp = {"best point": {'configuration': self.solution_features,
+                    "result": self.solution_labels,
+                    "measured points": len(self.all_features),
+                    'performed measurements': repeater.performed_measurements}
+                    }
             io.emit('best point', temp)
 
         return self.solution_labels, self.solution_features
