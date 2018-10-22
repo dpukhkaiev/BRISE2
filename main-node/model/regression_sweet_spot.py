@@ -1,3 +1,5 @@
+import logging
+
 from sklearn import model_selection
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
@@ -15,13 +17,9 @@ class RegressionSweetSpot(Model):
         """
         Initialization of regression model
         :param log_file_name: - string, location of file, which will store results of model creation
-        :param test_size: float number, displays size of test data set
-        :param features:  features in machine learning meaning selected by Sobol
-                          TODO - shape of features
-        :param labels: labels in machine learning meaning selected by Sobol
-                       TODO - shape of labels
         :param model_config: float number, displays size of test data set
         """
+        self.logger = logging.getLogger(__name__)
 
         # Model configuration - related fields.
         self.model_config = model_config
@@ -42,12 +40,6 @@ class RegressionSweetSpot(Model):
 
     def build_model(self, degree=6, tries=20):
         """
-        Return False, if it is impossible to build the model, and True, if the model was built successfully
-        :param degree:
-        :param score_min:
-        :param tries:
-        :return: True or False
-       
         Tries to build the new regression model.
 
         :param degree: Int. scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
@@ -73,22 +65,20 @@ class RegressionSweetSpot(Model):
                     if score_measured > best_got:
                         best_got = score_measured
                         best_model = model
-                        temp_message = ('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (
+                        self.logger.info('GOT NEW ACCURACY: %s with %s test size and %s accuracy threshold ' % (
                             round(score_measured, 3), round(current_test_size, 2), round(cur_accuracy, 2)))
-                        print(temp_message)
 
-                    # print("Accuracy: %s, test size: %s, try: %s" % (cur_accuracy, test_size, x))
                 if best_got > cur_accuracy:
                     self.model = best_model
                     self.built_model_accuracy = best_got
                     self.built_model_test_size = current_test_size
-                    print("Regression model built with %s test size and %s accuracy." % (
+                    self.logger.info("Regression model built with %s test size and %s accuracy." % (
                         current_test_size, best_got))
                     return True
                 else:
                     current_test_size -= 0.01
             cur_accuracy -= 0.01
-        print("Unable to build model, current best accuracy: %s need more data.." % best_got)
+        self.logger.info("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
     def validate_model(self, io, search_space, degree=6):
@@ -129,13 +119,12 @@ class RegressionSweetSpot(Model):
             f.write("R^2 = " + str(self.built_model_accuracy) + "\n")
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_) + "\n")
             f.close()
-            print("Built model is valid.")
+            self.logger.info("Built model is valid.")
             if io:
                 io.emit('info', {'message': "Built model is valid"})
-                io.sleep(0)
             return True
         else:
-            print("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
+            self.logger.info("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
     def predict_solution(self, io, search_space):
@@ -155,8 +144,7 @@ class RegressionSweetSpot(Model):
         return label, search_space[index]
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
-        # validate() in regression
-        print("Verifying solution that model gave..")
+        self.logger.info("Verifying solution that model gave..")
 
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
@@ -168,12 +156,12 @@ class RegressionSweetSpot(Model):
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         # validate false
         if solution_labels > default_value:
-            print("Predicted energy larger than default.")
-            print("Predicted energy: %s. Measured: %s. Default configuration: %s" % (
+            self.logger.info("Predicted energy larger than default.")
+            self.logger.info("Predicted energy: %s. Measured: %s. Default configuration: %s" % (
                 predicted_features[0], solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
-            print("Solution validation success!")
+            self.logger.info("Solution validation success!")
 
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
@@ -233,19 +221,18 @@ class RegressionSweetSpot(Model):
         # from sklearn.model_selection import train_test_split
         score = self.model.score(features, labels)
 
-        temp_message = ("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
-        print(temp_message)
+        self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
     def get_result(self, repeater, io):
 
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
 
-        print("\n\nFinal report:")
+        self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:
             temp_message = "Optimal configuration was not found. Reporting best of the measured."
-            print(temp_message)
+            self.logger.info(temp_message)
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
@@ -259,7 +246,7 @@ class RegressionSweetSpot(Model):
                             "\nthat model gave worse that one of measured previously, but better than default."
                             "\nReporting best of measured." %
                             (self.solution_features, self.solution_labels))
-            print(temp_message)
+            self.logger.info(temp_message)
             if io:
                 io.emit('info',
                         {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
@@ -269,11 +256,11 @@ class RegressionSweetSpot(Model):
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
 
-        print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
-        print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
-        print("Number of measured points: %s" % len(self.all_features))
-        print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
+        self.logger.info("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
+        self.logger.info("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
+        self.logger.info("Number of measured points: %s" % len(self.all_features))
+        self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
+        self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
         if io:
             configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
@@ -318,5 +305,4 @@ class RegressionSweetSpot(Model):
             self.all_labels += labels
 
         except AssertionError as err:
-            # TODO: replace with logger.
-            print("ERROR! Regression input validation error:\n%s" % err)
+            self.logger.error("ERROR! Regression input validation error:\n%s" % err)

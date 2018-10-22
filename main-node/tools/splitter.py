@@ -1,4 +1,5 @@
 import csv
+import logging
 
 class Splitter:
     data = []
@@ -10,6 +11,7 @@ class Splitter:
                                           '16': "16",'17': "17",'18': "18",'19': "19",'20': "20",'21': "21",'22': "22", 'sort':"sort", 'encrypt':"encrypt", 'decrypt':"decrypt"}
 
     def __init__(self, file_name):
+        self.logger = logging.getLogger(__name__)
         del self.data[:]
         try:
             with open(file_name, 'r') as csv_file:
@@ -17,7 +19,7 @@ class Splitter:
                 for row in reader: 
                     self.data.append(row)
         except EnvironmentError as e:
-            print("Error in splitter: %s" % e)
+            self.logger.error("Error in splitter: %s" % e, exc_info=True)
 
     def split(self, param):
         del self.new_data[:] 

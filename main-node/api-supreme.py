@@ -1,19 +1,19 @@
 from flask import Flask, jsonify, request
-from flask import render_template, send_from_directory
+from flask import render_template
 
 from flask_cors import CORS
-from flask_socketio import SocketIO, send, emit, join_room, leave_room
-from multiprocessing import Process
+from flask_socketio import SocketIO, join_room, leave_room
 import time
-import logging
 
 # USER
+from logger.default_logger import BRISELogConfigurator
+logger = BRISELogConfigurator().get_logger(__name__)
+
 from main import run as main_run
 # from tools.main_mock import run as main_run
 
 import eventlet
 eventlet.monkey_patch()
-
 
 # instance of Flask app
 app = Flask(__name__, static_url_path='', template_folder="static")
@@ -22,17 +22,12 @@ CORS(app)
 app.config['SECRET_KEY'] = 'galamaga'
 socketio = SocketIO(app, logger=True, engineio_logger=True)
 socketio.heartbeatTimeout = 15000
-logging.getLogger('socketio').setLevel(logging.DEBUG)
-
-# hide HTTP request logs
-# import logging
-# log = logging.getLogger('werkzeug')
 
 MAIN_PROCESS = None
 data_header = {
     'version': '1.0'
 }
-# sesion id of clients
+# session id of clients
 clients = []
 
 # add clients in room
@@ -96,7 +91,7 @@ def main_process_stop():
 # ---------------------------- Events ------------ 
 @socketio.on('ping')
 def ping_pong(json):
-    print(' Ping from: ' + str(request.sid))
+    logger.info(' Ping from: ' + str(request.sid))
     return 'main node: pong!'
 
 # --------------
@@ -114,7 +109,7 @@ def disconnect():
 @socketio.on('join', namespace='/front-end')
 def on_join(data):
     room = data['room']
-    print("Main connection. Room", data)
+    logger.info("Main connection. Room", data)
     join_room(room)
     front_clients.append(request.sid)
 
