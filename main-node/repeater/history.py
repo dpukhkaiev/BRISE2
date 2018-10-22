@@ -40,6 +40,7 @@ class History:
         :param filename: name of the file, where keys will write
         :return: True
         """
+        # TODO: Need to update tests for these module.
         try:
             with open(filename, "wb") as f:
                 pickle.dump(self.history, f)
@@ -55,6 +56,7 @@ class History:
         :param flush: Bool. Drop all currently saved objects to history before loading, or not.
         :return: Boolean True in case of success.
         """
+        # TODO: Need to write tests for these module.
         try:
             with open(filename, 'rb') as f:
                 data = pickle.loads(f.read())
