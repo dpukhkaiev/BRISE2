@@ -161,14 +161,14 @@ class RegressionSweetSpot(Model):
             io.emit('info', {'message': "Verifying solution that model gave.."})
 
         solution_candidate = repeater.measure_task([predicted_features], io=io)
-        solution_feature, solution_labels = split_features_and_labels(solution_candidate,
-                                                                      task_config["FeaturesLabelsStructure"])
+        solution_feature = [predicted_features]
+        solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         # validate false
         if solution_labels > default_value:
             print("Predicted energy larger than default.")
             print("Predicted energy: %s. Measured: %s. Default configuration: %s" % (
-                predicted_features[0], solution_labels[0][0], default_value[0][0]))
+                predicted_features[0], solution_labels[0][0], default_value[0]))
             prediction_is_final = False
         else:
             print("Solution validation success!")
