@@ -298,12 +298,11 @@ class BayesianOptimization(Model):
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
         solution_candidate = repeater.measure_task([predicted_features], io=io)
-        solution_feature = predicted_features
-        solution_labels = solution_candidate
+        solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels >= default_value:
-            print("Predicted energy largeror equal default: %s >= %s" % (solution_labels[0], default_value[0]))
+            print("Predicted energy largeror equal default: %s >= %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
             print("Solution validation success!")
@@ -311,7 +310,7 @@ class BayesianOptimization(Model):
                 io.emit('info', {'message': "Solution validation success!"})
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
-        self.solution_features = solution_feature
+        self.solution_features = solution_feature[0]
         return self.solution_labels, prediction_is_final
 
     def get_result(self, repeater, io):

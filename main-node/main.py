@@ -47,8 +47,7 @@ def run(io=None):
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
-    default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
-    default_value = default_result
+    default_features, default_value = split_features_and_labels(default_result, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
 
     if io:
         # TODO An array in the array with one value. 
@@ -61,8 +60,7 @@ def run(io=None):
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = change_decision_function(repeater, task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"])
     results = repeater.measure_task(initial_task, io, default_point=default_result[0])
-    features = initial_task
-    labels = results
+    features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
     print("Results got. Building model..")
 
     model = get_model(model_config=task_config["ModelConfiguration"],
@@ -118,8 +116,7 @@ def run(io=None):
         cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
 
         results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
-        features = cur_task
-        labels = results
+        features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(model.all_features) > len(search_space):
