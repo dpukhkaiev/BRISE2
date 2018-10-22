@@ -47,8 +47,8 @@ def run(io=None):
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
-    default_features = task_config["DomainDescription"]["DefaultConfiguration"]
-    default_value = default_result[0]
+    default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
+    default_value = default_result
 
     if io:
         # TODO An array in the array with one value. 
@@ -98,7 +98,7 @@ def run(io=None):
                                                                    predicted_features=predicted_features)
 
                 features = [predicted_features]
-                labels = [[validated_labels]]
+                labels = [validated_labels]
                 selector.disable_point(predicted_features)
 
                 if finish:

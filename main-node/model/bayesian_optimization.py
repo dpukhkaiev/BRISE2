@@ -299,7 +299,7 @@ class BayesianOptimization(Model):
             io.emit('info', {'message': "Verifying solution that model gave.."})
         solution_candidate = repeater.measure_task([predicted_features], io=io)
         solution_feature = predicted_features
-        solution_labels = solution_candidate[0]
+        solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels >= default_value:
