@@ -24,7 +24,7 @@ def read_global_config(global_config_path):
         exit(3)
 
 
-def load_task(path_to_file="./Resources/NB/taskNB1.json"):
+def load_task(path_to_file="./Resources/task.json"):
     """
     Method reads task configuration from task.json file.
     :param path_to_file: sting path to task file.
@@ -33,9 +33,9 @@ def load_task(path_to_file="./Resources/NB/taskNB1.json"):
     try:
         task = load_json_file(path_to_file)
         data = load_json_file(task["DomainDescription"]["DataFile"])
-        taskDataPoints = []
+        taskDataPoints = dict()
         for dimension in task["DomainDescription"]["FeatureNames"]:
-            taskDataPoints.append(data[dimension])
+                taskDataPoints[dimension] = data[dimension]
         task["DomainDescription"]["AllConfigurations"] = taskDataPoints
     except IOError as e:
         print("Error with reading task.json file: %s" % e)
@@ -51,9 +51,8 @@ def initialize_config(argv):
     Load global config and task config.
     :return: (dict globalConfiguration, dict taskConfiguration)
     """
-    taskPath = argv[1] if len(argv) > 1 else './Resources/NB/taskNB1.json'
+    taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
-    print(taskPath, global_config_path)
     #   Reading config file
     print("Global BRISE configuration file: |%s|, task description file: |%s|" % (global_config_path, taskPath))
     globalConfig = read_global_config(global_config_path)

@@ -10,13 +10,10 @@ class StudentRepeater(Repeater):
 
         # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
-        self.default_repeater = DefaultRepeater(*args, **kwargs)
-        self.number_of_measured_configs = 1
 
-    def decision_function(self, history, point, threshold=15, **configuration):
+    def decision_function(self, point, threshold=15, **configuration):
         """
         Return False if history is empty or has only 1 element for current point, and
-        :param history: history class object that stores all experiments results
         :param point: concrete experiment configuration that is evaluating
                       shape - tuple, e.g. ``(1200, 32)``
         :param threshold:
@@ -42,12 +39,12 @@ class StudentRepeater(Repeater):
         }
 
         # first of all - need at least 2 measurements
-        all_experiments = history.get(point)
+        all_experiments = self.history.get(point)
         if len(all_experiments) < 2:
             return False
 
         elif len(all_experiments) >= self.max_repeats_of_experiment:
-            return self.default_repeater.decision_function(history, point, **configuration)
+            return self.summing_all_results(all_experiments, point)
 
         else:
             default_not_digit_parameters = {}

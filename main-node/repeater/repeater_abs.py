@@ -14,7 +14,7 @@ class Repeater(ABC):
         self.number_of_measured_configs = 0
 
     @abstractmethod
-    def decision_function(self, history, point, iterations=3, **configuration): pass
+    def decision_function(self, point, iterations=3, **configuration): pass
     
     def measure_task(self, task, io, **decis_func_config):
         """
@@ -32,7 +32,7 @@ class Repeater(ABC):
             # Evaluating decision function for each point in task
             self.current_measurement[str(point)] = {'data': point,
                                                     'Finished': False}
-            result = self.decision_function(self.history, point, **decis_func_config)
+            result = self.decision_function(point, **decis_func_config)
             if result: 
                 self.current_measurement[str(point)]['Finished'] = True
                 self.current_measurement[str(point)]['Results'] = result
@@ -60,7 +60,7 @@ class Repeater(ABC):
 
             # Evaluating decision function for each point in task
             for point in cur_task:
-                result = self.decision_function(self.history, point, **decis_func_config)
+                result = self.decision_function(point, **decis_func_config)
                 if result:
                     print("Point %s finished after %s measurements. Result: %s" % (str(point),
                                                                                    len(self.history.get(point)),
@@ -96,3 +96,19 @@ class Repeater(ABC):
             return_for_main.append(eval(self.WSClient._results_data_types[index])(value)
                                    for index, value in enumerate(point))
         return return_for_main
+
+    def summing_all_results(self, all_experiments, point):
+        result = [0 for x in range(len(all_experiments[0]))]
+        for experiment in all_experiments:
+            for index, value in enumerate(experiment):
+                if type(value) not in [int, float]:
+                    result[index] = value
+                else:
+                    result[index] += value
+        # Calculating average.
+        for index, value in enumerate(result):
+            if type(value) not in [int, float]:
+                result[index] = value
+            else:
+                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
+        return result
