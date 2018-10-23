@@ -1,15 +1,15 @@
 from stop_condition.stop_condition_abs import StopCondition
 from tools.features_tools import split_features_and_labels
+import logging
 
-#передать сюда переменую из класса BayesianOptimization селф.солюшин_лейблз для того,
-#  что бы ее продолжать использовать в этом классе
-# передать в мейне, получить класс через метод гет_модел
 
 class StopConditionBO(StopCondition):
 
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
-        # validate() in regression
-        print("Verifying solution that model gave..")
+        self.logger.info("Verifying solution that model gave..")
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
 
@@ -21,15 +21,11 @@ class StopConditionBO(StopCondition):
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels > default_value:
-            print("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
+            self.logger.info("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
-            print("Solution validation success!")
+            self.logger.info("Solution validation success!")
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
             prediction_is_final = True
         return solution_labels[0], solution_feature[0], prediction_is_final
-
-        # model.solution_labels = solution_labels[0]
-        # model.solution_features = solution_feature[0]
-        # return model.solution_labels, prediction_is_final

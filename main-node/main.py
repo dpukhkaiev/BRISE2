@@ -17,9 +17,8 @@ from tools.features_tools import split_features_and_labels
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
+from stop_condition.stop_condition_selection import get_stop_condition
 
-
-from stop_condition.stop_condition_bo import StopConditionBO
 
 def run(io=None):
     time_started = datetime.datetime.now()
@@ -90,7 +89,7 @@ def run(io=None):
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
 
-    stop_condition = StopConditionBO()
+    stop_condition = get_stop_condition(stop_condition_type=task_config["ExperimentsConfiguration"]["StopCondition"])
 
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \
@@ -107,10 +106,6 @@ def run(io=None):
                 predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
                 logger.info("Predicted solution features:%s, labels:%s."
                             % (str(predicted_features), str(predicted_labels)))
-                # validated_labels, finish = model.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
-                #                                                    repeater=repeater,
-                #                                                    default_value=default_value,
-                #                                                    predicted_features=predicted_features)
                 model.solution_labels, model.solution_features, finish = \
                     stop_condition.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
                                                      repeater=repeater, default_value=default_value,

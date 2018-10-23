@@ -21,7 +21,8 @@
         "ResultDataTypes"  : ["float", "int", "float"],
         "RepeaterDecisionFunction"  : "student_deviation",
         "MaxRepeatsOfExperiment": 10,
-        "MaxTimeToRunExperiment": 10
+        "MaxTimeToRunExperiment": 10,
+        "StopCondition": "default"
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
