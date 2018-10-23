@@ -89,7 +89,8 @@ def run(io=None):
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
 
-    stop_condition = get_stop_condition(stop_condition_type=task_config["ExperimentsConfiguration"]["StopCondition"])
+    stop_condition = get_stop_condition(stop_condition_type=task_config["ExperimentsConfiguration"]["StopCondition"],
+                                        minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"])
 
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \

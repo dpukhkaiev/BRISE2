@@ -5,8 +5,9 @@ import logging
 
 class StopConditionBO(StopCondition):
 
-    def __init__(self):
+    def __init__(self, minimization_task_bool):
         self.logger = logging.getLogger(__name__)
+        self.minimization_task_bool = minimization_task_bool
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         self.logger.info("Verifying solution that model gave..")
@@ -20,8 +21,11 @@ class StopConditionBO(StopCondition):
 
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
-        if solution_labels > default_value:
-            self.logger.info("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
+        if self.minimization_task_bool is True and solution_labels > default_value:
+            self.logger.info("Predicted value larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
+            prediction_is_final = False
+        if self.minimization_task_bool is False and solution_labels < default_value:
+            self.logger.info("Predicted value lower than default: %s < %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
             self.logger.info("Solution validation success!")
