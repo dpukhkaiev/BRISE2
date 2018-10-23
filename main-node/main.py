@@ -18,6 +18,8 @@ from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 
 
+from stop_condition.stop_condition_bo import StopConditionBO
+
 def run(io=None):
     time_started = datetime.datetime.now()
 
@@ -80,6 +82,9 @@ def run(io=None):
     # 4. If solution is OK - reporting and terminating. If not - add it to all data set and go to 1.
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
+
+    stop_condition = StopConditionBO()
+
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \
                         "%s configuration points of %s was evaluated. %s retrieved from the selection algorithm.\n" \
@@ -94,13 +99,18 @@ def run(io=None):
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
                 print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
-                                                                   repeater=repeater,
-                                                                   default_value=default_value,
-                                                                   predicted_features=predicted_features)
-
+                # validated_labels, finish = model.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
+                #                                                    repeater=repeater,
+                #                                                    default_value=default_value,
+                #                                                    predicted_features=predicted_features)
+                model.solution_labels, model.solution_features, finish = stop_condition.validate_solution(io=io,
+                                                                                                          task_config=task_config["ModelConfiguration"],
+                                                                                                          repeater=repeater,
+                                                                                                          default_value=default_value,
+                                                                                                          predicted_features=predicted_features)
                 features = [predicted_features]
-                labels = [validated_labels]
+                # labels = [validated_labels]
+                labels = [model.solution_labels]
                 selector.disable_point(predicted_features)
 
                 if finish:
