@@ -2,6 +2,8 @@ __doc__ = """
     Describes logic of selection algorithm based on Sobol sequences in Sobol space."""
 
 import sobol_seq
+import logging
+
 from selection.selection_algorithm_abs import SelectionAlgorithm
 from scipy.spatial.distance import euclidean
 from itertools import product
@@ -27,6 +29,7 @@ class SobolSequence(SelectionAlgorithm):
         self.numOfGeneratedPoints = 0  # Counter of retrieved points from Sobol sequence.
         self.returned_points = []  # Storing previously returned points.
         self.hypercube_coordinates = []
+        self.logger = logging.getLogger(__name__)
 
         # Need to use floating numbers of indexes for searching distances between target point
         # and other points in hypercube
@@ -112,7 +115,8 @@ class SobolSequence(SelectionAlgorithm):
             #   In this point Sobol unable to generate unique configuration as all
             # configurations have been returned at least once.
             unique_point = self.__impose_point_to_search_space(point)
-            print("WARNING! Retrieving not unique configuration point from the Sobol selection algorithm!")
+            self.logger.warn("Retrieving not unique configuration point from the Sobol selection algorithm!")
+        self.logger.debug("Retrieving new configuration from the Sobol sequence: %s" % str(unique_point))
         return unique_point
 
     def disable_point(self, point):
@@ -126,7 +130,7 @@ class SobolSequence(SelectionAlgorithm):
             self.returned_points.append(point)
             return True
         else:
-            print("WARNING! Trying to disable point that have been already retrieved(or disabled).")
+            self.logger.warn("WARNING! Trying to disable point that have been already retrieved(or disabled).")
             return False
 
 

@@ -4,9 +4,11 @@ Mock for main module for running BRISE configuration balancing."""
 import pickle
 import time
 import random
+import logging
 
 from WorkerServiceClient.WSClient_sockets import WSClient
 from tools.file_system_io import create_folder_if_not_exists
+from logger.default_logger import BRISELogConfigurator
 
 def run(io=None):
     """
@@ -22,11 +24,15 @@ def run(io=None):
         "Task config": dict 
     }
     """
+    if __name__ == "__main__":
+        logger = BRISELogConfigurator().get_logger(__name__)
+    else:
+        logger = logging.getLogger(__name__)
     try:
         with open("./tools/main_mock_data.pkl", 'rb') as f:
             mock_data = pickle.loads(f.read())
-    except IOError as e:
-        print("Unable to load saved MOCK data: %s" % e)
+    except IOError or pickle.UnpicklingError as e:
+        logger.error("Unable to load saved MOCK data: %s" % e, exc_info=True)
         exit(1)
 
     sleep_between_messages = 0  # In seconds. One second + ~25 seconds to overall running for current version of mock.
@@ -56,7 +62,7 @@ def run(io=None):
         temp = {"global_config": mock_data["Global config"], "task": mock_data["Task config"]}
         io.emit('main_config', temp)
         time.sleep(sleep_between_messages)
-        print("Measuring default configuration that we will used in regression to evaluate solution... ")
+        logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
         # Sending default configuration (like from the repeater) 10 times.
         for x in range(10):
             wsc.work(mock_data["Default configuration"][0])
@@ -66,13 +72,14 @@ def run(io=None):
         time.sleep(sleep_between_messages)
 
         # Sending results of default configuration measurement (like from the main).
-        io.emit('default conf', {'configuration': mock_data["Default configuration"][0][0], "result": mock_data["Default configuration"][1][0][0]})
+        io.emit('default conf', {'configuration': mock_data["Default configuration"][0][0],
+                                 "result": mock_data["Default configuration"][1][0][0]})
         time.sleep(sleep_between_messages)
 
-        print("Measuring initial number experiments, while it is no sense in trying to create model"
+        logger.info("Measuring initial number experiments, while it is no sense in trying to create model"
               "\n(because there is no data)...")
         for feature, label in zip(mock_data["Features1"], mock_data["Labels1"]):
-            print("Sending new task to IO.", end=' ')
+            logger.info("Sending new task to IO.")
             if label < [406.12]: bounds = tresholds['good']
             elif label < [1083.67]: bounds = tresholds['mid']
             else: bounds = tresholds['bad']
@@ -88,7 +95,7 @@ def run(io=None):
 
         # First model solution prediction (greater than default).
         predicted_labels, predicted_features = mock_data["Model1"].predict_solution(io, mock_data["Search space"])
-        print("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
+        logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
 
@@ -96,7 +103,7 @@ def run(io=None):
         add_features = [config for config in mock_data["Final feature set"] if config not in mock_data["Features1"]]
         add_labels = [result for result in mock_data["Final label set"] if result not in mock_data["Labels1"]]
         for feature, label in zip(add_features, add_labels):
-            print("Sending new task to IO.", end=' ')
+            logger.info("Sending new task to IO.")
             if label < [406.12]: bounds = tresholds['good']
             elif label < [1083.67]: bounds = tresholds['mid']
             else: bounds = tresholds['bad']
@@ -110,7 +117,7 @@ def run(io=None):
         mock_data["Final model"].validate_model(io, mock_data["Search space"])
         time.sleep(sleep_between_messages)
         predicted_labels, predicted_features = mock_data["Final model"].predict_solution(io, mock_data["Search space"])
-        print("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
+        logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
@@ -143,6 +150,7 @@ from sys import path
 chdir('..')
 path.append(abspath('.'))
     """
+    logger = BRISELogConfigurator.get_logger(__name__)
     start = time.time()
     run(io=A())
-    print("\n\nMock running time: %s(sec)." % round(time.time() - start))
+    logger.info("Mock running time: %s(sec)." % round(time.time() - start))
