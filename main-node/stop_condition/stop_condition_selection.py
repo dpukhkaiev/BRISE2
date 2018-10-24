@@ -6,7 +6,8 @@ def get_stop_condition(stop_condition_type, minimization_task_bool):
     :param stop_condition_type: String.
             The name of desired decision function for stop_condition.
             Possible values - "default".
-            "default" - ... TODO.
+            "default" - search for a new point is stopped, if value of solution candidate is better then value of
+                        default point.
 
     :return: Stop Condition object.
     """

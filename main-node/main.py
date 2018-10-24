@@ -107,12 +107,14 @@ def run(io=None):
                 predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
                 logger.info("Predicted solution features:%s, labels:%s."
                             % (str(predicted_features), str(predicted_labels)))
-                model.solution_labels, model.solution_features, finish = \
-                    stop_condition.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
-                                                     repeater=repeater, default_value=default_value,
-                                                     predicted_features=predicted_features)
+
+                # "repeater.measure_task" works with list of tasks. "predicted_features" is one task, because of that it is transmitted as list
+                solution_candidate = repeater.measure_task([predicted_features], io=io)
+                model.solution_labels, model.solution_features, finish = stop_condition.validate_solution(io=io,
+                                                                          task_config=task_config["ModelConfiguration"],
+                                                                          solution_candidate=solution_candidate,
+                                                                          default_value=default_value)
                 features = [predicted_features]
-                # labels = [validated_labels]
                 labels = [model.solution_labels]
                 selector.disable_point(predicted_features)
 
