@@ -7,13 +7,9 @@ class StopConditionDefault(StopCondition):
 
     def __init__(self, *args, **kwargs):
 
-        # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-
-    # def __init__(self):
-    #     self.logger = logging.getLogger(__name__)
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         self.logger.info("Verifying solution that model gave..")
