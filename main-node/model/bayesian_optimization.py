@@ -39,8 +39,7 @@ import logging
 
 
 from model.model_abs import Model
-# from tools.features_tools import split_features_and_labels
-# from stop_condition.stop_condition_bo import StopConditionBO
+
 
 class BayesianOptimization(Model):
 

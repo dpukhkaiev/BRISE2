@@ -3,11 +3,17 @@ from tools.features_tools import split_features_and_labels
 import logging
 
 
-class StopConditionBO(StopCondition):
+class StopConditionDefault(StopCondition):
 
-    def __init__(self, minimization_task_bool):
+    def __init__(self, *args, **kwargs):
+
+        # Initiating parent class and transferring WSClient in *args and other params in **kwargs
+        super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
-        self.minimization_task_bool = minimization_task_bool
+
+
+    # def __init__(self):
+    #     self.logger = logging.getLogger(__name__)
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
         self.logger.info("Verifying solution that model gave..")
@@ -24,7 +30,7 @@ class StopConditionBO(StopCondition):
         if self.minimization_task_bool is True and solution_labels > default_value:
             self.logger.info("Predicted value larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
-        if self.minimization_task_bool is False and solution_labels < default_value:
+        elif self.minimization_task_bool is False and solution_labels < default_value:
             self.logger.info("Predicted value lower than default: %s < %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:

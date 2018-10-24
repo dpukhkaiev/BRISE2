@@ -12,9 +12,9 @@ def get_stop_condition(stop_condition_type, minimization_task_bool):
     """
     logger = logging.getLogger(__name__)
     if stop_condition_type == "default":
-        from stop_condition.stop_condition_bo import StopConditionBO
+        from stop_condition.stop_condition_default import StopConditionDefault
         logger.info("Default stop condition is selected.")
-        return StopConditionBO(minimization_task_bool)
+        return StopConditionDefault(minimization_task_bool)
     else:
         logger.error("Invalid stop condition type is provided!")
         raise KeyError
