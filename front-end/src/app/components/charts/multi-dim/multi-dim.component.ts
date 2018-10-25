@@ -41,6 +41,7 @@ export class MultiDimComponent implements OnInit {
 
   dimensions: Array<any>
 
+  // TODO: Rewrite the structure for a valid answer. Use the appropriate pattern
   ranges: {
     'laplace_correction': {
       'length': any,
@@ -76,7 +77,7 @@ export class MultiDimComponent implements OnInit {
     this.solution = undefined
   }
 
-  // poiner to DOM element #map
+  // poiner to DOM element #multi
   @ViewChild('multi') multi: ElementRef;
 
   constructor(private ioMain: MainSocketService) { }

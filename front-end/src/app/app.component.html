@@ -25,29 +25,18 @@
     </div>
 </header>
 
-<div class="header wrapper">
-  <div class="button-row"><br>
-    <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
-    <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
-    <mat-progress-bar mode="indeterminate" *ngIf=isRuning></mat-progress-bar>
-  </div>
-</div>
-
 <div class="content wrapper">
+  <launch-control-bar></launch-control-bar>
   <mat-tab-group>
     <!-- TAB 1 -->
-                        <!-- show "Heat map" tab always -->
     <mat-tab label="Heat map">
-                        <!-- show "Heat map" tab only if in task.json ModelType is "regression" -->
-    <!--<mat-tab label="Heat map" *ngIf="isModelType('regression')">-->
-      <multi-dim></multi-dim>
-      <hm-2></hm-2>
+      <!-- <multi-dim></multi-dim> -->
+      <hm></hm> 
     </mat-tab>
   
     <!-- TAB 2 -->
     <mat-tab label="Info">
       <imp-res></imp-res>
-      <!-- improvement chart-->
       <info-board></info-board>
     </mat-tab>
   

@@ -1,10 +1,8 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 // Service
-// import { RestService } from '../../services/worker.service';
 import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
-import { RestService as mainREST} from '../../../core/services/rest.service';
 
 import { Event } from '../../../data/client-enums';
 import { MainEvent } from '../../../data/client-enums';
@@ -22,7 +20,7 @@ interface Configuration {
 }
 
 @Component({
-  selector: 'hm-2',
+  selector: 'hm',
   templateUrl: './heat-map.component.html',
   styleUrls: ['./heat-map.component.scss']
 })
@@ -44,7 +42,7 @@ export class HeatMapComponent implements OnInit {
   solution: Solution
   // Measured points for the Regresion model from worker-service
   measPoints: Array<Array<number>> = []
-  default_task: Configuration
+  defaultTask: Configuration
 
   // Rendering axises
   y: Array<number>
@@ -55,7 +53,7 @@ export class HeatMapComponent implements OnInit {
     this.prediction.clear()
     this.solution = undefined
     this.measPoints = []
-    this.default_task = undefined
+    this.defaultTask = undefined
   }
 
 
@@ -75,7 +73,6 @@ export class HeatMapComponent implements OnInit {
   @ViewChild('map') map: ElementRef;
 
   constructor(
-    private mainREST: mainREST, 
     private ioWs: WsSocketService, 
     private ioMain: MainSocketService,
   ) {  }
@@ -160,20 +157,18 @@ export class HeatMapComponent implements OnInit {
   }
 
 
-
-
   //                              WebSocket
   // --------------------------   Worker-service
   private initWsEvents(): void {
     this.ioWs.initSocket();
     this.ioWs.onEvent(Event.CONNECT)
       .subscribe(() => {
-        console.log(' hm2.workerService: connected');
+        console.log(' heat-map: connected');
         this.ioWs.reqForAllRes();
       });
     this.ioWs.onEvent(Event.DISCONNECT)
       .subscribe(() => {
-        console.log(' hm2.workerService: disconnected');
+        console.log(' heat-map: disconnected');
     });
   }
 
@@ -183,22 +178,14 @@ export class HeatMapComponent implements OnInit {
 
     this.ioMain.onEmptyEvent(MainEvent.CONNECT)
       .subscribe(() => {
-        console.log(' hm.main: connected');
+        console.log(' heat-map: connected');
       });
     this.ioMain.onEmptyEvent(MainEvent.DISCONNECT)
       .subscribe(() => {
-        console.log(' hm.main: disconnected');
+        console.log(' heat-map: disconnected');
       });
 
     // ----                     Main events
-    this.ioMain.onEvent(MainEvent.BEST)
-      .subscribe((obj: any) => {
-        console.log(' Socket: BEST', obj);
-        this.solution = obj['best point']
-        this.render()
-        this.isRuning = false 
-      });
-
     this.ioMain.onEvent(MainEvent.INFO)
       .subscribe((obj: any) => {
         console.log(' Socket: INFO', obj);
@@ -216,7 +203,7 @@ export class HeatMapComponent implements OnInit {
     this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
       .subscribe((obj: any) => {
         console.log(' Socket: DEFAULT_task', obj);
-        this.default_task = obj
+        this.defaultTask = obj
         this.result.set(String(obj['configuration']), obj['result'])
         this.measPoints.push(obj['configuration'])
         this.render()
@@ -227,6 +214,13 @@ export class HeatMapComponent implements OnInit {
         this.measPoints.push(obj['configuration'])
         console.log('TaskRes:', obj)
         this.render()
+      });
+    this.ioMain.onEvent(MainEvent.BEST)
+      .subscribe((obj: any) => {
+        console.log(' Socket: BEST', obj);
+        this.solution = obj['best point']
+        this.render()
+        this.isRuning = false
       });
   }
 

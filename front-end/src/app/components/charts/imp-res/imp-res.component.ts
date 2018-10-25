@@ -12,7 +12,7 @@ interface PointExp {
   configuration: any;
   result: any;
   time: any;
-  number_of_configs: any;
+  'measured points': number;
 } 
 
 @Component({
@@ -28,8 +28,6 @@ export class ImpResComponent implements OnInit {
   solution: Solution
 
   taskConfig: TaskConfig
-
-  curr_max_x: any
 
   // poiner to DOM element #map
   @ViewChild('improvement') impr: ElementRef;
@@ -57,9 +55,8 @@ export class ImpResComponent implements OnInit {
           'configuration': obj['best point']['configuration'],
           'result': obj['best point']['result'],
           'time': min + 'm ' + sec + 's',
-          'number_of_configs': obj['best point']['measured points']
+          'measured points': obj['best point']['measured points']
         } 
-        this.curr_max_x = obj['best point']['measured points']
         this.allRes.add(temp) 
         this.bestRes.add(temp) // There is no check if this solution is the best decision 
         this.render() // Render chart when all points got
@@ -72,16 +69,15 @@ export class ImpResComponent implements OnInit {
           'configuration': obj['configuration'],
           'result': obj['result'],
           'time': min + 'm ' + sec + 's',
-          'number_of_configs': obj['number_of_configs']
+          'measured points': this.allRes.size + 1
         }) // Add new point(result)
         this.render() // Render chart
         let temp: PointExp = {
           'configuration': obj['configuration'],
           'result': obj['result'],
           'time': min + 'm ' + sec + 's',
-          'number_of_configs': obj['number_of_configs']
+          'measured points': this.allRes.size
         }
-        this.curr_max_x = obj['number_of_configs'] + 1 
 
         // Check the best available point
         this.bestRes && this.bestRes.forEach(function(resItem){
@@ -108,12 +104,12 @@ export class ImpResComponent implements OnInit {
     const element = this.impr.nativeElement
 
     // X-axis data
-    const xBest = Array.from(this.bestRes).map(i => i["number_of_configs"]);
+    const xBest = Array.from(this.bestRes).map(i => i["measured points"]);
     // Results
     const yBest = Array.from(this.bestRes).map(i => i["result"]);
     
     var allResultSet = { // Data for all results
-      x: Array.from(this.allRes).map(i => i["number_of_configs"]),
+      x: Array.from(this.allRes).map(i => i["measured points"]),
       y: Array.from(this.allRes).map(i => i["result"]),
       type: 'scatter',
       mode: 'lines+markers',
@@ -148,92 +144,45 @@ export class ImpResComponent implements OnInit {
 
     let data = [allResultSet, bestPointSet, startEndPoint];
 
-    if (this.taskConfig.ModelConfiguration.ModelType == "BO") {
-      var layout = {
-        title: 'The best results',
-        showlegend: true,
-        autosize: true,
-        xaxis: {
-          range: [0, this.curr_max_x],
-          title: "Number of measured configurations",
-          showline: true,
-          showgrid: false,
-          zeroline: false,
-          showticklabels: true,
-          linecolor: 'rgb(204,204,204)',
-          linewidth: 2,
-          autotick: false,
-          ticks: 'outside',
-          tickcolor: 'rgb(204,204,204)',
-          tickwidth: 2,
-          ticklen: 5,
-          tickfont: {
-            family: 'Roboto',
-            size: 12,
-            color: 'rgb(82, 82, 82)'
-          }
-        },
-        yaxis: {
-          title: "PREC_AT_99_REC",
-          showgrid: false,
-          zeroline: false,
-          showline: true,
-          linecolor: 'rgb(204,204,204)',
-          showticklabels: true,
-          ticks: 'outside',
-          tickcolor: 'rgb(204,204,204)',
-          ticklen: 5,
-          tickfont: {
-            family: 'Roboto',
-            size: 12,
-            color: 'rgb(82, 82, 82)'
-          }
-        },
-      };
-    };
-
-    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
-      var layout = {
-        title: 'The best results',
-        showlegend: true,
-        autosize: true,
-        xaxis: {
-          range: [0, this.curr_max_x],
-          title: "number_of_configs",
-          showline: true,
-          showgrid: false,
-          zeroline: false,
-          showticklabels: true,
-          linecolor: 'rgb(204,204,204)',
-          linewidth: 2,
-          autotick: false,
-          ticks: 'outside',
-          tickcolor: 'rgb(204,204,204)',
-          tickwidth: 2,
-          ticklen: 5,
-          tickfont: {
-            family: 'Roboto',
-            size: 12,
-            color: 'rgb(82, 82, 82)'
-          }
-        },
-        yaxis: {
-          title: "Energy",
-          showgrid: false,
-          zeroline: false,
-          showline: true,
-          linecolor: 'rgb(204,204,204)',
-          showticklabels: true,
-          ticks: 'outside',
-          tickcolor: 'rgb(204,204,204)',
-          ticklen: 5,
-          tickfont: {
-            family: 'Roboto',
-            size: 12,
-            color: 'rgb(82, 82, 82)'
-          }
-        },
-      };
+    var layout = {
+      title: 'The best results',
+      showlegend: true,
+      autosize: true,
+      xaxis: {
+        title: "Sequence number",
+        showline: true,
+        showgrid: false,
+        zeroline: false,
+        showticklabels: true,
+        linecolor: 'rgb(204,204,204)',
+        linewidth: 2,
+        autotick: false,
+        ticks: 'outside',
+        tickcolor: 'rgb(204,204,204)',
+        tickwidth: 2,
+        ticklen: 5,
+        tickfont: {
+          family: 'Roboto',
+          size: 12,
+          color: 'rgb(82, 82, 82)'
+        }
+      },
+      yaxis: {
+        title: "Energy",
+        showgrid: false,
+        zeroline: false,
+        showline: true,
+        linecolor: 'rgb(204,204,204)',
+        showticklabels: true,
+        ticks: 'outside',
+        tickcolor: 'rgb(204,204,204)',
+        ticklen: 5,
+        tickfont: {
+          family: 'Roboto',
+          size: 12,
+          color: 'rgb(82, 82, 82)'
+        }
+      },
     };
 
     Plotly.react(element, data, layout);
