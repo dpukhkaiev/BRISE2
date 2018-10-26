@@ -7,4 +7,4 @@ class StopCondition(ABC):
         self.minimization_task_bool = minimization_task_bool
 
     @abstractmethod
-    def validate_solution(self, io, task_config, repeater, default_value, predicted_features): pass
+    def validate_solution(self, io, task_config, predicted_features): pass

@@ -5,12 +5,13 @@ import logging
 
 class StopConditionDefault(StopCondition):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, default_value, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
+        self.default_value = default_value
 
-    def validate_solution(self, io, task_config, solution_candidate, default_value):
+    def validate_solution(self, io, task_config, solution_candidate):
         self.logger.info("Verifying solution that model gave..")
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
@@ -20,13 +21,13 @@ class StopConditionDefault(StopCondition):
 
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         # validate false
-        if self.minimization_task_bool is True and solution_labels > default_value:
+        if self.minimization_task_bool is True and solution_labels > self.default_value:
             self.logger.info("Predicted value larger than default: %s > %s" % (solution_labels[0][0],
-                                                                               default_value[0][0]))
+                                                                               self.default_value[0][0]))
             prediction_is_final = False
-        elif self.minimization_task_bool is False and solution_labels < default_value:
+        elif self.minimization_task_bool is False and solution_labels < self.default_value:
             self.logger.info("Predicted value lower than default: %s < %s" % (solution_labels[0][0],
-                                                                              default_value[0][0]))
+                                                                              self.default_value[0][0]))
             prediction_is_final = False
         else:
             self.logger.info("Solution validation success!")
