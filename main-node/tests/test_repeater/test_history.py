@@ -1,5 +1,7 @@
-from repeater.history import History
 import pytest
+import pickle
+
+from repeater.history import History
 
 
 def test_default_history():
@@ -18,7 +20,7 @@ def test_get():
     points = [(2400, 2), (0, 1), (500, 25), (1900, 25), (2900, 50)]
     values = [[45, 68, 56], [567, 345.7], 56, [98.25, 70], [45.8, 78]]
     history1 = History()
-    for p,v in zip(points,values):
+    for p, v in zip(points, values):
         history1.put(p, v)
     for index, value in enumerate(values):
         value = [value]
@@ -28,14 +30,8 @@ def test_get():
     assert history1.get(point) == []
 
 
-def check_point_is_tuple(point_value):
-    if isinstance(point_value, tuple) and (all(isinstance(list_item, int) for list_item in point_value)):
-        return True
-    else:
-        return False
-
-
 def test_put():
+
     point1 = (2900, 32)
     values1 = [1, 50]
     history1 = History()
@@ -44,41 +40,68 @@ def test_put():
     assert history1.history[str(point1)] == values1
     history1.history = {}
 
-    points = [[2900, 16], (2900, 32), (3000, 48), "123", 0, (3000, 32), [2900, 32], (2500, 15)]
-    values = [50, "yui", "ret", 5, [55, 48.9, 99], 1, ["123", 123], []]
+    points = [[2900.0, 16], (2900, 32), (3000, 48), "123", 0, (3000, 32), [2900, 32], (2500, 15), [2900.0, 16]]
+    values = [50, "yui", "ret", 5, [55, 48.9, 99], 1, ["123", 123], [], ['suppa', 'result', None, 123]]
+
+    # Since each new value (result) is adding to the end of values list for these configuration.
+    # Also covers testing of proper types storing.
+    for point, value in zip(points, values):
+        history1.put(point, value)
+        assert value == history1.history[str(point)][-1]
+
+    assert len(history1.history[str([2900.0, 16])]) == 2
+
+
+def make_history_object():
+    # Supporting function for preparing valid history object with some data in it.
+    # Testing data - 6 configurations, 5 unique, 6 results.
+    history_my = History()
+    points = [(2900, 32), (3000, 48), (3000, 32), (2900, 30), (2900, 16), (2900, 30)]
+    values = [50, 5, [55, 48, 99], 1, [123.98, 123], ['string value', 223, 23.1, '32', '32.4', None]]
     for p, v in zip(points, values):
-        if (isinstance(v, (int, float)) or all(isinstance(list_item, (int, float)) for list_item in v)) \
-                and check_point_is_tuple(p):
-            history1.put(p, v)
-        elif not (isinstance(v, (int, float)) or all(isinstance(list_item, (int, float)) for list_item in v)):
-            with pytest.raises(TypeError,
-                               message='point: %s ; VALUE: %s, VALUE is not INT or FLOAT' % (str(p), str(v))):
-                history1.put(p, v)
-        elif not check_point_is_tuple(p):
-            with pytest.raises(TypeError,
-                               message='POINT: %s ; value: %s, POINT is not a TUPLE or tuple item is not INT'
-                                       % (str(p), str(v))):
-                history1.put(p, v)
-
-    for index, point_value in enumerate(points):
-        values[index] = [values[index]]
-        if (isinstance(values[index][0], (int, float))
-                or all(isinstance(list_item, (int, float)) for list_item in values[index][0])) \
-                and check_point_is_tuple(point_value):
-            assert history1.history[str(point_value)] == values[index]
-
-        else:
-            with pytest.raises(KeyError, message='point: %s ; value: %s' %(str(point_value), str(values[index]))):
-                history1.history[str(point_value)]
+        history_my.put(p, v)
+    return history_my
 
 
 def test_dump(tmpdir):
-    history_my = History()
-    points = [(2900, 32), (3000, 48), (3000, 32), (2900, 30), (2900, 16), (2900, 30)]
-    values = [50, 5, [55, 48, 99], 1, [123.98, 123]]
-    for p, v in zip(points, values):
-        history_my.put(p, v)
-    file_path = tmpdir.join('testfile.txt')
-    history_my.dump(file_path)
-    assert history_my.dump(file_path) is True
-    assert file_path.read() == "(2900, 32)(3000, 48)(3000, 32)(2900, 30)(2900, 16)"
+
+    history_my = make_history_object()
+
+    file_path = tmpdir.join('file.hist')     # pathToHistory/ folder should also be created.
+    assert history_my.dump(str(file_path)) is True   # Check storing in normal case.
+    with open(str(file_path), 'rb') as f:
+        assert pickle.loads(f.read()) == history_my.history
+
+    #   Verification of problem cases with creating (writing) to write-protected files
+    # is too complicated (cause 1. New file will be created. 2. It will be created from 'root' user
+    # that will ensure highest read-write permissions to FS IO.
+
+
+def test_load(tmpdir):
+
+    # Preparing data.
+    history_obj = make_history_object()
+    history_to_be_written = history_obj.history.copy()
+
+    file_path = tmpdir.join('file.hist')
+    with open(str(file_path), "wb") as f:
+        pickle.dump(history_to_be_written, f)
+
+    # Test proper loading without dropping previous data using "flush" flag.
+    history_obj.history.clear()
+    assert history_obj.load(str(file_path))
+    assert history_obj.history == history_to_be_written
+
+    # Test proper loading with dropping previous data using "flush" flag.
+    assert history_obj.load(str(file_path), flush=True)
+    assert history_obj.history == history_to_be_written
+
+    # Testing invalid dumped invalid file.
+    with open(str(file_path), "w") as f:
+        f.write(str(history_to_be_written))
+
+    history_obj.history = {'key': 'value'}
+    assert history_obj.load(str(file_path)) is False
+    assert history_obj.history == {'key': 'value'}
+    assert history_obj.load(str(file_path), flush=True) is False
+    assert history_obj.history == {'key': 'value'}
