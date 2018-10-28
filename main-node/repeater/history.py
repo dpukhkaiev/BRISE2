@@ -1,8 +1,11 @@
-__doc__="""History represents key-value data structure within simple class with a put, get and dump methods for
+__doc__ = """History represents key-value data structure within simple class with a put, get and dump methods for
 storing, retrieving and saving history object to the file.  
 """
 import logging
 import pickle
+
+from tools.file_system_io import create_folder_if_not_exists
+
 
 class History:
     def __init__(self):
@@ -20,13 +23,16 @@ class History:
         try:
             return self.history[str(point)]
         except KeyError:
-            return {}
+            return []
 
     def put(self, point, value):
         """
-        Store the concrete experiment configuration and its value in the history
-        :param point: concrete experiment configuration
-        :param value: int, float, list of ints or floats
+                Take point (experiment configuration), convert these object to the String
+            object and use as a key. Store value (results for these configuration) in list
+            with other results (could be multiple results for same configuration).
+
+        :param point: Object. Concrete experiment configuration.
+        :param value: Object. Results of running for these configuration.
         """
         try:
             self.history[str(point)].append(value)
@@ -34,20 +40,23 @@ class History:
             self.history[str(point)] = []
             self.history[str(point)].append(value)
 
-    def dump(self, filename):
+    def dump(self, path):
         """
         Return True, if keys(points) have been written to the filename
-        :param filename: name of the file, where keys will write
-        :return: True
+        :param path: String.
+            Name of the file including path, where keys will be written, e.g. './history/dump.hist'
+        :return: Bool
+                True if success, in other case - False.
         """
-        # TODO: Need to update tests for these module.
         try:
-            with open(filename, "wb") as f:
+            create_folder_if_not_exists(path)   # Creates folders for storing dump file if needed.
+            with open(path, "wb") as f:
                 pickle.dump(self.history, f)
             self.logger.info("History saved. Number of written points: %s" % len(self.history))
             return True
         except Exception as e:
             self.logger.error("Failed to write results. Exception: %s" % e, exc_info=True)
+            return False
 
     def load(self, filename, flush=False):
         """
@@ -56,7 +65,6 @@ class History:
         :param flush: Bool. Drop all currently saved objects to history before loading, or not.
         :return: Boolean True in case of success.
         """
-        # TODO: Need to write tests for these module.
         try:
             with open(filename, 'rb') as f:
                 data = pickle.loads(f.read())
