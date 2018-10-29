@@ -6,7 +6,7 @@ from sklearn.pipeline import Pipeline
 from functools import reduce
 
 from model.model_abs import Model
-from tools.features_tools import split_features_and_labels
+
 
 
 class RegressionSweetSpot(Model):
@@ -161,7 +161,8 @@ class RegressionSweetSpot(Model):
             io.emit('info', {'message': "Verifying solution that model gave.."})
 
         solution_candidate = repeater.measure_task([predicted_features], io=io)
-        solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
+        solution_feature = [predicted_features]
+        solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         # validate false
         if solution_labels > default_value:

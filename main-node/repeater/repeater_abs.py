@@ -10,7 +10,8 @@ class Repeater(ABC):
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.max_repeats_of_experiment = ExperimentsConfiguration["MaxRepeatsOfExperiment"]
+        self.task_config = ExperimentsConfiguration
+        self.max_repeats_of_experiment = ExperimentsConfiguration["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
         self.number_of_measured_configs = 0
 
     @abstractmethod
@@ -66,10 +67,10 @@ class Repeater(ABC):
                                                                                    len(self.history.get(point)),
                                                                                    str(result)))
                     self.number_of_measured_configs += 1
-
+                    d = self.point_to_dictionary(point)
                     if io:
                         temp = {
-                            'configuration': point, 
+                            'configuration': self.point_to_dictionary(point), 
                             'result': list(set(result) - set(point)).pop(),
                             'number_of_configs': self.number_of_measured_configs
                         } 
@@ -112,3 +113,9 @@ class Repeater(ABC):
             else:
                 result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
         return result
+    def point_to_dictionary(self, point):
+        dict_point = dict()
+        keys = list(self.task_config["DomainDescription"]["AllConfigurations"].keys())
+        for i in range(0, len(point)):
+            dict_point[keys[i]] = point[i]
+        return dict_point

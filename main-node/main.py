@@ -13,7 +13,6 @@ from WorkerServiceClient.WSClient_sockets import WSClient
 from model.model_selection import get_model
 from repeater.repeater_selection import get_repeater, change_decision_function
 from tools.initial_config import initialize_config
-from tools.features_tools import split_features_and_labels
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 
@@ -43,11 +42,12 @@ def run(io=None):
                                                  task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
-    repeater = get_repeater("default", WS, task_config["ExperimentsConfiguration"])
+    repeater = get_repeater("default", WS, task_config)
 
     print("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
-    default_features, default_value = split_features_and_labels(default_result, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
+    default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
+    default_value = default_result
 
     if io:
         # TODO An array in the array with one value. 
@@ -60,7 +60,8 @@ def run(io=None):
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = change_decision_function(repeater, task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"])
     results = repeater.measure_task(initial_task, io, default_point=default_result[0])
-    features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
+    features = initial_task
+    labels = results
     print("Results got. Building model..")
 
     model = get_model(model_config=task_config["ModelConfiguration"],
@@ -116,7 +117,8 @@ def run(io=None):
         cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
 
         results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
-        features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
+        features = cur_task
+        labels = results
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(model.all_features) > len(search_space):

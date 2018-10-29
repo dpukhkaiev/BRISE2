@@ -17,8 +17,8 @@
       "ws_file": "taskNB1.csv"
     },
     "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-    "ResultStructure"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size", "accuracy"],
-    "ResultDataTypes"  : ["bool", "str", "str", "float", "float", "int", "bool", "int","float"],
+    "ResultStructure"   : ["accuracy"],
+    "ResultDataTypes"  : ["float"],
     "RepeaterDecisionFunction"  : "student_deviation",
     "MaxRepeatsOfExperiment": 2,
     "MaxTimeToRunExperiment": 10
