@@ -24,7 +24,7 @@ def run(io=None):
     global_config, task_config = initialize_config(argv)
 
     # Generate whole search space for model.
-    search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"].values())]
+    search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]
 
     if io:
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
@@ -34,7 +34,7 @@ def run(io=None):
     # Creating instance of selector based on selection type and
     # task data for further uniformly distributed data points generation.
     selector = get_selector(selection_algorithm_config=task_config["SelectionAlgorithm"],
-                            search_space=list(task_config["DomainDescription"]["AllConfigurations"].values()))
+                            search_space=task_config["DomainDescription"]["AllConfigurations"])
 
     # Instantiate client for Worker Service, establish connection.
     WS = WSClient(task_config["ExperimentsConfiguration"], global_config["WorkerService"]["Address"],

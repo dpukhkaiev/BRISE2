@@ -51,7 +51,6 @@ class BayesianOptimization(Model):
 
         # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
         self.task_config = whole_task_config
-        self.task_config["DomainDescription"]["AllConfigurations"] = list(self.task_config["DomainDescription"]["AllConfigurations"].values())
 
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth

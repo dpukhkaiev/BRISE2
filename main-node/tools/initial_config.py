@@ -33,9 +33,9 @@ def load_task(path_to_file="./Resources/NB/taskNB1.json"):
     try:
         task = load_json_file(path_to_file)
         data = load_json_file(task["DomainDescription"]["DataFile"])
-        taskDataPoints = dict()
+        taskDataPoints = []
         for dimension in task["DomainDescription"]["FeatureNames"]:
-                taskDataPoints[dimension] = data[dimension]
+            taskDataPoints.append(data[dimension])
         task["DomainDescription"]["AllConfigurations"] = taskDataPoints
     except IOError as e:
         print("Error with reading task.json file: %s" % e)
