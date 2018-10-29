@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from repeater.history import History
+from copy import deepcopy
 
 
 class Repeater(ABC):
@@ -10,7 +11,7 @@ class Repeater(ABC):
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.task_config = ExperimentsConfiguration
+        self.task_config = deepcopy(ExperimentsConfiguration)
         self.max_repeats_of_experiment = ExperimentsConfiguration["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
         self.number_of_measured_configs = 0
 
@@ -115,7 +116,6 @@ class Repeater(ABC):
         return result
     def point_to_dictionary(self, point):
         dict_point = dict()
-        keys = list(self.task_config["DomainDescription"]["AllConfigurations"].keys())
         for i in range(0, len(point)):
-            dict_point[keys[i]] = point[i]
+            dict_point[self.task_config["DomainDescription"]["FeatureNames"][i]] = point[i]
         return dict_point

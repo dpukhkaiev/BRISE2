@@ -52,7 +52,7 @@ def run(io=None):
     if io:
         # TODO An array in the array with one value. 
         # Events 'default conf' and 'task result' must be similar
-        temp = {'configuration': default_features, "result": default_value[0]}
+        temp = {'configuration': repeater.point_to_dictionary(default_features[0]), "result": default_value[0]}
         io.emit('default conf', temp)
 
     print("Measuring initial number experiments, while it is no sense in trying to create model"
