@@ -223,7 +223,7 @@ class BayesianOptimization(Model):
                 
                 l = self.model['good'].pdf
                 g = self.model['bad'].pdf
-
+                #TODO test max_me
                 minimize_me = lambda x: max(1e-32, g(x))/max(l(x), 1e-32)
 
                 kde_good = self.model['good']
