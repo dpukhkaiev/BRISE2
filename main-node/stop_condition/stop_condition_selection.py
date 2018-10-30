@@ -1,7 +1,7 @@
 import logging
 
 
-def get_stop_condition(stop_condition_type, minimization_task_bool, default_value=None):
+def get_stop_condition(stop_condition_type, minimization_task_bool):
     """
     :param stop_condition_type: String.
             The name of desired decision function for stop_condition.
@@ -15,8 +15,7 @@ def get_stop_condition(stop_condition_type, minimization_task_bool, default_valu
     if stop_condition_type == "default":
         from stop_condition.stop_condition_default import StopConditionDefault
         logger.info("Default stop condition is selected.")
-        return StopConditionDefault(minimization_task_bool=minimization_task_bool,
-                                    default_value=default_value)
+        return StopConditionDefault(minimization_task_bool=minimization_task_bool)
     else:
         logger.error("Invalid stop condition type is provided!")
         raise KeyError

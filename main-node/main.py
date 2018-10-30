@@ -90,8 +90,7 @@ def run(io=None):
     #
 
     stop_condition = get_stop_condition(stop_condition_type=task_config["ExperimentsConfiguration"]["StopCondition"],
-                                        minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"],
-                                        default_value=default_value)
+                                        minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"])
 
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \
@@ -111,9 +110,11 @@ def run(io=None):
 
                 # "repeater.measure_task" works with list of tasks. "predicted_features" is one task, because of that it is transmitted as list
                 solution_candidate = repeater.measure_task([predicted_features], io=io)
-                model.solution_labels, model.solution_features, finish = stop_condition.validate_solution(io=io,
-                                                                          task_config=task_config["ModelConfiguration"],
-                                                                          solution_candidate=solution_candidate)
+                model.solution_labels, model.solution_features, finish = \
+                    stop_condition.validate_solution(io=io,
+                                                     model_config=task_config["ModelConfiguration"],
+                                                     solution_candidate=solution_candidate,
+                                                     current_best_solution=default_value)
                 features = [predicted_features]
                 labels = [model.solution_labels]
                 selector.disable_point(predicted_features)
