@@ -143,7 +143,7 @@ class BayesianOptimization(Model):
 
         # a) With the certain probability at all (to continue with picking a random point).
         if np.random.rand() < self.random_fraction:
-            print("INFO: Skipping building the model in order to pick a random configuration point.")
+            self.logger.info("Skipping building the model in order to pick a random configuration point.")
             return False
 
         # b) if not enough points are available
@@ -156,7 +156,7 @@ class BayesianOptimization(Model):
         if not update_model:
             return False
 
-        print("INFO: Building the Bayesian optimization models..")
+        self.logger.info("INFO: Building the Bayesian optimization models..")
 
         train_features = np.array(self.all_features)
         train_labels = np.array(self.all_labels)
@@ -185,10 +185,9 @@ class BayesianOptimization(Model):
 
         good_kde = sm.nonparametric.KDEMultivariate(data=train_data_good, var_type=self.kde_vartypes, bw=bw_estimation)
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,  var_type=self.kde_vartypes, bw=bw_estimation)
-        
 
-        print("INFO: The models built with bandwidth: good - %s, bad - %s. Minimum from the configurations %s"
-              % (good_kde.bw, bad_kde.bw, self.min_bandwidth))
+        self.logger.info("The models built with bandwidth: good - %s, bad - %s. Minimum from the configurations %s"
+                         % (good_kde.bw, bad_kde.bw, self.min_bandwidth))
 
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth,None)
         good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth,None)
@@ -199,7 +198,8 @@ class BayesianOptimization(Model):
         }
 
         # update probs for the categorical parameters for later sampling
-        self.logger.debug('done building a new model based on %i/%i split\nBest loss for this budget:%f\n\n\n\n\n'%(n_good, n_bad, np.min(train_labels)))
+        self.logger.debug('done building a new model based on %i/%i split\nBest current result:%f\n\n\n\n\n'
+                          %(n_good, n_bad, np.min(train_labels)))
         return True
 
     def validate_model(self, io, search_space):
@@ -271,7 +271,7 @@ class BayesianOptimization(Model):
                         best_vector = vector
 
                 if best_vector is None:
-                    self.logger.debug("Sampling based optimization with %i samples failed -> using random configuration" % self.num_samples)
+                    self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.num_samples)
                     sample = self.configspace.sample_configuration().get_dictionary()
                     info_dict['model_based_pick'] = False
                 else:
@@ -281,18 +281,17 @@ class BayesianOptimization(Model):
                         sample.append(dimension[best_vector[index]])
 
             except:
-                self.logger.warning("Sampling based optimization with %i samples failed\n %s \nUsing random configuration" % (self.num_samples, traceback.format_exc()))
+                self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
+                                    "Using random configuration" % (self.num_samples, traceback.format_exc()))
                 # sample = self.configspace.sample_configuration()
                 info_dict['model_based_pick'] = False
-
 
         self.logger.debug('done sampling a new configuration.')
         return [best], sample
 
 
     def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
-        # validate() in regression
-        print("Verifying solution that model gave..")
+        self.logger.info("Verifying solution that model gave..")
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
         solution_candidate = repeater.measure_task([predicted_features], io=io)
@@ -301,10 +300,10 @@ class BayesianOptimization(Model):
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels >= default_value:
-            print("Predicted energy largeror equal default: %s >= %s" % (solution_labels[0][0], default_value[0][0]))
+            self.logger.info("Predicted value larger or equal default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
-            print("Solution validation success!")
+            self.logger.info("Solution validation success!")
             if io:
                 io.emit('info', {'message': "Solution validation success!"})
             prediction_is_final = True
@@ -317,11 +316,11 @@ class BayesianOptimization(Model):
         #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
         # point, that have less energy consumption, that predicted - report this point instead predicted.
         maximize_done = False
-        print("\n\nFinal report:")
+        self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:
             temp_message = "Optimal configuration was not found. Reporting best of the measured."
-            print(temp_message)
+            self.logger.info(temp_message)
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             if not self.task_config['ModelConfiguration']['MinimizationTask'] and not maximize_done:
@@ -346,22 +345,22 @@ class BayesianOptimization(Model):
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
                   (self.solution_features, self.solution_labels))
-            print(temp_message)
+            self.logger.info(temp_message)
             if io:
                 io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
         if not self.task_config['ModelConfiguration']['MinimizationTask'] and not maximize_done:
                 self.solution_labels = min(self.all_labels)
                 maximize_done = True
 
-        print("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
-        print("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
-        print("Number of measured points: %s" % len(self.all_features))
-        print("Number of performed measurements: %s" % repeater.performed_measurements)
-        print("Best found value: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
+        self.logger.info("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
+        self.logger.info("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
+        self.logger.info("Number of measured points: %s" % len(self.all_features))
+        self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
+        self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
         if io:
-            temp = {"best point": {'configuration': self.solution_features, 
-                    "result": self.solution_labels, 
+            temp = {"best point": {'configuration': self.solution_features,
+                    "result": self.solution_labels,
                     "measured points": len(self.all_features),
                     'performed measurements': repeater.performed_measurements}
                     }
@@ -401,8 +400,8 @@ class BayesianOptimization(Model):
                 self.all_labels += labels
 
         except AssertionError as err:
-            # TODO: replace with logger.
-            print("ERROR! Regression input validation error:\n%s" % err)
+            self.logger.error("Input data validation error:%s\nAdding Features: %s\nAdding Labels:%s"
+                              % (err, features, labels))
     
     def impute_conditional_data(self, array):
 

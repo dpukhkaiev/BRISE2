@@ -3,9 +3,7 @@ from math import ceil
 from time import time
 from os.path import isfile
 import csv
-# import logging
-# logging.getLogger("socketIO-client").setLevel(logging.DEBUG)
-# logging.basicConfig()
+import logging
 
 
 class WSClient(SocketIO):
@@ -18,11 +16,12 @@ class WSClient(SocketIO):
         :param wsclient_addr: String. Network address of Worker Service (including port).
         :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
+        self.logger = logging.getLogger(__name__)
         # Creating the SocketIO object and connecting to main node namespace - "/main_node"
-        print('INFO: Connecting to the Worker Service at "%s" ...' % wsclient_addr)
+        self.logger.info("INFO: Connecting to the Worker Service at '%s' ..." % wsclient_addr)
         super().__init__(wsclient_addr)
         self.ws_namespace = self.define(BaseNamespace, "/main_node")
-        print('INFO: Connect OK!')
+        self.logger.info("Connect OK!")
 
         # Properties that holds general task configuration (shared between task runs).
         self._exp_config = experiments_configuration
@@ -49,6 +48,7 @@ class WSClient(SocketIO):
         # Waiting for response, if response is OK - proceed.
         self._connection_ok = False
         while not self._connection_ok:
+            self.logger.debug("Sending 'ping' event to the Worker Service...")
             self.ws_namespace.emit('ping')
             self.wait(1)
 
@@ -57,10 +57,10 @@ class WSClient(SocketIO):
     # They cannot be accessed from outside of the class and manipulates task data stored inside object.
     #
     def __reconnect(self):
-        print("Worker Service has been connected!")
+        self.logger.info("Worker Service has been connected!")
 
     def __ping_response(self, *args):
-        print("Worker Service have {0} connected workers: {1}".format(len(args[0]), str(args[0])))
+        self.logger.info("Worker Service have {0} connected workers: {1}".format(len(args[0]), str(args[0])))
         self._connection_ok = True
         self._number_of_workers = len(args[0])
 
@@ -70,6 +70,7 @@ class WSClient(SocketIO):
     def __wrong_task_structure(self, received_task):
         self.ws_namespace.disconnect()
         self.disconnect()
+        self.logger.error("Worker Service does not supports specified task structure:\n%s" % received_task)
         raise TypeError("Incorrect task structure:\n%s" % received_task)
 
     def __task_results(self, results):
@@ -80,8 +81,8 @@ class WSClient(SocketIO):
             if results['task id'] in ids_of_already_finished_tasks:
                 # Workaround for floating on Worker Service.
                 # It could happens that WorkerService assigns one task on multiple workers.
-                print("Warning - Worker Server reported same task results multiple times! "
-                      "(Task were running on multiple Worker nodes)")
+                self.logger.warning("Warning - Worker Server reported same task results multiple times!"
+                                    "(Task were running on multiple Worker nodes)")
             else:
                 self.current_results.append(results)
 
@@ -92,7 +93,7 @@ class WSClient(SocketIO):
     ####################################################################################################################
     # Supporting methods.
     def _send_task(self, tasks_parameters):
-        print("Sending task: %s" % tasks_parameters)
+        self.logger.info("Sending task: %s" % tasks_parameters)
         tasks_to_send = []
 
         for task_parameter in tasks_parameters:
@@ -102,7 +103,6 @@ class WSClient(SocketIO):
             task_description["params"] = {}
             for index, parameter in enumerate(self._task_parameters):
                 task_description["params"][parameter] = str(task_parameter[index])
-
             tasks_to_send.append(task_description)
 
         self.ws_namespace.emit('add_tasks', tasks_to_send)  # response - task_accepted or wrong_task_structure
@@ -144,7 +144,7 @@ class WSClient(SocketIO):
                 for result in self._report_according_to_required_structure():
                     writer.writerow(result)
         except Exception as e:
-            print("Failed to write the results: %s" % e)
+            self.logger.error("Failed to write the results: %s" % e, exc_info=True)
 
     ####################################################################################################################
     # Outgoing interface for running task(s)
@@ -179,11 +179,11 @@ class WSClient(SocketIO):
                 break
 
         if len(self.current_results) < len(self.cur_tasks_ids):
-            print("Results were not got in time. Terminating currently running tasks.", end="")
+            self.logger.warning("Results were not got in time. Terminating currently running tasks.")
             self._terminate_not_finished_tasks()
         else:
-            print("All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)), end='')
-        print("Results: %s" % str(self._report_according_to_required_structure()))
+            self.logger.info("All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)))
+        self.logger.info("Results: %s" % str(self._report_according_to_required_structure()))
         self._dump_results_to_csv()
         return self._report_according_to_required_structure()
 

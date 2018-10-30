@@ -24,6 +24,7 @@ RUN apt-get update \
     && cd /usr/local/bin \
     && ln -s /usr/bin/python3 python \
     && python3 -m pip install requests \
+    && python3 -m pip install PyYAML \
     && python3 -m pip install --upgrade pip \
     && python3 -m pip install Flask \
     && python3 -m pip install flask-cors \

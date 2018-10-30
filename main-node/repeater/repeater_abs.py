@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import logging
+
 from repeater.history import History
 from copy import deepcopy
 
@@ -14,6 +16,8 @@ class Repeater(ABC):
         self.task_config = deepcopy(ExperimentsConfiguration)
         self.max_repeats_of_experiment = ExperimentsConfiguration["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
         self.number_of_measured_configs = 0
+        self.logger = logging.getLogger(__name__)
+
 
     @abstractmethod
     def decision_function(self, point, iterations=3, **configuration): pass
@@ -21,10 +25,20 @@ class Repeater(ABC):
     def measure_task(self, task, io, **decis_func_config):
         """
 
-        :param task:
-                     TODO - shape
-        :param io: id using for web-sockets
-        :return: result
+        :param task: List of lists.
+                Represents set of tasks for Worker Service. Each sublist of original task list is a final configuration
+            for target system. For example, for energy consumption experiments, system configures with concrete
+            frequency and threads values (e.g. frequency - 2900 MHz, threads - 3).
+                So, if configuration structure defined as [frequency, threads], task object with 3 different
+            configurations will be like:
+            [[1800.0, 32], [2000.0, 16], [2900.0, 8]]
+
+        :param io: Web API object.
+                Used to emit information messages to front-end.
+        :return: List of lists.
+                Results formatted according to configured structure. E.g. if required result structure is
+            [frequency, threads, energy], the result for task above will be like:
+            [[1800.0, 32, 1231.1], [2000.0, 16, 5121.32], [2900.0, 8, 1215.12]]
         """
         # Removing previous measurements
         self.current_measurement.clear()
@@ -64,11 +78,9 @@ class Repeater(ABC):
             for point in cur_task:
                 result = self.decision_function(point, **decis_func_config)
                 if result:
-                    print("Point %s finished after %s measurements. Result: %s" % (str(point),
-                                                                                   len(self.history.get(point)),
-                                                                                   str(result)))
+                    self.logger.info("Point %s finished after %s measurements. Result: %s"
+                                     % (str(point), len(self.history.get(point)), str(result)))
                     self.number_of_measured_configs += 1
-                    d = self.point_to_dictionary(point)
                     if io:
                         temp = {
                             'configuration': self.point_to_dictionary(point), 
@@ -76,7 +88,6 @@ class Repeater(ABC):
                             'number_of_configs': self.number_of_measured_configs
                         } 
                         io.emit('task result', temp)
-                        
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
@@ -87,9 +98,11 @@ class Repeater(ABC):
     
     def cast_results(self, results):
         """
-
-        :param results:
-                        TODO - shape
+           Results formatted according to configured data types. These done because Worker Service returns all fields
+           as strings, integers / floats / string differentiation is not supported.
+        :param results: List of lists.
+            Example, if required structure is [float, int, str], the result for task above will be like:
+            [[1800.0, 32, "1231.1"], [2000.0, 16, "5121.32"], [2900.0, 8, "1215.12"]]
         :return:
         """
         # WSClient during initialization stores data types in himself, need to cast results according to that data types
