@@ -27,13 +27,15 @@ def load_json_file(path_to_file="./task.json"):
 def create_folder_if_not_exists(folderPath):
     """
     Method create folder if it don't exist.
-    :param path: sting path to folder.
+    :param folderPath: sting path to folder, could include filename.
     :return: true if create folder or it exist
     """
     logger = logging.getLogger(__name__)
     try:
-        if not path.exists(path.dirname(folderPath)):
-            makedirs(path.dirname(folderPath))
+        dir_path = path.dirname(folderPath)
+        if dir_path:
+            if not path.exists(path.dirname(folderPath)):
+                makedirs(path.dirname(folderPath))
         return True
     except IOError as e:
         logger.error("Unable to create folder: %s" % folderPath, exc_info=True)
