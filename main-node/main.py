@@ -110,9 +110,10 @@ def run(io=None):
 
                 # "repeater.measure_task" works with list of tasks. "predicted_features" is one task, because of that it is transmitted as list
                 solution_candidate = repeater.measure_task([predicted_features], io=io)
+                if io:
+                    io.emit('info', {'message': "Verifying solution that model gave.."})
                 model.solution_labels, model.solution_features, finish = \
-                    stop_condition.validate_solution(io=io,
-                                                     model_config=task_config["ModelConfiguration"],
+                    stop_condition.validate_solution(model_config=task_config["ModelConfiguration"],
                                                      solution_candidate=solution_candidate,
                                                      current_best_solution=default_value)
                 features = [predicted_features]
@@ -120,6 +121,8 @@ def run(io=None):
                 selector.disable_point(predicted_features)
 
                 if finish:
+                    if io:
+                        io.emit('info', {'message': "Solution validation success!"})
                     model.add_data(features, labels)
                     optimal_result, optimal_config = model.get_result(repeater, io=io)
                     write_results(global_config, task_config, time_started, features, labels,

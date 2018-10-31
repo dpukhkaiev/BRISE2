@@ -7,9 +7,8 @@ class StopCondition(ABC):
         self.minimization_task_bool = minimization_task_bool
 
     @abstractmethod
-    def validate_solution(self, io, model_config, solution_candidate, current_best_solution):
+    def validate_solution(self, model_config, solution_candidate, current_best_solution):
         """
-        :param io: Web API object
         :param model_config: dictionary
                Dictionary of Model configuration, which is stored in Resources/task.json
         :param solution_candidate: list of lists with features and labels.

@@ -9,7 +9,7 @@ class StopConditionDefault(StopCondition):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-    def validate_solution(self, io, model_config, solution_candidate, current_best_solution):
+    def validate_solution(self, model_config, solution_candidate, current_best_solution):
         """
         Returns prediction_is_final=False if current_best_solution is better than solution_candidate_label,
                 prediction_is_final=True if solution_candidate_label is better than current_best_solution
@@ -17,8 +17,6 @@ class StopConditionDefault(StopCondition):
         """
 
         self.logger.info("Verifying solution that model gave..")
-        if io:
-            io.emit('info', {'message': "Verifying solution that model gave.."})
 
         solution_candidate_features, solution_candidate_labels = \
             split_features_and_labels(solution_candidate, model_config["FeaturesLabelsStructure"])
@@ -35,7 +33,5 @@ class StopConditionDefault(StopCondition):
             prediction_is_final = False
         else:
             self.logger.info("Solution validation success!")
-            if io:
-                io.emit('info', {'message': "Solution validation success!"})
             prediction_is_final = True
         return solution_candidate_labels[0], solution_candidate_features[0], prediction_is_final
