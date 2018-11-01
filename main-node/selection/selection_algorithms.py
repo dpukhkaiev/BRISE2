@@ -1,3 +1,5 @@
+import logging
+
 from selection.sobol import *
 
 
@@ -13,8 +15,11 @@ def get_selector(selection_algorithm_config, search_space):
                                          "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
                                      }
     """
+    logger = logging.getLogger(__name__)
     if selection_algorithm_config["SelectionType"] == "SobolSequence":
+        logger.debug("Sobol selection algorithm selected.")
         return SobolSequence(selection_algorithm_config, search_space)
     else:
-        print("ERROR: Configuration error - not valid selection algorithm.")
+        logger.error("Configuration error - invalid selection algorithm provided: %s." %
+                     selection_algorithm_config["SelectionType"])
         raise KeyError

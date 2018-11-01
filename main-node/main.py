@@ -3,8 +3,8 @@ Main module for running BRISE configuration balancing."""
 
 import itertools
 import datetime
-import socket
 from sys import argv
+import logging
 
 from warnings import filterwarnings
 filterwarnings("ignore")    # disable warnings for demonstration.
@@ -15,26 +15,35 @@ from repeater.repeater_selection import get_repeater, change_decision_function
 from tools.initial_config import initialize_config
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
+from logger.default_logger import BRISELogConfigurator
 
 
 def run(io=None):
     time_started = datetime.datetime.now()
 
+    if __name__ == "__main__":
+        logger = BRISELogConfigurator().get_logger(__name__)
+    else:
+        logger = logging.getLogger(__name__)
+    logger.info("Starting BRISE...")
+    if not io:
+        logger.warning("Running BRISE without provided API object.")
     # argv is a run parameters for main - using for configuration
     global_config, task_config = initialize_config(argv)
 
     # Generate whole search space for model.
-    search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"].values())]
+    search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]
 
     if io:
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
         temp = {"global_config": global_config, "task": task_config}
         io.emit('main_config', temp)
+        logger.debug("Task configuration and global configuration are sent to the API.")
 
     # Creating instance of selector based on selection type and
     # task data for further uniformly distributed data points generation.
     selector = get_selector(selection_algorithm_config=task_config["SelectionAlgorithm"],
-                            search_space=list(task_config["DomainDescription"]["AllConfigurations"].values()))
+                            search_space=task_config["DomainDescription"]["AllConfigurations"])
 
     # Instantiate client for Worker Service, establish connection.
     WS = WSClient(task_config["ExperimentsConfiguration"], global_config["WorkerService"]["Address"],
@@ -44,25 +53,26 @@ def run(io=None):
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
     repeater = get_repeater("default", WS, task_config)
 
-    print("Measuring default configuration that we will used in regression to evaluate solution... ")
+    logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
     default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
     default_value = default_result
+    logger.info("Results of measuring default value: %s" % default_value)
 
     if io:
-        # TODO An array in the array with one value. 
+        # TODO An array in the array with one value.
         # Events 'default conf' and 'task result' must be similar
-        temp = {'configuration': default_features, "result": default_value[0]}
+        temp = {'configuration': repeater.point_to_dictionary(default_features[0]), "result": default_value[0]}
         io.emit('default conf', temp)
 
-    print("Measuring initial number experiments, while it is no sense in trying to create model"
-          "\n(because there is no data)...")
+    logger.info("Measuring initial number experiments, while it is no sense in trying to create model"
+                "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = change_decision_function(repeater, task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"])
     results = repeater.measure_task(initial_task, io, default_point=default_result[0])
     features = initial_task
     labels = results
-    print("Results got. Building model..")
+    logger.info("Results got. Building model..")
 
     model = get_model(model_config=task_config["ModelConfiguration"],
                       log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
@@ -90,7 +100,8 @@ def run(io=None):
 
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
-                print("Predicted solution features:%s, labels:%s." %(str(predicted_features), str(predicted_labels)))
+                logger.info("Predicted solution features:%s, labels:%s."
+                            % (str(predicted_features), str(predicted_labels)))
                 validated_labels, finish = model.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
                                                                    repeater=repeater,
                                                                    default_value=default_value,
@@ -108,12 +119,11 @@ def run(io=None):
                     return optimal_result, optimal_config
 
                 else:
-                    print(cur_stats_message % (len(model.all_features),
-                                               len(search_space),
-                                               str(selector.numOfGeneratedPoints)))
+                    logger.info(cur_stats_message
+                                % (len(model.all_features), len(search_space), str(selector.numOfGeneratedPoints)))
                     continue
 
-        print(cur_stats_message % (len(model.all_features), len(search_space), str(selector.numOfGeneratedPoints)))
+        logger.info(cur_stats_message % (len(model.all_features), len(search_space), str(selector.numOfGeneratedPoints)))
         cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
 
         results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
@@ -122,7 +132,7 @@ def run(io=None):
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(model.all_features) > len(search_space):
-            print("Unable to finish normally, terminating with best of measured results.")
+            logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(features, labels)
             optimal_result, optimal_config = model.get_result(repeater, io=io)
             write_results(global_config, task_config, time_started, features, labels,

@@ -12,7 +12,7 @@ from api.worker_manager.recruit import Recruit
 
 # Logging
 import logging
-logging.getLogger('flask.app').setLevel(logging.DEBUG)
+logging.getLogger('flask.app').setLevel(logging.INFO)
 
 def create_app(script_info=None):
 

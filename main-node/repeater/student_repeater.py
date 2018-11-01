@@ -15,7 +15,7 @@ class StudentRepeater(Repeater):
         """
         Return False if history is empty or has only 1 element for current point, and
         :param point: concrete experiment configuration that is evaluating
-                      shape - tuple, e.g. ``(1200, 32)``
+                      shape - list, e.g. ``[1200, 32]``
         :param threshold:
         :return:
         """
@@ -44,7 +44,7 @@ class StudentRepeater(Repeater):
             return False
 
         elif len(all_experiments) >= self.max_repeats_of_experiment:
-            return self.summing_all_results(all_experiments, point)
+            return self.summary_all_results(all_experiments)
 
         else:
             default_not_digit_parameters = {}
@@ -89,10 +89,8 @@ class StudentRepeater(Repeater):
                 threshold = 100/(1+exp(-float((all_dim_avg.tolist()[0][index] / default_point[index]))+3.3))\
                             + len(all_experiments) - 2 if default_point else threshold + len(all_experiments)
                 # If for any dimension relative error is > that threshold - abort
-                # print("student_deviation - need more: %s" % str(relative_errors))
                 if error > threshold:
                     return False
-            # print(all_dim_avg.tolist()[0])
             # eval(self...)(value) - process of casting according to ResultDataTypes in task.json
             result_data_types_short = copy.deepcopy(self.WSClient._result_data_types)
             for index in not_digit_parameters_indexes:
