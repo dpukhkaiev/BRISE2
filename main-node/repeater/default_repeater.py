@@ -29,5 +29,5 @@ class DefaultRepeater(Repeater):
             return False
         else:
             # Summing all results
-            result = self.summing_all_results(all_experiments, point)
+            result = self.summary_all_results(all_experiments)
             return result

@@ -2,20 +2,18 @@ from abc import ABC, abstractmethod
 import logging
 
 from repeater.history import History
-from copy import deepcopy
 
 
 class Repeater(ABC):
-    def __init__(self, WorkerServiceClient, ExperimentsConfiguration):
+    def __init__(self, WorkerServiceClient, whole_task_config):
 
         self.WSClient = WorkerServiceClient
         self.history = History()
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.task_config = deepcopy(ExperimentsConfiguration)
-        self.max_repeats_of_experiment = ExperimentsConfiguration["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
-        self.number_of_measured_configs = 0
+        self.feature_names = whole_task_config["DomainDescription"]["FeatureNames"]
+        self.max_repeats_of_experiment = whole_task_config["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
         self.logger = logging.getLogger(__name__)
 
 
@@ -80,12 +78,10 @@ class Repeater(ABC):
                 if result:
                     self.logger.info("Point %s finished after %s measurements. Result: %s"
                                      % (str(point), len(self.history.get(point)), str(result)))
-                    self.number_of_measured_configs += 1
                     if io:
                         temp = {
                             'configuration': self.point_to_dictionary(point), 
-                            'result': list(set(result) - set(point)).pop(),
-                            'number_of_configs': self.number_of_measured_configs
+                            'result': list(set(result) - set(point)).pop()
                         } 
                         io.emit('task result', temp)
                     self.current_measurement[str(point)]['Finished'] = True
@@ -112,7 +108,12 @@ class Repeater(ABC):
                                    for index, value in enumerate(point))
         return return_for_main
 
-    def summing_all_results(self, all_experiments, point):
+    def summary_all_results(self, all_experiments):
+        """
+            Summary of all Results. Calculating avarage result for task
+        :param all_experiments: List of all results in specific point(configuration)
+        :return: List with 1 average value.
+        """
         result = [0 for x in range(len(all_experiments[0]))]
         for experiment in all_experiments:
             for index, value in enumerate(experiment):
@@ -127,8 +128,15 @@ class Repeater(ABC):
             else:
                 result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
         return result
+
     def point_to_dictionary(self, point):
+        """
+            Transform list of features values to dict
+        :param point: concrete experiment configuration that is evaluating
+                      shape - list, e.g. ``[1200, 32]``
+        :return: Dict with keys - feature name and value - value of this feature.
+        """
         dict_point = dict()
         for i in range(0, len(point)):
-            dict_point[self.task_config["DomainDescription"]["FeatureNames"][i]] = point[i]
+            dict_point[self.feature_names[i]] = point[i]
         return dict_point

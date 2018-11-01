@@ -31,12 +31,13 @@ def load_task(path_to_file="./Resources/task.json"):
     :param path_to_file: sting path to task file.
     :return: dict with task parameters and task data.
     """
+    # TODO: Add task file validation. The file contains all parameters of the task that BRISE require
     logger = logging.getLogger(__name__)
     try:
         task = load_json_file(path_to_file)
         data = load_json_file(task["DomainDescription"]["DataFile"])
         taskDataPoints = []
-        #TODO validate dimension with data
+        #TODO the dimensions validation in the task data file
         for dimension in task["DomainDescription"]["FeatureNames"]:
             taskDataPoints.append(data[dimension])
         task["DomainDescription"]["AllConfigurations"] = taskDataPoints

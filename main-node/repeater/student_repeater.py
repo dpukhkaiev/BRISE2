@@ -15,7 +15,7 @@ class StudentRepeater(Repeater):
         """
         Return False if history is empty or has only 1 element for current point, and
         :param point: concrete experiment configuration that is evaluating
-                      shape - tuple, e.g. ``(1200, 32)``
+                      shape - list, e.g. ``[1200, 32]``
         :param threshold:
         :return:
         """
@@ -44,7 +44,7 @@ class StudentRepeater(Repeater):
             return False
 
         elif len(all_experiments) >= self.max_repeats_of_experiment:
-            return self.summing_all_results(all_experiments, point)
+            return self.summary_all_results(all_experiments)
 
         else:
             default_not_digit_parameters = {}
