@@ -13,11 +13,12 @@ class StudentRepeater(Repeater):
 
     def decision_function(self, point, threshold=15, **configuration):
         """
-        Return False if history is empty or has only 1 element for current point, and
+        Return False while number of measurements less than max_repeats_of_experiment (inherited from abstract class).
+        In other case - compute result as average between all experiments.
         :param point: a configuration under evaluation
                       shape - list, e.g. ``[1200, 32]``
-        :param threshold:
-        :return:
+        :param threshold: 
+        :return: result or False
         """
         # Preparing configuration
         params = configuration.keys()

@@ -17,8 +17,8 @@ class DefaultRepeater(Repeater):
         """
         Return False while number of measurements less than max_repeats_of_experiment (inherited from abstract class).
         In other case - compute result as average between all experiments.
-        :param point: concrete experiment configuration that is evaluating
-                      shape - tuple, e.g. ``(1200, 32)``
+        :param point: a configuration under evaluation
+                      shape - list, e.g. ``[1200, 32]``
         :return: result or False
         """
 
