@@ -29,5 +29,5 @@ class DefaultRepeater(Repeater):
             return False
         else:
             # Summing all results
-            result = self.summary_all_results(all_experiments)
+            result = self.calculate_configs_average(all_experiments)
             return result

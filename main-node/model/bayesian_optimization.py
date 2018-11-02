@@ -314,8 +314,8 @@ class BayesianOptimization(Model):
 
     def get_result(self, repeater, io):
         # TODO: need to review a way of features and labels addition here.
-        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
-        # point, that have less energy consumption, that predicted - report this point instead predicted.
+        #   In case, if model predicted final point, that have less value, than default, but there is
+        # point, that have less value, that predicted - report this point instead predicted.
         self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:

@@ -108,7 +108,7 @@ class Repeater(ABC):
                                    for index, value in enumerate(point))
         return return_for_main
 
-    def summary_all_results(self, all_experiments):
+    def calculate_configs_average(self, all_experiments):
         """
             Summary of all Results. Calculating avarage result for task
         :param all_experiments: List of all results in specific point(configuration)
