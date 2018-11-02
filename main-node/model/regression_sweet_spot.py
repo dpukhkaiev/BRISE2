@@ -222,9 +222,8 @@ class RegressionSweetSpot(Model):
         self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
     def get_result(self, repeater, io):
-
-        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
-        # point, that have less energy consumption, that predicted - report this point instead predicted.
+        #   In case, if the model predicted the final point, that has less value, than the default, but there is
+        # a point, that has less value, than the predicted point - report this point instead of predicted point.
 
         self.logger.info("\n\nFinal report:")
 

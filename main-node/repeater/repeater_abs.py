@@ -108,25 +108,28 @@ class Repeater(ABC):
                                    for index, value in enumerate(point))
         return return_for_main
 
-    def calculate_configs_average(self, all_experiments):
+    def calculate_config_average(self, point_results):
         """
             Summary of all Results. Calculating avarage result for task
-        :param all_experiments: List of all results in specific point(configuration)
+        :param point_results: List of all results(list) in specific point(configuration)
+                    shape - list, e.g. ``[[465], [246.423]]``
         :return: List with 1 average value.
         """
-        result = [0 for x in range(len(all_experiments[0]))]
-        for experiment in all_experiments:
+        result = [0 for x in range(len(point_results[0]))]
+        for experiment in point_results:
             for index, value in enumerate(experiment):
+                # If the result has not digital values, we should assign this values to the result variable without averaging
                 if type(value) not in [int, float]:
                     result[index] = value
                 else:
                     result[index] += value
         # Calculating average.
         for index, value in enumerate(result):
+            # If the result has not digital values, we should assign this values to the result variable without averaging
             if type(value) not in [int, float]:
                 result[index] = value
             else:
-                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
+                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(point_results), 3))
         return result
 
     def point_to_dictionary(self, point):
