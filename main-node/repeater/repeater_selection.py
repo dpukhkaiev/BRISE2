@@ -27,7 +27,7 @@ def get_repeater(repeater_type, WS, whole_task_config):
         return StudentRepeater(WS, whole_task_config)
     else:
         logger.error("Invalid repeater type provided!")
-        raise KeyError
+        raise KeyError("Invalid repeater type provided!")
 
 def change_decision_function(repeater, repeater_type):
     """
@@ -50,4 +50,4 @@ def change_decision_function(repeater, repeater_type):
         return repeater
     else:
         logger.error("Invalid repeater type provided!")
-        raise KeyError
+        raise KeyError("Invalid repeater type provided!")
