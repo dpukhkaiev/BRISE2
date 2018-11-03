@@ -6,10 +6,13 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 import { Solution } from '../../../data/taskData.model';
 import { MainEvent } from '../../../data/client-enums';
 
+import { TaskConfig } from '../../../data/taskConfig.model';
+
 interface PointExp {
   configuration: any;
   result: any;
   time: any;
+  'measured points': number;
 } 
 
 @Component({
@@ -24,6 +27,8 @@ export class ImpResComponent implements OnInit {
   // Best point 
   solution: Solution
 
+  taskConfig: TaskConfig
+
   // poiner to DOM element #map
   @ViewChild('improvement') impr: ElementRef;
 
@@ -36,6 +41,10 @@ export class ImpResComponent implements OnInit {
   //                              WebSocket
   // --------------------------   Main-node
   private initMainEvents(): void {
+    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+      .subscribe((obj: any) => {
+        this.taskConfig = obj['task']
+      });
 
     this.ioMain.onEvent(MainEvent.BEST)
       .subscribe((obj: any) => {
@@ -45,7 +54,8 @@ export class ImpResComponent implements OnInit {
         let temp: PointExp = {
           'configuration': obj['best point']['configuration'],
           'result': obj['best point']['result'],
-          'time': min + 'm ' + sec + 's'
+          'time': min + 'm ' + sec + 's',
+          'measured points': obj['best point']['measured points']
         } 
         this.allRes.add(temp) 
         this.bestRes.add(temp) // There is no check if this solution is the best decision 
@@ -58,23 +68,27 @@ export class ImpResComponent implements OnInit {
         this.allRes.add({
           'configuration': obj['configuration'],
           'result': obj['result'],
-          'time': min + 'm ' + sec + 's'
+          'time': min + 'm ' + sec + 's',
+          'measured points': this.allRes.size + 1
         }) // Add new point(result)
-
+        this.render() // Render chart
         let temp: PointExp = {
           'configuration': obj['configuration'],
           'result': obj['result'],
-          'time': min + 'm ' + sec + 's'
-        } 
+          'time': min + 'm ' + sec + 's',
+          'measured points': this.allRes.size
+        }
 
         // Check the best available point
         this.bestRes && this.bestRes.forEach(function(resItem){
+          // TODO: Max or min from task
           if (temp.result > resItem.result) {
             temp.result = resItem.result
             temp.configuration = resItem.configuration
           }
         })  
         this.bestRes.add(temp) // Add the best available point(result)
+        this.render() // Render chart
         this.bestRes.size>2 && this.render()
       });
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
@@ -90,12 +104,12 @@ export class ImpResComponent implements OnInit {
     const element = this.impr.nativeElement
 
     // X-axis data
-    const xBest = Array.from(this.bestRes).map(i => i["time"]);
+    const xBest = Array.from(this.bestRes).map(i => i["measured points"]);
     // Results
     const yBest = Array.from(this.bestRes).map(i => i["result"]);
     
     var allResultSet = { // Data for all results
-      x: Array.from(this.allRes).map(i => i["time"]),
+      x: Array.from(this.allRes).map(i => i["measured points"]),
       y: Array.from(this.allRes).map(i => i["result"]),
       type: 'scatter',
       mode: 'lines+markers',
@@ -131,13 +145,14 @@ export class ImpResComponent implements OnInit {
     let data = [allResultSet, bestPointSet, startEndPoint];
 
     var layout = {
-      title: 'The best results in time',
+      title: 'The best results',
       showlegend: true,
       autosize: true,
       xaxis: {
-        title: "Time",
+        title: "Sequence number",
         showline: true,
         showgrid: false,
+        zeroline: false,
         showticklabels: true,
         linecolor: 'rgb(204,204,204)',
         linewidth: 2,
@@ -167,46 +182,7 @@ export class ImpResComponent implements OnInit {
           size: 12,
           color: 'rgb(82, 82, 82)'
         }
-
       },
-      // margin: {
-      //   autoexpand: false,
-      //   l: 100,
-      //   r: 20,
-      //   t: 100
-      // },
-      // annotations: [
-        // {
-        //   xref: 'paper',
-        //   yref: 'paper',
-        //   x: 0.05,
-        //   y: 1.05,
-        //   xanchor: 'center',
-        //   yanchor: 'bottom',
-        //   text: 'Best results for time',
-        //   font: {
-        //     family: 'Roboto',
-        //     size: 20,
-        //     color: 'rgb(37,37,37)'
-        //   },
-        //   showarrow: false
-        // },
-        // {
-        //   xref: 'paper',
-        //   yref: 'paper',
-        //   x: 0.5,
-        //   y: -0.1,
-        //   xanchor: 'center',
-        //   yanchor: 'top',
-        //   text: 'Time',
-        //   showarrow: false,
-        //   font: {
-        //     family: 'Roboto',
-        //     size: 15,
-        //     color: 'rgb(150,150,150)'
-        //   }
-        // }
-      // ]
     };
 
     Plotly.react(element, data, layout);

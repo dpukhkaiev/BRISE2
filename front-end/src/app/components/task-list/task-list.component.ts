@@ -147,7 +147,7 @@ export class TaskListComponent implements OnInit {
     // Observer for stack and all results from workers service
     this.ioConnection = this.io.onAllResults()
       .subscribe((obj: any) => {
-        console.log("onAllResults ::", JSON.parse(obj))
+        // console.log("onAllResults ::", JSON.parse(obj))
         var data = JSON.parse(obj)
         // this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
         this.stack = (data.hasOwnProperty('stack') && data['stack'].length) ? data['stack'].map((t) => new Task(t)) : [];

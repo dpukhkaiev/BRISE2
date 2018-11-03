@@ -11,9 +11,8 @@ filterwarnings("ignore")    # disable warnings for demonstration.
 
 from WorkerServiceClient.WSClient_sockets import WSClient
 from model.model_selection import get_model
-from repeater.repeater_selection import get_repeater
+from repeater.repeater_selection import get_repeater, change_decision_function
 from tools.initial_config import initialize_config
-from tools.features_tools import split_features_and_labels
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
@@ -32,7 +31,7 @@ def run(io=None):
     # argv is a run parameters for main - using for configuration
     global_config, task_config = initialize_config(argv)
 
-    # Generate whole search space for regression.
+    # Generate whole search space for model.
     search_space = [list(tup) for tup in itertools.product(*task_config["DomainDescription"]["AllConfigurations"])]
 
     if io:
@@ -52,26 +51,27 @@ def run(io=None):
                                                  task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
-    repeater = get_repeater("default", WS, task_config["ExperimentsConfiguration"])
+    repeater = get_repeater("default", WS, task_config)
 
     logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
-    default_features, default_value = split_features_and_labels(default_result, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
+    default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
+    default_value = default_result
     logger.info("Results of measuring default value: %s" % default_value)
 
     if io:
         # TODO An array in the array with one value.
         # Events 'default conf' and 'task result' must be similar
-        temp = {'configuration': default_features[0], "result": default_value[0][0]}
+        temp = {'configuration': repeater.point_to_dictionary(default_features[0]), "result": default_value[0]}
         io.emit('default conf', temp)
 
     logger.info("Measuring initial number experiments, while it is no sense in trying to create model"
                 "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
-    repeater = get_repeater(repeater_type=task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"],
-                            WS=WS, experiments_configuration=task_config["ExperimentsConfiguration"])
+    repeater = change_decision_function(repeater, task_config["ExperimentsConfiguration"]["RepeaterDecisionFunction"])
     results = repeater.measure_task(initial_task, io, default_point=default_result[0])
-    features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
+    features = initial_task
+    labels = results
     logger.info("Results got. Building model..")
 
     model = get_model(model_config=task_config["ModelConfiguration"],
@@ -127,7 +127,8 @@ def run(io=None):
         cur_task = [selector.get_next_point() for x in range(task_config["SelectionAlgorithm"]["Step"])]
 
         results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
-        features, labels = split_features_and_labels(results, task_config["ModelConfiguration"]["FeaturesLabelsStructure"])
+        features = cur_task
+        labels = results
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(model.all_features) > len(search_space):

@@ -5,18 +5,20 @@ from repeater.history import History
 
 
 class Repeater(ABC):
-    def __init__(self, WorkerServiceClient, ExperimentsConfiguration):
+    def __init__(self, WorkerServiceClient, whole_task_config):
 
         self.WSClient = WorkerServiceClient
         self.history = History()
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.max_repeats_of_experiment = ExperimentsConfiguration["MaxRepeatsOfExperiment"]
+        self.feature_names = whole_task_config["DomainDescription"]["FeatureNames"]
+        self.max_repeats_of_experiment = whole_task_config["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
         self.logger = logging.getLogger(__name__)
 
+
     @abstractmethod
-    def decision_function(self, history, point, iterations=3, **configuration): pass
+    def decision_function(self, point, iterations=3, **configuration): pass
     
     def measure_task(self, task, io, **decis_func_config):
         """
@@ -44,7 +46,7 @@ class Repeater(ABC):
             # Evaluating decision function for each point in task
             self.current_measurement[str(point)] = {'data': point,
                                                     'Finished': False}
-            result = self.decision_function(self.history, point, **decis_func_config)
+            result = self.decision_function(point, **decis_func_config)
             if result: 
                 self.current_measurement[str(point)]['Finished'] = True
                 self.current_measurement[str(point)]['Results'] = result
@@ -72,16 +74,16 @@ class Repeater(ABC):
 
             # Evaluating decision function for each point in task
             for point in cur_task:
-                result = self.decision_function(self.history, point, **decis_func_config)
+                result = self.decision_function(point, **decis_func_config)
                 if result:
                     self.logger.info("Point %s finished after %s measurements. Result: %s"
                                      % (str(point), len(self.history.get(point)), str(result)))
-
                     if io:
-                        configuration = [result[0], result[1]]
-                        temp = {'configuration': configuration, "result": result[2]}
+                        temp = {
+                            'configuration': self.point_to_dictionary(point), 
+                            'result': list(set(result) - set(point)).pop()
+                        } 
                         io.emit('task result', temp)
-
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
@@ -105,3 +107,39 @@ class Repeater(ABC):
             return_for_main.append(eval(self.WSClient._results_data_types[index])(value)
                                    for index, value in enumerate(point))
         return return_for_main
+
+    def calculate_config_average(self, point_results):
+        """
+            Summary of all Results. Calculating avarage result for task
+        :param point_results: List of all results(list) in specific point(configuration)
+                    shape - list, e.g. ``[[465], [246.423]]``
+        :return: List with 1 average value.
+        """
+        result = [0 for x in range(len(point_results[0]))]
+        for experiment in point_results:
+            for index, value in enumerate(experiment):
+                # If the result has not digital values, we should assign this values to the result variable without averaging
+                if type(value) not in [int, float]:
+                    result[index] = value
+                else:
+                    result[index] += value
+        # Calculating average.
+        for index, value in enumerate(result):
+            # If the result has not digital values, we should assign this values to the result variable without averaging
+            if type(value) not in [int, float]:
+                result[index] = value
+            else:
+                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(point_results), 3))
+        return result
+
+    def point_to_dictionary(self, point):
+        """
+            Transform list of features values to dict
+        :param point: concrete experiment configuration that is evaluating
+                      shape - list, e.g. ``[1200, 32]``
+        :return: Dict with keys - feature name and value - value of this feature.
+        """
+        dict_point = dict()
+        for i in range(0, len(point)):
+            dict_point[self.feature_names[i]] = point[i]
+        return dict_point

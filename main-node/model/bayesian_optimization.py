@@ -39,10 +39,10 @@ import logging
 
 
 from model.model_abs import Model
-from tools.features_tools import split_features_and_labels
 
 
 class BayesianOptimization(Model):
+# TODO: need to implement Maximization/minimization model.
 
     def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=30, num_samples=96, random_fraction=1/3,
                  bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
@@ -224,7 +224,7 @@ class BayesianOptimization(Model):
                 
                 l = self.model['good'].pdf
                 g = self.model['bad'].pdf
-
+                #TODO test max_me
                 minimize_me = lambda x: max(1e-32, g(x))/max(l(x), 1e-32)
 
                 kde_good = self.model['good']
@@ -296,11 +296,12 @@ class BayesianOptimization(Model):
         if io:
             io.emit('info', {'message': "Verifying solution that model gave.."})
         solution_candidate = repeater.measure_task([predicted_features], io=io)
-        solution_feature, solution_labels = split_features_and_labels(solution_candidate, task_config["FeaturesLabelsStructure"])
+        solution_feature = predicted_features
+        solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels >= default_value:
-            self.logger.info("Predicted energy larger than default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
+            self.logger.info("Predicted value larger or equal default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
             prediction_is_final = False
         else:
             self.logger.info("Solution validation success!")
@@ -313,9 +314,8 @@ class BayesianOptimization(Model):
 
     def get_result(self, repeater, io):
         # TODO: need to review a way of features and labels addition here.
-        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
-        # point, that have less energy consumption, that predicted - report this point instead predicted.
-
+        #   In case, if the model predicted the final point, that has less value, than the default, but there is
+        # a point, that has less value, than the predicted point - report this point instead of predicted point.
         self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:

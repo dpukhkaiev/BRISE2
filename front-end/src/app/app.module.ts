@@ -18,6 +18,7 @@ import { InfoBoardComponent } from './components/info-board/info-board.component
 import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.component';
+import { LaunchControlBarComponent } from './components/launch-control-bar/launch-control-bar.component';
 
 
 @NgModule({ 
@@ -26,12 +27,12 @@ import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.compo
     TaskListComponent,
     TaskListBoComponent,
     HeatMapComponent,
-    HeatMapComponent,
     HeatMapRegComponent,
     InfoBoardComponent,
     ImpResComponent,
     FooterComponent,
-    MultiDimComponent
+    MultiDimComponent,
+    LaunchControlBarComponent
   ],
   imports: [
     BrowserModule, HttpModule,
