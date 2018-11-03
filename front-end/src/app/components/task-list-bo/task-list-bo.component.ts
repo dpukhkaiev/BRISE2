@@ -40,7 +40,7 @@ export class TaskListBoComponent implements OnInit {
   // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
   // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
   focus: any
-  displayedColumns: string[] = ['id', 'run', 'file', 'result', 'application_grid_size', 'number_of_kernels', 'minimum_bandwidth'];
+  displayedColumns: string[] = ['id', 'run', 'file', 'result'];
   ioConnection: any;
   taskConfig: TaskConfig
 
@@ -100,13 +100,11 @@ export class TaskListBoComponent implements OnInit {
     this.ioConnection = this.io.stack()
       .subscribe((obj: Array<Object>) => {
         this.stack = obj.map(i => new Task(i));
-        // console.log(' Stack:', obj);
       });
 
     // Observer for stack and all results from workers service
     this.ioConnection = this.io.onAllResults()
       .subscribe((obj: any) => {
-        console.log("onAllResults ::", JSON.parse(obj))
         var data = JSON.parse(obj)
         // this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
         this.stack = (data.hasOwnProperty('stack') && data['stack'].length) ? data['stack'].map((t) => new Task(t)) : [];
@@ -114,13 +112,7 @@ export class TaskListBoComponent implements OnInit {
 
     this.io.onEvent(Event.CONNECT)
       .subscribe(() => {
-        console.log(' task-list: connected');
-        // get init data
         this.io.reqForAllRes();
-      });
-    this.io.onEvent(Event.DISCONNECT)
-      .subscribe(() => {
-        console.log(' task-list: disconnected');
       });
   }
 
@@ -130,8 +122,8 @@ export class TaskListBoComponent implements OnInit {
       .subscribe((res) => {
         this.focus = res["result"];
         this.focus.time = res["time"]
-      }
-      );
+    }
+    );
   }
 
 }

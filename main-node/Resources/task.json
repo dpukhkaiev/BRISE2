@@ -17,8 +17,8 @@
           "ws_file": "Radix-500mio.csv"
         },
         "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["frequency", "threads", "energy"],
-        "ResultDataTypes"  : ["float", "int", "float"],
+        "ResultStructure"   : ["energy"],
+        "ResultDataTypes"  : ["float"],
         "RepeaterDecisionFunction"  : "student_deviation",
         "MaxRepeatsOfExperiment": 10,
         "MaxTimeToRunExperiment": 10,

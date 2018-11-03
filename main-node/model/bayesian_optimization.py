@@ -42,6 +42,7 @@ from model.model_abs import Model
 
 
 class BayesianOptimization(Model):
+# TODO: need to implement Maximization/minimization model.
 
     def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=30, num_samples=96, random_fraction=1/3,
                  bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
@@ -223,7 +224,7 @@ class BayesianOptimization(Model):
                 
                 l = self.model['good'].pdf
                 g = self.model['bad'].pdf
-
+                #TODO test max_me
                 minimize_me = lambda x: max(1e-32, g(x))/max(l(x), 1e-32)
 
                 kde_good = self.model['good']
@@ -292,9 +293,8 @@ class BayesianOptimization(Model):
 
     def get_result(self, repeater, io):
         # TODO: need to review a way of features and labels addition here.
-        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
-        # point, that have less energy consumption, that predicted - report this point instead predicted.
-
+        #   In case, if the model predicted the final point, that has less value, than the default, but there is
+        # a point, that has less value, than the predicted point - report this point instead of predicted point.
         self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:

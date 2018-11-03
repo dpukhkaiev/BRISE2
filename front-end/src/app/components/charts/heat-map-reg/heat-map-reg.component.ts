@@ -33,7 +33,6 @@ export class HeatMapRegComponent implements OnInit {
     this.measPoints = []
   }
 
-
   @ViewChild('reg') reg: ElementRef;
 
   globalConfig: object
@@ -65,52 +64,50 @@ export class HeatMapRegComponent implements OnInit {
 
   // Rendering
   regrRender(): void {
-    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
-      let regression = this.reg.nativeElement
-      const data = [
-        {
-          z: this.zParser(this.prediction),
-          x: this.x.map(String),
-          y: this.y.map(String),
-          type: this.theme.type,
-          colorscale: this.theme.color,
-          zsmooth: this.theme.smooth
-        },
-        {
-          type: 'scatter',
-          mode: 'markers',
-          name: 'measured points',
-          marker: { color: 'grey', size: 8, symbol: 'x' },
-          x: this.measPoints.map(arr => arr[1]),
-          y: this.measPoints.map(arr => arr[0]) 
-        },
-        {
-          type: 'scatter',
-          mode: 'markers',
-          name: 'solution',
-          marker: { color: 'Gold', size: 16, symbol: 'star' },
-          x: this.solution && [this.solution.configuration[1]],
-          y: this.solution && [this.solution.configuration[0]]
-        }
-      ];
+    let regression = this.reg.nativeElement
+    const data = [
+      {
+        z: this.zParser(this.prediction),
+        x: this.x,
+        y: this.y,
+        type: this.theme.type,
+        colorscale: this.theme.color,
+        zsmooth: this.theme.smooth
+      },
+      {
+        type: 'scatter',
+        mode: 'markers',
+        name: 'measured points',
+        marker: { color: 'grey', size: 8, symbol: 'x' },
+        x: this.measPoints.map(arr => arr[1]),
+        y: this.measPoints.map(arr => arr[0]) 
+      },
+      {
+        type: 'scatter',
+        mode: 'markers',
+        name: 'solution',
+        marker: { color: 'Gold', size: 16, symbol: 'star' },
+        x: this.solution && [this.solution.configuration[1]],
+        y: this.solution && [this.solution.configuration[0]]
+      }
+    ];
 
-      var layout = {
-        title: 'Regression',
-        autosize: true,
-        showlegend: false,
-        xaxis: { title: "Threads",
-          type: 'category',
-          autorange: true,
-          range: [Math.min(...this.x), Math.max(...this.x)] 
-        },
-        yaxis: { title: "Frequency",
-          type: 'category',
-          autorange: true,
-          range: [Math.min(...this.y), Math.max(...this.y)]  }
-      };
+    var layout = {
+      title: 'Regression',
+      autosize: true,
+      showlegend: false,
+      xaxis: { title: "Threads",
+        type: 'category',
+        autorange: true,
+        range: [Math.min(...this.x), Math.max(...this.x)] 
+      },
+      yaxis: { title: "Frequency",
+        type: 'category',
+        autorange: true,
+        range: [Math.min(...this.y), Math.max(...this.y)]  }
+    };
 
-      Plotly.react(regression, data, layout);
-    }
+    Plotly.react(regression, data, layout);
   }
   zParser(data: Map<String, Number>): Array<Array<Number>> {
     var z = []
@@ -129,11 +126,11 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEmptyEvent(MainEvent.CONNECT)
       .subscribe(() => {
-        console.log(' reg.main: reg connected');
+        console.log(' regresion: connected');
       });
     this.ioMain.onEmptyEvent(MainEvent.DISCONNECT)
       .subscribe(() => {
-        console.log(' reg.main: reg disconnected');
+        console.log(' regresion disconnected');
       });
     // ---- Main events
 
@@ -148,6 +145,7 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.MAIN_CONF)
       .subscribe((obj: any) => {
+        // console.log(' Regresion: **MAIN_CONF', obj);
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
         this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency

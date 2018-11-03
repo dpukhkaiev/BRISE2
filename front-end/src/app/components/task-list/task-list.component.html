@@ -1,5 +1,5 @@
 <!-- <div class="box"  *ngIf="isModelType('regression')"> -->
-<div class="box">
+<div class="box" *ngIf="isModelType('regression')">
 
   <!-- <mat-card class="focus" *ngIf=focus>
     <!- FOCUS task. select from lists ->
@@ -116,7 +116,7 @@
                 <!-- <p>{{task.run?.method}}</p> -->
               </td>
             </ng-container>
-        
+              
             <!-- File Column -->
             <ng-container matColumnDef="file">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
@@ -140,7 +140,7 @@
             <!-- Time Column -->
             <ng-container matColumnDef="time">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                Time (m:ss:SS)
+                Time (m:ss`SS)
               </th>
               <td mat-cell *matCellDef="let task">
                 {{ (task.meta?.result?.time > 0) ? (task.meta?.result?.time | date: 'mm:ss`SS') : ""}}
@@ -208,4 +208,3 @@
     </mat-card>  <!-- end results -->
 
 </div>
-

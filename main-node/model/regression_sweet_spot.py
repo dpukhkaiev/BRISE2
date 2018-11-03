@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from functools import reduce
 
 from model.model_abs import Model
-from tools.features_tools import split_features_and_labels
+
 
 
 class RegressionSweetSpot(Model):
@@ -196,9 +196,8 @@ class RegressionSweetSpot(Model):
         self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
     def get_result(self, repeater, io):
-
-        #   In case, if regression predicted final point, that have less energy consumption, that default, but there is
-        # point, that have less energy consumption, that predicted - report this point instead predicted.
+        #   In case, if the model predicted the final point, that has less value, than the default, but there is
+        # a point, that has less value, than the predicted point - report this point instead of predicted point.
 
         self.logger.info("\n\nFinal report:")
 
@@ -211,7 +210,6 @@ class RegressionSweetSpot(Model):
             if io:
                 io.emit('info',
                         {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-                io.sleep(0)
 
         elif min(self.all_labels) < self.solution_labels:
             temp_message = ("Configuration(%s) quality(%s), "
@@ -222,7 +220,6 @@ class RegressionSweetSpot(Model):
             if io:
                 io.emit('info',
                         {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-                io.sleep(0)
                 
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)

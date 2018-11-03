@@ -7,37 +7,27 @@ from repeater.repeater_abs import Repeater
 
 
 class DefaultRepeater(Repeater):
+
+    def __init__(self, *args, **kwargs):
+
+        # Initiating parent class and transferring WSClient in *args and other params in **kwargs
+        super().__init__(*args, **kwargs)
     
-    def decision_function(self, history, point, **configuration):
+    def decision_function(self, point, **configuration):
         """
         Return False while number of measurements less than max_repeats_of_experiment (inherited from abstract class).
-        In other case - compute result as average between all experiments.
-        :param history: history class object that stores all experiments results
-        :param point: concrete experiment configuration that is evaluating
-                      shape - tuple, e.g. ``(1200, 32)``
+        In other case - compute result as average between all experiments for one specific configuration.
+        :param point: a configuration under evaluation
+                      shape - list, e.g. ``[1200, 32]``
         :return: result or False
         """
 
         # Getting all results from history;
-        # all experiments is a list of lists of numbers: [exp1, exp2...], where exp1 = [123.1, 123.4, ...]
-        all_experiments = history.get(point)
-        if len(all_experiments) < self.max_repeats_of_experiment:
+        # point_results is a list of lists of numbers: [exp1, exp2...], where exp1 = [123.1, 123.4, ...]
+        point_results = self.history.get(point)
+        if len(point_results) < self.max_repeats_of_experiment:
             return False
         else:
-            # Summing all results
-            result = [0 for x in range(len(all_experiments[0]))]
-            for experiment in all_experiments:
-                for index, value in enumerate(experiment):
-                    if type(value) not in [int, float]:
-                        result[index] = value
-                    else:
-                        result[index] += value
-
-            # Calculating average.
-            for index, value in enumerate(result):
-                if type(value) not in [int, float]:
-                    result[index] = value
-                else:
-                    result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(all_experiments), 3))
-
+            # Get the average result
+            result = self.calculate_config_average(point_results)
             return result
