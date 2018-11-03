@@ -20,4 +20,4 @@ def get_model(model_config, log_file_name, task_config=None):
         return BayesianOptimization(task_config)
     else:
         logger.error("Configuration error - model type not supported: %s" % model_config["ModelType"])
-        raise KeyError
+        raise KeyError("Configuration error - model type not supported: %s" % model_config["ModelType"])

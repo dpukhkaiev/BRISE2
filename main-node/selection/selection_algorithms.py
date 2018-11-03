@@ -22,4 +22,5 @@ def get_selector(selection_algorithm_config, search_space):
     else:
         logger.error("Configuration error - invalid selection algorithm provided: %s." %
                      selection_algorithm_config["SelectionType"])
-        raise KeyError
+        raise KeyError("Configuration error - invalid selection algorithm provided: %s." %
+                     selection_algorithm_config["SelectionType"])
