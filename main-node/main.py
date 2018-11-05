@@ -38,7 +38,7 @@ def run(io=None):
         # APPI_QUEUE.put({"global_config": global_config, "task": task_config})
         temp = {"global_config": global_config, "task": task_config}
         io.emit('main_config', temp)
-        logger.debug("Task configuration and global configuration are sent to the API.")
+        logger.debug("Task configuration and global configuration sent to the API.")
 
     # Creating instance of selector based on selection type and
     # task data for further uniformly distributed data points generation.
