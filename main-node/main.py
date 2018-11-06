@@ -89,7 +89,7 @@ def run(io=None):
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
 
-    stop_condition = get_stop_condition(stop_condition_type=task_config["ExperimentsConfiguration"]["StopCondition"],
+    stop_condition = get_stop_condition(stop_condition_type=task_config["StopCondition"]["StopConditionName"],
                                         minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"])
 
     finish = False
@@ -105,19 +105,24 @@ def run(io=None):
 
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
-                logger.info("Predicted solution features:%s, labels:%s."
-                            % (str(predicted_features), str(predicted_labels)))
+                logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features),
+                                                                            str(predicted_labels)))
 
-                # "repeater.measure_task" works with list of tasks. "predicted_features" is one task, because of that it is transmitted as list
-                solution_candidate = repeater.measure_task([predicted_features], io=io)
                 if io:
                     io.emit('info', {'message': "Verifying solution that model gave.."})
-                model.solution_labels, model.solution_features, finish = \
-                    stop_condition.validate_solution(model_config=task_config["ModelConfiguration"],
-                                                     solution_candidate=solution_candidate,
-                                                     current_best_solution=default_value)
-                features = [predicted_features]
-                labels = [model.solution_labels]
+
+                # "repeater.measure_task" works with list of tasks. "predicted_features" is one task,
+                # because of that it is transmitted as list
+                solution_candidate_labels = repeater.measure_task(task=[predicted_features], io=io)
+                labels, features, finish = stop_condition.validate_solution(
+                                                  early_stop_criteria=task_config["StopCondition"]["EarlyStopCriteria"],
+                                                  solution_candidate_labels=solution_candidate_labels,
+                                                  solution_candidate_features=[predicted_features],
+                                                  current_best_solution=default_value)
+
+                model.solution_labels = labels[0]
+                model.solution_features = features[0]
+
                 selector.disable_point(predicted_features)
 
                 if finish:

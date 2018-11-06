@@ -21,8 +21,7 @@
         "ResultDataTypes"  : ["float"],
         "RepeaterDecisionFunction"  : "student_deviation",
         "MaxRepeatsOfExperiment": 10,
-        "MaxTimeToRunExperiment": 10,
-        "StopCondition": "default"
+        "MaxTimeToRunExperiment": 10
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
@@ -30,5 +29,9 @@
         "ModelType"         : "BO",
         "MinimizationTask"  : true,
         "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
+      },
+      "StopCondition": {
+        "StopConditionName": "default",
+        "EarlyStopCriteria": 3
       }
 }
