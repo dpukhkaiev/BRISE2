@@ -29,9 +29,9 @@ class API(metaclass=Singleton):
 
     # These should be kept updated according to the APIMessageBuilder functionality!
     SUPPORTED_MESSAGES = {
-        "LOG": ["debug", "info", "warning", "error", "critical"],
-        "TASK": ["default", "new", "predictions", "final"],
-        "EXPERIMENT": ["configuration"]
+        "LOG": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        "TASK": ["DEFAULT", "NEW", "PREDICTIONS", "FINAL"],
+        "EXPERIMENT": ["CONFIGURATION"]
     }
 
     def __init__(self, api_object=None):
@@ -64,16 +64,27 @@ class API(metaclass=Singleton):
         """
 
         try:
-            assert message_type == str, "API message type! Got: %s, should be string." % message_type
-            assert message_subtype == str, "API message type! Got: %s, should be string." % message_subtype
-            assert message_type.upper() in API.SUPPORTED_MESSAGES.keys(), "Message type is not supported!"
-            assert message_subtype.upper() in API.SUPPORTED_MESSAGES[message_type], "Message type is not supported!"
+            assert type(message_type) == str, \
+                "Wrong API message type object! Got: %s, should be string." % type(message_type)
+
+            assert type(message_subtype) == str, \
+                "Wrong API message subtype object! Got: %s, should be string." % type(message_subtype)
+
+            assert message_type.upper() in API.SUPPORTED_MESSAGES.keys(), \
+                "Message type is not supported! Got: %s, supported: %s" % \
+                (message_type, str(list(API.SUPPORTED_MESSAGES.keys())))
+
+            assert message_subtype.upper() in API.SUPPORTED_MESSAGES[message_type.upper()], \
+                "Message subtype is not supported! Got %s, supported: %s" % \
+                (message_subtype.upper(), str(API.SUPPORTED_MESSAGES[message_type.upper()]))
+
+            # All is OK, sending the message.
+            self._api_object.emit(message_type.upper(),
+                                  {message_subtype.upper(): APIMessageBuilder.build(message_type.upper(), **key_value_params)}
+                                  )
+
         except AssertionError as err:
             self.logger.error(err)
-
-        self._api_object.emit(message_type.upper(),
-                              {message_subtype.upper(), APIMessageBuilder.build(message_type, **key_value_params)}
-                              )
 
 
 class APIMessageBuilder:
@@ -106,7 +117,7 @@ class APIMessageBuilder:
         return {
             "LOG": APIMessageBuilder._build_log_message,
             "TASK": APIMessageBuilder._build_task_message,
-            "EXPERIMENT": APIMessageBuilder._build_task_message
+            "EXPERIMENT": APIMessageBuilder._build_experiment_message
         }[message_type.upper()](**kwargs)
 
     @staticmethod
