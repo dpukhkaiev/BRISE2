@@ -89,8 +89,8 @@ def run(io=None):
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
 
-    stop_condition = get_stop_condition(stop_condition_type=task_config["StopCondition"]["StopConditionName"],
-                                        minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"])
+    stop_condition = get_stop_condition(minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"],
+                                        stop_condition_config=task_config["StopCondition"])
 
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \
@@ -115,7 +115,6 @@ def run(io=None):
                 # because of that it is transmitted as list
                 solution_candidate_labels = repeater.measure_task(task=[predicted_features], io=io)
                 labels, features, finish = stop_condition.validate_solution(
-                                                  early_stop_criteria=task_config["StopCondition"]["EarlyStopCriteria"],
                                                   solution_candidate_labels=solution_candidate_labels,
                                                   solution_candidate_features=[predicted_features],
                                                   current_best_solution=default_value)

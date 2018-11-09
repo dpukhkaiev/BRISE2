@@ -12,8 +12,7 @@ class StopConditionDefault(StopCondition):
         self.best_solution_labels = 0
         self.best_solution_features = 0
 
-    def validate_solution(self, early_stop_criteria, solution_candidate_labels, solution_candidate_features,
-                          current_best_solution):
+    def validate_solution(self, solution_candidate_labels, solution_candidate_features, current_best_solution):
         """
         Returns prediction_is_final=True if solution_candidate_label is better than current_best_solution and
                 early_stop_criteria < 0, otherwise prediction_is_final=False
@@ -28,9 +27,9 @@ class StopConditionDefault(StopCondition):
 
         if self.best_solution_labels is 0:
             self.best_solution_labels = current_best_solution
-            self.early_stop_criteria = early_stop_criteria
+            self.early_stop_criteria = self.stop_condition_config["EarlyStopCriteria"]
 
-        # If our measured point is worse than previous best value - add this point to data set and rebuild model.
+        # If the measured point is worse than previous best value - add this point to data set and rebuild model.
         # validation is false
         if (self.minimization_task_bool is True and solution_candidate_labels[0][0] > self.best_solution_labels[0][0]) \
                 or (self.minimization_task_bool is False and solution_candidate_labels[0] < self.best_solution_labels[0]):
@@ -38,13 +37,13 @@ class StopConditionDefault(StopCondition):
             self.logger.info("Predicted value is worse than previous value: %s, %s. Early stop criteria = %s" %
                              (solution_candidate_labels, self.best_solution_labels, self.early_stop_criteria))
 
-        # If our measured point is better than previous best value - add this point to data set and rebuild model.
+        # If the measured point is better than previous best value - add this point to data set and rebuild model.
         # validation is false
         elif (self.minimization_task_bool is True and solution_candidate_labels[0][0] < self.best_solution_labels[0][0]) \
                 or (self.minimization_task_bool is False and solution_candidate_labels[0][0] > self.best_solution_labels[0][0]):
             self.best_solution_labels = solution_candidate_labels
             self.best_solution_features = solution_candidate_features
-            self.early_stop_criteria = early_stop_criteria
+            self.early_stop_criteria = self.stop_condition_config["EarlyStopCriteria"]
             self.logger.info("New solution is found! Predicted value is better than previous value: %s, %s. "
                              "Early stop criteria = %s" % (solution_candidate_labels, self.best_solution_labels,
                                                            self.early_stop_criteria))
