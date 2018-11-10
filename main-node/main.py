@@ -89,7 +89,7 @@ def run(io=None):
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
 
-    stop_condition = get_stop_condition(minimization_task_bool=task_config["ModelConfiguration"]["MinimizationTask"],
+    stop_condition = get_stop_condition(is_minimization_experiment=task_config["ModelConfiguration"]["MinimizationExperiment"],
                                         stop_condition_config=task_config["StopCondition"])
 
     finish = False

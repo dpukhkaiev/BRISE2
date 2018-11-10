@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 
 class StopCondition(ABC):
 
-    def __init__(self, minimization_task_bool, stop_condition_config):
-        self.minimization_task_bool = minimization_task_bool
+    def __init__(self, is_minimization_experiment, stop_condition_config):
+        self.is_minimization_experiment = is_minimization_experiment
         self.stop_condition_config = stop_condition_config
 
     @abstractmethod

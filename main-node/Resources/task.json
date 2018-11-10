@@ -27,11 +27,11 @@
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
         "ModelType"         : "BO",
-        "MinimizationTask"  : true,
+        "MinimizationExperiment"  : true,
         "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
       },
       "StopCondition": {
         "StopConditionName": "default",
-        "EarlyStopCriteria": 3
+        "MaxConfigsWithoutImprovement": 3
       }
 }
