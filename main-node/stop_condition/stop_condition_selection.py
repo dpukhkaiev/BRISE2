@@ -5,7 +5,7 @@ def get_stop_condition(is_minimization_experiment, stop_condition_config):
     """
     :param is_minimization_experiment: bool
             Possible values - "True" and "False".
-            "True" for the minimization task. "False" for the maximization task.
+            "True" for the minimization experiment. "False" for the maximization experiment.
     :param stop_condition_config: dict.
             stop_condition_type["StopConditionName"] - String. the name of desired decision function for stop_condition.
             Possible values - "default".
