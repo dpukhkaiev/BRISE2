@@ -29,29 +29,29 @@ class StopConditionDefault(StopCondition):
         if self.best_solution_labels == [[]] or self.best_solution_features == [[]]:
             self.best_solution_labels = current_best_labels
             self.best_solution_features = current_best_features
-            self.configs_without_improvement = self.stop_condition_config["ConfigsWithoutImprovement"]
 
-        # If the measured point is better than previous best value - add this point to data set and rebuild model.
-        # Assign self.configs_without_improvement to its configuration value.
-        if is_better_point(is_minimization_experiment=self.is_minimization_experiment,
-                           solution_candidate_label=solution_candidate_labels[0][0],
-                           best_solution_label=self.best_solution_labels[0][0]):
-            self.configs_without_improvement = self.stop_condition_config["ConfigsWithoutImprovement"]
-            self.logger.info("New solution is found! Predicted value %s is better than previous value %s. "
-                             "Max Configs Without Improvement = %s" % (solution_candidate_labels, self.best_solution_labels,
-                                                                       self.configs_without_improvement))
-            self.best_solution_labels = solution_candidate_labels
-            self.best_solution_features = solution_candidate_features
+        if self.configs_without_improvement < self.stop_condition_config["MaxConfigsWithoutImprovement"]:
+            # If the measured point is better than previous best value - add this point to data set and rebuild model.
+            # Assign self.configs_without_improvement to its configuration value.
+            if is_better_point(is_minimization_experiment=self.is_minimization_experiment,
+                               solution_candidate_label=solution_candidate_labels[0][0],
+                               best_solution_label=self.best_solution_labels[0][0]):
+                self.configs_without_improvement = 0
+                self.logger.info("New solution is found! Predicted value %s is better than previous value %s. "
+                                 "Max Configs Without Improvement = %s" % (solution_candidate_labels, self.best_solution_labels,
+                                                                           self.configs_without_improvement))
+                self.best_solution_labels = solution_candidate_labels
+                self.best_solution_features = solution_candidate_features
 
-        # If the measured point is worse than previous best value - add this point to data set and rebuild model.
-        # Decrease self.configs_without_improvement by 1
+            # If the measured point is worse than previous best value - add this point to data set and rebuild model.
+            # Decrease self.configs_without_improvement by 1
+            else:
+                self.configs_without_improvement += 1
+                self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s"
+                                 % (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
+
         else:
-            self.configs_without_improvement -= 1
-            self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s"
-                             % (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
-
-        # if self.configs_without_improvement is equal to 0 or lower than 0, then validation is True.
-        if self.configs_without_improvement <= 0:
+            # if self.configs_without_improvement is equal to 0 or lower than 0, then validation is True.
             self.logger.info("Solution validation success! Solution features: %s, solution labels: %s."
                              %(self.best_solution_features,self.best_solution_labels))
             prediction_is_final = True
