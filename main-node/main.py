@@ -55,8 +55,8 @@ def run(io=None):
     repeater = get_repeater("default", WS, task_config)
 
     logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
     default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
+    default_result = repeater.measure_task(default_features, io) #change it to switch inside and devide to
     default_value = default_result
     logger.info("Results of measuring default value: %s" % default_value)
 
@@ -117,7 +117,8 @@ def run(io=None):
                 labels, features, finish = stop_condition.validate_solution(
                                                   solution_candidate_labels=solution_candidate_labels,
                                                   solution_candidate_features=[predicted_features],
-                                                  current_best_solution=default_value)
+                                                  current_best_labels=default_value,
+                                                  current_best_features=default_features)
 
                 model.solution_labels = labels[0]
                 model.solution_features = features[0]
