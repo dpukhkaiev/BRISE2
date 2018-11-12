@@ -51,7 +51,7 @@ class StopConditionImprovementBased(StopCondition):
                 self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s" %
                                  (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
 
-        else:
+        if self.configs_without_improvement >= self.stop_condition_config["MaxConfigsWithoutImprovement"]:
             # If best_solution_labels value is better, than default value, validation is True.
             if is_better_point(is_minimization_experiment=self.is_minimization_experiment,
                                solution_candidate_label=self.best_solution_labels[0][0],
