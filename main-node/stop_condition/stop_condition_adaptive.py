@@ -8,14 +8,11 @@ class StopConditionAdaptive(StopCondition):
     def __init__(self, search_space_size, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
-        self.configs_without_improvement = 0
 
         # max_configs_without_improvement is calculated as part of full search space size.
         # The part is determined by configs's value - "SearchSpacePercentageWithoutImprovement".
         self.max_configs_without_improvement = \
             round(self.stop_condition_config["SearchSpacePercentageWithoutImprovement"] / 100 * search_space_size)
-        self.best_solution_labels = [[]]
-        self.best_solution_features = [[]]
 
     def validate_solution(self, solution_candidate_labels, solution_candidate_features, current_best_labels,
                           current_best_features):

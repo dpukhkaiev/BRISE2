@@ -56,7 +56,7 @@ def run(io=None):
 
     logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
-    default_result = repeater.measure_task(default_features, io) #change it to switch inside and devide to
+    default_result = repeater.measure_task(default_features, io)
     default_value = default_result
     logger.info("Results of measuring default value: %s" % default_value)
 

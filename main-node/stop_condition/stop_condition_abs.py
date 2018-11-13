@@ -6,6 +6,9 @@ class StopCondition(ABC):
     def __init__(self, is_minimization_experiment, stop_condition_config):
         self.is_minimization_experiment = is_minimization_experiment
         self.stop_condition_config = stop_condition_config
+        self.configs_without_improvement = 0
+        self.best_solution_labels = [[]]
+        self.best_solution_features = [[]]
 
     @abstractmethod
     def validate_solution(self, solution_candidate_labels, solution_candidate_features, current_best_labels,
