@@ -29,5 +29,10 @@
     "ModelType"         : "BO",
     "isMinimizationExperiment"  : false,
     "FeaturesLabelsStructure"  : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
+  },
+  "StopCondition": {
+    "StopConditionName": "adaptive",
+    "MaxConfigsWithoutImprovement": 3,
+    "SearchSpacePercentageWithoutImprovement": 5
   }
 }

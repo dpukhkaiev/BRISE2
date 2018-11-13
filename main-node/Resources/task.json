@@ -31,7 +31,8 @@
         "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
       },
       "StopCondition": {
-        "StopConditionName": "default",
-        "MaxConfigsWithoutImprovement": 3
+        "StopConditionName": "adaptive",
+        "MaxConfigsWithoutImprovement": 3,
+        "SearchSpacePercentageWithoutImprovement": 10
       }
 }

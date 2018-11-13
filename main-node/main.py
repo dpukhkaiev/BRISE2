@@ -90,7 +90,8 @@ def run(io=None):
     #
 
     stop_condition = get_stop_condition(is_minimization_experiment=task_config["ModelConfiguration"]["isMinimizationExperiment"],
-                                        stop_condition_config=task_config["StopCondition"])
+                                        stop_condition_config=task_config["StopCondition"],
+                                        search_space_size=len(search_space))
 
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \

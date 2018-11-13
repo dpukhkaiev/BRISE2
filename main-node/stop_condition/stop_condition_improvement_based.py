@@ -16,7 +16,7 @@ class StopConditionImprovementBased(StopCondition):
                           current_best_features):
         """
         Returns prediction_is_final=True if best_solution_labels is better than current_best_labels and
-                configs_without_improvement < 0, otherwise prediction_is_final=False
+                configs_without_improvement >= "MaxConfigsWithoutImprovement", otherwise prediction_is_final=False
         :return: labels,
                      shape - list of lists, e.g. ``[[253.132]]``
                  feature,

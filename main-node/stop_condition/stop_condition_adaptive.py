@@ -3,19 +3,24 @@ import logging
 from tools.is_better_point import is_better_point
 
 
-class StopConditionDefault(StopCondition):
+class StopConditionAdaptive(StopCondition):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, search_space_size, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
         self.configs_without_improvement = 0
+
+        # max_configs_without_improvement is calculated as part of full search space size.
+        # The part is determined by configs's value - "SearchSpacePercentageWithoutImprovement".
+        self.max_configs_without_improvement = \
+            round(self.stop_condition_config["SearchSpacePercentageWithoutImprovement"] / 100 * search_space_size)
         self.best_solution_labels = [[]]
         self.best_solution_features = [[]]
 
     def validate_solution(self, solution_candidate_labels, solution_candidate_features, current_best_labels,
                           current_best_features):
         """
-        Returns prediction_is_final=True if configs_without_improvement >= "MaxConfigsWithoutImprovement",
+        Returns prediction_is_final=True if configs_without_improvement >= self.max_configs_without_improvement,
                 otherwise prediction_is_final=False
         :return: labels,
                      shape - list of lists, e.g. ``[[253.132]]``
@@ -50,9 +55,9 @@ class StopConditionDefault(StopCondition):
             self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s"
                              % (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
 
-        if self.configs_without_improvement >= self.stop_condition_config["MaxConfigsWithoutImprovement"]:
-            # if self.configs_without_improvement is higher or equal to
-            # self.stop_condition_config["MaxConfigsWithoutImprovement"], then validation is True.
+        if self.configs_without_improvement >= self.max_configs_without_improvement:
+            # if self.configs_without_improvement is higher or equal to self.max_configs_without_improvement,
+            # then validation is True.
             self.logger.info("Solution validation success! Solution features: %s, solution labels: %s."
                              %(self.best_solution_features,self.best_solution_labels))
             prediction_is_final = True
