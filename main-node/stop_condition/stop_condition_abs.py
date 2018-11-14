@@ -36,10 +36,10 @@ class StopCondition(ABC):
                  prediction_is_final
         """
         self.initial_assignment(current_best_features, current_best_labels)
-        if self.find_solution():
-            self.predict_value(solution_candidate_labels, solution_candidate_features)
-        if not self.find_solution():
-            self.solution_validation(current_best_labels, solution_candidate_labels)
+        if self.continue_comparison():
+            self.compare_configurations(solution_candidate_labels, solution_candidate_features)
+        if not self.continue_comparison():
+            self.prediction_is_final = self.stop_prediction(current_best_labels, solution_candidate_labels)
 
         if self.prediction_is_final is True:
             return self.best_solution_labels, self.best_solution_features, self.prediction_is_final
@@ -52,11 +52,9 @@ class StopCondition(ABC):
             self.best_solution_features = current_best_features
 
     @abstractmethod
-    def find_solution(self):
-        """Primitive operation. You HAVE TO override me, I'm a placeholder."""
-        pass
+    def continue_comparison(self): pass
 
-    def predict_value(self, solution_candidate_labels, solution_candidate_features):
+    def compare_configurations(self, solution_candidate_labels, solution_candidate_features):
         # If the measured point is better than previous best value - add this point to data set and rebuild model.
         # Assign self.configs_without_improvement to its configuration value.
         if is_better_point(is_minimization_experiment=self.is_minimization_experiment,
@@ -74,10 +72,8 @@ class StopCondition(ABC):
         # Decrease self.configs_without_improvement by 1
         else:
             self.configs_without_improvement += 1
-            self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s" %
-                             (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
+            self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s"
+                             % (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
 
     @abstractmethod
-    def solution_validation(self, current_best_labels, solution_candidate_labels):
-        """Primitive operation. You HAVE TO override me, I'm a placeholder."""
-        pass
+    def stop_prediction(self, current_best_labels, solution_candidate_labels): pass
