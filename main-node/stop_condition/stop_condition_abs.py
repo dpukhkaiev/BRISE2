@@ -11,6 +11,7 @@ class StopCondition(ABC):
         self.best_solution_labels = [[]]
         self.best_solution_features = [[]]
         self.prediction_is_final = False
+        self.max_configs_without_improvement = 0
 
     # Template method
     def validate_solution(self, solution_candidate_labels, solution_candidate_features, current_best_labels,
@@ -36,10 +37,10 @@ class StopCondition(ABC):
                  prediction_is_final
         """
         self.initial_assignment(current_best_features, current_best_labels)
-        if self.continue_comparison():
+        if self.configs_without_improvement < self.max_configs_without_improvement:
             self.compare_configurations(solution_candidate_labels, solution_candidate_features)
-        if not self.continue_comparison():
-            self.prediction_is_final = self.stop_prediction(current_best_labels, solution_candidate_labels)
+        if self.configs_without_improvement >= self.max_configs_without_improvement:
+            self.prediction_is_final = self.is_final_prediction(current_best_labels, solution_candidate_labels)
 
         if self.prediction_is_final is True:
             return self.best_solution_labels, self.best_solution_features, self.prediction_is_final
@@ -51,8 +52,8 @@ class StopCondition(ABC):
             self.best_solution_labels = current_best_labels
             self.best_solution_features = current_best_features
 
-    @abstractmethod
-    def continue_comparison(self): pass
+    # @abstractmethod
+    # def continue_comparison(self): pass
 
     def compare_configurations(self, solution_candidate_labels, solution_candidate_features):
         # If the measured point is better than previous best value - add this point to data set and rebuild model.
@@ -62,7 +63,7 @@ class StopCondition(ABC):
                            best_solution_label=self.best_solution_labels[0][0]):
             self.configs_without_improvement = 0
             self.logger.info("New solution is found! Predicted value %s is better than previous value %s. "
-                             "Max Configs Without Improvement = %s" % (solution_candidate_labels,
+                             "Configs Without Improvement = %s" % (solution_candidate_labels,
                                                                        self.best_solution_labels,
                                                                        self.configs_without_improvement))
             self.best_solution_labels = solution_candidate_labels
@@ -72,8 +73,8 @@ class StopCondition(ABC):
         # Decrease self.configs_without_improvement by 1
         else:
             self.configs_without_improvement += 1
-            self.logger.info("Predicted value %s is worse than previous value %s. Max Configs Without Improvement = %s"
+            self.logger.info("Predicted value %s is worse than previous value %s. Configs Without Improvement = %s"
                              % (solution_candidate_labels, self.best_solution_labels, self.configs_without_improvement))
 
     @abstractmethod
-    def stop_prediction(self, current_best_labels, solution_candidate_labels): pass
+    def is_final_prediction(self, current_best_labels, solution_candidate_labels): pass
