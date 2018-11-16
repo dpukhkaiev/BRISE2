@@ -27,7 +27,12 @@
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
         "ModelType"         : "BO",
-        "MinimizationTask"  : true,
+        "isMinimizationExperiment"  : true,
         "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
+      },
+      "StopCondition": {
+        "adaptive": {
+          "SearchSpacePercentageWithoutImprovement": 10
+        }
       }
 }

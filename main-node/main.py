@@ -16,6 +16,7 @@ from tools.initial_config import initialize_config
 from tools.write_results import write_results
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
+from stop_condition.stop_condition_selection import get_stop_condition
 
 
 def run(io=None):
@@ -54,8 +55,8 @@ def run(io=None):
     repeater = get_repeater("default", WS, task_config)
 
     logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
-    default_result = repeater.measure_task([task_config["DomainDescription"]["DefaultConfiguration"]], io) #change it to switch inside and devide to
     default_features = [task_config["DomainDescription"]["DefaultConfiguration"]]
+    default_result = repeater.measure_task(default_features, io)
     default_value = default_result
     logger.info("Results of measuring default value: %s" % default_value)
 
@@ -87,6 +88,11 @@ def run(io=None):
     # 4. If solution is OK - reporting and terminating. If not - add it to all data set and go to 1.
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
+
+    stop_condition = get_stop_condition(is_minimization_experiment=task_config["ModelConfiguration"]["isMinimizationExperiment"],
+                                        stop_condition_config=task_config["StopCondition"],
+                                        search_space_size=len(search_space))
+
     finish = False
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \
                         "%s configuration points of %s was evaluated. %s retrieved from the selection algorithm.\n" \
@@ -100,18 +106,29 @@ def run(io=None):
 
             if model_validated:
                 predicted_labels, predicted_features = model.predict_solution(io=io, search_space=search_space)
-                logger.info("Predicted solution features:%s, labels:%s."
-                            % (str(predicted_features), str(predicted_labels)))
-                validated_labels, finish = model.validate_solution(io=io, task_config=task_config["ModelConfiguration"],
-                                                                   repeater=repeater,
-                                                                   default_value=default_value,
-                                                                   predicted_features=predicted_features)
+                logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features),
+                                                                            str(predicted_labels)))
 
-                features = [predicted_features]
-                labels = [validated_labels]
+                if io:
+                    io.emit('info', {'message': "Verifying solution that model gave.."})
+
+                # "repeater.measure_task" works with list of tasks. "predicted_features" is one task,
+                # because of that it is transmitted as list
+                solution_candidate_labels = repeater.measure_task(task=[predicted_features], io=io)
+                labels, features, finish = stop_condition.validate_solution(
+                                                  solution_candidate_labels=solution_candidate_labels,
+                                                  solution_candidate_features=[predicted_features],
+                                                  current_best_labels=default_value,
+                                                  current_best_features=default_features)
+
+                model.solution_labels = labels[0]
+                model.solution_features = features[0]
+
                 selector.disable_point(predicted_features)
 
                 if finish:
+                    if io:
+                        io.emit('info', {'message': "Solution validation success!"})
                     model.add_data(features, labels)
                     optimal_result, optimal_config = model.get_result(repeater, io=io)
                     write_results(global_config, task_config, time_started, features, labels,

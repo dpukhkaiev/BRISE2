@@ -12,9 +12,6 @@ class Model(ABC):
     def predict_solution(self): pass
 
     @abstractmethod
-    def validate_solution(self): pass
-
-    @abstractmethod
     def get_result(self): pass
     
     @abstractmethod
