@@ -9,13 +9,6 @@ class StopConditionDefault(StopCondition):
         self.logger = logging.getLogger(__name__)
         self.max_configs_without_improvement = self.stop_condition_config["MaxConfigsWithoutImprovement"]
 
-
-    # def continue_comparison(self):
-    #     if self.configs_without_improvement < self.stop_condition_config["MaxConfigsWithoutImprovement"]:
-    #         return True
-    #     else:
-    #         return False
-
     def is_final_prediction(self, current_best_labels, solution_candidate_labels):
         # if self.configs_without_improvement is higher or equal to
         # self.stop_condition_config["MaxConfigsWithoutImprovement"], then validation is True.

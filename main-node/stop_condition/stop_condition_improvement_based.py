@@ -10,12 +10,6 @@ class StopConditionImprovementBased(StopCondition):
         self.logger = logging.getLogger(__name__)
         self.max_configs_without_improvement = self.stop_condition_config["MaxConfigsWithoutImprovement"]
 
-    # def continue_comparison(self):
-    #     if self.configs_without_improvement < self.stop_condition_config["MaxConfigsWithoutImprovement"]:
-    #         return True
-    #     else:
-    #         return False
-
     def is_final_prediction(self, current_best_labels, solution_candidate_labels):
         # If best_solution_labels value is better, than default value, validation is True.
         if is_better_point(is_minimization_experiment=self.is_minimization_experiment,
