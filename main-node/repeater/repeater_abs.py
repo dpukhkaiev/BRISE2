@@ -20,7 +20,7 @@ class Repeater(ABC):
     @abstractmethod
     def decision_function(self, point, iterations=3, **configuration): pass
     
-    def measure_task(self, task, io, **decis_func_config):
+    def measure_task(self, task, **decis_func_config):
         """
 
         :param task: List of lists.
@@ -76,14 +76,12 @@ class Repeater(ABC):
             for point in cur_task:
                 result = self.decision_function(point, **decis_func_config)
                 if result:
-                    self.logger.info("Point %s finished after %s measurements. Result: %s"
+                    temp_msg = ("Point %s finished after %s measurements. Result: %s"
                                      % (str(point), len(self.history.get(point)), str(result)))
-                    if io:
-                        temp = {
-                            'configuration': self.point_to_dictionary(point), 
-                            'result': list(set(result) - set(point)).pop()
-                        } 
-                        io.emit('task result', temp)
+                    self.logger.info(temp_msg)
+                    from tools.front_API import API
+                    API().send('log', 'info', message=temp_msg)
+                    API().send('task', 'new', configurations=[point], results=[result])
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 

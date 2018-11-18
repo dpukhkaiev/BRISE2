@@ -79,8 +79,9 @@ class API(metaclass=Singleton):
                 (message_subtype.upper(), str(API.SUPPORTED_MESSAGES[message_type.upper()]))
 
             # All is OK, sending the message.
-            self._api_object.emit(message_type.upper(),
-                                  {message_subtype.upper(): APIMessageBuilder.build(message_type.upper(), **key_value_params)}
+            # --lowercase
+            self._api_object.emit(message_type.lower(),
+                                  {message_subtype.lower(): APIMessageBuilder.build(message_type.upper(), **key_value_params)}
                                   )
 
         except AssertionError as err:

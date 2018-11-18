@@ -36,7 +36,7 @@ import statsmodels.api as sm
 import scipy.stats as sps
 
 import logging
-
+from tools.front_API import API
 
 from model.model_abs import Model
 
@@ -58,6 +58,8 @@ class BayesianOptimization(Model):
 
         if "logger" not in dir(self):
             self.logger = logging.getLogger(__name__)
+        # Send updates to subscribers
+        self.sub = API() 
 
         if min_points_in_model is None:
             self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
@@ -203,7 +205,7 @@ class BayesianOptimization(Model):
                           %(n_good, n_bad, np.min(train_labels)))
         return True
 
-    def validate_model(self, io, search_space):
+    def validate_model(self, search_space):
         #TODO how validate
         # Check if model was built.
         if not self.model:
@@ -211,7 +213,7 @@ class BayesianOptimization(Model):
         return True
 
 
-    def predict_solution(self, io, search_space):
+    def predict_solution(self, search_space):
 
         sample = None
         info_dict = {}
@@ -291,50 +293,52 @@ class BayesianOptimization(Model):
         return [best], sample
 
 
-    def validate_solution(self, io, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, task_config, repeater, default_value, predicted_features):
         self.logger.info("Verifying solution that model gave..")
-        if io:
-            io.emit('info', {'message': "Verifying solution that model gave.."})
-        solution_candidate = repeater.measure_task([predicted_features], io=io)
+        self.sub.send('log', 'info', message="Verifying solution that model gave..")
+
+        
+        solution_candidate = repeater.measure_task([predicted_features])
         solution_feature = predicted_features
         solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
         #validate false
         if solution_labels >= default_value:
-            self.logger.info("Predicted value larger or equal default: %s > %s" % (solution_labels[0][0], default_value[0][0]))
+            temp_message = "Predicted value larger or equal default: %s > %s" % (solution_labels[0][0], default_value[0][0])
+            self.logger.info(temp_message)
+            self.sub.send('log', 'info', message=temp_message)
             prediction_is_final = False
         else:
             self.logger.info("Solution validation success!")
-            if io:
-                io.emit('info', {'message': "Solution validation success!"})
+            self.sub.send('log', 'info', message="✔ Solution validation success!")
             prediction_is_final = True
         self.solution_labels = solution_labels[0]
         self.solution_features = solution_feature[0]
         return self.solution_labels, prediction_is_final
 
-    def get_result(self, repeater, io):
+    def get_result(self, repeater):
         # TODO: need to review a way of features and labels addition here.
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
         self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:
-            temp_message = "Optimal configuration was not found. Reporting best of the measured."
-            self.logger.info(temp_message)
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
-            if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+
+            self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
+            self.sub.send('log', 'info', message="Optimal configuration was not found. Quality: %s, Configuration: %s" % 
+            (self.solution_labels, self.solution_features))
 
         elif min(self.all_labels) < self.solution_labels:
-            temp_message = ("Configuration(%s) quality(%s), "
+            temp_message = ("Configuration: %s, Quality: %s, "
                   "\nthat model gave worse that one of measured previously, but better than default."
                   "\nReporting best of measured." %
                   (self.solution_features, self.solution_labels))
             self.logger.info(temp_message)
-            if io:
-                io.emit('info', {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+            self.sub.send('log', 'info', message=temp_message)
+
 
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
@@ -346,13 +350,20 @@ class BayesianOptimization(Model):
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        if io:
-            temp = {"best point": {'configuration': self.solution_features,
-                    "result": self.solution_labels,
-                    "measured points": len(self.all_features),
-                    'performed measurements': repeater.performed_measurements}
-                    }
-            io.emit('best point', temp)
+        # if io:
+        #     temp = {"best point": {'configuration': self.solution_features,
+        #             "result": self.solution_labels,
+        #             "measured points": len(self.all_features),
+        #             'performed measurements': repeater.performed_measurements}
+        #             }
+        #     io.emit('best point', temp)
+
+        self.sub.send('task', 'final', 
+        configurations=[self.solution_features], 
+        results=[self.solution_labels],
+        type=['bayesian solution'],
+        measured_points=[self.all_features],
+        performed_measurements=[[repeater.performed_measurements]])
 
         return self.solution_labels, self.solution_features
 

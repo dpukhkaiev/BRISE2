@@ -51,6 +51,10 @@ $(document).ready(function () {
         $("#others").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
         console.log('--task result:', msg);
     });
+    socket.on('predictions', function (msg) {
+        $("#others").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
+        console.log('--task result:', msg);
+    });
 
     socket.on('regression', function (msg) {
         $("#others").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');

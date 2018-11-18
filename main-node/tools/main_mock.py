@@ -90,11 +90,11 @@ def run(io=None):
             time.sleep(sleep_between_messages)
 
         # First model validation.
-        mock_data["Model1"].validate_model(io, mock_data["Search space"])
+        mock_data["Model1"].validate_model(mock_data["Search space"])
         time.sleep(sleep_between_messages)
 
         # First model solution prediction (greater than default).
-        predicted_labels, predicted_features = mock_data["Model1"].predict_solution(io, mock_data["Search space"])
+        predicted_labels, predicted_features = mock_data["Model1"].predict_solution(mock_data["Search space"])
         logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
@@ -114,9 +114,9 @@ def run(io=None):
             time.sleep(sleep_between_messages)
 
         # Second (and final) model creation, validation, solution prediction.
-        mock_data["Final model"].validate_model(io, mock_data["Search space"])
+        mock_data["Final model"].validate_model(mock_data["Search space"])
         time.sleep(sleep_between_messages)
-        predicted_labels, predicted_features = mock_data["Final model"].predict_solution(io, mock_data["Search space"])
+        predicted_labels, predicted_features = mock_data["Final model"].predict_solution(mock_data["Search space"])
         logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Verifying solution that model gave.."})
@@ -131,7 +131,7 @@ def run(io=None):
         # reporting results
         repeater = A() # Just for reporting results. Fake object, in reporting only one field used.
         repeater.performed_measurements = repetitions    # Just for reporting results. These field used in reporting.
-        mock_data["Final model"].get_result(repeater, io)
+        mock_data["Final model"].get_result(repeater)
 
 
 class A:
