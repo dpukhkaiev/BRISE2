@@ -7,12 +7,15 @@ export enum Event {
 export enum MainEvent {
     CONNECT = 'connect',
     DISCONNECT = 'disconnect',
-    BEST = 'best point',
-    DEFAULT_CONF = 'default conf',
-    MAIN_CONF = 'main_config',
-    REGRESION = 'regression',
-    TASK_RESULT = 'task result',
-    INFO = 'info'
+    EXPERIMENT = 'experiment',
+    TASK = 'task',
+    LOG = 'log'
+}
+
+export const SubEvent = {
+    EXPERIMENT: ['configuration'],
+    TASK: ['default', 'new', 'predictions', 'final'],
+    LOG: ['info', 'debug', 'critical']
 }
 
 export const Color = ['Portland', 'Greens', 'Greys', 'YIGnBu',

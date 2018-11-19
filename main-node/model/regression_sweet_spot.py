@@ -248,8 +248,8 @@ class RegressionSweetSpot(Model):
             self.solution_features = self.all_features[index_of_the_best_labels]
 
             temp_message = ("Configuration: %s Quality: %s, "
-                "\nthat model gave worse that one of measured previously, but better than default."
-                "\nReporting best of measured." %
+                "Solution that model gave worse that one of measured previously, but better than default."
+                "Reporting best of measured." %
                 (self.solution_features, self.solution_labels))
             self.logger.info(temp_message)
             self.sub.send('log', 'info', message=temp_message)
@@ -264,7 +264,7 @@ class RegressionSweetSpot(Model):
         value = round(self.solution_labels[0], 2)
         self.sub.send('task', 'final', 
         configurations=[configuration], 
-        results=[value], 
+        results=[[value]], 
         type=['regresion solution'],
         measured_points=[self.all_features],
         performed_measurements=[repeater.performed_measurements])

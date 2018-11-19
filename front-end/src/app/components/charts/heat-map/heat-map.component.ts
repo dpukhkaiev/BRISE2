@@ -5,7 +5,7 @@ import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
 import { Event } from '../../../data/client-enums';
-import { MainEvent } from '../../../data/client-enums';
+import { MainEvent, SubEvent } from '../../../data/client-enums';
 import { TaskConfig } from '../../../data/taskConfig.model';
 
 // Plot
@@ -127,8 +127,8 @@ export class HeatMapComponent implements OnInit {
           hoverinfo: 'none',
           showlegend: false,
           marker: { color: 'Gold', size: 16, symbol: 'star' },
-          x: this.solution && [this.solution.configuration[1]],
-          y: this.solution && [this.solution.configuration[0]]
+          x: this.solution && [this.solution.configurations[1]],
+          y: this.solution && [this.solution.configurations[0]]
         }
       ];
 
@@ -186,12 +186,12 @@ export class HeatMapComponent implements OnInit {
       });
 
     // ----                     Main events
-    this.ioMain.onEvent(MainEvent.INFO)
+    this.ioMain.onEvent(MainEvent.LOG)
       .subscribe((obj: any) => {
-        console.log(' Socket: INFO', obj);
+        console.log(' Socket: LOG', obj);
       });
 
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
         this.globalConfig = obj['global_config']
         this.taskConfig = obj['task']
@@ -200,28 +200,57 @@ export class HeatMapComponent implements OnInit {
         this.resetRes() // Clear the old data and results
         console.log(' Socket: MAIN_CONF', obj);
       });
-    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
+    this.ioMain.onEvent(MainEvent.TASK)
       .subscribe((obj: any) => {
-        console.log(' Socket: DEFAULT_task', obj);
-        this.defaultTask = obj
-        this.result.set(String(obj['configuration']), obj['result'])
-        this.measPoints.push(obj['configuration'])
-        this.render()
+        let type = Object.getOwnPropertyNames(obj)[0] // messaage type
+
+        switch (type) {
+          case "new": // New task results
+            obj["new"]!! && obj["new"].forEach( task => {
+              if (task) {
+                this.result.set(String(task['configurations']), task['results'])
+                this.measPoints.push(task['configurations'])
+              } else {
+                console.log("Empty task")
+              }
+            })
+            console.log('New:', obj["new"])
+            this.render()
+            break;
+
+          case "default": // Default configuration
+            obj["default"]!! && obj["default"].forEach( task => {
+              if (task) {
+                this.defaultTask = task // In case if only one point default
+                this.result.set(String(task['configurations']), task['results'])
+                this.measPoints.push(task['configurations'])
+              } else {
+                console.log("Empty default")
+              }
+            })
+            console.log('Default:', obj["default"])
+            this.render()
+            break;
+
+          case "final": // Default configuration
+            obj["final"]!! && obj["final"].forEach( task => {
+              if (task) {
+                this.solution = task // In case if only one point solution
+                this.isRuning = false
+              } else {
+                console.log("Empty solution")
+              }
+            })
+            console.log('Final:', obj["final"])
+            this.render()
+            break;
+        
+          default:
+            break;
+        }
+
       });
-    this.ioMain.onEvent(MainEvent.TASK_RESULT)
-      .subscribe((obj: any) => {
-        this.result.set(String(obj['configuration']), obj['result'])
-        this.measPoints.push(obj['configuration'])
-        console.log('TaskRes:', obj)
-        this.render()
-      });
-    this.ioMain.onEvent(MainEvent.BEST)
-      .subscribe((obj: any) => {
-        console.log(' Socket: BEST', obj);
-        this.solution = obj['best point']
-        this.render()
-        this.isRuning = false
-      });
+
   }
 
 }
