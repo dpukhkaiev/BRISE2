@@ -44,14 +44,14 @@ from model.model_abs import Model
 class BayesianOptimization(Model):
 # TODO: need to implement Maximization/minimization model.
 
-    def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=30, num_samples=96, random_fraction=1/3,
-                 bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
+    def __init__(self, experiment_description, min_points_in_model=None, top_n_percent=30, num_samples=96,
+                 random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
 
         self.model = None
         self.top_n_percent = top_n_percent
 
         # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
-        self.task_config = whole_task_config
+        self.experiment_description = experiment_description
 
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
@@ -60,16 +60,16 @@ class BayesianOptimization(Model):
             self.logger = logging.getLogger(__name__)
 
         if min_points_in_model is None:
-            self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
-        elif min_points_in_model < len(self.task_config["DomainDescription"]["AllConfigurations"])+1:
+            self.min_points_in_model = len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1
+        elif min_points_in_model < len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1:
             self.logger.warning('Invalid min_points_in_model value. Setting it to %i' % (
-                len(self.task_config["DomainDescription"]["AllConfigurations"])+1))
-            self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
+                len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1))
+            self.min_points_in_model = len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1
 
         self.num_samples = num_samples
         self.random_fraction = random_fraction
 
-        hps = self.task_config["DomainDescription"]["AllConfigurations"]
+        hps = self.experiment_description["DomainDescription"]["AllConfigurations"]
 
         self.kde_vartypes = ""
         self.vartypes = []
@@ -109,7 +109,7 @@ class BayesianOptimization(Model):
         for cur_index in indexes:
             configuration = []
             for hyperparam_index, index in enumerate(cur_index):
-                hyperparam_value = self.task_config["DomainDescription"]["AllConfigurations"][hyperparam_index][index]
+                hyperparam_value = self.experiment_description["DomainDescription"]["AllConfigurations"][hyperparam_index][index]
                 configuration.insert(hyperparam_index, hyperparam_value)
             configurations.append(configuration)
 
@@ -126,7 +126,7 @@ class BayesianOptimization(Model):
         for config in configs:
             cur_indexes = []
             for hyperparam_index, value in enumerate(config):
-                param_index = self.task_config["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
+                param_index = self.experiment_description["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
                 cur_indexes.insert(hyperparam_index, param_index)
             indexes.append(cur_indexes)
 
@@ -278,7 +278,7 @@ class BayesianOptimization(Model):
                 else:
                     self.logger.debug('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
                     sample = []
-                    for index, dimension in enumerate(self.task_config["DomainDescription"]["AllConfigurations"]):
+                    for index, dimension in enumerate(self.experiment_description["DomainDescription"]["AllConfigurations"]):
                         sample.append(dimension[best_vector[index]])
 
             except:
@@ -289,7 +289,6 @@ class BayesianOptimization(Model):
 
         self.logger.debug('done sampling a new configuration.')
         return [best], sample
-
 
     def get_result(self, repeater, io):
         # TODO: need to review a way of features and labels addition here.
@@ -398,3 +397,4 @@ class BayesianOptimization(Model):
                 nan_indices = np.argwhere(np.isnan(datum)).flatten()
             return_array[i,:] = datum
         return(return_array)
+

@@ -5,7 +5,7 @@ from repeater.default_repeater import DefaultRepeater
 from repeater.student_repeater import StudentRepeater
 
 
-def get_repeater(repeater_type, WS, whole_task_config):
+def get_repeater(repeater_type, WS, experiment_description):
     """
 
     :param repeater_type: String.
@@ -16,15 +16,15 @@ def get_repeater(repeater_type, WS, whole_task_config):
                 the quality of each configuration (better configuration - better quality) and deviation of each
                 experiment are taken into account.
     :param WS: WorkerService client object.
-    :param whole_task_config: Dict.
+    :param experiment_description: Dict.
             Dictionary object representing task configuration file.
     :return: Repeater object.
     """
     logger = logging.getLogger(__name__)
     if repeater_type == "default":
-        return DefaultRepeater(WS, whole_task_config)
+        return DefaultRepeater(WS, experiment_description)
     elif repeater_type == "student_deviation":
-        return StudentRepeater(WS, whole_task_config)
+        return StudentRepeater(WS, experiment_description)
     else:
         logger.error("Invalid repeater type provided!")
         raise KeyError("Invalid repeater type provided!")

@@ -10,22 +10,14 @@ from itertools import product
 
 
 class SobolSequence(SelectionAlgorithm):
-    def __init__(self, selection_algorithm_config, search_space):
+    def __init__(self, experiment):
         """
         Creates SobolSequence instance that stores information about number of generated points
-        :param selection_algorithm_config: Dict with configuration of selection algorithm.
-        :param search_space: list of dimensions that describes a
-                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
-                                 if there is such search space in "taskData.json" :
-                                     {
-                                         "threads": [1, 2, 4, 8, 16, 32],
-                                         "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
-                                     }
-
+        :param experiment: the instance of Experiment class
         """
 
-        self.dimensionality = len(search_space)
-        self.search_space = search_space
+        self.search_space = experiment.description["DomainDescription"]["AllConfigurations"]
+        self.dimensionality = len(self.search_space)
         self.numOfGeneratedPoints = 0  # Counter of retrieved points from Sobol sequence.
         self.returned_points = []  # Storing previously returned points.
         self.hypercube_coordinates = []
@@ -33,7 +25,7 @@ class SobolSequence(SelectionAlgorithm):
 
         # Need to use floating numbers of indexes for searching distances between target point
         # and other points in hypercube
-        for dimension in search_space:
+        for dimension in self.search_space:
             dim_indexes = [float(x) for x in range(len(dimension))]
             self.hypercube_coordinates.append(dim_indexes)
 

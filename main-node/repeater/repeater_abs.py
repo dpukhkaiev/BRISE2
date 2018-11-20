@@ -5,15 +5,15 @@ from repeater.history import History
 
 
 class Repeater(ABC):
-    def __init__(self, WorkerServiceClient, whole_task_config):
+    def __init__(self, WorkerServiceClient, experiment_description):
 
         self.WSClient = WorkerServiceClient
         self.history = History()
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.feature_names = whole_task_config["DomainDescription"]["FeatureNames"]
-        self.max_repeats_of_experiment = whole_task_config["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
+        self.feature_names = experiment_description["DomainDescription"]["FeatureNames"]
+        self.max_repeats_of_experiment = experiment_description["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
         self.logger = logging.getLogger(__name__)
 
 
