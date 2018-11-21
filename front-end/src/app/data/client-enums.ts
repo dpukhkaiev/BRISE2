@@ -8,13 +8,19 @@ export enum MainEvent {
     CONNECT = 'connect',
     DISCONNECT = 'disconnect',
     EXPERIMENT = 'experiment',
-    TASK = 'task',
+    DEFAULT= 'default',
+    NEW = 'new',
+    PREDICTIONS = 'predictions',
+    FINAL = 'final',
     LOG = 'log'
 }
 
 export const SubEvent = {
     EXPERIMENT: ['configuration'],
-    TASK: ['default', 'new', 'predictions', 'final'],
+    DEFAUL: ['task'],
+    NEW: ['task'],
+    PREDICTIONS: ['task'],
+    FINAL: ['task'],
     LOG: ['info', 'debug', 'critical']
 }
 

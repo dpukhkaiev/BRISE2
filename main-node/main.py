@@ -71,7 +71,7 @@ def run(io=None):
 
     # TODO An array in the array with one value.
     # Events 'default conf' and 'task result' must be similar
-    sub.send('task', 'default', configurations=default_features, results=default_value[0])
+    sub.send('default', 'task', configurations=default_features, results=default_value[0])
 
     temp_msg = "Measuring initial number experiments, while it is no sense in trying to create model (because there is no data)"
     logger.info(temp_msg)

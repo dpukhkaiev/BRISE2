@@ -30,7 +30,11 @@ class API(metaclass=Singleton):
     # These should be kept updated according to the APIMessageBuilder functionality!
     SUPPORTED_MESSAGES = {
         "LOG": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        "TASK": ["DEFAULT", "NEW", "PREDICTIONS", "FINAL"],
+        # "TASK": ["DEFAULT", "NEW", "PREDICTIONS", "FINAL"],
+        ["DEFAULT"]: ["TASK"],
+        ["NEW"]: ["TASK"],
+        ["PREDICTIONS"]: ["TASK"],
+        ["FINAL"]: ["TASK"],
         "EXPERIMENT": ["CONFIGURATION"]
     }
 

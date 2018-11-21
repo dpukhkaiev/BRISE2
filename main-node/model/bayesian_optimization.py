@@ -358,7 +358,7 @@ class BayesianOptimization(Model):
         #             }
         #     io.emit('best point', temp)
 
-        self.sub.send('task', 'final', 
+        self.sub.send('final', 'task', 
         configurations=[self.solution_features], 
         results=[self.solution_labels],
         type=['bayesian solution'],

@@ -142,7 +142,7 @@ class RegressionSweetSpot(Model):
         #                        for (prediction, index) in predictions]
         #     io.emit('regression', {"regression": all_predictions})
 
-        self.sub.send('task', 'predictions', 
+        self.sub.send('predictions', 'task', 
         configurations=[search_space[index] for (prediction, index) in predictions], 
         results=[[round(prediction[0], 2)] for (prediction, index) in predictions])
 
@@ -262,7 +262,7 @@ class RegressionSweetSpot(Model):
 
         configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
         value = round(self.solution_labels[0], 2)
-        self.sub.send('task', 'final', 
+        self.sub.send('final', 'task', 
         configurations=[configuration], 
         results=[[value]], 
         type=['regresion solution'],

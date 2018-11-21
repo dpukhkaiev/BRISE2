@@ -4,7 +4,7 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
-import { Event } from '../../../data/client-enums';
+import { Event as SocketEvent } from '../../../data/client-enums';
 import { MainEvent, SubEvent } from '../../../data/client-enums';
 import { TaskConfig } from '../../../data/taskConfig.model';
 
@@ -161,12 +161,12 @@ export class HeatMapComponent implements OnInit {
   // --------------------------   Worker-service
   private initWsEvents(): void {
     this.ioWs.initSocket();
-    this.ioWs.onEvent(Event.CONNECT)
+    this.ioWs.onEvent(SocketEvent.CONNECT)
       .subscribe(() => {
         console.log(' heat-map: connected');
         this.ioWs.reqForAllRes();
       });
-    this.ioWs.onEvent(Event.DISCONNECT)
+    this.ioWs.onEvent(SocketEvent.DISCONNECT)
       .subscribe(() => {
         console.log(' heat-map: disconnected');
     });
@@ -185,11 +185,7 @@ export class HeatMapComponent implements OnInit {
         console.log(' heat-map: disconnected');
       });
 
-    // ----                     Main events
-    this.ioMain.onEvent(MainEvent.LOG)
-      .subscribe((obj: any) => {
-        console.log(' Socket: LOG', obj);
-      });
+    //                            Main events
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
@@ -200,55 +196,46 @@ export class HeatMapComponent implements OnInit {
         this.resetRes() // Clear the old data and results
         console.log(' Socket: MAIN_CONF', obj);
       });
-    this.ioMain.onEvent(MainEvent.TASK)
+
+    this.ioMain.onEvent(MainEvent.NEW) // New task results
       .subscribe((obj: any) => {
-        let type = Object.getOwnPropertyNames(obj)[0] // messaage type
-
-        switch (type) {
-          case "new": // New task results
-            obj["new"]!! && obj["new"].forEach( task => {
-              if (task) {
-                this.result.set(String(task['configurations']), task['results'])
-                this.measPoints.push(task['configurations'])
-              } else {
-                console.log("Empty task")
-              }
-            })
-            console.log('New:', obj["new"])
-            this.render()
-            break;
-
-          case "default": // Default configuration
-            obj["default"]!! && obj["default"].forEach( task => {
-              if (task) {
-                this.defaultTask = task // In case if only one point default
-                this.result.set(String(task['configurations']), task['results'])
-                this.measPoints.push(task['configurations'])
-              } else {
-                console.log("Empty default")
-              }
-            })
-            console.log('Default:', obj["default"])
-            this.render()
-            break;
-
-          case "final": // Default configuration
-            obj["final"]!! && obj["final"].forEach( task => {
-              if (task) {
-                this.solution = task // In case if only one point solution
-                this.isRuning = false
-              } else {
-                console.log("Empty solution")
-              }
-            })
-            console.log('Final:', obj["final"])
-            this.render()
-            break;
-        
-          default:
-            break;
-        }
-
+        obj["task"]!! && obj["task"].forEach(task => {
+          if (task) {
+            this.result.set(String(task['configurations']), task['results'])
+            this.measPoints.push(task['configurations'])
+          } else {
+            console.log("Empty task")
+          }
+        })
+        console.log('New:', obj["new"])
+        this.render()
+      });
+    this.ioMain.onEvent(MainEvent.FINAL) // Results
+      .subscribe((obj: any) => {
+        obj["task"]!! && obj["task"].forEach(task => {
+          if (task) {
+            this.solution = task // In case if only one point solution
+            this.isRuning = false
+          } else {
+            console.log("Empty solution")
+          }
+        })
+        console.log('Final:', obj["final"])
+        this.render()
+      });
+    this.ioMain.onEvent(MainEvent.DEFAULT) // Default configuration
+      .subscribe((obj: any) => {
+        obj["default"]!! && obj["default"].forEach(task => {
+          if (task) {
+            this.defaultTask = task // In case if only one point default
+            this.result.set(String(task['configurations']), task['results'])
+            this.measPoints.push(task['configurations'])
+          } else {
+            console.log("Empty default")
+          }
+        })
+        console.log('Default:', obj["default"])
+        this.render()
       });
 
   }
