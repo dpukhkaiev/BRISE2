@@ -5,7 +5,7 @@ from repeater.default_repeater import DefaultRepeater
 from repeater.student_repeater import StudentRepeater
 
 
-def get_repeater(repeater_type, WS, experiment_description):
+def get_repeater(repeater_type, WS, experiment):
     """
 
     :param repeater_type: String.
@@ -22,12 +22,13 @@ def get_repeater(repeater_type, WS, experiment_description):
     """
     logger = logging.getLogger(__name__)
     if repeater_type == "default":
-        return DefaultRepeater(WS, experiment_description)
+        return DefaultRepeater(WS, experiment)
     elif repeater_type == "student_deviation":
-        return StudentRepeater(WS, experiment_description)
+        return StudentRepeater(WS, experiment)
     else:
         logger.error("Invalid repeater type provided!")
         raise KeyError("Invalid repeater type provided!")
+
 
 def change_decision_function(repeater, repeater_type):
     """

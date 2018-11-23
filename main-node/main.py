@@ -19,7 +19,7 @@ from logger.default_logger import BRISELogConfigurator
 from stop_condition.stop_condition_selection import get_stop_condition
 
 from core_entities.experiment import Experiment
-from core_entities.configuration import Configuration
+
 
 def run(io=None):
     time_started = datetime.datetime.now()
@@ -32,7 +32,7 @@ def run(io=None):
     if not io:
         logger.warning("Running BRISE without provided API object.")
     # argv is a run parameters for main - using for configuration
-    experiment = Experiment
+    experiment = Experiment()
     global_config, experiment.description = initialize_config(argv)
 
     # Generate whole search space for model.
@@ -54,11 +54,11 @@ def run(io=None):
                                                  experiment.description["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]))
 
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
-    repeater = get_repeater("default", WS, experiment.description)
+    repeater = get_repeater("default", WS, experiment)
 
     logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_features = [experiment.description["DomainDescription"]["DefaultConfiguration"]]
-    default_result = repeater.measure_task(default_features, io)
+    default_result = repeater.measure_task(experiment, default_features, io)
     default_value = default_result
     logger.info("Results of measuring default value: %s" % default_value)
 
@@ -72,7 +72,7 @@ def run(io=None):
                 "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(experiment.description["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = change_decision_function(repeater, experiment.description["ExperimentsConfiguration"]["RepeaterDecisionFunction"])
-    results = repeater.measure_task(initial_task, io, default_point=default_result[0])
+    results = repeater.measure_task(experiment, initial_task, io, default_point=default_result[0])
     features = initial_task
     labels = results
     logger.info("Results got. Building model..")
@@ -113,7 +113,7 @@ def run(io=None):
 
                 # "repeater.measure_task" works with list of tasks. "predicted_features" is one task,
                 # because of that it is transmitted as list
-                solution_candidate_labels = repeater.measure_task(task=[predicted_features], io=io)
+                solution_candidate_labels = repeater.measure_task(experiment=experiment, task=[predicted_features], io=io)
                 labels, features, finish = stop_condition.validate_solution(
                                                   solution_candidate_labels=solution_candidate_labels,
                                                   solution_candidate_features=[predicted_features],
@@ -142,7 +142,7 @@ def run(io=None):
         logger.info(cur_stats_message % (len(model.all_features), len(experiment.search_space), str(selector.numOfGeneratedPoints)))
         cur_task = [selector.get_next_point() for x in range(experiment.description["SelectionAlgorithm"]["Step"])]
 
-        results = repeater.measure_task(cur_task, io=io, default_point=default_result[0])
+        results = repeater.measure_task(experiment, cur_task, io=io, default_point=default_result[0])
         features = cur_task
         labels = results
 

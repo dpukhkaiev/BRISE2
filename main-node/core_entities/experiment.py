@@ -2,12 +2,13 @@ import logging
 
 
 class Experiment:
-    all_configurations = []  # list with instances of Configuration class
-    description = {}  # task config
-    search_space = []  # full search space of the experiment, shape - list of lists
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+
+        self.all_configurations = []  # list with instances of Configuration class
+        self.description = {}  # task config
+        self.search_space = []  # full search space of the experiment, shape - list of lists
 
     def put(self, configuration_instance):
         """

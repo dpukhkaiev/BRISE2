@@ -2,42 +2,36 @@ import logging
 
 
 class Configuration:
-    # The shape of configuration - list, e.g.
-    #                              [2900.0, 32]
-    configuration = []
 
-    # The shape of data - dict, e.g.
-    #                     {
-    #                        id_task_1: {
-    #                           "result": result,
-    #                           "worker": worker_name
-    #                        }
-    #                        id_task_1: {
-    #                          "result": result,
-    #                          "worker": worker_name
-    #                        }
-    #                        ...
-    #                     }
-    # The shape of id_task_1 - int
-    # The shape of result - list with one value, e.g.
-    #                       [700.56]
-    # The shape of worker_name - string
-    data = {}
-
-    # The shape of average_result - list with one average value of 'result' fields in 'data', e.g.
-    #                               [806.43]
-    average_result = []
-
-    def __init__(self, configuration, task_id, result, worker):
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.configuration = configuration
-        self.data[task_id] = {
-            "result": result,
-            "worker": worker
-        }
-        self.calculate_average_result()
+        # The shape of configuration - list, e.g.
+        #                              [2900.0, 32]
+        self.configuration = []
 
-    def add_data(self, configuration, task_id, result, worker):
+        # The shape of data - dict, e.g.
+        #                     {
+        #                        id_task_1: {
+        #                           "result": result,
+        #                           "worker": worker_name
+        #                        }
+        #                        id_task_1: {
+        #                          "result": result,
+        #                          "worker": worker_name
+        #                        }
+        #                        ...
+        #                     }
+        # The shape of id_task_1 - int
+        # The shape of result - list with one value, e.g.
+        #                       [700.56]
+        # The shape of worker_name - string
+        self.data = {}
+
+        # The shape of average_result - list with one average value of 'result' fields in 'data', e.g.
+        #                               [806.43]
+        self.average_result = []
+
+    def put(self, configuration, task_id, result, worker):
 
         if self.configuration == []:
             self.configuration = configuration
@@ -51,6 +45,12 @@ class Configuration:
         else:
             self.logger.error('New configuration %s does not match with current configuration %s'
                               % (configuration, self.configuration), exc_info=True)
+
+    def get_data(self):
+        return self.data
+
+    def get_average_result(self):
+        return self.average_result
 
     def __lt__(self, compared_configuration):
         """
@@ -73,7 +73,12 @@ class Configuration:
          Calculating average result for configuration
         """
         # create a list
-        self.average_result = [0 for x in range(len(self.data[0]["result"]))]
+        average_result_length = 0
+        for sub_dictionary_key, sub_dictionary in self.data.items():
+            average_result_length = len(sub_dictionary["result"])
+            break
+        self.average_result = [0 for x in range(average_result_length)]
+
         for key, key_dict in self.data.items():
             for index, value in enumerate(key_dict["result"]):
                 # If the result doesn't have digital values, these values should be assigned  to the result variable
@@ -90,3 +95,4 @@ class Configuration:
                 self.average_result[index] = value
             else:
                 self.average_result[index] = round(value / len(self.data), 3)
+

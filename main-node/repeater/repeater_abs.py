@@ -1,28 +1,30 @@
 from abc import ABC, abstractmethod
 import logging
 
-from repeater.history import History
+from core_entities.configuration import Configuration
 
 
 class Repeater(ABC):
-    def __init__(self, WorkerServiceClient, experiment_description):
+    def __init__(self, WorkerServiceClient, experiment):
 
         self.WSClient = WorkerServiceClient
-        self.history = History()
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.feature_names = experiment_description["DomainDescription"]["FeatureNames"]
-        self.max_repeats_of_experiment = experiment_description["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
+        self.feature_names = experiment.description["DomainDescription"]["FeatureNames"]
+        self.max_repeats_of_experiment = experiment.description["ExperimentsConfiguration"]["MaxRepeatsOfExperiment"]
+
         self.logger = logging.getLogger(__name__)
 
+        self.task_id = 0       # should be deleted, receive from WSClient
+        self.worker = "alpha"  # should be deleted, receive from WSClient
 
     @abstractmethod
-    def decision_function(self, point, iterations=3, **configuration): pass
+    def decision_function(self, experiment, point, iterations=3, **configuration): pass
     
-    def measure_task(self, task, io, **decis_func_config):
+    def measure_task(self, experiment, task, io, **decis_func_config):
         """
-
+        :param experiment: the instance of Experiment class
         :param task: List of lists.
                 Represents set of tasks for Worker Service. Each sublist of original task list is a final configuration
             for target system. For example, for energy consumption experiments, system configures with concrete
@@ -46,7 +48,7 @@ class Repeater(ABC):
             # Evaluating decision function for each point in task
             self.current_measurement[str(point)] = {'data': point,
                                                     'Finished': False}
-            result = self.decision_function(point, **decis_func_config)
+            result = self.decision_function(experiment, point, **decis_func_config)
             if result: 
                 self.current_measurement[str(point)]['Finished'] = True
                 self.current_measurement[str(point)]['Results'] = result
@@ -68,16 +70,25 @@ class Repeater(ABC):
             # Send this task to Worker service
             results = self.WSClient.work(cur_task)
 
-            # Writing data to history.
+            # Writing data to experiment.
             for point, result in zip(cur_task, results):
-                self.history.put(point, result)
+
+                configuration_object = experiment.get(configuration=point)
+                if configuration_object:
+                    configuration_object.put(point, str(self.task_id), result, self.worker)
+                else:
+                    configuration_object = Configuration()
+                    configuration_object.put(point, str(self.task_id), result, self.worker)
+                    experiment.put(configuration_instance=configuration_object)
+                self.task_id += 1
 
             # Evaluating decision function for each point in task
             for point in cur_task:
-                result = self.decision_function(point, **decis_func_config)
+                result = self.decision_function(experiment, point, **decis_func_config)
                 if result:
                     self.logger.info("Point %s finished after %s measurements. Result: %s"
-                                     % (str(point), len(self.history.get(point)), str(result)))
+                                     % (str(point), len(experiment.get(point).data),
+                                        str(experiment.get(point).average_result)))
                     if io:
                         temp = {
                             'configuration': self.point_to_dictionary(point), 
