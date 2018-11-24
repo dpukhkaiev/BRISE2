@@ -143,7 +143,6 @@ class RegressionSweetSpot(Model):
         label = list(label)
         return label, search_space[index]
 
-
     def resplit_data(self, test_size):
         """
         Just recreates subsets of features and labels for training and testing from existing features and labels.
@@ -246,7 +245,7 @@ class RegressionSweetSpot(Model):
 
         return self.solution_labels, self.solution_features
 
-    def add_data(self, features, labels):
+    def add_data(self, configurations):
         """
 
         Method adds new features and labels to whole set of features and labels.
@@ -259,6 +258,11 @@ class RegressionSweetSpot(Model):
         # 2. Tests if all lists are nested.
         # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
         # These all(all(...)..) returns true if all data
+        features = []
+        labels = []
+        for config in configurations:
+            features.append(config.configuration)
+            labels.append(config.average_result)
         try:
 
             assert len(features) == len(labels) > 0, \

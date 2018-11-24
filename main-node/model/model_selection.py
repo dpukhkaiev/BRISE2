@@ -14,7 +14,7 @@ def get_model(experiment, log_file_name):
         logger.info("Regression Sweet Spot prediction model selected.")
         return RegressionSweetSpot(log_file_name=log_file_name,
                                    model_config=experiment.description["ModelConfiguration"])
-    if experiment.description["ModelConfiguration"]["ModelType"] == "BO":
+    elif experiment.description["ModelConfiguration"]["ModelType"] == "BO":
         from model.bayesian_optimization import BayesianOptimization
         logger.info("Bayesian Optimization prediction model selected.")
         return BayesianOptimization(experiment.description)

@@ -37,7 +37,7 @@ import scipy.stats as sps
 
 import logging
 
-
+from core_entities.configuration import Configuration
 from model.model_abs import Model
 
 
@@ -94,6 +94,8 @@ class BayesianOptimization(Model):
         # Data holding fields.
         self.all_features = []
         self.all_labels = []
+        self.all_configurations = []
+        self.solution_configuration = []
         self.solution_features = []
         self.solution_labels = []
         self.good_config_rankings = dict()
@@ -209,7 +211,6 @@ class BayesianOptimization(Model):
         if not self.model:
             return False
         return True
-
 
     def predict_solution(self, io, search_space):
 
@@ -334,9 +335,8 @@ class BayesianOptimization(Model):
 
         return self.solution_labels, self.solution_features
 
-    def add_data(self, features, labels): 
+    def add_data(self, configurations):
         """
-        
         Method adds new features and labels to whole set of features and labels.
 
         :param features: List. features in machine learning meaning selected by Sobol
@@ -347,6 +347,11 @@ class BayesianOptimization(Model):
         # 2. Tests if all lists are nested.
         # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
         # These all(all(...)..) returns true if all data
+        features = []
+        labels = []
+        for config in configurations:
+            features.append(config.configuration)
+            labels.append(config.average_result)
         try:
 
             assert len(features) == len(labels) > 0, \

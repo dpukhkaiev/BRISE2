@@ -54,6 +54,7 @@ class Repeater(ABC):
                 self.current_measurement[str(point)]['Results'] = result
 
         # Continue to make measurements while decision function will not terminate it.
+
         while not self.current_measurement_finished:
 
             # Selecting only that tasks that were not finished.
@@ -82,6 +83,7 @@ class Repeater(ABC):
                     experiment.put(configuration_instance=configuration_object)
                 self.task_id += 1
 
+
             # Evaluating decision function for each point in task
             for point in cur_task:
                 result = self.decision_function(experiment, point, **decis_func_config)
@@ -98,10 +100,10 @@ class Repeater(ABC):
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 
-        results = []
+        results_configurations = []
         for point in task:
-            results.append(self.current_measurement[str(point)]['Results'])
-        return results
+            results_configurations.append(experiment.get(configuration=point))
+        return results_configurations
     
     def cast_results(self, results):
         """

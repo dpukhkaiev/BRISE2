@@ -8,8 +8,9 @@ import logging
 from tools.file_system_io import create_folder_if_not_exists
 
 
-def write_results(global_config, experiment_description, time_started, features, labels, performed_measurements, optimal_config,
-                  optimal_result, default_features, default_value):
+def write_results(global_config, experiment_description, time_started, configurations, performed_measurements, optimal_config,
+                  optimal_result, default_configurations):
+                  # default_features, default_value):
 
     logger = logging.getLogger(__name__)
     create_folder_if_not_exists(global_config["results_storage"])
@@ -17,6 +18,11 @@ def write_results(global_config, experiment_description, time_started, features,
 
     file_path = "%sBRISE_Results_for_%s.txt" % (global_config["results_storage"],
                                                 experiment_description["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"])
+    features = []
+    labels = []
+    for config in configurations:
+        features.append(config.configuration)
+        labels.append(config.average_result)
     try:
         with open(file_path, 'a') as results_file:
             results_file.write("####: START results of BRISE run at %s. ####\n" % time_started.strftime("%d.%m.%Y - %H:%M:%S"))
@@ -25,8 +31,8 @@ def write_results(global_config, experiment_description, time_started, features,
             results_file.write("Search space size                   : %s\n" % len(search_space))
             results_file.write("Number of tested configurations     : %s\n" % len(features))
             results_file.write("Number of performed experiments     : %s\n" % performed_measurements)
-            results_file.write("Default configuration               : %s\n" % default_features)
-            results_file.write("Default configuration results       : %s\n" % default_value)
+            results_file.write("Default configuration               : %s\n" % default_configurations[0].configuration)
+            results_file.write("Default configuration results       : %s\n" % default_configurations[0].average_result)
             results_file.write("Time used for balancing             : %s\n" % str(datetime.datetime.now() - time_started))
             results_file.write("BRISE optimal configuration         : %s\n" % optimal_config)
             results_file.write("BRISE optimal configuration results : %s\n" % optimal_result)

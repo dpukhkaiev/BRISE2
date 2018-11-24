@@ -58,23 +58,27 @@ def run(io=None):
 
     logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
     default_features = [experiment.description["DomainDescription"]["DefaultConfiguration"]]
-    default_result = repeater.measure_task(experiment, default_features, io)
-    default_value = default_result
-    logger.info("Results of measuring default value: %s" % default_value)
+    default_configurations = repeater.measure_task(experiment, default_features, io)
+    # default_result = repeater.measure_task(experiment, default_features, io)
+    # default_value = default_result
+    logger.info("Results of measuring default value: %s" % default_configurations[0].average_result)
 
     if io:
         # TODO An array in the array with one value.
         # Events 'default conf' and 'task result' must be similar
-        temp = {'configuration': repeater.point_to_dictionary(default_features[0]), "result": default_value[0]}
-        io.emit('default conf', temp)
+        temp = {
+            "configuration": repeater.point_to_dictionary(default_features[0]),
+            "result": default_configurations[0].average_result
+        }
+        io.emit("default conf", temp)
 
     logger.info("Measuring initial number experiments, while it is no sense in trying to create model"
                 "\n(because there is no data)...")
     initial_task = [selector.get_next_point() for x in range(experiment.description["SelectionAlgorithm"]["NumberOfInitialExperiments"])]
     repeater = change_decision_function(repeater, experiment.description["ExperimentsConfiguration"]["RepeaterDecisionFunction"])
-    results = repeater.measure_task(experiment, initial_task, io, default_point=default_result[0])
-    features = initial_task
-    labels = results
+    results_configurations = repeater.measure_task(experiment, initial_task, io, default_point=default_configurations[0].average_result)
+    # features = initial_task
+    # labels = results
     logger.info("Results got. Building model..")
 
     model = get_model(experiment=experiment,
@@ -96,8 +100,10 @@ def run(io=None):
     cur_stats_message = "\nNew data point needed to continue process of balancing. " \
                         "%s configuration points of %s was evaluated. %s retrieved from the selection algorithm.\n" \
                         + '='*120
+    configurations = experiment.all_configurations
+
     while not finish:
-        model.add_data(features, labels)
+        model.add_data(configurations)
         model_built = model.build_model()
 
         if model_built:
@@ -113,25 +119,24 @@ def run(io=None):
 
                 # "repeater.measure_task" works with list of tasks. "predicted_features" is one task,
                 # because of that it is transmitted as list
-                solution_candidate_labels = repeater.measure_task(experiment=experiment, task=[predicted_features], io=io)
-                labels, features, finish = stop_condition.validate_solution(
-                                                  solution_candidate_labels=solution_candidate_labels,
-                                                  solution_candidate_features=[predicted_features],
-                                                  current_best_labels=default_value,
-                                                  current_best_features=default_features)
+                solution_candidate_configurations = repeater.measure_task(experiment=experiment, task=[predicted_features], io=io)
+                configurations, finish = stop_condition.validate_solution(
+                                                   solution_candidate_configurations=solution_candidate_configurations,
+                                                   current_best_configurations=default_configurations)
 
-                model.solution_labels = labels[0]
-                model.solution_features = features[0]
+                model.solution_configuration = configurations
+                model.solution_labels = configurations[0].average_result
+                model.solution_features = configurations[0].configuration
 
                 selector.disable_point(predicted_features)
 
                 if finish:
                     if io:
                         io.emit('info', {'message': "Solution validation success!"})
-                    model.add_data(features, labels)
+                    model.add_data(configurations)
                     optimal_result, optimal_config = model.get_result(repeater, io=io)
-                    write_results(global_config, experiment.description, time_started, features, labels,
-                                  repeater.performed_measurements, optimal_config, optimal_result, default_features, default_value)
+                    write_results(global_config, experiment.description, time_started, configurations,
+                                  repeater.performed_measurements, optimal_config, optimal_result, default_configurations)
                     return optimal_result, optimal_config
 
                 else:
@@ -142,7 +147,7 @@ def run(io=None):
         logger.info(cur_stats_message % (len(model.all_features), len(experiment.search_space), str(selector.numOfGeneratedPoints)))
         cur_task = [selector.get_next_point() for x in range(experiment.description["SelectionAlgorithm"]["Step"])]
 
-        results = repeater.measure_task(experiment, cur_task, io=io, default_point=default_result[0])
+        results = repeater.measure_task(experiment, cur_task, io=io, default_point=default_configurations[0].average_result)
         features = cur_task
         labels = results
 
@@ -151,9 +156,8 @@ def run(io=None):
             logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(features, labels)
             optimal_result, optimal_config = model.get_result(repeater, io=io)
-            write_results(global_config, experiment.description, time_started, features, labels,
-                          repeater.performed_measurements, optimal_config, optimal_result, default_features,
-                          default_value)
+            write_results(global_config, experiment.description, time_started, configurations,
+                          repeater.performed_measurements, optimal_config, optimal_result, default_configurations)
             return optimal_result, optimal_config
 
 
