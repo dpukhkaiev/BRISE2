@@ -79,9 +79,9 @@ export class TaskListBoComponent implements OnInit {
 
   // --------------------- SOCKET ---------------
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.taskConfig = obj['task']
+        this.taskConfig = obj['configuration']['experiment configuration']
       });
   }
   private initIoConnection(): void {

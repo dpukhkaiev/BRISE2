@@ -62,7 +62,7 @@ def run(io=None):
         temp = {"global_config": mock_data["Global config"], "task": mock_data["Task config"]}
         io.emit('main_config', temp)
         time.sleep(sleep_between_messages)
-        logger.info("Measuring default configuration that we will used in regression to evaluate solution... ")
+        logger.info("Measuring default configuration that we will used in regression to evaluate solution")
         # Sending default configuration (like from the repeater) 10 times.
         for x in range(10):
             wsc.work(mock_data["Default configuration"][0])

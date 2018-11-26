@@ -15,8 +15,8 @@ import { Smooth as smooth } from '../../../data/client-enums';
 import { Solution } from '../../../data/taskData.model';
 
 interface Configuration {
-  configuration: Array<any>;
-  result: any;
+  configurations: Array<any>;
+  results: any;
 }
 
 @Component({
@@ -31,9 +31,6 @@ export class HeatMapComponent implements OnInit {
 
   // The prediction results from model
   prediction = new Map()
-
-  // Flag for runing main-node
-  isRuning: boolean = false
 
   globalConfig: object 
   taskConfig: TaskConfig
@@ -55,7 +52,6 @@ export class HeatMapComponent implements OnInit {
     this.measPoints = []
     this.defaultTask = undefined
   }
-
 
   // Default theme
   theme = {
@@ -95,7 +91,9 @@ export class HeatMapComponent implements OnInit {
     this.y.forEach(y => { // y - threads
       var row = [] 
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
+        let results = data.get(String([y, x]))
+        row.push(results && results[0]) // change [x,y] or [y,x] if require horizontal or vertical orientation
+                                        // Get the first result from an array or undefined
       });
       z.push(row)
     });
@@ -189,43 +187,41 @@ export class HeatMapComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['global_config']
-        this.taskConfig = obj['task']
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
+        this.globalConfig = obj['configuration']['global configuration']
+        this.taskConfig = obj['configuration']['experiment configuration']
+        this.y = this.taskConfig['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = this.taskConfig['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
-        console.log(' Socket: MAIN_CONF', obj);
       });
 
     this.ioMain.onEvent(MainEvent.NEW) // New task results
       .subscribe((obj: any) => {
-        obj["task"]!! && obj["task"].forEach(task => {
+        obj["task"] && obj["task"].forEach(task => {
           if (task) {
             this.result.set(String(task['configurations']), task['results'])
             this.measPoints.push(task['configurations'])
+            console.log('New:', task)
           } else {
             console.log("Empty task")
           }
         })
-        console.log('New:', obj["new"])
         this.render()
       });
     this.ioMain.onEvent(MainEvent.FINAL) // Results
       .subscribe((obj: any) => {
-        obj["task"]!! && obj["task"].forEach(task => {
+        obj["task"] && obj["task"].forEach(task => {
           if (task) {
             this.solution = task // In case if only one point solution
-            this.isRuning = false
           } else {
             console.log("Empty solution")
           }
         })
-        console.log('Final:', obj["final"])
+        console.log('Final:', obj["task"])
         this.render()
       });
     this.ioMain.onEvent(MainEvent.DEFAULT) // Default configuration
       .subscribe((obj: any) => {
-        obj["default"]!! && obj["default"].forEach(task => {
+        obj["task"] && obj["task"].forEach(task => {
           if (task) {
             this.defaultTask = task // In case if only one point default
             this.result.set(String(task['configurations']), task['results'])
@@ -234,7 +230,7 @@ export class HeatMapComponent implements OnInit {
             console.log("Empty default")
           }
         })
-        console.log('Default:', obj["default"])
+        console.log('Default:', obj["task"])
         this.render()
       });
 

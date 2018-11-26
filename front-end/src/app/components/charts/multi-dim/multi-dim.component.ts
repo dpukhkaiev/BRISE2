@@ -89,7 +89,7 @@ export class MultiDimComponent implements OnInit {
 
   // main-node socket events
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.BEST)
+    this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
         this.solution = obj['best point']
         let tmp: PointExp = {
@@ -108,44 +108,49 @@ export class MultiDimComponent implements OnInit {
         this.render()
       });
 
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['global_config']
-        this.taskConfig = obj['task']
-        this.dimensions = obj['task']['DomainDescription']['AllConfigurations']
+        this.globalConfig = obj['configuration']['global configuration']
+        this.taskConfig = obj['configuration']['experiment configuration']
+        this.dimensions = this.taskConfig['DomainDescription']['AllConfigurations']
         // this.resetRes() // Clear the old data and results
         this.ranges = {
           'laplace_correction': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][0].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][0]
+            'length': this.taskConfig['DomainDescription']['AllConfigurations'][0].length,
+            'parameters_digits': Array.apply(null, { length: this.taskConfig['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
+            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][0]
           },
           'estimation_mode': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][1].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][1]
+            'length': this.taskConfig['DomainDescription']['AllConfigurations'][1].length,
+            'parameters_digits': Array.apply(null, {length: this.taskConfig['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
+            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][1]
           },
           'bandwidth_selection': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][2].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][2]
+            'length': this.taskConfig['DomainDescription']['AllConfigurations'][2].length,
+            'parameters_digits': Array.apply(null, {length: this.taskConfig['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
+            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][2]
           },
           'use_application_grid': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][6].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][6]
+            'length': this.taskConfig['DomainDescription']['AllConfigurations'][6].length,
+            'parameters_digits': Array.apply(null, {length: this.taskConfig['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
+            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][6]
           }
         }
       });
-    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
+    this.ioMain.onEvent(MainEvent.DEFAULT)
       .subscribe((obj: any) => {
-        this.default_task = obj
-        this.result.set(String(obj['configuration']), obj['result'])
+        if (obj['task']) {
+          obj["task"].forEach(task => {
+            this.default_task = obj
+            this.result.set(String(obj['configurations']), obj['results'])
+          })
+        }
       });
 
-    this.ioMain.onEvent(MainEvent.TASK_RESULT)
+    this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
-        this.result.set(String(obj['configuration']), obj['result'])
+        obj = obj['task']
+        this.result.set(String(obj['configurations']), obj['results'])
 
         let tmp: PointExp = {
           'laplace_correction': this.ranges['laplace_correction']['parameters_names'].indexOf(obj['configuration'][0]),

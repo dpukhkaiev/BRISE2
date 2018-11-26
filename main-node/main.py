@@ -29,8 +29,8 @@ def run(io=None):
     else:
         logger = logging.getLogger(__name__)
 
-    logger.info("Starting BRISE...")
-    sub.send('log', 'info', message="Starting BRISE...")
+    logger.info("Starting BRISE")
+    sub.send('log', 'info', message="Starting BRISE")
     if not sub:
         logger.warning("Running BRISE without provided API object.")
     # argv is a run parameters for main - using for configuration
@@ -57,7 +57,7 @@ def run(io=None):
     # Creating runner for experiments that will repeat task running for avoiding fluctuations.
     repeater = get_repeater("default", WS, task_config)
 
-    temp_msg = "Measuring default configuration that we will used in regression to evaluate solution..."
+    temp_msg = "Measuring default configuration that we will used in regression to evaluate solution"
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
 
@@ -71,7 +71,7 @@ def run(io=None):
 
     # TODO An array in the array with one value.
     # Events 'default conf' and 'task result' must be similar
-    sub.send('default', 'task', configurations=default_features, results=default_value[0])
+    sub.send('default', 'task', configurations=default_features, results=[default_value[0]])
 
     temp_msg = "Measuring initial number experiments, while it is no sense in trying to create model (because there is no data)"
     logger.info(temp_msg)

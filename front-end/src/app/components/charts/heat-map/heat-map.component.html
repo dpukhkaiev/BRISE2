@@ -39,8 +39,8 @@
   <mat-card *ngIf=solution class="chart-solution">
     <mat-icon matListIcon>star</mat-icon>
     <span>Solution: </span>
-    <h3>{{solution.configuration}}</h3>
+    <h3>{{solution.configurations}}</h3>
     <span>Deviation from default: </span>
-    <h3>{{(solution.result/defaultTask.result-1)*100 | number:'2.0-0'}}%</h3>
+    <h3>{{(solution.results[0]/(defaultTask.results[0])-1)*100 | number:'2.0-0'}}%</h3>
   </mat-card>
 </mat-card>

@@ -30,11 +30,10 @@ class API(metaclass=Singleton):
     # These should be kept updated according to the APIMessageBuilder functionality!
     SUPPORTED_MESSAGES = {
         "LOG": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        # "TASK": ["DEFAULT", "NEW", "PREDICTIONS", "FINAL"],
-        ["DEFAULT"]: ["TASK"],
-        ["NEW"]: ["TASK"],
-        ["PREDICTIONS"]: ["TASK"],
-        ["FINAL"]: ["TASK"],
+        "DEFAULT": ["TASK"],
+        "NEW": ["TASK"],
+        "PREDICTIONS": ["TASK"],
+        "FINAL": ["TASK"],
         "EXPERIMENT": ["CONFIGURATION"]
     }
 
@@ -99,7 +98,7 @@ class APIMessageBuilder:
 
         Currently supported message *types* are:
             LOG - payload is a string.
-            TASK - payload is a list of dictionaries with mandatory fields "configuration" and "result" and
+            NEW, DEFAULT, PREDICTIONS, FINAL - payload is a list of dictionaries with mandatory fields "configuration" and "result" and
                     additional fields (for the extension).
             EXPERIMENT - payload is a dictionary.
 
@@ -121,7 +120,10 @@ class APIMessageBuilder:
         """
         return {
             "LOG": APIMessageBuilder._build_log_message,
-            "TASK": APIMessageBuilder._build_task_message,
+            "NEW": APIMessageBuilder._build_task_message,
+            "PREDICTIONS": APIMessageBuilder._build_task_message,
+            "DEFAULT": APIMessageBuilder._build_task_message,
+            "FINAL": APIMessageBuilder._build_task_message,
             "EXPERIMENT": APIMessageBuilder._build_experiment_message
         }[message_type.upper()](**kwargs)
 

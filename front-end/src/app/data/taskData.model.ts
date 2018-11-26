@@ -39,9 +39,9 @@ interface Results {
 }
 
 export interface Solution {
-    configurations: any;
-    results: any;
+    configurations: Array<any>;
+    results: Array<any>;
     'measured points': Array<Number>
-    'performed measurements': number
+    'performed_measurements': number
 } 
 

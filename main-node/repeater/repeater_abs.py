@@ -81,7 +81,7 @@ class Repeater(ABC):
                     self.logger.info(temp_msg)
                     from tools.front_API import API
                     API().send('log', 'info', message=temp_msg)
-                    API().send('task', 'new', configurations=[point], results=[result])
+                    API().send('new', 'task', configurations=[point], results=[result])
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
 

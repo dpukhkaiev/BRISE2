@@ -9,8 +9,8 @@ import { MainEvent } from '../../../data/client-enums';
 import { TaskConfig } from '../../../data/taskConfig.model';
 
 interface PointExp {
-  configuration: any;
-  result: any;
+  configurations: Array<any>;
+  results: Array<any>;
   time: any;
   'measured points': number;
 } 
@@ -41,61 +41,69 @@ export class ImpResComponent implements OnInit {
   //                              WebSocket
   // --------------------------   Main-node
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.taskConfig = obj['task']
+        this.taskConfig = obj['configuration']['experiment configuration']
       });
 
-    this.ioMain.onEvent(MainEvent.BEST)
+    this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
-        this.solution = obj['best point']
-        let min = new Date().getMinutes()
-        let sec = new Date().getSeconds()
-        let temp: PointExp = {
-          'configuration': obj['best point']['configuration'],
-          'result': obj['best point']['result'],
-          'time': min + 'm ' + sec + 's',
-          'measured points': obj['best point']['measured points']
-        } 
-        this.allRes.add(temp) 
-        this.bestRes.add(temp) // There is no check if this solution is the best decision 
+        obj["task"] && obj["task"].forEach(task => {
+          this.solution = task
+          let min = new Date().getMinutes()
+          let sec = new Date().getSeconds()
+          let temp: PointExp = {
+            'configurations': task['configurations'],
+            'results': task['results'],
+            'time': min + 'm ' + sec + 's',
+            'measured points': task['measured points']
+          }
+          this.allRes.add(temp)
+          this.bestRes.add(temp) // There is no check if this solution is the best decision 
+        })
         this.render() // Render chart when all points got
       });
-    this.ioMain.onEvent(MainEvent.TASK_RESULT)
-      .subscribe((obj: any) => {
-        let min = new Date().getMinutes()
-        let sec = new Date().getSeconds()
-        this.allRes.add({
-          'configuration': obj['configuration'],
-          'result': obj['result'],
-          'time': min + 'm ' + sec + 's',
-          'measured points': this.allRes.size + 1
-        }) // Add new point(result)
-        this.render() // Render chart
-        let temp: PointExp = {
-          'configuration': obj['configuration'],
-          'result': obj['result'],
-          'time': min + 'm ' + sec + 's',
-          'measured points': this.allRes.size
-        }
 
-        // Check the best available point
-        this.bestRes && this.bestRes.forEach(function(resItem){
-          // TODO: Max or min from task
-          if (temp.result > resItem.result) {
-            temp.result = resItem.result
-            temp.configuration = resItem.configuration
+
+    this.ioMain.onEvent(MainEvent.NEW)
+      .subscribe((obj: any) => {
+        obj["task"] && obj["task"].forEach(task => {
+          let min = new Date().getMinutes()
+          let sec = new Date().getSeconds()
+          this.allRes.add({
+            'configurations': task['configurations'],
+            'results': task['results'],
+            'time': min + 'm ' + sec + 's',
+            'measured points': this.allRes.size + 1
+          }) // Add new point(result)
+          let temp: PointExp = {
+            'configurations': task['configurations'],
+            'results': task['results'],
+            'time': min + 'm ' + sec + 's',
+            'measured points': this.allRes.size
           }
-        })  
-        this.bestRes.add(temp) // Add the best available point(result)
+
+          // Check the best available point
+          this.bestRes && this.bestRes.forEach(function (resItem) {
+            // TODO: Max or min from task
+            if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
+              temp.results = resItem.results
+              temp.configurations = resItem.configurations
+            }
+          })
+          this.bestRes.add(temp) // Add the best available point(result)
+        })
         this.render() // Render chart
         this.bestRes.size>2 && this.render()
       });
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.bestRes.clear()
-        this.allRes.clear()
-        this.solution = undefined
+        if (obj["configuration"]) {
+          this.bestRes.clear()
+          this.allRes.clear()
+          this.solution = undefined
+        }
       });
   }
 
@@ -106,15 +114,15 @@ export class ImpResComponent implements OnInit {
     // X-axis data
     const xBest = Array.from(this.bestRes).map(i => i["measured points"]);
     // Results
-    const yBest = Array.from(this.bestRes).map(i => i["result"]);
+    const yBest = Array.from(this.bestRes).map(i => i["results"][0]);
     
     var allResultSet = { // Data for all results
       x: Array.from(this.allRes).map(i => i["measured points"]),
-      y: Array.from(this.allRes).map(i => i["result"]),
+      y: Array.from(this.allRes).map(i => i["results"][0]),
       type: 'scatter',
       mode: 'lines+markers',
       line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline', dash: 'dot' },
-      text: Array.from(this.allRes).map(i => String(i["configuration"])),
+      text: Array.from(this.allRes).map(i => String(i["configurations"])),
       marker: {
         color: 'rgba(255,64,129,1)',
         size: 8,

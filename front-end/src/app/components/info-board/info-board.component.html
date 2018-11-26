@@ -41,25 +41,27 @@
       <mat-list class="solution">
         <mat-list-item>
           <mat-icon matListIcon>outlined_flag</mat-icon>
-          <span class="desc">Configuration: </span> <span>{{solution.configuration}}</span>
+          <span class="desc">Configuration: </span> <span>{{solution.configurations}}</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>grade</mat-icon>
-          <span class="desc">Result: </span> <span>{{solution.result}}</span>
+          <span class="desc">Result: </span> <span>{{solution.results}}</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>network_check</mat-icon>
-          <span class="desc">Quality gain: </span> <span>{{100*(solution.result - default_task.result)/default_task.result | number:'2.0-2'}}%</span>
+          <span class="desc">Quality gain: </span> <span>{{100*(solution.results[0] - default_task.results[0])/default_task.results[0] | number:'2.0-2'}}%</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>blur_on</mat-icon>
-          <span class="desc">Performed measurements: </span> <span>{{solution['performed measurements']}}</span>
+          <span class="desc">Performed measurements: </span> <span>{{solution['performed_measurements']}}</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>sentiment_satisfied_alt</mat-icon>
           <span class="desc">Saved efforts: </span> <span>
             {{
-              (1 - solution['performed measurements'] / ( taskConfig['DomainDescription']['AllConfigurations'][0].length * taskConfig['DomainDescription']['AllConfigurations'][1].length * taskConfig['DomainDescription']['AllConfigurations'][2].length * taskConfig['DomainDescription']['AllConfigurations'][3].length * taskConfig['DomainDescription']['AllConfigurations'][4].length * taskConfig['DomainDescription']['AllConfigurations'][5].length * taskConfig['DomainDescription']['AllConfigurations'][6].length * taskConfig['DomainDescription']['AllConfigurations'][7].length * taskConfig['ExperimentsConfiguration']['MaxRepeatsOfExperiment'])) * 100 |number:'2.0-2'
+              (1 - solution['performed_measurements'] / ( taskConfig['DomainDescription']['AllConfigurations'][0].length 
+              * taskConfig['DomainDescription']['AllConfigurations'][1].length 
+              * taskConfig['ExperimentsConfiguration']['MaxRepeatsOfExperiment'])) * 100 |number:'2.0-2'
             }}%
         </span>
         </mat-list-item>
