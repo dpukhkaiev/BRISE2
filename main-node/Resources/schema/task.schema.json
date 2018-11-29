@@ -1,0 +1,187 @@
+{
+    "$id": "http://brise.com/task.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "DomainDescription": {
+            "type": "object",
+            "properties": {
+                "FeatureNames": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "DataFile": {
+                    "type": "string"
+                },
+                "AllConfigurations": {
+                    "type": "string"
+                },
+                "DefaultConfiguration": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "FeatureNames",
+                "DataFile",
+                "AllConfigurations",
+                "DefaultConfiguration"
+            ]
+        },
+        "SelectionAlgorithm": {
+            "type": "object",
+            "properties": {
+                "SelectionType": {
+                    "type": "string"
+                },
+                "NumberOfInitialExperiments": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true  
+                },
+                "Step": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true 
+                }
+            },
+            "required": [
+                "SelectionType",
+                "NumberOfInitialExperiments",
+                "Step"
+            ]
+        },
+        "ExperimentsConfiguration": {
+            "type": "object",
+            "properties": {
+                "TaskName": {
+                    "type": "string"
+                },
+                "WorkerConfiguration": {
+                    "type": "object",
+                    "properties": {
+                        "ws_file": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "ws_file"
+                    ]
+                },
+                "TaskParameters": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "ResultStructure": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "ResultDataTypes": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "RepeaterDecisionFunction": {
+                    "type": "string"
+                },
+                "MaxRepeatsOfExperiment": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "MaxTimeToRunExperiment": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            },
+            "required": [
+                "TaskName",
+                "WorkerConfiguration",
+                "TaskParameters",
+                "ResultStructure",
+                "ResultDataTypes",
+                "RepeaterDecisionFunction",
+                "MaxRepeatsOfExperiment",
+                "MaxTimeToRunExperiment"
+            ]
+        },
+        "ModelConfiguration": {
+            "type": "object",
+            "properties": {
+                "ModelTestSize": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "exclusiveMaximum": true
+                },
+                "MinimumAccuracy": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "exclusiveMaximum": true
+                },
+                "ModelType": {
+                    "type": "string",
+                    "pattern": "^regression$|^BO$"
+                },
+                "MinimizationTask": {
+                    "type": "boolean"
+                },
+                "FeaturesLabelsStructure": {
+                    "type": "array",
+                    "items": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "ModelTestSize",
+                "MinimumAccuracy",
+                "ModelType",
+                "MinimizationTask",
+                "FeaturesLabelsStructure"
+            ]
+        }
+    },
+    "required": [
+        "DomainDescription",
+        "SelectionAlgorithm",
+        "ExperimentsConfiguration",
+        "ModelConfiguration"
+    ]
+}
