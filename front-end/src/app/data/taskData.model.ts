@@ -15,7 +15,7 @@ interface MetaData {
     "appointment": String,
     "owner": String,
     "receive": number,
-    "result": Results
+    "result": any
 }
 
 interface Configuration {
@@ -24,11 +24,7 @@ interface Configuration {
 
 interface Run {
     "method": String,
-    "param": {
-        "frequency": number,
-        "threads": number,
-        "ws_file": string
-    }
+    "param": any
 }
 
 interface Results {

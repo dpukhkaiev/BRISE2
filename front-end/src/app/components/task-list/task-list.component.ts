@@ -164,15 +164,4 @@ export class TaskListComponent implements OnInit {
         console.log(' task-list: disconnected');
       });
   }
-
-  // ____________________________ HTTP _____
-  taskInfo(id: string): any {
-     this.ws.getTaskById(id)
-      .subscribe((res) => {
-        this.focus = res["result"];
-        this.focus.time = res["time"]
-      }
-      );
-  }
-
 }

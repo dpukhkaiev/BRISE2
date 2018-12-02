@@ -52,6 +52,8 @@ export class TaskListBoComponent implements OnInit {
     this.resultData.filterPredicate = (task, filter) => {
       return JSON.stringify(task).includes(filter)
     }
+
+    console.log("Task list BO init")
   }
 
   ngOnInit() {
@@ -65,9 +67,6 @@ export class TaskListBoComponent implements OnInit {
     return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
   }
 
-  clearFocus():void {
-    this.focus = null
-  }
   applyFilter(filterValue: string) {
     this.resultData.filter = filterValue.trim().toLowerCase();
 
@@ -75,7 +74,6 @@ export class TaskListBoComponent implements OnInit {
       this.resultData.paginator.firstPage();
     }
   }
-
 
   // --------------------- SOCKET ---------------
   private initMainEvents(): void {
@@ -94,36 +92,14 @@ export class TaskListBoComponent implements OnInit {
         !this.result.includes(fresh, -1) && this.result.push(fresh);
 
         this.resultData.data = this.result;
+        // console.log("List +", fresh)
         // this.table.renderRows();
-      });
-    // Rewrite task stack
-    this.ioConnection = this.io.stack()
-      .subscribe((obj: Array<Object>) => {
-        this.stack = obj.map(i => new Task(i));
-      });
-
-    // Observer for stack and all results from workers service
-    this.ioConnection = this.io.onAllResults()
-      .subscribe((obj: any) => {
-        var data = JSON.parse(obj)
-        // this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
-        this.stack = (data.hasOwnProperty('stack') && data['stack'].length) ? data['stack'].map((t) => new Task(t)) : [];
       });
 
     this.io.onEvent(Event.CONNECT)
       .subscribe(() => {
         this.io.reqForAllRes();
       });
-  }
-
-  // ____________________________ HTTP _____
-  taskInfo(id: string): any {
-     this.ws.getTaskById(id)
-      .subscribe((res) => {
-        this.focus = res["result"];
-        this.focus.time = res["time"]
-    }
-    );
   }
 
 }
