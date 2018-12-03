@@ -31,7 +31,6 @@
 import traceback
 
 import numpy as np
-# TODO: Need to uncomment it!
 import statsmodels.api as sm
 import scipy.stats as sps
 
@@ -90,49 +89,25 @@ class BayesianOptimization(Model):
         # Data holding fields.
         self.all_configurations = []
         self.solution_configuration = []
-        self.solution_features = []
-        self.solution_labels = []
         self.good_config_rankings = dict()
 
-    def _idx_to_config(self, indexes):
+    def _config_to_idx(self, configuration):
         """
-        Helper function to transform list of indexes in search space of configurations to the real configurations
-        :param indexes: List. indexes (integers)
-        :return: List. Target system configurations.
-        """
-        configurations = []
-
-        for cur_index in indexes:
-            configuration = []
-            for hyperparam_index, index in enumerate(cur_index):
-                hyperparam_value = self.experiment_description["DomainDescription"]["AllConfigurations"][hyperparam_index][index]
-                configuration.insert(hyperparam_index, hyperparam_value)
-            configurations.append(configuration)
-
-        return configurations
-
-    def _config_to_idx(self, config):
-        """
-        Helper function to real configuration to its indexes in the search space.
-        :param config: List. Target system configurations.
+        Helper function to convert real configuration to its indexes in the search space.
+        :param configuration: List. Target system configurations.
         :return: List. Indexes (integers).
         """
-        indexes = []
+        configuration_in_indexes = []
 
-        # for config in configs:
-        #     cur_indexes = []
-        for hyperparam_index, value in enumerate(config):
+        for hyperparam_index, value in enumerate(configuration):
             param_index = self.experiment_description["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
-            indexes.insert(hyperparam_index, param_index)
-        # indexes.append(indexes)
+            configuration_in_indexes.insert(hyperparam_index, param_index)
 
-        return indexes
+        return configuration_in_indexes
 
     def build_model(self, update_model=True):
         """
-
         Tries to build the new Bayesian Optimization model.
-
         :return: Boolean. True if the model was successfully built, otherwise - False.
         """
 
@@ -211,8 +186,12 @@ class BayesianOptimization(Model):
             return False
         return True
 
-    def predict_solution(self, io, search_space):
-
+    def predict_solution(self, io):
+        """
+        Predicts the solution candidate of the model. Returns old Configuration instance if configuration is already
+        exists in all_configuration list, otherwise creates new Configuration instance.
+        :return Configuration instance
+        """
         sample = None
         info_dict = {}
 
@@ -287,6 +266,10 @@ class BayesianOptimization(Model):
                 info_dict['model_based_pick'] = False
 
         self.logger.debug('done sampling a new configuration.')
+        for config in self.all_configurations:
+            if config.configuration == sample:
+                config.add_predicted_result(configuration=sample, predicted_result=[best])
+                return config
         predicted_configuration = Configuration(sample)
         predicted_configuration.add_predicted_result(configuration=sample, predicted_result=[best])
         return predicted_configuration
@@ -356,48 +339,13 @@ class BayesianOptimization(Model):
 
     def add_data(self, configurations):
         """
-        Method adds new features and labels to whole set of features and labels.
+        Method adds configurations to whole set of configurations. Convert configurations to its indexes.
 
-        :param features: List. features in machine learning meaning selected by Sobol
-        :param labels: List. labels in machine learning meaning selected by Sobol
+        :param configurations: List of Configuration's instances
         """
-        # An input validation and updating of the features and labels set.
-        # 1. Tests if lists of features and labels are same length.
-        # 2. Tests if all lists are nested.
-        # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
-        # These all(all(...)..) returns true if all data
         self.all_configurations = configurations
         for config in self.all_configurations:
             config.configuration_in_indexes = self._config_to_idx(config.configuration)
-
-
-        # features = []
-        # labels = []
-        # for config in configurations:
-        #     features.append(config.configuration)
-        #     labels.append(config.average_result)
-        # try:
-        #
-        #     assert len(features) == len(labels) > 0, \
-        #         "Incorrect length!\nFeatures:%s\nLabels:%s" % (str(features), str(labels))
-        #
-        #     assert all(all(isinstance(value, (int, float, str)) for value in feature) for feature in features), \
-        #         "Incorrect data types in features: %s" % str(features)
-        #
-        #     assert all(all(isinstance(value, (int, float, str)) for value in label) for label in labels), \
-        #         "Incorrect data types in labelss: %s" % str(labels)
-        #     if labels is None:
-        #         # One could skip crashed results, but we decided
-        #         # assign a +inf loss and count them as bad configurations
-        #         self.all_labels += np.inf
-        #     else:
-        #         self.all_features += self._config_to_idx(features)
-        #         self.all_labels += labels
-        #         self.all_configurations += configurations
-        #
-        # except AssertionError as err:
-        #     self.logger.error("Input data validation error:%s\nAdding Features: %s\nAdding Labels:%s"
-        #                       % (err, features, labels))
     
     def impute_conditional_data(self, array):
 

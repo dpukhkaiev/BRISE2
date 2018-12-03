@@ -8,9 +8,8 @@ import logging
 from tools.file_system_io import create_folder_if_not_exists
 
 
-def write_results(global_config, experiment_description, time_started, configurations, performed_measurements,
-                  optimal_configuration, default_configurations):
-                  # default_features, default_value):
+def write_results(global_config, experiment_description, time_started, configurations,
+                  performed_measurements, optimal_configuration, default_configurations):
 
     logger = logging.getLogger(__name__)
     create_folder_if_not_exists(global_config["results_storage"])

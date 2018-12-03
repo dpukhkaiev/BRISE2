@@ -8,12 +8,12 @@ from sklearn.pipeline import Pipeline
 from functools import reduce
 
 from model.model_abs import Model
-
+from core_entities.configuration import Configuration
 
 
 class RegressionSweetSpot(Model):
 
-    def __init__(self, log_file_name, model_config):
+    def __init__(self, log_file_name, experiment):
         """
         Initialization of regression model
         :param log_file_name: - string, location of file, which will store results of model creation
@@ -22,21 +22,24 @@ class RegressionSweetSpot(Model):
         self.logger = logging.getLogger(__name__)
 
         # Model configuration - related fields.
-        self.model_config = model_config
-        self.initial_test_size = model_config["ModelTestSize"]
+        self.model_config = experiment.description["ModelConfiguration"]
+        self.initial_test_size = self.model_config["ModelTestSize"]
         self.log_file_name = log_file_name
 
         # Built model - related fields.
         self.model = None
-        self.minimum_model_accuracy = model_config["MinimumAccuracy"]
+        self.minimum_model_accuracy = self.model_config["MinimumAccuracy"]
         self.built_model_accuracy = 0
         self.built_model_test_size = 0.0
 
         # Data holding fields.
-        self.all_features = []
-        self.all_labels = []
-        self.solution_features = []
-        self.solution_labels = []
+        # self.all_features = []
+        # self.all_labels = []
+        # self.solution_features = []
+        # self.solution_labels = []
+        self.experiment = experiment
+        self.all_configurations = []
+        self.solution_configuration = []
 
     def build_model(self, degree=6, tries=20):
         """
@@ -102,19 +105,20 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space.copy())
 
         # Check if the model is adequate - write it.
-        predicted_labels, predicted_features = self.predict_solution(io, search_space)
+        predicted_solution = self.predict_solution(io)
+        predicted_labels = predicted_solution.predicted_result
+        predicted_features = predicted_solution.configuration
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
             f.write(str(search_space) + "\n")
             f.write("Testing size = " + str(self.built_model_test_size) + "\n")
-            # f.write("Degree = " + str(degree)+ "\n")
             for i in range(degree + 1):
                 if i == 0:
                     f.write("(TR ^ 0) * (FR ^ 0) = " + str(self.model.named_steps['reg'].coef_[i]) + "\n")
                 else:
                     for j in range(i + 1):
-                        f.write("(TR ^ " + str(i - j) + ") * (FR ^ " + str(j) + ") = " + \
+                        f.write("(TR ^ " + str(i - j) + ") * (FR ^ " + str(j) + ") = " +
                                 str(self.model.named_steps['reg'].coef_[0][self.sum_fact(i) + j]) + "\n")
             f.write("R^2 = " + str(self.built_model_accuracy) + "\n")
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_) + "\n")
@@ -127,21 +131,28 @@ class RegressionSweetSpot(Model):
             self.logger.info("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, io, search_space):
+    def predict_solution(self, io):
         """
         Takes features, using previously created model makes regression to find labels and return label with the lowest value.
         :param search_space: list of data points (each data point is also a list).
         :return: lowest value, and related features.
         """
 
-        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(self.experiment.search_space))]
+
         if io:
-            all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
+            all_predictions = [{'configuration': self.experiment.search_space[index], "prediction": round(prediction[0], 2)}
                                for (prediction, index) in predictions]
             io.emit('regression', {"regression": all_predictions})
         label, index = min(predictions)
         label = list(label)
-        return label, search_space[index]
+        for config in self.all_configurations:
+            if config.configuration == self.experiment.search_space[index]:
+                config.add_predicted_result(self.experiment.search_space[index], label)
+                return config
+        solution = Configuration(self.experiment.search_space[index])
+        solution.add_predicted_result(self.experiment.search_space[index], label)
+        return solution
 
     def resplit_data(self, test_size):
         """
@@ -149,9 +160,16 @@ class RegressionSweetSpot(Model):
         :param test_size: Float. Indicates the amount of data that will be used to test the model.
         :return: None
         """
+        all_features = []
+        all_labels = []
+        for configuration in self.all_configurations:
+            all_features.append(configuration.configuration)
+            all_labels.append(configuration.average_result)
 
         feature_train, feature_test, target_train, target_test = \
-            model_selection.train_test_split(self.all_features, self.all_labels, test_size=test_size)
+            model_selection.train_test_split(all_features, all_labels, test_size=test_size)
+        # feature_train, feature_test, target_train, target_test = \
+        #     model_selection.train_test_split(self.all_features, self.all_labels, test_size=test_size)
 
         return feature_train, feature_test, target_train, target_test
 
@@ -182,9 +200,9 @@ class RegressionSweetSpot(Model):
 
         file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
-        for point in self.all_features:
-            if point in search_space:
-                search_space.remove(point)
+        for config in self.all_configurations:
+            if config.configuration in search_space:
+                search_space.remove(config.configuration)
         for point in search_space:
             spl.search(str(point[0]), str(point[1]))
             all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
@@ -200,82 +218,72 @@ class RegressionSweetSpot(Model):
 
         self.logger.info("\n\nFinal report:")
 
-        if not self.solution_labels:
+        if self.solution_configuration == []:
             temp_message = "Optimal configuration was not found. Reporting best of the measured."
             self.logger.info(temp_message)
-            self.solution_labels = min(self.all_labels)
-            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
+            self.solution_configuration = [self.all_configurations[0]]
+            for configuration in self.all_configurations:
+                if configuration < self.solution_configuration[0]:
+                    self.solution_configuration = [configuration]
             if io:
                 io.emit('info',
-                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+                            {
+                                'message': temp_message,
+                                "quality": self.solution_configuration[0].average_result,
+                                "conf": self.solution_configuration[0].configuration
+                            }
+                        )
 
-        elif min(self.all_labels) < self.solution_labels:
-            temp_message = ("Configuration(%s) quality(%s), "
-                            "\nthat model gave worse that one of measured previously, but better than default."
-                            "\nReporting best of measured." %
-                            (self.solution_features, self.solution_labels))
+        else:
+            min_configuration = [self.all_configurations[0]]
+            for configuration in self.all_configurations:
+                if configuration < min_configuration[0]:
+                    min_configuration = [configuration]
+
+            if min_configuration[0] < self.solution_configuration[0]:
+                temp_message = ("Configuration(%s) quality(%s), "
+                                "\nthat model gave worse that one of measured previously, but better than default."
+                                "\nReporting best of measured." % (self.solution_configuration[0].configuration,
+                                                                   self.solution_configuration[0].average_result))
             self.logger.info(temp_message)
             if io:
                 io.emit('info',
-                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-                
-            self.solution_labels = min(self.all_labels)
-            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
+                            {
+                                'message': temp_message,
+                                "quality": self.solution_configuration[0].average_result,
+                                "conf": self.solution_configuration[0].configuration
+                            }
+                        )
+            self.solution_configuration = min_configuration
 
-        self.logger.info("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
-        self.logger.info("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
-        self.logger.info("Number of measured points: %s" % len(self.all_features))
+        self.logger.info("ALL MEASURED CONFIGURATIONS:\n%s")
+        for configuration in self.all_configurations:
+            self.logger.info("%s: %s" % (str(configuration.configuration), str(configuration.average_result)))
+        self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
-        self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
+        self.logger.info("Best found energy: %s, with configuration: %s"
+                         % (self.solution_configuration[0].average_result,
+                            self.solution_configuration[0].configuration))
 
         if io:
             configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
             value = round(self.solution_labels[0], 2)
             temp = {
                 'best point': {
-                    'configuration': configuration,
-                    'result': value,
-                    'measured points': self.all_features,
+                    'configuration': self.solution_configuration[0].configuration,
+                    'result': self.solution_configuration[0].average_result,
+                    'measured points': self.all_configurations,
                     'performed measurements': repeater.performed_measurements
                 }
             }
             io.emit('best point', temp)
 
-        return self.solution_labels, self.solution_features
+        return self.solution_configuration
 
     def add_data(self, configurations):
         """
+        Method adds configurations to whole set of configurations.
 
-        Method adds new features and labels to whole set of features and labels.
-
-        :param features: List. features in machine learning meaning selected by Sobol
-        :param labels: List. labels in machine learning meaning selected by Sobol
+        :param configurations: List of Configuration's instances
         """
-        # An input validation and updating of the features and labels set.
-        # 1. Tests if lists of features and labels are same length.
-        # 2. Tests if all lists are nested.
-        # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
-        # These all(all(...)..) returns true if all data
-        features = []
-        labels = []
-        for config in configurations:
-            features.append(config.configuration)
-            labels.append(config.average_result)
-        try:
-
-            assert len(features) == len(labels) > 0, \
-                "Incorrect length!\nFeatures:%s\nLabels:%s" % (str(features), str(labels))
-
-            assert all(all(isinstance(value, (int, float)) for value in feature) for feature in features), \
-                "Incorrect data types in features: %s" % str(features)
-
-            assert all(all(isinstance(value, (int, float)) for value in label) for label in labels), \
-                "Incorrect data types in labels: %s" % str(labels)
-
-            self.all_features += features
-            self.all_labels += labels
-
-        except AssertionError as err:
-            self.logger.error("ERROR! Regression input validation error:\n%s" % err)
+        self.all_configurations = configurations

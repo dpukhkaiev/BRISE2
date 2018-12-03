@@ -106,14 +106,15 @@ def run(io=None):
     while not finish:
         model.add_data(experiment.all_configurations)
         model_built = model.build_model()
+        predicted_configuration = None
 
         if model_built:
             model_validated = model.validate_model(io=io, search_space=experiment.search_space)
 
             if model_validated:
-                predicted_configuration = model.predict_solution(io=io, search_space=experiment.search_space)
+                predicted_configuration = model.predict_solution(io=io)
                 experiment.put(predicted_configuration)
-                predicted_configuration = experiment.get(predicted_configuration.configuration)
+
                 logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_configuration.configuration),
                                                                             str(predicted_configuration.predicted_result)))
 
@@ -135,8 +136,11 @@ def run(io=None):
                         io.emit('info', {'message': "Solution validation success!"})
                     model.add_data(experiment.all_configurations)
                     optimal_configuration = model.get_result(repeater, io=io)
-                    write_results(global_config, experiment.description, time_started, [predicted_configuration],
-                                  repeater.performed_measurements, optimal_configuration, [default_configuration])
+                    write_results(global_config=global_config, experiment_description=experiment.description,
+                                  time_started=time_started, configurations=[predicted_configuration],
+                                  performed_measurements=repeater.performed_measurements,
+                                  optimal_configuration=optimal_configuration,
+                                  default_configurations=[default_configuration])
                     return optimal_configuration
 
                 else:
@@ -159,8 +163,10 @@ def run(io=None):
             logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(configurations=cur_task)
             optimal_configuration = model.get_result(repeater, io=io)
-            write_results(global_config, experiment.description, time_started, [predicted_configuration],
-                          repeater.performed_measurements, optimal_configuration, [default_configuration])
+            write_results(global_config=global_config, experiment_description=experiment.description,
+                          time_started=time_started, configurations=[predicted_configuration],
+                          performed_measurements=repeater.performed_measurements,
+                          optimal_configuration=optimal_configuration, default_configurations=[default_configuration])
             return optimal_configuration
 
 
