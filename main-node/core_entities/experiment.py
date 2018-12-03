@@ -22,8 +22,6 @@ class Experiment:
             for value in self.all_configurations:
                 if value.configuration == configuration_instance.configuration:
                     is_exists = True
-                    self.logger.info("Configuration %s is already exists in Experiment" % value.configuration)
-                    break
             if not is_exists:
                 self.all_configurations.append(configuration_instance)
                 self.logger.info("Configuration %s has added to Experiment" % value.configuration)

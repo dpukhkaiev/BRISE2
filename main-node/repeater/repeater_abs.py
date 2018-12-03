@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
 
-from core_entities.configuration import Configuration
-
 
 class Repeater(ABC):
     def __init__(self, WorkerServiceClient, experiment):
@@ -22,8 +20,9 @@ class Repeater(ABC):
     @abstractmethod
     def decision_function(self, experiment, point, iterations=3, **configuration): pass
     
-    def measure_task(self, experiment, task, io, **decis_func_config):
+    def measure_task(self, experiment, configurations, io, **decis_func_config):
         """
+        :param configurations
         :param experiment: the instance of Experiment class
         :param task: List of lists.
                 Represents set of tasks for Worker Service. Each sublist of original task list is a final configuration
@@ -44,14 +43,14 @@ class Repeater(ABC):
         self.current_measurement.clear()
         self.current_measurement_finished = False
         # Creating holders for current measurements
-        for point in task:
+        for config in configurations:
             # Evaluating decision function for each point in task
-            self.current_measurement[str(point)] = {'data': point,
-                                                    'Finished': False}
-            result = self.decision_function(experiment, point, **decis_func_config)
+            self.current_measurement[str(config.configuration)] = {'data': config.configuration,
+                                                                   'Finished': False}
+            result = self.decision_function(experiment, config.configuration, **decis_func_config)
             if result: 
-                self.current_measurement[str(point)]['Finished'] = True
-                self.current_measurement[str(point)]['Results'] = result
+                self.current_measurement[str(config.configuration)]['Finished'] = True
+                self.current_measurement[str(config.configuration)]['Results'] = result
 
         # Continue to make measurements while decision function will not terminate it.
 
@@ -59,9 +58,9 @@ class Repeater(ABC):
 
             # Selecting only that tasks that were not finished.
             cur_task = []
-            for point in self.current_measurement.keys():
-                if not self.current_measurement[point]['Finished']:
-                    cur_task.append(self.current_measurement[point]['data'])
+            for config in self.current_measurement.keys():
+                if not self.current_measurement[config]['Finished']:
+                    cur_task.append(self.current_measurement[config]['data'])
                     self.performed_measurements += 1
 
             if not cur_task:
@@ -73,14 +72,10 @@ class Repeater(ABC):
 
             # Writing data to experiment.
             for point, result in zip(cur_task, results):
-
-                configuration_object = experiment.get(configuration=point)
-                if configuration_object:
-                    configuration_object.put(point, str(self.task_id), result, self.worker)
-                else:
-                    configuration_object = Configuration()
-                    configuration_object.put(point, str(self.task_id), result, self.worker)
-                    experiment.put(configuration_instance=configuration_object)
+                for config in configurations:
+                    if config.configuration == point:
+                        config.add_data(point, str(self.task_id), result, self.worker)
+                        experiment.put(configuration_instance=config)
                 self.task_id += 1
 
 
@@ -99,11 +94,6 @@ class Repeater(ABC):
                         io.emit('task result', temp)
                     self.current_measurement[str(point)]['Finished'] = True
                     self.current_measurement[str(point)]['Results'] = result
-
-        results_configurations = []
-        for point in task:
-            results_configurations.append(experiment.get(configuration=point))
-        return results_configurations
     
     def cast_results(self, results):
         """

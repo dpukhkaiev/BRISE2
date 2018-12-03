@@ -8,8 +8,8 @@ import logging
 from tools.file_system_io import create_folder_if_not_exists
 
 
-def write_results(global_config, experiment_description, time_started, configurations, performed_measurements, optimal_config,
-                  optimal_result, default_configurations):
+def write_results(global_config, experiment_description, time_started, configurations, performed_measurements,
+                  optimal_configuration, default_configurations):
                   # default_features, default_value):
 
     logger = logging.getLogger(__name__)
@@ -34,8 +34,8 @@ def write_results(global_config, experiment_description, time_started, configura
             results_file.write("Default configuration               : %s\n" % default_configurations[0].configuration)
             results_file.write("Default configuration results       : %s\n" % default_configurations[0].average_result)
             results_file.write("Time used for balancing             : %s\n" % str(datetime.datetime.now() - time_started))
-            results_file.write("BRISE optimal configuration         : %s\n" % optimal_config)
-            results_file.write("BRISE optimal configuration results : %s\n" % optimal_result)
+            results_file.write("BRISE optimal configuration         : %s\n" % optimal_configuration[0].configuration)
+            results_file.write("BRISE optimal configuration results : %s\n" % optimal_configuration[0].average_result)
             results_file.write("####: END results of BRISE run.                 ####\n\n\n\n")
     except IOError as e:
         logger.error("ERROR: %s occurred when tried to write final report to file." % e, exc_info=True)

@@ -3,11 +3,12 @@ import logging
 
 class Configuration:
 
-    def __init__(self):
+    def __init__(self, configuration):
         self.logger = logging.getLogger(__name__)
         # The shape of configuration - list, e.g.
         #                              [2900.0, 32]
-        self.configuration = []
+        self.configuration = configuration
+        self.configuration_in_indexes = []
 
         # The shape of data - dict, e.g.
         #                     {
@@ -31,17 +32,22 @@ class Configuration:
         #                               [806.43]
         self.average_result = []
 
-    def put(self, configuration, task_id, result, worker):
+        self.predicted_result = []
 
-        if self.configuration == []:
-            self.configuration = configuration
+    def add_predicted_result(self, configuration, predicted_result):
 
         if self.configuration == configuration:
-            self.data[task_id] = {
-                "result": result,
-                "worker": worker
-            }
-            self.calculate_average_result()
+            self.predicted_result = predicted_result
+
+    def add_data(self, configuration, task_id=None, result=None, worker=None):
+
+        if self.configuration == configuration:
+            if task_id and result and worker:
+                self.data[task_id] = {
+                    "result": result,
+                    "worker": worker
+                }
+                self.calculate_average_result()
         else:
             self.logger.error('New configuration %s does not match with current configuration %s'
                               % (configuration, self.configuration), exc_info=True)
