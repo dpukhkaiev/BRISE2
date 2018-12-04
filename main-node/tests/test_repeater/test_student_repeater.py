@@ -10,7 +10,7 @@ EXPERIMENTS = {
     "ResultStructure": ["frequency", "threads", "energy"],
     "ResultDataTypes": ["float", "int", "float"],
     "RepeaterDecisionFunction": "student_deviation",
-    "MaxRepeatsOfExperiment": 4
+    "MaxTasksPerConfiguration": 4
 }
 
 
@@ -37,5 +37,5 @@ def test_decision_function():
     # #if test_history has two elements
     # assert result ==
 
-    # TODO - if test_history has more than (equals) "MaxRepeatsOfExperiment": 4 elements (WSClient)
+    # TODO - if test_history has more than (equals) "MaxTasksPerConfiguration": 4 elements (WSClient)
     values = [1, 50, 60, 45, 56]

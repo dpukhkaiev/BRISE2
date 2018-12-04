@@ -8,10 +8,10 @@
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
-    "NumberOfInitialExperiments"   : 10,
+    "NumberOfInitialConfigurations"   : 10,
     "Step"              : 1
   },
-  "ExperimentsConfiguration":{
+  "TaskConfiguration":{
     "TaskName"          : "taskNB",
     "WorkerConfiguration":{
       "ws_file": "taskNB1.csv"
@@ -20,14 +20,14 @@
     "ResultStructure"   : ["accuracy"],
     "ResultDataTypes"  : ["float"],
     "RepeaterDecisionFunction"  : "student_deviation",
-    "MaxRepeatsOfExperiment": 2,
-    "MaxTimeToRunExperiment": 10
+    "MaxTasksPerConfiguration": 2,
+    "MaxTimeToRunTask": 10
   },
   "ModelConfiguration":{
     "ModelTestSize"     : 0.9,
     "MinimumAccuracy"   : 0.85,
     "ModelType"         : "BO",
-    "MinimizationTask"  : false,
+    "MinimizationExperiment"  : false,
     "FeaturesLabelsStructure"  : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
   }
 }

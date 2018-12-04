@@ -55,7 +55,7 @@ def run(io=None):
 
     if io:
         # Sasha asked also to send each 'measuring' point to Worker Service.
-        wsc = WSClient(mock_data["Task config"]["ExperimentsConfiguration"],
+        wsc = WSClient(mock_data["Task config"]["TaskConfiguration"],
                        'w_service:49153',
                        "MOCK_WSC.log")
         # Sending global and task config

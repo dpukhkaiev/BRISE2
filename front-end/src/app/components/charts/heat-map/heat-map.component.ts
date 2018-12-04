@@ -6,7 +6,7 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 
 import { Event as SocketEvent } from '../../../data/client-enums';
 import { MainEvent, SubEvent } from '../../../data/client-enums';
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 
 // Plot
 import { PlotType as type } from '../../../data/client-enums';
@@ -33,13 +33,13 @@ export class HeatMapComponent implements OnInit {
   prediction = new Map()
 
   globalConfig: object 
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   // Best point 
   solution: Solution
   // Measured points for the Regresion model from worker-service
   measPoints: Array<Array<number>> = []
-  defaultTask: Configuration
+  defaultConfiguration: Configuration
 
   // Rendering axises
   y: Array<number>
@@ -50,7 +50,7 @@ export class HeatMapComponent implements OnInit {
     this.prediction.clear()
     this.solution = undefined
     this.measPoints = []
-    this.defaultTask = undefined
+    this.defaultConfiguration = undefined
   }
 
   // Default theme
@@ -80,7 +80,7 @@ export class HeatMapComponent implements OnInit {
     // window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
   }
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   zParser(data: Map<String,Number>): Array<Array<Number>> {
@@ -101,7 +101,7 @@ export class HeatMapComponent implements OnInit {
   }
   
   render(): void {
-    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+    if (this.experimentDescription.ModelConfiguration.ModelType == "regression") {
       const element = this.map.nativeElement
       const data = [
         { // defined X and Y axises with data, type and color
@@ -187,10 +187,10 @@ export class HeatMapComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['configuration']['global configuration']
-        this.taskConfig = obj['configuration']['experiment configuration']
-        this.y = this.taskConfig['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = this.taskConfig['DomainDescription']['AllConfigurations'][1] // threads
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
+        this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
       });
 
@@ -209,28 +209,28 @@ export class HeatMapComponent implements OnInit {
       });
     this.ioMain.onEvent(MainEvent.FINAL) // Results
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(task => {
-          if (task) {
-            this.solution = task // In case if only one point solution
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.solution = configuration // In case if only one point solution
+            console.log('Final:', obj["configuration"])
           } else {
             console.log("Empty solution")
           }
         })
-        console.log('Final:', obj["task"])
         this.render()
       });
     this.ioMain.onEvent(MainEvent.DEFAULT) // Default configuration
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(task => {
-          if (task) {
-            this.defaultTask = task // In case if only one point default
-            this.result.set(String(task['configurations']), task['results'])
-            this.measPoints.push(task['configurations'])
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.defaultConfiguration = configuration // In case if only one point default
+            this.result.set(String(configuration['configurations']), configuration['results'])
+            this.measPoints.push(configuration['configurations'])
           } else {
             console.log("Empty default")
           }
         })
-        console.log('Default:', obj["task"])
+        console.log('Default:', obj["configuration"])
         this.render()
       });
 

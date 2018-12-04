@@ -9,7 +9,7 @@ mkdir -p ./Results
 for file in "${files[@]}"
  do
     # Read current file name from config file for further replacement
-    cur_source_file=$(cat ./Resources/task.json | jq '.ExperimentsConfiguration .FileToRead')
+    cur_source_file=$(cat ./Resources/task.json | jq '.TaskConfiguration .FileToRead')
     # Get new file name that will be run
     new_source_file=$(basename $file)
     # Generate log file name to write script output.

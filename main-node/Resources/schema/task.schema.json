@@ -48,7 +48,7 @@
                 "SelectionType": {
                     "type": "string"
                 },
-                "NumberOfInitialExperiments": {
+                "NumberOfInitialConfigurations": {
                     "type": "integer",
                     "minimum": 0,
                     "exclusiveMinimum": true  
@@ -61,11 +61,11 @@
             },
             "required": [
                 "SelectionType",
-                "NumberOfInitialExperiments",
+                "NumberOfInitialConfigurations",
                 "Step"
             ]
         },
-        "ExperimentsConfiguration": {
+        "TaskConfiguration": {
             "type": "object",
             "properties": {
                 "TaskName": {
@@ -112,11 +112,11 @@
                 "RepeaterDecisionFunction": {
                     "type": "string"
                 },
-                "MaxRepeatsOfExperiment": {
+                "MaxTasksPerConfiguration": {
                     "type": "integer",
                     "minimum": 0
                 },
-                "MaxTimeToRunExperiment": {
+                "MaxTimeToRunTask": {
                     "type": "integer",
                     "minimum": 0
                 }
@@ -128,8 +128,8 @@
                 "ResultStructure",
                 "ResultDataTypes",
                 "RepeaterDecisionFunction",
-                "MaxRepeatsOfExperiment",
-                "MaxTimeToRunExperiment"
+                "MaxTasksPerConfiguration",
+                "MaxTimeToRunTask"
             ]
         },
         "ModelConfiguration": {
@@ -151,7 +151,7 @@
                     "type": "string",
                     "pattern": "^regression$|^BO$"
                 },
-                "MinimizationTask": {
+                "MinimizationExperiment": {
                     "type": "boolean"
                 },
                 "FeaturesLabelsStructure": {
@@ -173,7 +173,7 @@
                 "ModelTestSize",
                 "MinimumAccuracy",
                 "ModelType",
-                "MinimizationTask",
+                "MinimizationExperiment",
                 "FeaturesLabelsStructure"
             ]
         }
@@ -181,7 +181,7 @@
     "required": [
         "DomainDescription",
         "SelectionAlgorithm",
-        "ExperimentsConfiguration",
+        "TaskConfiguration",
         "ModelConfiguration"
     ]
 }

@@ -7,7 +7,7 @@ EXPERIMENTS = {
         "ResultStructure": ["frequency", "threads", "energy"],
         "ResultDataTypes": ["float", "int", "float"],
         "RepeaterDecisionFunction": "student_deviation",
-        "MaxRepeatsOfExperiment": 4
+        "MaxTasksPerConfiguration": 4
 }
 WS = "should be WS"
 
@@ -26,7 +26,7 @@ def test_default_repeater():
     assert def_repeater.current_measurement == {}
     assert def_repeater.current_measurement_finished is False
     assert def_repeater.performed_measurements == 0
-    assert def_repeater.max_repeats_of_experiment == EXPERIMENTS["MaxRepeatsOfExperiment"]
+    assert def_repeater.max_repeats_of_experiment == EXPERIMENTS["MaxTasksPerConfiguration"]
 
 
 # TODO - line 47, 78 (repeater_abs.py) there is WSClient

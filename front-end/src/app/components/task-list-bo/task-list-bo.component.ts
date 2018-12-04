@@ -14,7 +14,7 @@ import { Event } from '../../data/client-enums';
 import { MainEvent } from '../../data/client-enums';
 
 // import { resolve } from 'path';
-import { TaskConfig } from '../../data/taskConfig.model';
+import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 
 @Component({
@@ -42,7 +42,7 @@ export class TaskListBoComponent implements OnInit {
   focus: any
   displayedColumns: string[] = ['id', 'run', 'file', 'result'];
   ioConnection: any;
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   public resultData: MatTableDataSource<Task>
 
@@ -64,7 +64,7 @@ export class TaskListBoComponent implements OnInit {
   }
 
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   applyFilter(filterValue: string) {
@@ -79,7 +79,7 @@ export class TaskListBoComponent implements OnInit {
   private initMainEvents(): void {
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.taskConfig = obj['configuration']['experiment configuration']
+        this.experimentDescription = obj['description']['experiment description']
       });
   }
   private initIoConnection(): void {

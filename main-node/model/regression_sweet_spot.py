@@ -86,7 +86,6 @@ class RegressionSweetSpot(Model):
     def validate_model(self, search_space, degree=6):
         """
         Return True, if the model have built, and False, if the model can not build or the model already exists
-        :param io: id using for web-sockets
         :param search_space: list of dimensions for this experiment
                              shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
                                      if there is such search space in "taskData.json" :
@@ -137,24 +136,20 @@ class RegressionSweetSpot(Model):
         """
 
         predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
-        # if io:
-        #     all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
-        #                        for (prediction, index) in predictions]
-        #     io.emit('regression', {"regression": all_predictions})
 
-        self.sub.send('predictions', 'task', 
-        configurations=[search_space[index] for (prediction, index) in predictions], 
-        results=[[round(prediction[0], 2)] for (prediction, index) in predictions])
+        self.sub.send('predictions', 'configurations',
+                      configurations=[search_space[index] for (prediction, index) in predictions],
+                      results=[[round(prediction[0], 2)] for (prediction, index) in predictions])
 
         label, index = min(predictions)
         label = list(label)
         return label, search_space[index]
 
-    def validate_solution(self, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, repeater, default_value, predicted_features):
         self.logger.info("Verifying solution that model gave..")
         self.sub.send('log', 'info', message="Verifying solution that model gave..")
 
-        solution_candidate = repeater.measure_task([predicted_features])
+        solution_candidate = repeater.measure_configuration([predicted_features])
         solution_feature = [predicted_features]
         solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
@@ -212,7 +207,7 @@ class RegressionSweetSpot(Model):
         from tools.splitter import Splitter
         all_data = []
 
-        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
+        file_path = "./csv/" + load_task()["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
         for point in self.all_features:
             if point in search_space:
@@ -262,12 +257,12 @@ class RegressionSweetSpot(Model):
 
         configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
         value = round(self.solution_labels[0], 2)
-        self.sub.send('final', 'task', 
-        configurations=[configuration], 
-        results=[[value]], 
-        type=['regresion solution'],
-        measured_points=[self.all_features],
-        performed_measurements=[repeater.performed_measurements])
+        self.sub.send('final', 'configuration',
+                      configurations=[configuration],
+                      results=[[value]],
+                      type=['regresion solution'],
+                      measured_points=[self.all_features],
+                      performed_measurements=[repeater.performed_measurements])
 
         return self.solution_labels, self.solution_features
 
