@@ -16,11 +16,11 @@ export enum MainEvent {
 }
 
 export const SubEvent = {
-    EXPERIMENT: ['configuration'],
-    DEFAUL: ['task'],
-    NEW: ['task'],
-    PREDICTIONS: ['task'],
-    FINAL: ['task'],
+    EXPERIMENT: ['description'],
+    DEFAUL: ['configuration'],
+    NEW: ['task', 'configuration'],
+    PREDICTIONS: ['configurations'],
+    FINAL: ['configuration'],
     LOG: ['info', 'debug', 'critical']
 }
 

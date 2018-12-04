@@ -30,11 +30,11 @@ class API(metaclass=Singleton):
     # These should be kept updated according to the APIMessageBuilder functionality!
     SUPPORTED_MESSAGES = {
         "LOG": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        "DEFAULT": ["TASK"],
-        "NEW": ["TASK"],
-        "PREDICTIONS": ["TASK"],
-        "FINAL": ["TASK"],
-        "EXPERIMENT": ["CONFIGURATION"]
+        "DEFAULT": ["CONFIGURATION"],
+        "NEW": ["CONFIGURATION", "TASK"],
+        "PREDICTIONS": ["CONFIGURATIONS"],
+        "FINAL": ["CONFIGURATION"],
+        "EXPERIMENT": ["DESCRIPTION"]
     }
 
     def __init__(self, api_object=None):
@@ -98,8 +98,8 @@ class APIMessageBuilder:
 
         Currently supported message *types* are:
             LOG - payload is a string.
-            NEW, DEFAULT, PREDICTIONS, FINAL - payload is a list of dictionaries with mandatory fields "configuration" and "result" and
-                    additional fields (for the extension).
+            NEW, DEFAULT, PREDICTIONS, FINAL - payload is a list of dictionaries with mandatory fields "
+                configuration" and "result" and additional fields (for the extension).
             EXPERIMENT - payload is a dictionary.
 
         Usage (used only in the API class):
@@ -183,11 +183,11 @@ class APIMessageBuilder:
         # Validation
         try:
             assert "global_config" in kwargs.keys(), "The global configuration is not provided!"
-            assert "experiment_config" in kwargs.keys(), "The experiment configuration is not provided!"
+            assert "experiment_description" in kwargs.keys(), "The experiment description is not provided!"
         except AssertionError as err:
             getLogger(__name__).error(err)
 
         return {
             "global configuration": kwargs["global_config"],
-            "experiment configuration": kwargs["experiment_config"]
+            "experiment description": kwargs["experiment_description"]
         }

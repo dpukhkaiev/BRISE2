@@ -6,7 +6,7 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 // Events
 import { MainEvent } from '../../../data/client-enums';
 import { Task } from '../../../data/taskData.model';
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 import { Solution } from '../../../data/taskData.model';
 
 interface PointExp {
@@ -34,10 +34,10 @@ export class MultiDimComponent implements OnInit {
   result = new Map()
   // Best point 
   solution: Solution
-  default_task: any
+  default_configuration: any
 
   globalConfig: object
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   dimensions: Array<any>
 
@@ -69,7 +69,7 @@ export class MultiDimComponent implements OnInit {
   BestPoint = new Set<PointExp>()
 
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   resetRes() {
@@ -110,38 +110,38 @@ export class MultiDimComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['configuration']['global configuration']
-        this.taskConfig = obj['configuration']['experiment configuration']
-        this.dimensions = this.taskConfig['DomainDescription']['AllConfigurations']
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
+        this.dimensions = this.experimentDescription['DomainDescription']['AllConfigurations']
         // this.resetRes() // Clear the old data and results
         this.ranges = {
           'laplace_correction': {
-            'length': this.taskConfig['DomainDescription']['AllConfigurations'][0].length,
-            'parameters_digits': Array.apply(null, { length: this.taskConfig['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
-            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][0]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][0].length,
+            'parameters_digits': Array.apply(null, { length: this.experimentDescription['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][0]
           },
           'estimation_mode': {
-            'length': this.taskConfig['DomainDescription']['AllConfigurations'][1].length,
-            'parameters_digits': Array.apply(null, {length: this.taskConfig['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
-            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][1]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][1].length,
+            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][1]
           },
           'bandwidth_selection': {
-            'length': this.taskConfig['DomainDescription']['AllConfigurations'][2].length,
-            'parameters_digits': Array.apply(null, {length: this.taskConfig['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
-            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][2]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][2].length,
+            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][2]
           },
           'use_application_grid': {
-            'length': this.taskConfig['DomainDescription']['AllConfigurations'][6].length,
-            'parameters_digits': Array.apply(null, {length: this.taskConfig['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
-            'parameters_names': this.taskConfig['DomainDescription']['AllConfigurations'][6]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][6].length,
+            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][6]
           }
         }
       });
     this.ioMain.onEvent(MainEvent.DEFAULT)
       .subscribe((obj: any) => {
-        if (obj['task']) {
-          obj["task"].forEach(task => {
-            this.default_task = obj
+        if (obj['configuration']) {
+          obj["configuration"].forEach(configuration => {
+            this.default_configuration = obj
             this.result.set(String(obj['configurations']), obj['results'])
           })
         }

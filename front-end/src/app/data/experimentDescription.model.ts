@@ -1,6 +1,6 @@
-export interface TaskConfig {
+export interface ExperimentDescription {
     DomainDescription: DomainDescription
-    ExperimentsConfiguration: ExperimentsConfiguration
+    TaskConfiguration: TaskConfiguration
     ModelConfiguration: ModelCreation
     SelectionAlgorithm: SelectionAlgorithm
 }
@@ -11,9 +11,9 @@ interface DomainDescription {
     DefaultConfiguration: Array<any>
     FeatureNames: Array<String>
 }
-interface ExperimentsConfiguration {
-    MaxRepeatsOfExperiment: number
-    MaxTimeToRunExperiment: number
+interface TaskConfiguration {
+    MaxTasksPerConfiguration: number
+    MaxTimeToRunTask: number
     RepeaterDecisionFunction: String
     ResultDataTypes: Array<String>
     ResultStructure: Array<String>
@@ -29,6 +29,6 @@ interface ModelCreation {
 
 }
 interface SelectionAlgorithm {
-    NumberOfInitialExperiments: Number
+    NumberOfInitialConfigurations: Number
     SelectionType: String
 }

@@ -17,18 +17,18 @@ Possible values of configurations for your system should be provided in separate
 
 - `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
     - `SelectionType` - `string`. An exploration algorithm specification. Currently only `SobolSequence` available.
-    - `NumberOfInitialExperiments` - `int`. The number of configurations that will be tested before making any attempts to build prediction model.
+    - `NumberOfInitialConfigurations` - `int`. The number of configurations that will be tested before making any attempts to build prediction model.
     - `Step` - `int`. The number of configurations that will be tested simultaneously.
 
-- `ExperimentsConfiguration` - this section describes general configuration for Worker Service and your system during testing.
+- `TaskConfiguration` - this section describes general configuration for Worker Service and your system during testing.
     - `TaskName` - `string`. The Worker nodes are able to run different experiments/tasks. This value identifies needed.
     - `WorkerConfiguration` - `dict`. the experiments/tasks configuration that is static and is needed to be passed to Worker nodes each time.
     - `TaskParamenters` - `List of strings`. Configurations that the Worker nodes will use to run target system.
     - `ResultStructure` - `List of strings`. Configurations that the Worker nodes will report back to Main node. `TaskParameters` should be included. 
     - `ResultDataTypes` - `List of strings`. Should be a proper names of Python data types, used for casting data that arrives from Worker nodes (as strings).
     - `RepeaterDecisionFunction` - `string`. Each experiments should be repeated to exclude a fluctuations in the results. Possible values - `student_deviation`(repeat the experiment, until absolute error higher that a threshold), `default` - just repeat the experiment maximum times.
-    - `MaxRepeatsOfExperiment` - `int`. Maximum times to run each experiment. 
-    - `MaxTimeToRunExperiment` - `float`. Maximum time to run each experiment in seconds. In case of exceeding the experiment will be terminated.
+    - `MaxRepeatsPerConfiguration` - `int`. Maximum times to run each configuration. 
+    - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
     
 - `ModelConfiguration` - section with the configuration related to the prediction model creating process.
     - `ModelTestSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
@@ -48,10 +48,10 @@ Possible values of configurations for your system should be provided in separate
       },
       "SelectionAlgorithm":{
         "SelectionType"     : "SobolSequence",
-        "NumberOfInitialExperiments"   : 10,
+        "NumberOfInitialConfigurations"   : 10,
         "Step"              : 1
       },
-      "ExperimentsConfiguration":{
+      "TaskConfiguration":{
         "TaskName"          : "energy_consumption",
         "WorkerConfiguration":{
           "ws_file": "Radix-500mio.csv"
@@ -60,8 +60,8 @@ Possible values of configurations for your system should be provided in separate
         "ResultStructure"   : ["frequency", "threads", "energy"],
         "ResultDataTypes"  : ["float", "int", "float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsOfExperiment": 10,
-        "MaxTimeToRunExperiment": 10
+        "MaxRepeatsPerConfiguration": 10,
+        "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,

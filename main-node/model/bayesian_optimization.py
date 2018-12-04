@@ -49,10 +49,7 @@ class BayesianOptimization(Model):
 
         self.model = None
         self.top_n_percent = top_n_percent
-
-        # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
         self.task_config = whole_task_config
-
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
 
@@ -292,17 +289,15 @@ class BayesianOptimization(Model):
         self.logger.debug('done sampling a new configuration.')
         return [best], sample
 
-
-    def validate_solution(self, task_config, repeater, default_value, predicted_features):
+    def validate_solution(self, repeater, default_value, predicted_features):
         self.logger.info("Verifying solution that model gave..")
         self.sub.send('log', 'info', message="Verifying solution that model gave..")
 
-        
-        solution_candidate = repeater.measure_task([predicted_features])
+        solution_candidate = repeater.measure_configuration([predicted_features])
         solution_feature = predicted_features
         solution_labels = solution_candidate
         # If our measured energy higher than default best value - add this point to data set and rebuild model.
-        #validate false
+        # validate false
         if solution_labels >= default_value:
             temp_message = "Predicted value larger or equal default: %s > %s" % (solution_labels[0][0], default_value[0][0])
             self.logger.info(temp_message)
@@ -358,12 +353,12 @@ class BayesianOptimization(Model):
         #             }
         #     io.emit('best point', temp)
 
-        self.sub.send('final', 'task', 
-        configurations=[self.solution_features], 
-        results=[self.solution_labels],
-        type=['bayesian solution'],
-        measured_points=[self.all_features],
-        performed_measurements=[[repeater.performed_measurements]])
+        self.sub.send('final', 'configuration',
+                      configurations=[self.solution_features],
+                      results=[self.solution_labels],
+                      type=['bayesian solution'],
+                      measured_points=[self.all_features],
+                      performed_measurements=[[repeater.performed_measurements]])
 
         return self.solution_labels, self.solution_features
 

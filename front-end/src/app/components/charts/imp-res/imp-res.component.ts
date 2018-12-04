@@ -6,7 +6,7 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 import { Solution } from '../../../data/taskData.model';
 import { MainEvent } from '../../../data/client-enums';
 
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 
 interface PointExp {
   configurations: Array<any>;
@@ -27,7 +27,7 @@ export class ImpResComponent implements OnInit {
   // Best point 
   solution: Solution
 
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   // poiner to DOM element #map
   @ViewChild('improvement') impr: ElementRef;
@@ -43,20 +43,20 @@ export class ImpResComponent implements OnInit {
   private initMainEvents(): void {
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.taskConfig = obj['configuration']['experiment configuration']
+        this.experimentDescription = obj['description']['experiment description']
       });
 
     this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(task => {
-          this.solution = task
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          this.solution = configuration
           let min = new Date().getMinutes()
           let sec = new Date().getSeconds()
           let temp: PointExp = {
-            'configurations': task['configurations'],
-            'results': task['results'],
+            'configurations': configuration['configurations'],
+            'results': configuration['results'],
             'time': min + 'm ' + sec + 's',
-            'measured points': task['measured points']
+            'measured points': configuration['measured points']
           }
           this.allRes.add(temp)
           this.bestRes.add(temp) // There is no check if this solution is the best decision 

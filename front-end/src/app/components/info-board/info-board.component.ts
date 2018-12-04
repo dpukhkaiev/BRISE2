@@ -28,10 +28,10 @@ export class InfoBoardComponent implements OnInit {
   news: Set<NewsPoint> = new Set()
   
   solution: Solution
-  default_task: any
+  default_configuration: any
 
   globalConfig: object
-  taskConfig: object
+  experimentDescription: object
 
   constructor(
     private ioWs: WsSocketService,
@@ -58,9 +58,9 @@ export class InfoBoardComponent implements OnInit {
     // ----                     Main events
     this.ioMain.onEvent(MainEvent.DEFAULT)
       .subscribe((obj: any) => {
-        if (obj['task']) {
-          this.default_task = obj['task'][0]
-          let temp: NewsPoint = {'time': Date.now(), 'message': 'Experiment default value received' }
+        if (obj['configuration']) {
+          this.default_configuration = obj['configuration'][0]
+          let temp: NewsPoint = {'time': Date.now(), 'message': 'Default configuration results received' }
           this.snackBar.open(temp['message'], '×', {
             duration: 3000
           });
@@ -70,8 +70,8 @@ export class InfoBoardComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
-        if (obj['task']) { 
-          this.solution = obj['task'][0]
+        if (obj['configuration']) {
+          this.solution = obj['configuration'][0]
           let temp = {
             'time': Date.now(),
             'message': '★★★ The optimum result is found. The best point is reached ★★★'
@@ -96,8 +96,8 @@ export class InfoBoardComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['configuration']['global configuration']
-        this.taskConfig = obj['configuration']['experiment configuration']
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
         let temp = {
           'time': Date.now(), 
           'message': 'The main configurations of the experiment are obtained. Let\'s go! '
@@ -126,10 +126,10 @@ export class InfoBoardComponent implements OnInit {
       });
     this.ioMain.onEvent(MainEvent.PREDICTIONS)
       .subscribe((obj: any) => {
-        if (obj['task']) {
+        if (obj['configurations']) {
           let temp = {
             'time': Date.now(),
-            'message': 'Regression obtained. ' + obj['task'].length + ' predictions'
+            'message': 'Regression obtained. ' + obj['configurations'].length + ' predictions'
           }
           this.snackBar.open(temp['message'], '×', {
             duration: 3000

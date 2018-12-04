@@ -33,7 +33,7 @@ G_EXPERIMENTS = {
     "ResultStructure": ["frequency", "threads", "energy"],
     "ResultDataTypes": ["float", "int", "float"],
     "RepeaterDecisionFunction": "student_deviation",
-    "MaxRepeatsOfExperiment": 4
+    "MaxTasksPerConfiguration": 4
 }
 
 

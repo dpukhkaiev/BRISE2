@@ -5,7 +5,7 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 
 // Model
 import { MainEvent } from '../../../data/client-enums';
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 
 // Plot
 import { PlotType as type } from '../../../data/client-enums';
@@ -36,7 +36,7 @@ export class HeatMapRegComponent implements OnInit {
   @ViewChild('reg') reg: ElementRef;
 
   globalConfig: object
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
   // Rendering axises
   y: Array<number>
   x: Array<number>
@@ -59,7 +59,7 @@ export class HeatMapRegComponent implements OnInit {
   }
 
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   // Rendering
@@ -137,7 +137,7 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.FINAL) //// ???
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(result => {
+        obj["configuration"] && obj["configuration"].forEach(result => {
           if (result) {
             this.solution = result // In case if only one point solution
           } else {
@@ -152,23 +152,23 @@ export class HeatMapRegComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['configuration']['global configuration']
-        this.taskConfig = obj['configuration']['experiment configuration']
-        this.y = this.taskConfig['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = this.taskConfig['DomainDescription']['AllConfigurations'][1] // threads
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
+        this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
         this.resetRes() // Clear the old data and results
       });
 
     this.ioMain.onEvent(MainEvent.PREDICTIONS)
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(point => {
+        obj["configurations"] && obj["configurations"].forEach(point => {
           if (point) {
             this.prediction.set(String(point['configurations']), point['results'])
           } else {
             console.log("Empty prediction point")
           }
         })
-        console.log(" Regresion points:", obj['task'].length)
+        console.log(" Regresion points:", obj['configurations'].length)
         this.prediction.size && this.regrRender()
       });
 

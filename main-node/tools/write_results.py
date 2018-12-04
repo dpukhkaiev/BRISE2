@@ -8,15 +8,16 @@ import logging
 from tools.file_system_io import create_folder_if_not_exists
 
 
-def write_results(global_config, task_config, time_started, features, labels, performed_measurements, optimal_config,
+def write_results(global_config, experiment_description, time_started, features, labels, performed_measurements, optimal_config,
                   optimal_result, default_features, default_value):
 
     logger = logging.getLogger(__name__)
     create_folder_if_not_exists(global_config["results_storage"])
-    search_space = list(itertools.product(*task_config["DomainDescription"]["AllConfigurations"]))
+    search_space = list(itertools.product(*experiment_description["DomainDescription"]["AllConfigurations"]))
 
+    # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
     file_path = "%sBRISE_Results_for_%s.txt" % (global_config["results_storage"],
-                                                task_config["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"])
+                                                experiment_description["TaskConfiguration"]["WorkerConfiguration"]["ws_file"])
     try:
         with open(file_path, 'a') as results_file:
             results_file.write("####: START results of BRISE run at %s. ####\n" % time_started.strftime("%d.%m.%Y - %H:%M:%S"))
