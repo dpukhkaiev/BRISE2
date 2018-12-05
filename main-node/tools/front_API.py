@@ -22,11 +22,8 @@ class Singleton(type):
 
 class API(metaclass=Singleton):
     """
-        The singleton - enabled decorator for the API object.
-
-        TODO: Finish description of the class.
+            The singleton - enabled decorator for the API object with exposed `send` method instead emit.
     """
-
     # These should be kept updated according to the APIMessageBuilder functionality!
     SUPPORTED_MESSAGES = {
         "LOG": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -60,10 +57,10 @@ class API(metaclass=Singleton):
     def send(self, message_type: str, message_subtype: str, **key_value_params):
         """
             Actual wrapper for the "emit" method of the API object.
-        :param message_type: String. One of the supported types: "LOG", "TASK", "EXPERIMENT"
-        :param message_subtype: String. Subtype of message with respect to the message type.
+        :param message_type: String. One of the supported types: SUPPORTED_MESSAGES.keys()
+        :param message_subtype: String. Subtype of message with respect to the message type: SUPPORTED_MESSAGES[TYPE]
         :param key_value_params: Parameters that will be passed to the message constructor in APIMessageBuilder class.
-        :return: None
+        :return: Result of API`s emit action.
         """
 
         try:
@@ -83,9 +80,9 @@ class API(metaclass=Singleton):
 
             # All is OK, sending the message.
             # --lowercase
-            self._api_object.emit(message_type.lower(),
-                                  {message_subtype.lower(): APIMessageBuilder.build(message_type.upper(), **key_value_params)}
-                                  )
+            return self._api_object.emit(message_type.lower(),
+                                         {message_subtype.lower(): APIMessageBuilder.build(message_type.upper(),
+                                                                                           **key_value_params)})
 
         except AssertionError as err:
             self.logger.error(err)
@@ -99,23 +96,21 @@ class APIMessageBuilder:
         Currently supported message *types* are:
             LOG - payload is a string.
             NEW, DEFAULT, PREDICTIONS, FINAL - payload is a list of dictionaries with mandatory fields "
-                configuration" and "result" and additional fields (for the extension).
+                configurations" and "results" and additional fields (for the extension).
             EXPERIMENT - payload is a dictionary.
 
         Usage (used only in the API class):
         APIMessageBuilder.LOG(msg="log message")
         APIMessageBuilder.TASK(configurations=[[1,2,3], .. [3,2,1]], results=[[2,3], .. [5,4]], field=[[..], .. [..]])
         APIMessageBuilder.EXPERIMENT(global_config={..}, experiment_config={..})
-
-
     """
 
     @staticmethod
     def build(message_type: str, **kwargs):
         """
             Call the appropriate message constructor and return built message.
-        :param message_type:
-        :param kwargs:
+        :param message_type: String.
+        :param kwargs: data to form a payload.
         :return: Message payload (string for LOG, list for TASK, dict for EXPERIMENT).
         """
         return {
@@ -139,11 +134,11 @@ class APIMessageBuilder:
     @staticmethod
     def _build_task_message(**kwargs) -> list:
         """
-            Builds list of dictionaries each representing the task (configuration and result).
+            Builds list of dictionaries each representing the task (configuration, result and other metadata).
 
         :param kwargs: Should contain at least "configuration" and "result" key parameters, values - list of lists.
 
-            Example of shape, if only "configurations" and "results" have been provided (other key params also possible):
+            Example of shape if only "configurations" and "results" have been provided (other key params also possible):
             {
                 "configurations" : [[2900.0, 12], [1600.0, 2]],
                 "results" : [[100], [500]]
@@ -153,13 +148,16 @@ class APIMessageBuilder:
         """
         # Validation of input.
         try:
+            # Verify that all mandatory fields provided.
             assert "configurations" in kwargs.keys(), "The configurations(key parameter) are not provided!"
             assert "results" in kwargs.keys(), "The results(key parameter) are not provided!"
 
+            # Verify that length of all parameters are the same.
             assert all(len(kwargs[key]) == len(kwargs["configurations"]) for key in kwargs.keys()), \
                 "Different sizes of provided parameters!\n%s" % str(kwargs)
         except AssertionError as err:
             getLogger(__name__).error(err)
+            raise KeyError("Invalid parameters passed to send message via API.")
 
         message = []
 
@@ -174,11 +172,13 @@ class APIMessageBuilder:
     @staticmethod
     def _build_experiment_message(**kwargs) -> dict:
         """
-            Takes all key-value parameters and checks if "global_config" and "experiment_config" presents.
+            Takes all key-value parameters and checks if "global_config" and "experiment_description" presents.
             Currently it just provides validation of input (needed fields are present).
-            TODO: In future, if new subtypes of the"EXPERIMENT" type will appear - this method should be refined.
+
+            !!! In future, if new subtypes of the"EXPERIMENT" type will appear - this method should be refined.
+
         :param kwargs: "global_config" and "experiment_config" as mandatory fields.
-        :return: Dictionary with same
+        :return: Dictionary.
         """
         # Validation
         try:
