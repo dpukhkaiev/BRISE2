@@ -52,7 +52,7 @@ class API(metaclass=Singleton):
 
             class DummyAPI:
                 """Stub for the api object"""
-                def emit(self): pass
+                def emit(self, *args, **kwargs): pass
             self._api_object = DummyAPI()
         else:
             self._api_object = api_object
