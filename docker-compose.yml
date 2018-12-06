@@ -30,13 +30,13 @@ services:
       - FLASK_DEBUG=1
 
   front-end:
-     build: ./front-end/
-     container_name: front-end
-     tty: true
-     networks:
-      - worker_net
-     ports:
-       - "80:80"
+    build: ./front-end/
+    container_name: front-end
+    tty: true
+    networks:
+     - worker_net
+    ports:
+      - "80:80"
 
   w_alpha:
     build: ./worker/
