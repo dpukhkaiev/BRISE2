@@ -10,16 +10,18 @@ chdir(join(abspath('.'), 'main-node'))
 
 from tools.file_system_io import load_json_file
 
-def is_valid(file_path="resources/task.json"):
+
+def is_experiment_description_valid(path_to_shema="resources/task.json"):
     """
     Validation function for json files.
     :file_path: string. The file for validation.
     :return: boolean. Is file valid
     """
-    data = load_json_file(file_path)
+    data = load_json_file(path_to_shema)
     schema = load_json_file("resources/schema/task.schema.json") # validation schema
 
     return validate(data, schema) == None
 
+
 if __name__ == "__main__":
-   print("Valid:", is_valid())
+    print("Valid:", is_experiment_description_valid())

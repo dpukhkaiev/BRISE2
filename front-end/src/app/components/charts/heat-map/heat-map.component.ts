@@ -194,20 +194,20 @@ export class HeatMapComponent implements OnInit {
         this.resetRes() // Clear the old data and results
       });
 
-    this.ioMain.onEvent(MainEvent.NEW) // New task results
+    this.ioMain.onEvent(MainEvent.NEW) // New configuration results
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(task => {
-          if (task) {
-            this.result.set(String(task['configurations']), task['results'])
-            this.measPoints.push(task['configurations'])
-            console.log('New:', task)
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.result.set(String(configuration['configurations']), configuration['results'])
+            this.measPoints.push(configuration['configurations'])
+            console.log('New configuration:', configuration)
           } else {
-            console.log("Empty task")
+            console.log("Empty configuration")
           }
         })
         this.render()
       });
-    this.ioMain.onEvent(MainEvent.FINAL) // Results
+    this.ioMain.onEvent(MainEvent.FINAL) // The final configuration, suggested by BRISE.
       .subscribe((obj: any) => {
         obj["configuration"] && obj["configuration"].forEach(configuration => {
           if (configuration) {
