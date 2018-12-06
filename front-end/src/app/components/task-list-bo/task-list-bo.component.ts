@@ -37,8 +37,7 @@ export class TaskListBoComponent implements OnInit {
   
   stack: Array<any> = []
   result: Array<Task> = []
-  // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
-  // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
+ 
   focus: any
   displayedColumns: string[] = ['id', 'run', 'file', 'result'];
   ioConnection: any;

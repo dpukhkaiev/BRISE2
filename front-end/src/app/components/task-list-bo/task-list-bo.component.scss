@@ -12,11 +12,6 @@ table {
   width: 100%;
 }
 
-// .mat-list[dense],
-// .mat-nav-list[dense],
-// .mat-selection-list[dense] {
-//   display: flex;
-// }
 tr.example-detail-row {
   background-color: rgba($divider-color, .4);
 }
@@ -59,7 +54,8 @@ mat-tab-body mat-grid-tile {
   color: darken($divider-color, 15% )
 }
 .mat-icon {
-  color: darken($divider-color, 15% )
+  color: darken($divider-color, 15% );
+  margin-right: 5px;
 }
 .mat-icon + span {
   color: darken($divider-color, 15% );
@@ -88,11 +84,6 @@ tr.example-element-row:not(.example-expanded-row):hover {
   background: rgba($divider-color, .4);
   border-left: 2px solid $accent-color;
 }
-
-// tr.example-element-row:not(.example-expanded-row):active {
-//   background: $divider-color;
-//   border-left: 2px solid $accent-color;
-// }
 
 .example-element-row td {
   border-bottom-width: 0;

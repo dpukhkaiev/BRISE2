@@ -78,13 +78,17 @@
                       <span>{{task?.meta?.appointment}}</span>
                     </mat-list-item>
                   </mat-list>  
-                  <mat-list dense role="list">
-                    <mat-list-item role="listitem" *ngFor="let p of task.run?.param | keyvalue; let i = index; let first = first">
-                      <mat-icon>filter_{{i+1}}</mat-icon>
+
+                  <mat-chip-list selectable="false">
+                    <mat-chip *ngFor="let p of task.run?.param | keyvalue; let i = index; let first = first"
+                      [selectable]="false">
+                      <mat-icon>flare</mat-icon>
                       <span> {{p.key | titlecase}}:</span>
                       <span> {{p.value}}</span>
-                    </mat-list-item>
-                  </mat-list>
+                    </mat-chip>
+                  </mat-chip-list>
+
+
                 </div>
               </td>
             </ng-container>
