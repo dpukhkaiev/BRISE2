@@ -149,7 +149,7 @@ export class MultiDimComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
-        obj = obj['task']
+        obj = obj["configuration"]
         this.result.set(String(obj['configurations']), obj['results'])
 
         let tmp: PointExp = {

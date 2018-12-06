@@ -105,22 +105,23 @@ export class InfoBoardComponent implements OnInit {
         this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
-        this.news.add(temp) 
+        this.news.add(temp)
+        console.log("Experiment description: ", obj)
       });
     this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(task => {
-          if (task) {
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
             let temp = {
               'time': Date.now(),
-              'message': 'New results for ' + String(task['configurations'])
+              'message': 'New results for ' + String(configuration['configurations'])
             }
             this.snackBar.open(temp['message'], '×', {
               duration: 3000
             });
             this.news.add(temp)
           } else {
-            console.log("Empty task")
+            console.log("Empty configuration")
           }
         })
       });

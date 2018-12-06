@@ -67,18 +67,18 @@ export class ImpResComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
-        obj["task"] && obj["task"].forEach(task => {
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
           let min = new Date().getMinutes()
           let sec = new Date().getSeconds()
           this.allRes.add({
-            'configurations': task['configurations'],
-            'results': task['results'],
+            'configurations': configuration['configurations'],
+            'results': configuration['results'],
             'time': min + 'm ' + sec + 's',
             'measured points': this.allRes.size + 1
           }) // Add new point(result)
           let temp: PointExp = {
-            'configurations': task['configurations'],
-            'results': task['results'],
+            'configurations': configuration['configurations'],
+            'results': configuration['results'],
             'time': min + 'm ' + sec + 's',
             'measured points': this.allRes.size
           }
