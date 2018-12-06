@@ -56,7 +56,7 @@ class BayesianOptimization(Model):
         if "logger" not in dir(self):
             self.logger = logging.getLogger(__name__)
         # Send updates to subscribers
-        self.sub = API() 
+        self.sub = API()
 
         if min_points_in_model is None:
             self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
@@ -289,27 +289,6 @@ class BayesianOptimization(Model):
         self.logger.debug('done sampling a new configuration.')
         return [best], sample
 
-    def validate_solution(self, repeater, default_value, predicted_features):
-        self.logger.info("Verifying solution that model gave..")
-        self.sub.send('log', 'info', message="Verifying solution that model gave..")
-
-        solution_candidate = repeater.measure_configuration([predicted_features])
-        solution_feature = predicted_features
-        solution_labels = solution_candidate
-        # If our measured energy higher than default best value - add this point to data set and rebuild model.
-        # validate false
-        if solution_labels >= default_value:
-            temp_message = "Predicted value larger or equal default: %s > %s" % (solution_labels[0][0], default_value[0][0])
-            self.logger.info(temp_message)
-            self.sub.send('log', 'info', message=temp_message)
-            prediction_is_final = False
-        else:
-            self.logger.info("Solution validation success!")
-            self.sub.send('log', 'info', message="✔ Solution validation success!")
-            prediction_is_final = True
-        self.solution_labels = solution_labels[0]
-        self.solution_features = solution_feature[0]
-        return self.solution_labels, prediction_is_final
 
     def get_result(self, repeater):
         # TODO: need to review a way of features and labels addition here.
@@ -323,7 +302,7 @@ class BayesianOptimization(Model):
             self.solution_features = self.all_features[index_of_the_best_labels]
 
             self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
-            self.sub.send('log', 'info', message="Optimal configuration was not found. Quality: %s, Configuration: %s" % 
+            self.sub.send('log', 'info', message="Optimal configuration was not found. Quality: %s, Configuration: %s" %
             (self.solution_labels, self.solution_features))
 
         elif min(self.all_labels) < self.solution_labels:
@@ -344,14 +323,6 @@ class BayesianOptimization(Model):
         self.logger.info("Number of measured points: %s" % len(self.all_features))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
-
-        # if io:
-        #     temp = {"best point": {'configuration': self.solution_features,
-        #             "result": self.solution_labels,
-        #             "measured points": len(self.all_features),
-        #             'performed measurements': repeater.performed_measurements}
-        #             }
-        #     io.emit('best point', temp)
 
         self.sub.send('final', 'configuration',
                       configurations=[self.solution_features],

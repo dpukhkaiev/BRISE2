@@ -17,12 +17,12 @@ from tools.write_results import write_results
 from tools.front_API import API
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
+from stop_condition.stop_condition_selection import get_stop_condition
 
 
 def run():
     time_started = datetime.datetime.now()
     sub = API() # subscribers
-    print(sub)
 
     if __name__ == "__main__":
         logger = BRISELogConfigurator().get_logger(__name__)
@@ -66,6 +66,7 @@ def run():
     default_result = repeater.measure_configuration([experiment_description["DomainDescription"]["DefaultConfiguration"]]) #change it to switch inside and devide to
     default_features = [experiment_description["DomainDescription"]["DefaultConfiguration"]]
     default_value = default_result
+    logger.info("Results of measuring default value: %s" % default_value)
 
     temp_msg = "Results of measuring default value: %s" % default_value
     logger.info(temp_msg)
@@ -102,6 +103,11 @@ def run():
     # 4. If solution is OK - reporting and terminating. If not - add it to all data set and go to 1.
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
+
+    stop_condition = get_stop_condition(is_minimization_experiment=task_config["ModelConfiguration"]["isMinimizationExperiment"],
+                                        stop_condition_config=task_config["StopCondition"],
+                                        search_space_size=len(search_space))
+
     finish = False
     cur_stats_message = "-- New configuration measurement is needed to proceed. " \
                         "%s configuration points of %s was evaluated. %s retrieved from the selection algorithm.\n"
@@ -121,25 +127,36 @@ def run():
                                                                    default_value=default_value,
                                                                    predicted_features=predicted_features)
 
-                features = [predicted_features]
-                labels = [validated_labels]
+                # "repeater.measure_task" works with list of tasks. "predicted_features" is one task,
+                # because of that it is transmitted as list
+
+                # TODO: CHECK HERE!
+                solution_candidate_labels = repeater.measure_configuration(predicted_features, io=io)
+                labels, features, finish = stop_condition.validate_solution(
+                                                  solution_candidate_labels=solution_candidate_labels,
+                                                  solution_candidate_features=[predicted_features],
+                                                  current_best_labels=default_value,
+                                                  current_best_features=default_features)
+
+                model.solution_labels = labels[0]
+                model.solution_features = features[0]
+
                 selector.disable_point(predicted_features)
 
                 if finish:
+                    sub.send('log', 'info', {'message': "Solution validation success!"})
                     model.add_data(features, labels)
                     optimal_result, optimal_config = model.get_result(repeater)
-
                     write_results(global_config, experiment_description, time_started, features, labels,
                                   repeater.performed_measurements, optimal_config, optimal_result, default_features,
                                   default_value)
-
                     return optimal_result, optimal_config
 
                 else:
                     temp_msg = cur_stats_message % (
                         len(model.all_features), len(search_space), str(selector.numOfGeneratedPoints))
                     logger.info(temp_msg)
-                    # sub.send('log', 'info', message=temp_msg)
+                    sub.send('log', 'info', message=temp_msg)
                     continue
 
         temp_msg = cur_stats_message % (len(model.all_features), len(search_space), str(selector.numOfGeneratedPoints))
