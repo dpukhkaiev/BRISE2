@@ -91,9 +91,9 @@ export class HeatMapComponent implements OnInit {
     this.y.forEach(y => { // y - threads
       var row = [] 
       this.x.forEach(x => { // x - frequency
-        let results = data.get(String([y, x]))
-        row.push(results && results[0]) // change [x,y] or [y,x] if require horizontal or vertical orientation
-                                        // Get the first result from an array or undefined
+        let results = data.get(String([y, x])) // To get horizontal orientation - change to [x,y], vertical - [y,x]
+        row.push(results && results[0]) // Get the first result from an array or mark it as undefined.
+
       });
       z.push(row)
     });

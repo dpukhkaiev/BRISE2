@@ -135,19 +135,18 @@ export class HeatMapRegComponent implements OnInit {
       });
     // ---- Main events
 
-    this.ioMain.onEvent(MainEvent.FINAL) //// ???
+    this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
-        obj["configuration"] && obj["configuration"].forEach(result => {
+        if (obj["configuration"]) {
+          if (obj["configuration"].length > 1) console.log("WARNING! More than one solution received!")
+          let result = obj["configuration"][0]
           if (result) {
-            this.solution = result // In case if only one point solution
-          } else {
-            console.log("Empty solution")
-          }
-          this.measPoints.push(result['configurations'])
-          // this.measPoints = result['measured points']
-        })
-        console.log("Measured", this.measPoints.length)
-        this.prediction.size && this.regrRender()
+              this.solution = result // In case if only one point solution
+              this.measPoints.push(result['configurations'])
+              console.log("Measured", this.measPoints.length)
+              this.prediction.size && this.regrRender()
+            } else { console.log("Empty solution") }
+        }
       });
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
