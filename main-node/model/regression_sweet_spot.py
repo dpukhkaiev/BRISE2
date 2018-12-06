@@ -135,16 +135,15 @@ class RegressionSweetSpot(Model):
         :return: lowest value, and related features.
         """
 
-        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
+        predicted_results = [[predicted_result, index] for (index, predicted_result) in enumerate(self.model.predict(search_space))]
 
         self.sub.send('predictions', 'configurations',
-                      configurations=[search_space[index] for (prediction, index) in predictions],
-                      results=[[round(prediction[0], 2)] for (prediction, index) in predictions])
+                      configurations=[search_space[index] for (predicted_result, index) in predicted_results],
+                      results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
 
-        label, index = min(predictions)
-        label = list(label)
-        return label, search_space[index]
-
+        predicted_result, index_of_predicted_configuration = min(predicted_results)
+        predicted_result, predicted_configuration = list(predicted_result), search_space[index_of_predicted_configuration]
+        return predicted_result, predicted_configuration
 
     def resplit_data(self, test_size):
         """

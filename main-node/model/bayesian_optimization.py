@@ -209,16 +209,14 @@ class BayesianOptimization(Model):
             return False
         return True
 
-
     def predict_solution(self, search_space):
-
-        sample = None
+        predicted_configuration = None
         info_dict = {}
 
-        best = np.inf
-        best_vector = None
+        predicted_result = np.inf
+        predicted_result_vector = None
 
-        if sample is None:
+        if predicted_configuration is None:
             try:
                 
                 l = self.model['good'].pdf
@@ -253,7 +251,7 @@ class BayesianOptimization(Model):
                     val = minimize_me(vector)
 
                     if not np.isfinite(val):
-                        self.logger.warning('sampled vector: %s has EI value %s' % (vector, val))
+                        self.logger.warning('predicted configuration vector: %s has EI value %s' % (vector, val))
                         self.logger.warning("data in the KDEs:\n%s\n%s" %(kde_good.data, kde_bad.data))
                         self.logger.warning("bandwidth of the KDEs:\n%s\n%s" %(kde_good.bw, kde_bad.bw))
                         self.logger.warning("l(x) = %s" % (l(vector)))
@@ -263,31 +261,36 @@ class BayesianOptimization(Model):
                         # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
                         # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
                         if np.isfinite(l(vector)):
-                            best_vector = vector
+                            predicted_result_vector = vector
                             break
 
-                    if val < best:
-                        best = val
-                        best_vector = vector
+                    if val < predicted_result:
+                        predicted_result = val
+                        predicted_result_vector = vector
 
-                if best_vector is None:
+                if predicted_result_vector is None:
                     self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.num_samples)
-                    sample = self.configspace.sample_configuration().get_dictionary()
+                    # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                     info_dict['model_based_pick'] = False
                 else:
-                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
-                    sample = []
+                    self.logger.debug('predicted_result_vector: {}, {}, {}, {}'.format(
+                        predicted_result_vector,
+                        predicted_result,
+                        l(predicted_result_vector),
+                        g(predicted_result_vector)))
+
+                    predicted_configuration = []
                     for index, dimension in enumerate(self.task_config["DomainDescription"]["AllConfigurations"]):
-                        sample.append(dimension[best_vector[index]])
+                        predicted_configuration.append(dimension[predicted_result_vector[index]])
 
             except:
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
                                     "Using random configuration" % (self.num_samples, traceback.format_exc()))
-                # sample = self.configspace.sample_configuration()
+                # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                 info_dict['model_based_pick'] = False
 
         self.logger.debug('done sampling a new configuration.')
-        return [best], sample
+        return predicted_result, predicted_configuration
 
 
     def get_result(self, repeater):
@@ -307,8 +310,8 @@ class BayesianOptimization(Model):
 
         elif min(self.all_labels) < self.solution_labels:
             temp_message = ("Configuration: %s, Quality: %s, "
-                  "\nthat model gave worse that one of measured previously, but better than default."
-                  "\nReporting best of measured." %
+                  "that model gave worse that one of measured previously, but better than default."
+                  "Reporting best of measured." %
                   (self.solution_features, self.solution_labels))
             self.logger.info(temp_message)
             self.sub.send('log', 'info', message=temp_message)

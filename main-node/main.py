@@ -104,8 +104,8 @@ def run():
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
     #
 
-    stop_condition = get_stop_condition(is_minimization_experiment=task_config["ModelConfiguration"]["isMinimizationExperiment"],
-                                        stop_condition_config=task_config["StopCondition"],
+    stop_condition = get_stop_condition(is_minimization_experiment=experiment_description["ModelConfiguration"]["isMinimizationExperiment"],
+                                        stop_condition_config=experiment_description["StopCondition"],
                                         search_space_size=len(search_space))
 
     finish = False
@@ -119,32 +119,25 @@ def run():
             model_validated = model.validate_model(search_space=search_space)
 
             if model_validated:
-                predicted_labels, predicted_features = model.predict_solution(search_space=search_space)
-                temp_msg = "Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels))
+                # TODO: Need to agree on return structure (nested or not).
+                predicted_result, predicted_configuration = model.predict_solution(search_space=search_space)
+                temp_msg = "Predicted solution features:%s, labels:%s." % (str(predicted_configuration), str(predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
-                validated_labels, finish = model.validate_solution(repeater=repeater,
-                                                                   default_value=default_value,
-                                                                   predicted_features=predicted_features)
-
-                # "repeater.measure_task" works with list of tasks. "predicted_features" is one task,
-                # because of that it is transmitted as list
-
-                # TODO: CHECK HERE!
-                solution_candidate_labels = repeater.measure_configuration(predicted_features, io=io)
+                solution_candidate_labels = repeater.measure_configuration([predicted_configuration])
                 labels, features, finish = stop_condition.validate_solution(
                                                   solution_candidate_labels=solution_candidate_labels,
-                                                  solution_candidate_features=[predicted_features],
+                                                  solution_candidate_features=[predicted_configuration],
                                                   current_best_labels=default_value,
                                                   current_best_features=default_features)
-
+                # TODO: Storing possible result should be in `experiment` object.
                 model.solution_labels = labels[0]
                 model.solution_features = features[0]
 
-                selector.disable_point(predicted_features)
+                selector.disable_point(predicted_configuration)
 
                 if finish:
-                    sub.send('log', 'info', {'message': "Solution validation success!"})
+                    sub.send('log', 'info', message="Solution validation success!")
                     model.add_data(features, labels)
                     optimal_result, optimal_config = model.get_result(repeater)
                     write_results(global_config, experiment_description, time_started, features, labels,
