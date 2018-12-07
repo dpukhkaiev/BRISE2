@@ -97,39 +97,3 @@ class Repeater(ABC):
             return_for_main.append(eval(self.WSClient._results_data_types[index])(value)
                                    for index, value in enumerate(point))
         return return_for_main
-    #
-    # def calculate_config_average(self, tasks_results):
-    #     """
-    #         Summary of all Results. Calculating avarage result for configuration
-    #     :param tasks_results: List of all results(list) in specific point(configuration)
-    #                 shape - list, e.g. ``[[465], [246.423]]``
-    #     :return: List with 1 average value.
-    #     """
-    #     result = [0 for _ in range(len(tasks_results[0]))]
-    #     for task_result in tasks_results:
-    #         for index, value in enumerate(task_result):
-    #             # If the result is not a digital value, we should use this value variable without averaging
-    #             if type(value) not in [int, float]:
-    #                 result[index] = value
-    #             else:
-    #                 result[index] += value
-    #     # Calculating average.
-    #     for index, value in enumerate(result):
-    #         # If the result is not a digital value, we should use this value variable without averaging
-    #         if type(value) not in [int, float]:
-    #             result[index] = value
-    #         else:
-    #             result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(tasks_results), 3))
-    #     return result
-    #
-    # def point_to_dictionary(self, point):
-    #     """
-    #         Transform list of features values to dict
-    #     :param point: concrete experiment configuration that is evaluating
-    #                   shape - list, e.g. ``[1200, 32]``
-    #     :return: Dict with keys - feature name and value - value of this feature.
-    #     """
-    #     dict_point = dict()
-    #     for i in range(0, len(point)):
-    #         dict_point[self.feature_names[i]] = point[i]
-    #     return dict_point
