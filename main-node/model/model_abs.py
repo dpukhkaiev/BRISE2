@@ -9,7 +9,10 @@ class Model(ABC):
     def validate_model(self): pass
 
     @abstractmethod
-    def predict_solution(self): pass
+    def predict_solution(self):
+        # TODO: Make it `template method`.
+        pass
+
 
     @abstractmethod
     def get_result(self): pass

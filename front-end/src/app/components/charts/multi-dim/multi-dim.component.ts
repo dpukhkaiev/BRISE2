@@ -6,7 +6,7 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 // Events
 import { MainEvent } from '../../../data/client-enums';
 import { Task } from '../../../data/taskData.model';
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 import { Solution } from '../../../data/taskData.model';
 
 interface PointExp {
@@ -34,10 +34,10 @@ export class MultiDimComponent implements OnInit {
   result = new Map()
   // Best point 
   solution: Solution
-  default_task: any
+  default_configuration: any
 
   globalConfig: object
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   dimensions: Array<any>
 
@@ -69,7 +69,7 @@ export class MultiDimComponent implements OnInit {
   BestPoint = new Set<PointExp>()
 
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   resetRes() {
@@ -89,7 +89,7 @@ export class MultiDimComponent implements OnInit {
 
   // main-node socket events
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.BEST)
+    this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
         this.solution = obj['best point']
         let tmp: PointExp = {
@@ -108,44 +108,49 @@ export class MultiDimComponent implements OnInit {
         this.render()
       });
 
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['global_config']
-        this.taskConfig = obj['task']
-        this.dimensions = obj['task']['DomainDescription']['AllConfigurations']
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
+        this.dimensions = this.experimentDescription['DomainDescription']['AllConfigurations']
         // this.resetRes() // Clear the old data and results
         this.ranges = {
           'laplace_correction': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][0].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][0]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][0].length,
+            'parameters_digits': Array.apply(null, { length: this.experimentDescription['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][0]
           },
           'estimation_mode': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][1].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][1]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][1].length,
+            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][1]
           },
           'bandwidth_selection': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][2].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][2]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][2].length,
+            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][2]
           },
           'use_application_grid': {
-            'length': obj['task']['DomainDescription']['AllConfigurations'][6].length,
-            'parameters_digits': Array.apply(null, {length: obj['task']['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
-            'parameters_names': obj['task']['DomainDescription']['AllConfigurations'][6]
+            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][6].length,
+            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
+            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][6]
           }
         }
       });
-    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
+    this.ioMain.onEvent(MainEvent.DEFAULT)
       .subscribe((obj: any) => {
-        this.default_task = obj
-        this.result.set(String(obj['configuration']), obj['result'])
+        if (obj['configuration']) {
+          obj["configuration"].forEach(configuration => {
+            this.default_configuration = obj
+            this.result.set(String(obj['configurations']), obj['results'])
+          })
+        }
       });
 
-    this.ioMain.onEvent(MainEvent.TASK_RESULT)
+    this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
-        this.result.set(String(obj['configuration']), obj['result'])
+        obj = obj["configuration"]
+        this.result.set(String(obj['configurations']), obj['results'])
 
         let tmp: PointExp = {
           'laplace_correction': this.ranges['laplace_correction']['parameters_names'].indexOf(obj['configuration'][0]),

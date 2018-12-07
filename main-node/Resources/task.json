@@ -8,10 +8,10 @@
       },
       "SelectionAlgorithm":{
         "SelectionType"     : "SobolSequence",
-        "NumberOfInitialExperiments"   : 10,
+        "NumberOfInitialConfigurations"   : 10,
         "Step"              : 1
       },
-      "ExperimentsConfiguration":{
+      "TaskConfiguration":{
         "TaskName"          : "energy_consumption",
         "WorkerConfiguration":{
           "ws_file": "Radix-500mio.csv"
@@ -20,8 +20,8 @@
         "ResultStructure"   : ["energy"],
         "ResultDataTypes"  : ["float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsOfExperiment": 10,
-        "MaxTimeToRunExperiment": 10
+        "MaxTasksPerConfiguration": 10,
+        "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,

@@ -37,6 +37,8 @@ import scipy.stats as sps
 import logging
 
 from core_entities.configuration import Configuration
+from tools.front_API import API
+
 from model.model_abs import Model
 
 
@@ -57,6 +59,8 @@ class BayesianOptimization(Model):
 
         if "logger" not in dir(self):
             self.logger = logging.getLogger(__name__)
+        # Send updates to subscribers
+        self.sub = API()
 
         if min_points_in_model is None:
             self.min_points_in_model = len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1
@@ -179,26 +183,26 @@ class BayesianOptimization(Model):
                           %(n_good, n_bad, np.min(train_labels)))
         return True
 
-    def validate_model(self, io, search_space):
+    def validate_model(self, search_space):
         #TODO how validate
         # Check if model was built.
         if not self.model:
             return False
         return True
 
-    def predict_solution(self, io):
+    def predict_solution(self):
         """
         Predicts the solution candidate of the model. Returns old Configuration instance if configuration is already
         exists in all_configuration list, otherwise creates new Configuration instance.
         :return Configuration instance
         """
-        sample = None
+        predicted_configuration = None
         info_dict = {}
 
-        best = np.inf
-        best_vector = None
+        predicted_result = np.inf
+        predicted_result_vector = None
 
-        if sample is None:
+        if predicted_configuration is None:
             try:
                 
                 l = self.model['good'].pdf
@@ -233,7 +237,7 @@ class BayesianOptimization(Model):
                     val = minimize_me(vector)
 
                     if not np.isfinite(val):
-                        self.logger.warning('sampled vector: %s has EI value %s' % (vector, val))
+                        self.logger.warning('predicted configuration vector: %s has EI value %s' % (vector, val))
                         self.logger.warning("data in the KDEs:\n%s\n%s" %(kde_good.data, kde_bad.data))
                         self.logger.warning("bandwidth of the KDEs:\n%s\n%s" %(kde_good.bw, kde_bad.bw))
                         self.logger.warning("l(x) = %s" % (l(vector)))
@@ -243,58 +247,57 @@ class BayesianOptimization(Model):
                         # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
                         # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
                         if np.isfinite(l(vector)):
-                            best_vector = vector
+                            predicted_result_vector = vector
                             break
 
-                    if val < best:
-                        best = val
-                        best_vector = vector
+                    if val < predicted_result:
+                        predicted_result = val
+                        predicted_result_vector = vector
 
-                if best_vector is None:
+                if predicted_result_vector is None:
                     self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.num_samples)
-                    sample = self.configspace.sample_configuration().get_dictionary()
+                    # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                     info_dict['model_based_pick'] = False
                 else:
-                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
-                    sample = []
+                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(
+                        predicted_result_vector,
+                        predicted_result,
+                        l(predicted_result_vector),
+                        g(predicted_result_vector)))
+
+                    predicted_configuration = []
                     for index, dimension in enumerate(self.experiment_description["DomainDescription"]["AllConfigurations"]):
-                        sample.append(dimension[best_vector[index]])
+                        predicted_configuration.append(dimension[predicted_result_vector[index]])
 
             except:
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
                                     "Using random configuration" % (self.num_samples, traceback.format_exc()))
+                # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                 info_dict['model_based_pick'] = False
 
         self.logger.debug('done sampling a new configuration.')
-        for config in self.all_configurations:
-            if config.configuration == sample:
-                config.add_predicted_result(configuration=sample, predicted_result=[best])
-                return config
-        predicted_configuration = Configuration(sample)
-        predicted_configuration.add_predicted_result(configuration=sample, predicted_result=[best])
-        return predicted_configuration
+        for configuration in self.all_configurations:
+            if configuration.configuration == predicted_configuration:
+                configuration.add_predicted_result(configuration=predicted_configuration, predicted_result=[predicted_result])
+                return configuration
+        predicted_configuration_class = Configuration(predicted_configuration)
+        predicted_configuration_class.add_predicted_result(configuration=predicted_configuration, predicted_result=[predicted_result])
+        return predicted_configuration_class
 
-    def get_result(self, repeater, io):
+    def get_result(self, repeater):
         # TODO: need to review a way of features and labels addition here.
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
         self.logger.info("\n\nFinal report:")
 
         if self.solution_configuration == []:
-            temp_message = "Optimal configuration was not found. Reporting best of the measured."
-            self.logger.info(temp_message)
             self.solution_configuration = [self.all_configurations[0]]
             for configuration in self.all_configurations:
                 if configuration < self.solution_configuration[0]:
                     self.solution_configuration = [configuration]
-            if io:
-                io.emit('info',
-                            {
-                                'message': temp_message,
-                                "quality": self.solution_configuration[0].average_result,
-                                "conf": self.solution_configuration[0].configuration
-                            }
-                        )
+            self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
+            self.sub.send('log', 'info', message="Optimal configuration was not found. Configuration: %s, Quality: %s" %
+                          (self.solution_configuration[0].configuration, self.solution_configuration[0].average_result))
         else:
             min_configuration = [self.all_configurations[0]]
             for configuration in self.all_configurations:
@@ -302,19 +305,12 @@ class BayesianOptimization(Model):
                     min_configuration = [configuration]
 
             if min_configuration[0] < self.solution_configuration[0]:
-                temp_message = ("Configuration(%s) quality(%s), "
-                      "\nthat model gave worse that one of measured previously, but better than default."
-                      "\nReporting best of measured." % (self.solution_configuration[0].configuration,
-                                                         self.solution_configuration[0].average_result))
+                temp_message = ("Configuration: %s, Quality: %s, "
+                      "that model gave worse that one of measured previously, but better than default."
+                      "Reporting best of measured." % (self.solution_configuration[0].configuration,
+                                                       self.solution_configuration[0].average_result))
                 self.logger.info(temp_message)
-                if io:
-                    io.emit('info',
-                                {
-                                    'message': temp_message,
-                                    "quality": self.solution_configuration[0].average_result,
-                                    "conf": self.solution_configuration[0].configuration
-                                }
-                            )
+                self.sub.send('log', 'info', message=temp_message)
                 self.solution_configuration = min_configuration
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:")
@@ -326,14 +322,15 @@ class BayesianOptimization(Model):
                          % (self.solution_configuration[0].average_result,
                             self.solution_configuration[0].configuration))
 
-        if io:
-            temp = {
-                        "best point": {'configuration': self.solution_configuration[0].configuration,
-                        "result": self.solution_configuration[0].average_result,
-                        "measured points": len(self.all_configurations),
-                        'performed measurements': repeater.performed_measurements}
-                    }
-            io.emit('best point', temp)
+        all_features = []
+        for configuration in self.all_configurations:
+            all_features.append(configuration.configuration)
+        self.sub.send('final', 'configuration',
+                      configurations=[self.solution_configuration[0].configuration],
+                      results=[self.solution_configuration[0].average_result],
+                      type=['bayesian solution'],
+                      measured_points=[all_features],
+                      performed_measurements=[repeater.performed_measurements])
 
         return self.solution_configuration
 
@@ -375,4 +372,3 @@ class BayesianOptimization(Model):
                 nan_indices = np.argwhere(np.isnan(datum)).flatten()
             return_array[i,:] = datum
         return(return_array)
-

@@ -11,8 +11,7 @@ class StopConditionImprovementBased(StopCondition):
 
     def is_final_prediction(self, current_best_configurations, solution_candidate_configurations):
         # If best_solution_labels value is better, than default value, validation is True.
-        if (self.is_minimization_experiment is True and self.best_solution_configuration < current_best_configurations) or \
-                (self.is_minimization_experiment is False and self.best_solution_configuration > current_best_configurations):
+        if current_best_configurations[0].is_better_point(self.is_minimization_experiment, solution_candidate_configurations[0]):
             self.logger.info("Solution validation success! Solution features: %s, solution labels: %s."
                              %(self.best_solution_configuration[0].configuration, self.best_solution_configuration[0].average_result))
             return True

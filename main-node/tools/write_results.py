@@ -15,8 +15,9 @@ def write_results(global_config, experiment_description, time_started, configura
     create_folder_if_not_exists(global_config["results_storage"])
     search_space = list(itertools.product(*experiment_description["DomainDescription"]["AllConfigurations"]))
 
+    # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
     file_path = "%sBRISE_Results_for_%s.txt" % (global_config["results_storage"],
-                                                experiment_description["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"])
+                                                experiment_description["TaskConfiguration"]["WorkerConfiguration"]["ws_file"])
     features = []
     labels = []
     for config in configurations:

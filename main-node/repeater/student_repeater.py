@@ -13,8 +13,9 @@ class StudentRepeater(Repeater):
 
     def decision_function(self, experiment, point, threshold=15, **configuration):
         """
-        Return False while number of measurements less than max_repeats_of_experiment (inherited from abstract class).
+        Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
         In other case - compute result as average between all experiments.
+        :param experiment: instance of Experiment class
         :param point: a configuration under evaluation
                       shape - list, e.g. ``[1200, 32]``
         :param threshold: the maximum value of the relative error(in percents) that could be accepted.
@@ -51,7 +52,7 @@ class StudentRepeater(Repeater):
         if len(configuration_data) < 2:
             return False
 
-        elif len(configuration_data) >= self.max_repeats_of_experiment:
+        elif len(configuration_data) >= self.max_tasks_per_configuration:
             return average_result
 
         else:

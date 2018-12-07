@@ -12,16 +12,16 @@ DATA_FOR_JSON_FILE = {
     },
     "SelectionAlgorithm": {
         "SelectionType": "SobolSequence",
-        "NumberOfInitialExperiments": 10,
+        "NumberOfInitialConfigurations": 10,
         "Step": 1
     },
-    "ExperimentsConfiguration": {
+    "TaskConfiguration": {
         "TaskName": "energy_consumption",
         "FileToRead": "Radix-500mio.csv",
         "ResultStructure": ["frequency", "threads", "energy"],
         "ResultDataTypes": ["float", "int", "float"],
         "RepeaterDecisionFunction": "student_deviation",
-        "MaxRepeatsOfExperiment": 4
+        "MaxTasksPerConfiguration": 4
     },
     "ModelCreation": {
         "ModelTestSize": 0.9,

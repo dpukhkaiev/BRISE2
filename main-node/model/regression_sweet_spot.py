@@ -10,6 +10,7 @@ from functools import reduce
 from model.model_abs import Model
 from core_entities.configuration import Configuration
 
+from tools.front_API import API
 
 class RegressionSweetSpot(Model):
 
@@ -17,9 +18,11 @@ class RegressionSweetSpot(Model):
         """
         Initialization of regression model
         :param log_file_name: - string, location of file, which will store results of model creation
-        :param model_config: float number, displays size of test data set
+        :param experiment: instance of Experiment class
         """
         self.logger = logging.getLogger(__name__)
+        # Send updates to subscribers
+        self.sub = API()
 
         # Model configuration - related fields.
         self.model_config = experiment.description["ModelConfiguration"]
@@ -33,10 +36,6 @@ class RegressionSweetSpot(Model):
         self.built_model_test_size = 0.0
 
         # Data holding fields.
-        # self.all_features = []
-        # self.all_labels = []
-        # self.solution_features = []
-        # self.solution_labels = []
         self.experiment = experiment
         self.all_configurations = []
         self.solution_configuration = []
@@ -84,11 +83,11 @@ class RegressionSweetSpot(Model):
         self.logger.info("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def validate_model(self, io, search_space, degree=6):
+    def validate_model(self, search_space, degree=6):
         """
         Return True, if the model have built, and False, if the model can not build or the model already exists
-        :param io: id using for web-sockets
         :param search_space: list of dimensions for this experiment
+                             # TODO - fix the shape of search_space
                              shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
                                      if there is such search space in "taskData.json" :
                                          {
@@ -105,7 +104,7 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space.copy())
 
         # Check if the model is adequate - write it.
-        predicted_solution = self.predict_solution(io)
+        predicted_solution = self.predict_solution()
         predicted_labels = predicted_solution.predicted_result
         predicted_features = predicted_solution.configuration
         if predicted_labels[0] >= 0:
@@ -124,27 +123,26 @@ class RegressionSweetSpot(Model):
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_) + "\n")
             f.close()
             self.logger.info("Built model is valid.")
-            if io:
-                io.emit('info', {'message': "Built model is valid"})
+            self.sub.send('log', 'info', message="Built model is valid")
             return True
         else:
             self.logger.info("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
+            self.sub.send('log', 'info', message="Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, io):
+    def predict_solution(self):
         """
         Takes features, using previously created model makes regression to find labels and return label with the lowest value.
         :param search_space: list of data points (each data point is also a list).
         :return: lowest value, and related features.
         """
 
-        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(self.experiment.search_space))]
+        predicted_results = [[predicted_result, index] for (index, predicted_result) in enumerate(self.model.predict(self.experiment.search_space))]
+        self.sub.send('predictions', 'configurations',
+                      configurations=[self.experiment.search_space[index] for (predicted_result, index) in predicted_results],
+                      results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
 
-        if io:
-            all_predictions = [{'configuration': self.experiment.search_space[index], "prediction": round(prediction[0], 2)}
-                               for (prediction, index) in predictions]
-            io.emit('regression', {"regression": all_predictions})
-        label, index = min(predictions)
+        label, index = min(predicted_results)
         label = list(label)
         for config in self.all_configurations:
             if config.configuration == self.experiment.search_space[index]:
@@ -153,6 +151,7 @@ class RegressionSweetSpot(Model):
         solution = Configuration(self.experiment.search_space[index])
         solution.add_predicted_result(self.experiment.search_space[index], label)
         return solution
+
 
     def resplit_data(self, test_size):
         """
@@ -168,8 +167,6 @@ class RegressionSweetSpot(Model):
 
         feature_train, feature_test, target_train, target_test = \
             model_selection.train_test_split(all_features, all_labels, test_size=test_size)
-        # feature_train, feature_test, target_train, target_test = \
-        #     model_selection.train_test_split(self.all_features, self.all_labels, test_size=test_size)
 
         return feature_train, feature_test, target_train, target_test
 
@@ -198,7 +195,7 @@ class RegressionSweetSpot(Model):
         from tools.splitter import Splitter
         all_data = []
 
-        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
+        file_path = "./csv/" + load_task()["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
         for config in self.all_configurations:
             if config.configuration in search_space:
@@ -212,27 +209,21 @@ class RegressionSweetSpot(Model):
 
         self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def get_result(self, repeater, io):
+    def get_result(self, repeater):
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
 
         self.logger.info("\n\nFinal report:")
 
         if self.solution_configuration == []:
-            temp_message = "Optimal configuration was not found. Reporting best of the measured."
-            self.logger.info(temp_message)
             self.solution_configuration = [self.all_configurations[0]]
             for configuration in self.all_configurations:
                 if configuration < self.solution_configuration[0]:
                     self.solution_configuration = [configuration]
-            if io:
-                io.emit('info',
-                            {
-                                'message': temp_message,
-                                "quality": self.solution_configuration[0].average_result,
-                                "conf": self.solution_configuration[0].configuration
-                            }
-                        )
+            temp_message = "Optimal configuration was not found. Reporting best of the measured. Quality: %s. Configuration: %s" % \
+                           (self.solution_configuration[0].average_result, self.solution_configuration[0].configuration)
+            self.logger.info(temp_message)
+            self.sub.send('log', 'info', message=temp_message)
 
         else:
             min_configuration = [self.all_configurations[0]]
@@ -241,20 +232,13 @@ class RegressionSweetSpot(Model):
                     min_configuration = [configuration]
 
             if min_configuration[0] < self.solution_configuration[0]:
-                temp_message = ("Configuration(%s) quality(%s), "
-                                "\nthat model gave worse that one of measured previously, but better than default."
-                                "\nReporting best of measured." % (self.solution_configuration[0].configuration,
-                                                                   self.solution_configuration[0].average_result))
+                self.solution_configuration = min_configuration
+                temp_message = ("Configuration: %s Quality: %s, "
+                                "Solution that model gave is worse that one of measured previously, but better than default."
+                                "Reporting best of measured." % (self.solution_configuration[0].configuration,
+                                                                 self.solution_configuration[0].average_result))
             self.logger.info(temp_message)
-            if io:
-                io.emit('info',
-                            {
-                                'message': temp_message,
-                                "quality": self.solution_configuration[0].average_result,
-                                "conf": self.solution_configuration[0].configuration
-                            }
-                        )
-            self.solution_configuration = min_configuration
+            self.sub.send('log', 'info', message=temp_message)
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n%s")
         for configuration in self.all_configurations:
@@ -265,18 +249,15 @@ class RegressionSweetSpot(Model):
                          % (self.solution_configuration[0].average_result,
                             self.solution_configuration[0].configuration))
 
-        if io:
-            configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
-            value = round(self.solution_labels[0], 2)
-            temp = {
-                'best point': {
-                    'configuration': self.solution_configuration[0].configuration,
-                    'result': self.solution_configuration[0].average_result,
-                    'measured points': self.all_configurations,
-                    'performed measurements': repeater.performed_measurements
-                }
-            }
-            io.emit('best point', temp)
+        all_features = []
+        for configuration in self.all_configurations:
+            all_features.append(configuration.configuration)
+        self.sub.send('final', 'configuration',
+                      configurations=[self.solution_configuration[0].configuration],
+                      results=[[round(self.solution_configuration[0].average_result, 2)]],
+                      type=['regresion solution'],
+                      measured_points=[all_features],
+                      performed_measurements=[repeater.performed_measurements])
 
         return self.solution_configuration
 

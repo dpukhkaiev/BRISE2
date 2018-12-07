@@ -64,7 +64,7 @@ class Configuration:
         :param compared_configuration: instance of Configuration class
         :return: True or False
         """
-        return self.average_result < compared_configuration.average_result
+        return self.average_result[0] < compared_configuration.average_result[0]
 
     def __gt__(self, compared_configuration):
         """
@@ -101,4 +101,16 @@ class Configuration:
                 self.average_result[index] = value
             else:
                 self.average_result[index] = round(value / len(self.data), 3)
+
+    def is_better_point(self, is_minimization_experiment, solution_candidate):
+        if is_minimization_experiment is True:
+            if solution_candidate < self:
+                return True
+            else:
+                return False
+        elif is_minimization_experiment is False:
+            if solution_candidate > self:
+                return True
+            else:
+                return False
 

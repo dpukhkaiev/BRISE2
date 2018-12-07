@@ -16,25 +16,12 @@ class StopCondition(ABC):
         """
         Returns prediction_is_final=True if configs_without_improvement >= "MaxConfigsWithoutImprovement",
                 otherwise prediction_is_final=False
-        :param solution_candidate_labels: list of lists with labels of solution candidate. To be validated as a new
-                                          solution.
-               shape - list of lists, e.g. ``[[435.51]]``
-        :param solution_candidate_features: list of lists with features of solution candidate.
-               shape - list of lists, e.g. ``[[1900.0, 32]]``
-        :param current_best_labels: list of lists with labels of current best value.
-               current_best_labels is always labels of default_value for the "StopConditionDefault" case.
-               shape - list of lists with one value, e.g. ``[[326.273]]``
-        :param current_best_features: list of lists with features of current best value.
-               current_best_features is always features of default_value for the "StopConditionDefault" case.
-               shape - list of lists, e.g. ``[[2900.0, 32]]``
-        :return: labels,
-                     shape - list of lists, e.g. ``[[253.132]]``
-                 feature,
-                     shape - list of lists, e.g. ``[[2000.0, 32]]``
-                 prediction_is_final
+        :param solution_candidate_configurations: list of instances of Configuration class
+        :param current_best_configurations: list of instances of Configuration class
+
+        :return: prediction_is_final
         """
-        if self.best_solution_configuration == [] or \
-                self.best_solution_configuration.average_result[0] > current_best_configurations.average_result[0]:
+        if self.best_solution_configuration == [] or self.best_solution_configuration[0] > current_best_configurations[0]:
             self.best_solution_configuration = current_best_configurations
 
         if self.configs_without_improvement < self.max_configs_without_improvement:
@@ -48,12 +35,11 @@ class StopCondition(ABC):
     def compare_configurations(self, solution_candidate_configurations, current_best_configurations):
         # If the measured point is better than previous best value - add this point to data set and rebuild model.
         # Assign self.configs_without_improvement to its configuration value.
-        if (self.is_minimization_experiment is True and solution_candidate_configurations < self.best_solution_configuration) or \
-                (self.is_minimization_experiment is False and solution_candidate_configurations > self.best_solution_configuration):
+        if current_best_configurations[0].is_better_point(self.is_minimization_experiment, solution_candidate_configurations[0]):
             self.configs_without_improvement = 0
             self.logger.info("New solution is found! Predicted value %s is better than previous value %s. "
-                             "Configs Without Improvement = %s" % (solution_candidate_configurations.average_result,
-                                                                   self.best_solution_configuration.average_result,
+                             "Configs Without Improvement = %s" % (solution_candidate_configurations[0].average_result,
+                                                                   self.best_solution_configuration[0].average_result,
                                                                    self.configs_without_improvement))
             self.best_solution_configuration = solution_candidate_configurations
 
@@ -62,8 +48,8 @@ class StopCondition(ABC):
         else:
             self.configs_without_improvement += 1
             self.logger.info("Predicted value %s is worse than previous value %s. Configs Without Improvement = %s"
-                             % (solution_candidate_configurations.average_result,
-                                self.best_solution_configuration.average_result,
+                             % (solution_candidate_configurations[0].average_result,
+                                self.best_solution_configuration[0].average_result,
                                 self.configs_without_improvement))
             if self.configs_without_improvement >= self.max_configs_without_improvement:
                 self.prediction_is_final = self.is_final_prediction(current_best_configurations,

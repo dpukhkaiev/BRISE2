@@ -17,5 +17,6 @@ class StopConditionAdaptive(StopCondition):
         # if self.configs_without_improvement is higher or equal to self.max_configs_without_improvement,
         # then validation is True.
         self.logger.info("Solution validation success! Solution features: %s, solution labels: %s."
-                         %(self.best_solution_configuration.configuration, self.best_solution_configuration.average_result))
+                         %(self.best_solution_configuration[0].configuration,
+                           self.best_solution_configuration[0].average_result))
         return True

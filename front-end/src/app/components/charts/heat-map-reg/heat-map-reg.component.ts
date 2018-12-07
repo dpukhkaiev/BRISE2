@@ -5,7 +5,7 @@ import { MainSocketService } from '../../../core/services/main.socket.service';
 
 // Model
 import { MainEvent } from '../../../data/client-enums';
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 
 // Plot
 import { PlotType as type } from '../../../data/client-enums';
@@ -36,7 +36,7 @@ export class HeatMapRegComponent implements OnInit {
   @ViewChild('reg') reg: ElementRef;
 
   globalConfig: object
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
   // Rendering axises
   y: Array<number>
   x: Array<number>
@@ -59,7 +59,7 @@ export class HeatMapRegComponent implements OnInit {
   }
 
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   // Rendering
@@ -87,8 +87,8 @@ export class HeatMapRegComponent implements OnInit {
         mode: 'markers',
         name: 'solution',
         marker: { color: 'Gold', size: 16, symbol: 'star' },
-        x: this.solution && [this.solution.configuration[1]],
-        y: this.solution && [this.solution.configuration[0]]
+        x: this.solution && [this.solution.configurations[1]],
+        y: this.solution && [this.solution.configurations[0]]
       }
     ];
 
@@ -114,7 +114,8 @@ export class HeatMapRegComponent implements OnInit {
     this.y.forEach(y => { // y - threads
       var row = []
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
+        row.push(data.get(String([y, x]))[0]) // change [x,y] or [y,x] if require horizontal or vertical orientation
+                                          // Get the first result from an array
       });
       z.push(row)
     });
@@ -134,31 +135,39 @@ export class HeatMapRegComponent implements OnInit {
       });
     // ---- Main events
 
-    this.ioMain.onEvent(MainEvent.BEST)
+    this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
-        this.solution = obj['best point']
-        this.measPoints.push(obj['configuration'])
-        this.measPoints = obj['best point']['measured points']
-        console.log("Measured", this.measPoints.length)
-        this.prediction.size && this.regrRender()
+        if (obj["configuration"]) {
+          if (obj["configuration"].length > 1) console.log("WARNING! More than one solution received!")
+          let result = obj["configuration"][0]
+          if (result) {
+              this.solution = result // In case if only one point solution
+              this.measPoints.push(result['configurations'])
+              console.log("Measured", this.measPoints.length)
+              this.prediction.size && this.regrRender()
+            } else { console.log("Empty solution") }
+        }
       });
 
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        // console.log(' Regresion: **MAIN_CONF', obj);
-        this.globalConfig = obj['global_config']
-        this.taskConfig = obj['task']
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
-        this.resetRes() // Clear the old data and results
+        this.resetRes()
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
+        this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
       });
 
-    this.ioMain.onEvent(MainEvent.REGRESION)
+    this.ioMain.onEvent(MainEvent.PREDICTIONS)
       .subscribe((obj: any) => {
-        console.log(" Regresion points:", obj['regression'].length)
-        obj['regression'].map(point => {
-          this.prediction.set(String(point['configuration']), point['prediction'])
+        obj["configurations"] && obj["configurations"].forEach(point => {
+          if (point) {
+            this.prediction.set(String(point['configurations']), point['results'])
+          } else {
+            console.log("Empty prediction point")
+          }
         })
+        console.log(" Regresion points:", obj['configurations'].length)
         this.prediction.size && this.regrRender()
       });
 

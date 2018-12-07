@@ -8,11 +8,11 @@ import logging
 
 class WSClient(SocketIO):
 
-    def __init__(self, experiments_configuration, wsclient_addr, logfile):
+    def __init__(self, task_configuration, wsclient_addr, logfile):
         """
         Worker Service client, that uses socketIO library to communicate with Worker Service: send task and get results
         (communication based on events).
-        :param experiments_configuration: Dictionary. Represents "ExperimentsConfiguration" of BRISE configuration file.
+        :param task_configuration: Dictionary. Represents "TaskConfiguration" of BRISE configuration file.
         :param wsclient_addr: String. Network address of Worker Service (including port).
         :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
@@ -24,13 +24,13 @@ class WSClient(SocketIO):
         self.logger.info("Connect OK!")
 
         # Properties that holds general task configuration (shared between task runs).
-        self._exp_config = experiments_configuration
-        self._task_name = experiments_configuration["TaskName"]
-        self._task_parameters = experiments_configuration["TaskParameters"]
-        self._result_structure = experiments_configuration["ResultStructure"]
-        self._result_data_types = experiments_configuration["ResultDataTypes"]
-        self._worker_config = experiments_configuration["WorkerConfiguration"]
-        self._time_for_one_task_running = experiments_configuration["MaxTimeToRunExperiment"]
+        self._exp_config = task_configuration
+        self._task_name = task_configuration["TaskName"]
+        self._task_parameters = task_configuration["TaskParameters"]
+        self._result_structure = task_configuration["ResultStructure"]
+        self._result_data_types = task_configuration["ResultDataTypes"]
+        self._worker_config = task_configuration["WorkerConfiguration"]
+        self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"]
         self._log_file_path = logfile
 
         # Properties that holds current task data.
@@ -200,8 +200,8 @@ if __name__ == "__main__":
         "ResultStructure"   : ["frequency", "threads", "energy"],
         "ResultDataTypes"  : ["float", "int", "float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsOfExperiment": 10,
-        "MaxTimeToRunExperiment": 10
+        "MaxTasksPerConfiguration": 10,
+        "MaxTimeToRunTask": 10
     }
     task_data = [[2900.0, 32], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16]]
     from random import randint

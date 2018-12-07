@@ -3,7 +3,7 @@
   "params": {
     "ExperimentNumber"  : 1,
     "ModelTestSize"  : 0.9,
-    "NumberOfInitialExperiments" : 10,
+    "NumberOfInitialConfigurations" : 10,
     "step": 2,
     "SelectionType"     : "SobolSequence",
     "StopCondition"     : "regression",

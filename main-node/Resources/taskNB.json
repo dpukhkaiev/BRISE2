@@ -8,10 +8,10 @@
       },
       "SelectionAlgorithm":{
         "SelectionType"     : "SobolSequence",
-        "NumberOfInitialExperiments"   : 10,
+        "NumberOfInitialConfigurations"   : 10,
         "Step"              : 1
       },
-      "ExperimentsConfiguration":{
+      "TaskConfiguration":{
         "TaskName"          : "taskNB",
         "WorkerConfiguration":{
           "ws_file": ""
@@ -20,8 +20,8 @@
         "ResultStructure"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size", "accuracy"],
         "ResultDataTypes"  : ["bool", "str", "str", "float", "float", "int", "bool", "int", "float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsOfExperiment": 10,
-        "MaxTimeToRunExperiment": 10
+        "MaxTasksPerConfiguration": 10,
+        "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,

@@ -5,7 +5,5 @@
 
     "results_storage" : "./Results/",
     "logging_level" : "DEBUG",
-    "log_filename"  : "BRISE.log",
-
-    "frontend" : false
+    "log_filename"  : "BRISE.log"
 }

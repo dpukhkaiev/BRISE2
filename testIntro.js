@@ -24,9 +24,21 @@ $(document).ready(function () {
     });
     // --------------------------------------- New events
 
-    socket.on('task', function (msg) {
+    socket.on('default', function (msg) {
         $("#task").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
-        console.log('Task:', msg);
+        console.log('default:', msg);
+    })
+    socket.on('new', function (msg) {
+        $("#task").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
+        console.log('new:', msg);
+    })
+    socket.on('predictions', function (msg) {
+        $("#task").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
+        console.log('predictions:', msg);
+    })
+    socket.on('final', function (msg) {
+        $("#task").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
+        console.log('final:', msg);
     })
     socket.on('experiment', function (msg) {
         $("#experiment").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
@@ -51,7 +63,6 @@ $(document).ready(function () {
         $("#others").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
         console.log('--task result:', msg);
     });
-
     socket.on('regression', function (msg) {
         $("#others").append('<li class="collection-item">' + JSON.stringify(msg) + '</li>');
         console.log('--regression', msg);

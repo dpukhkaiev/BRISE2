@@ -15,7 +15,7 @@ interface MetaData {
     "appointment": String,
     "owner": String,
     "receive": number,
-    "result": Results
+    "result": any
 }
 
 interface Configuration {
@@ -24,11 +24,7 @@ interface Configuration {
 
 interface Run {
     "method": String,
-    "param": {
-        "frequency": number,
-        "threads": number,
-        "ws_file": string
-    }
+    "param": any
 }
 
 interface Results {
@@ -39,9 +35,9 @@ interface Results {
 }
 
 export interface Solution {
-    configuration: any;
-    result: any;
+    configurations: Array<any>;
+    results: Array<any>;
     'measured points': Array<Number>
-    'performed measurements': number
+    'performed_measurements': number
 } 
 

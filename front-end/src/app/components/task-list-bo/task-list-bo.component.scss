@@ -12,6 +12,10 @@ table {
   width: 100%;
 }
 
+tr.example-detail-row {
+  background-color: rgba($divider-color, .4);
+}
+
 .box {
   display: flex;
   flex-direction: row;
@@ -50,7 +54,8 @@ mat-tab-body mat-grid-tile {
   color: darken($divider-color, 15% )
 }
 .mat-icon {
-  color: darken($divider-color, 15% )
+  color: darken($divider-color, 15% );
+  margin-right: 5px;
 }
 .mat-icon + span {
   color: darken($divider-color, 15% );
@@ -77,11 +82,6 @@ tr.example-detail-row {
 
 tr.example-element-row:not(.example-expanded-row):hover {
   background: rgba($divider-color, .4);
-  border-left: 2px solid $accent-color;
-}
-
-tr.example-element-row:not(.example-expanded-row):active {
-  background: $divider-color;
   border-left: 2px solid $accent-color;
 }
 
