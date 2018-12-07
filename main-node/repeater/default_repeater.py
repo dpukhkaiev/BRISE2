@@ -15,7 +15,7 @@ class DefaultRepeater(Repeater):
     
     def decision_function(self, point, **configuration):
         """
-        Return False while number of measurements less than max_repeats_of_experiment (inherited from abstract class).
+        Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
         In other case - compute result as average between all experiments for one specific configuration.
         :param point: a configuration under evaluation
                       shape - list, e.g. ``[1200, 32]``
@@ -25,7 +25,7 @@ class DefaultRepeater(Repeater):
         # Getting all results from history;
         # point_results is a list of lists of numbers: [exp1, exp2...], where exp1 = [123.1, 123.4, ...]
         point_results = self.history.get(point)
-        if len(point_results) < self.max_repeats_of_experiment:
+        if len(point_results) < self.max_tasks_per_configuration:
             return False
         else:
             # Get the average result

@@ -14,7 +14,7 @@ import { Event } from '../../data/client-enums';
 import { MainEvent } from '../../data/client-enums';
 
 // import { resolve } from 'path';
-import { TaskConfig } from '../../data/taskConfig.model';
+import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 
 @Component({
@@ -37,12 +37,11 @@ export class TaskListBoComponent implements OnInit {
   
   stack: Array<any> = []
   result: Array<Task> = []
-  // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
-  // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
+ 
   focus: any
   displayedColumns: string[] = ['id', 'run', 'file', 'result'];
   ioConnection: any;
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   public resultData: MatTableDataSource<Task>
 
@@ -52,6 +51,8 @@ export class TaskListBoComponent implements OnInit {
     this.resultData.filterPredicate = (task, filter) => {
       return JSON.stringify(task).includes(filter)
     }
+
+    console.log("Task list BO init")
   }
 
   ngOnInit() {
@@ -62,12 +63,9 @@ export class TaskListBoComponent implements OnInit {
   }
 
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
-  clearFocus():void {
-    this.focus = null
-  }
   applyFilter(filterValue: string) {
     this.resultData.filter = filterValue.trim().toLowerCase();
 
@@ -76,12 +74,11 @@ export class TaskListBoComponent implements OnInit {
     }
   }
 
-
   // --------------------- SOCKET ---------------
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.taskConfig = obj['task']
+        this.experimentDescription = obj['description']['experiment description']
       });
   }
   private initIoConnection(): void {
@@ -94,36 +91,14 @@ export class TaskListBoComponent implements OnInit {
         !this.result.includes(fresh, -1) && this.result.push(fresh);
 
         this.resultData.data = this.result;
+        // console.log("List +", fresh)
         // this.table.renderRows();
-      });
-    // Rewrite task stack
-    this.ioConnection = this.io.stack()
-      .subscribe((obj: Array<Object>) => {
-        this.stack = obj.map(i => new Task(i));
-      });
-
-    // Observer for stack and all results from workers service
-    this.ioConnection = this.io.onAllResults()
-      .subscribe((obj: any) => {
-        var data = JSON.parse(obj)
-        // this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
-        this.stack = (data.hasOwnProperty('stack') && data['stack'].length) ? data['stack'].map((t) => new Task(t)) : [];
       });
 
     this.io.onEvent(Event.CONNECT)
       .subscribe(() => {
         this.io.reqForAllRes();
       });
-  }
-
-  // ____________________________ HTTP _____
-  taskInfo(id: string): any {
-     this.ws.getTaskById(id)
-      .subscribe((res) => {
-        this.focus = res["result"];
-        this.focus.time = res["time"]
-    }
-    );
   }
 
 }

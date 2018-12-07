@@ -4,9 +4,9 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
-import { Event } from '../../../data/client-enums';
-import { MainEvent } from '../../../data/client-enums';
-import { TaskConfig } from '../../../data/taskConfig.model';
+import { Event as SocketEvent } from '../../../data/client-enums';
+import { MainEvent, SubEvent } from '../../../data/client-enums';
+import { ExperimentDescription } from '../../../data/experimentDescription.model';
 
 // Plot
 import { PlotType as type } from '../../../data/client-enums';
@@ -15,8 +15,8 @@ import { Smooth as smooth } from '../../../data/client-enums';
 import { Solution } from '../../../data/taskData.model';
 
 interface Configuration {
-  configuration: Array<any>;
-  result: any;
+  configurations: Array<any>;
+  results: any;
 }
 
 @Component({
@@ -32,17 +32,14 @@ export class HeatMapComponent implements OnInit {
   // The prediction results from model
   prediction = new Map()
 
-  // Flag for runing main-node
-  isRuning: boolean = false
-
   globalConfig: object 
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   // Best point 
   solution: Solution
   // Measured points for the Regresion model from worker-service
   measPoints: Array<Array<number>> = []
-  defaultTask: Configuration
+  defaultConfiguration: Configuration
 
   // Rendering axises
   y: Array<number>
@@ -53,9 +50,8 @@ export class HeatMapComponent implements OnInit {
     this.prediction.clear()
     this.solution = undefined
     this.measPoints = []
-    this.defaultTask = undefined
+    this.defaultConfiguration = undefined
   }
-
 
   // Default theme
   theme = {
@@ -84,7 +80,7 @@ export class HeatMapComponent implements OnInit {
     // window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
   }
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
   zParser(data: Map<String,Number>): Array<Array<Number>> {
@@ -95,7 +91,9 @@ export class HeatMapComponent implements OnInit {
     this.y.forEach(y => { // y - threads
       var row = [] 
       this.x.forEach(x => { // x - frequency
-        row.push(data.get(String([y, x]))) // change [x,y] or [y,x] if require horizontal or vertical orientation
+        let results = data.get(String([y, x])) // To get horizontal orientation - change to [x,y], vertical - [y,x]
+        row.push(results && results[0]) // Get the first result from an array or mark it as undefined.
+
       });
       z.push(row)
     });
@@ -103,7 +101,7 @@ export class HeatMapComponent implements OnInit {
   }
   
   render(): void {
-    if (this.taskConfig.ModelConfiguration.ModelType == "regression") {
+    if (this.experimentDescription.ModelConfiguration.ModelType == "regression") {
       const element = this.map.nativeElement
       const data = [
         { // defined X and Y axises with data, type and color
@@ -127,8 +125,8 @@ export class HeatMapComponent implements OnInit {
           hoverinfo: 'none',
           showlegend: false,
           marker: { color: 'Gold', size: 16, symbol: 'star' },
-          x: this.solution && [this.solution.configuration[1]],
-          y: this.solution && [this.solution.configuration[0]]
+          x: this.solution && [this.solution.configurations[1]],
+          y: this.solution && [this.solution.configurations[0]]
         }
       ];
 
@@ -161,12 +159,12 @@ export class HeatMapComponent implements OnInit {
   // --------------------------   Worker-service
   private initWsEvents(): void {
     this.ioWs.initSocket();
-    this.ioWs.onEvent(Event.CONNECT)
+    this.ioWs.onEvent(SocketEvent.CONNECT)
       .subscribe(() => {
         console.log(' heat-map: connected');
         this.ioWs.reqForAllRes();
       });
-    this.ioWs.onEvent(Event.DISCONNECT)
+    this.ioWs.onEvent(SocketEvent.DISCONNECT)
       .subscribe(() => {
         console.log(' heat-map: disconnected');
     });
@@ -185,43 +183,57 @@ export class HeatMapComponent implements OnInit {
         console.log(' heat-map: disconnected');
       });
 
-    // ----                     Main events
-    this.ioMain.onEvent(MainEvent.INFO)
+    //                            Main events
+
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        console.log(' Socket: INFO', obj);
+        this.resetRes()
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
+        this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
+        this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
       });
 
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.NEW) // New configuration results
       .subscribe((obj: any) => {
-        this.globalConfig = obj['global_config']
-        this.taskConfig = obj['task']
-        this.y = obj['task']['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = obj['task']['DomainDescription']['AllConfigurations'][1] // threads
-        this.resetRes() // Clear the old data and results
-        console.log(' Socket: MAIN_CONF', obj);
-      });
-    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
-      .subscribe((obj: any) => {
-        console.log(' Socket: DEFAULT_task', obj);
-        this.defaultTask = obj
-        this.result.set(String(obj['configuration']), obj['result'])
-        this.measPoints.push(obj['configuration'])
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.result.set(String(configuration['configurations']), configuration['results'])
+            this.measPoints.push(configuration['configurations'])
+            console.log('New configuration:', configuration)
+          } else {
+            console.log("Empty configuration")
+          }
+        })
         this.render()
       });
-    this.ioMain.onEvent(MainEvent.TASK_RESULT)
+    this.ioMain.onEvent(MainEvent.FINAL) // The final configuration, suggested by BRISE.
       .subscribe((obj: any) => {
-        this.result.set(String(obj['configuration']), obj['result'])
-        this.measPoints.push(obj['configuration'])
-        console.log('TaskRes:', obj)
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.solution = configuration // In case if only one point solution
+            console.log('Final:', obj["configuration"])
+          } else {
+            console.log("Empty solution")
+          }
+        })
         this.render()
       });
-    this.ioMain.onEvent(MainEvent.BEST)
+    this.ioMain.onEvent(MainEvent.DEFAULT) // Default configuration
       .subscribe((obj: any) => {
-        console.log(' Socket: BEST', obj);
-        this.solution = obj['best point']
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.defaultConfiguration = configuration // In case if only one point default
+            this.result.set(String(configuration['configurations']), configuration['results'])
+            this.measPoints.push(configuration['configurations'])
+          } else {
+            console.log("Empty default")
+          }
+        })
+        console.log('Default:', obj["configuration"])
         this.render()
-        this.isRuning = false
       });
+
   }
 
 }

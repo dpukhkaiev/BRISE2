@@ -10,6 +10,10 @@ import { MainSocketService } from '../../core/services/main.socket.service';
 import { MainEvent } from '../../data/client-enums';
 import { Solution } from '../../data/taskData.model';
 
+interface NewsPoint  {
+  'time': any;
+  'message': string;
+}
 
 @Component({
   selector: 'info-board',
@@ -21,13 +25,13 @@ export class InfoBoardComponent implements OnInit {
   panelOpenState = false;
 
   // Information log
-  news = new Set()
+  news: Set<NewsPoint> = new Set()
   
   solution: Solution
-  default_task: any
+  default_configuration: any
 
   globalConfig: object
-  taskConfig: object
+  experimentDescription: object
 
   constructor(
     private ioWs: WsSocketService,
@@ -52,71 +56,87 @@ export class InfoBoardComponent implements OnInit {
       });
 
     // ----                     Main events
-    this.ioMain.onEvent(MainEvent.DEFAULT_CONF)
+    this.ioMain.onEvent(MainEvent.DEFAULT)
       .subscribe((obj: any) => {
-        this.default_task = obj
-        let temp = { 'time': Date.now(), 'message': 'Measured default configuration'}
-        this.snackBar.open(temp['message'], '×', {
-          duration: 3000
-        });
-        this.news.add(temp) 
-      });
-    this.ioMain.onEvent(MainEvent.BEST)
-      .subscribe((obj: any) => {
-        this.solution = obj['best point']
-        let temp = { 
-          'time': Date.now(), 
-          'message': '★★★ The optimum result is found. The best point is reached ★★★'
+        if (obj['configuration']) {
+          this.default_configuration = obj['configuration'][0]
+          let temp: NewsPoint = {'time': Date.now(), 'message': 'Default configuration results received' }
+          this.snackBar.open(temp['message'], '×', {
+            duration: 3000
+          });
+          // this.news.add(temp) 
         }
-        this.snackBar.open(temp['message'], '×', {
-          duration: 3000
-        });
-        this.news.add(temp)
       });
 
-    this.ioMain.onEvent(MainEvent.INFO)
+    this.ioMain.onEvent(MainEvent.FINAL)
       .subscribe((obj: any) => {
-        let temp = { 'time': Date.now(), 'message': obj['message'] }
-        this.snackBar.open(temp['message'], '×', {
-          duration: 3000
-        });
-        this.news.add(temp)
+        if (obj['configuration']) {
+          this.solution = obj['configuration'][0]
+          let temp = {
+            'time': Date.now(),
+            'message': '★★★ The optimum result is found. The best point is reached ★★★'
+          }
+          this.snackBar.open(temp['message'], '×', {
+            duration: 3000
+          });
+          this.news.add(temp)
+        }
       });
 
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.LOG) // For information messages
       .subscribe((obj: any) => {
-        this.globalConfig = obj['global_config']
-        this.taskConfig = obj['task']
+        if (obj['info']) {
+          let temp = { 'time': Date.now(), 'message': obj['info'] }
+          this.snackBar.open(temp['message'], '×', {
+            duration: 3000
+          });
+          this.news.add(temp)
+        }
+      });
+
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
+      .subscribe((obj: any) => {
+        this.globalConfig = obj['description']['global configuration']
+        this.experimentDescription = obj['description']['experiment description']
         let temp = {
           'time': Date.now(), 
-          'message': 'The main configurations of the experiment are obtained.Let\'s go!'
-        }
-        this.snackBar.open(temp['message'], '×', {
-          duration: 3000
-        });
-        this.news.add(temp) 
-      });
-    this.ioMain.onEvent(MainEvent.TASK_RESULT)
-      .subscribe((obj: any) => {
-        let temp = { 
-          'time': Date.now(), 
-          'message': 'New results for ' + String(obj['configuration']) 
+          'message': 'The main configurations of the experiment are obtained. Let\'s go! '
         }
         this.snackBar.open(temp['message'], '×', {
           duration: 3000
         });
         this.news.add(temp)
+        console.log("Experiment description: ", obj)
       });
-    this.ioMain.onEvent(MainEvent.REGRESION)
+    this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
-        let temp = { 
-          'time': Date.now(), 
-          'message': 'Regression obtained. ' + obj['regression'].length + ' predictions' 
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            let temp = {
+              'time': Date.now(),
+              'message': 'New results for ' + String(configuration['configurations'])
+            }
+            this.snackBar.open(temp['message'], '×', {
+              duration: 3000
+            });
+            this.news.add(temp)
+          } else {
+            console.log("Empty configuration")
+          }
+        })
+      });
+    this.ioMain.onEvent(MainEvent.PREDICTIONS)
+      .subscribe((obj: any) => {
+        if (obj['configurations']) {
+          let temp = {
+            'time': Date.now(),
+            'message': 'Regression obtained. ' + obj['configurations'].length + ' predictions'
+          }
+          this.snackBar.open(temp['message'], '×', {
+            duration: 3000
+          });
+          this.news.add(temp)
         }
-        this.snackBar.open(temp['message'], '×', {
-          duration: 3000
-        });
-        this.news.add(temp)
       });
   }
 

@@ -23,7 +23,8 @@ import {
   MatTableModule,
   MatInputModule,
   MatPaginatorModule,
-  MatSortModule
+  MatSortModule,
+  MatChipsModule
 } from '@angular/material';
 
 import { LoaderComponent } from './loader/loader.component';
@@ -49,7 +50,8 @@ import { LoaderComponent } from './loader/loader.component';
     MatTableModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSortModule
+    MatSortModule,
+    MatChipsModule
   ],
   declarations: [LoaderComponent],
   exports: [
@@ -73,7 +75,8 @@ import { LoaderComponent } from './loader/loader.component';
     MatTableModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSortModule
+    MatSortModule,
+    MatChipsModule
   ]
 })
 export class SharedModule { }

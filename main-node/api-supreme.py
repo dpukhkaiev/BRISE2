@@ -9,6 +9,7 @@ import time
 from logger.default_logger import BRISELogConfigurator
 logger = BRISELogConfigurator().get_logger(__name__)
 
+from tools.front_API import API
 from main import run as main_run
 # from tools.main_mock import run as main_run
 
@@ -18,10 +19,14 @@ eventlet.monkey_patch()
 # instance of Flask app
 app = Flask(__name__, static_url_path='', template_folder="static")
 CORS(app)
+
 # WebSocket
 app.config['SECRET_KEY'] = 'galamaga'
-socketio = SocketIO(app, logger=True, engineio_logger=True)
+socketio = SocketIO(app, logger=False, engineio_logger=True)
 socketio.heartbeatTimeout = 15000
+
+# Initialize the API singleton
+API(api_object=socketio)
 
 MAIN_PROCESS = None
 data_header = {
@@ -51,7 +56,7 @@ def main_process_start():
     global MAIN_PROCESS, socketio
 
     if not MAIN_PROCESS:
-        MAIN_PROCESS = eventlet.spawn(main_run, socketio)
+        MAIN_PROCESS = eventlet.spawn(main_run)
         time.sleep(0.1)
 
     return main_process_status()

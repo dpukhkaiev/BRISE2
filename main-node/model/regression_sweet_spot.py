@@ -9,7 +9,7 @@ from functools import reduce
 
 from model.model_abs import Model
 
-
+from tools.front_API import API
 
 class RegressionSweetSpot(Model):
 
@@ -20,6 +20,8 @@ class RegressionSweetSpot(Model):
         :param model_config: float number, displays size of test data set
         """
         self.logger = logging.getLogger(__name__)
+        # Send updates to subscribers
+        self.sub = API()
 
         # Model configuration - related fields.
         self.model_config = model_config
@@ -81,10 +83,9 @@ class RegressionSweetSpot(Model):
         self.logger.info("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 
-    def validate_model(self, io, search_space, degree=6):
+    def validate_model(self, search_space, degree=6):
         """
         Return True, if the model have built, and False, if the model can not build or the model already exists
-        :param io: id using for web-sockets
         :param search_space: list of dimensions for this experiment
                              shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
                                      if there is such search space in "taskData.json" :
@@ -102,7 +103,7 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(search_space.copy())
 
         # Check if the model is adequate - write it.
-        predicted_labels, predicted_features = self.predict_solution(io, search_space)
+        predicted_labels, predicted_features = self.predict_solution(search_space)
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -120,29 +121,29 @@ class RegressionSweetSpot(Model):
             f.write("Intercept = " + str(self.model.named_steps['reg'].intercept_) + "\n")
             f.close()
             self.logger.info("Built model is valid.")
-            if io:
-                io.emit('info', {'message': "Built model is valid"})
+            self.sub.send('log', 'info', message="Built model is valid")
             return True
         else:
             self.logger.info("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
+            self.sub.send('log', 'info', message="Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self, io, search_space):
+    def predict_solution(self, search_space):
         """
         Takes features, using previously created model makes regression to find labels and return label with the lowest value.
         :param search_space: list of data points (each data point is also a list).
         :return: lowest value, and related features.
         """
 
-        predictions = [[label, index] for (index, label) in enumerate(self.model.predict(search_space))]
-        if io:
-            all_predictions = [{'configuration': search_space[index], "prediction": round(prediction[0], 2)}
-                               for (prediction, index) in predictions]
-            io.emit('regression', {"regression": all_predictions})
-        label, index = min(predictions)
-        label = list(label)
-        return label, search_space[index]
+        predicted_results = [[predicted_result, index] for (index, predicted_result) in enumerate(self.model.predict(search_space))]
 
+        self.sub.send('predictions', 'configurations',
+                      configurations=[search_space[index] for (predicted_result, index) in predicted_results],
+                      results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
+
+        predicted_result, index_of_predicted_configuration = min(predicted_results)
+        predicted_result, predicted_configuration = list(predicted_result), search_space[index_of_predicted_configuration]
+        return predicted_result, predicted_configuration
 
     def resplit_data(self, test_size):
         """
@@ -181,7 +182,7 @@ class RegressionSweetSpot(Model):
         from tools.splitter import Splitter
         all_data = []
 
-        file_path = "./csv/" + load_task()["ExperimentsConfiguration"]["WorkerConfiguration"]["ws_file"]
+        file_path = "./csv/" + load_task()["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
         for point in self.all_features:
             if point in search_space:
@@ -195,35 +196,33 @@ class RegressionSweetSpot(Model):
 
         self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def get_result(self, repeater, io):
+    def get_result(self, repeater):
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
 
         self.logger.info("\n\nFinal report:")
 
         if not self.solution_labels:
-            temp_message = "Optimal configuration was not found. Reporting best of the measured."
-            self.logger.info(temp_message)
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
-            if io:
-                io.emit('info',
-                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
+
+            temp_message = "Optimal configuration was not found. Reporting best of the measured. Quality: %s. Configuration: %s" % (
+                self.solution_labels, self.solution_features)
+            self.logger.info(temp_message)
+            self.sub.send('log', 'info', message=temp_message)
 
         elif min(self.all_labels) < self.solution_labels:
-            temp_message = ("Configuration(%s) quality(%s), "
-                            "\nthat model gave worse that one of measured previously, but better than default."
-                            "\nReporting best of measured." %
-                            (self.solution_features, self.solution_labels))
-            self.logger.info(temp_message)
-            if io:
-                io.emit('info',
-                        {'message': temp_message, "quality": self.solution_labels, "conf": self.solution_features})
-                
             self.solution_labels = min(self.all_labels)
             index_of_the_best_labels = self.all_labels.index(self.solution_labels)
             self.solution_features = self.all_features[index_of_the_best_labels]
+
+            temp_message = ("Configuration: %s Quality: %s, "
+                "Solution that model gave worse that one of measured previously, but better than default."
+                "Reporting best of measured." %
+                (self.solution_features, self.solution_labels))
+            self.logger.info(temp_message)
+            self.sub.send('log', 'info', message=temp_message)
 
         self.logger.info("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
         self.logger.info("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
@@ -231,18 +230,14 @@ class RegressionSweetSpot(Model):
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
 
-        if io:
-            configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
-            value = round(self.solution_labels[0], 2)
-            temp = {
-                'best point': {
-                    'configuration': configuration,
-                    'result': value,
-                    'measured points': self.all_features,
-                    'performed measurements': repeater.performed_measurements
-                }
-            }
-            io.emit('best point', temp)
+        configuration = [float(self.solution_features[0]), int(self.solution_features[1])]
+        value = round(self.solution_labels[0], 2)
+        self.sub.send('final', 'configuration',
+                      configurations=[configuration],
+                      results=[[value]],
+                      type=['regresion solution'],
+                      measured_points=[self.all_features],
+                      performed_measurements=[repeater.performed_measurements])
 
         return self.solution_labels, self.solution_features
 

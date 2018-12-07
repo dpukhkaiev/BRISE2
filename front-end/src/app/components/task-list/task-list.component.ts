@@ -11,7 +11,7 @@ import { MainSocketService } from '../../core/services/main.socket.service';
 
 import { Task } from '../../data/taskData.model';
 import { Event } from '../../data/client-enums';
-import { TaskConfig } from '../../data/taskConfig.model';
+import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 import { MainEvent } from '../../data/client-enums';
 
@@ -43,7 +43,7 @@ export class TaskListComponent implements OnInit {
   displayedColumns: string[] = ['id', 'run', 'file', 'result', 'time'];
   ioConnection: any;
 
-  taskConfig: TaskConfig
+  experimentDescription: ExperimentDescription
 
   public resultData: MatTableDataSource<Task>
 
@@ -75,7 +75,7 @@ export class TaskListComponent implements OnInit {
     this.focus = null
   }
   isModelType(type: String) {
-    return this.taskConfig && this.taskConfig.ModelConfiguration.ModelType == type
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
   applyFilter(filterValue: string) {
     this.resultData.filter = filterValue.trim().toLowerCase();
@@ -120,9 +120,9 @@ export class TaskListComponent implements OnInit {
 
   // --------------------- SOCKET ---------------
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.MAIN_CONF)
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.taskConfig = obj['task']
+        this.experimentDescription = obj['description']['experiment description']
       });
   }
   private initIoConnection(): void {
@@ -164,15 +164,4 @@ export class TaskListComponent implements OnInit {
         console.log(' task-list: disconnected');
       });
   }
-
-  // ____________________________ HTTP _____
-  taskInfo(id: string): any {
-     this.ws.getTaskById(id)
-      .subscribe((res) => {
-        this.focus = res["result"];
-        this.focus.time = res["time"]
-      }
-      );
-  }
-
 }
