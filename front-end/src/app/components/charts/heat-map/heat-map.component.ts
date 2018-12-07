@@ -187,11 +187,11 @@ export class HeatMapComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
+        this.resetRes()
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
         this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
         this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
-        this.resetRes() // Clear the old data and results
       });
 
     this.ioMain.onEvent(MainEvent.NEW) // New configuration results
