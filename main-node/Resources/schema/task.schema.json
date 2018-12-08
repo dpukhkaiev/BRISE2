@@ -1,6 +1,6 @@
 {
     "$id": "http://brise.com/task.schema.json",
-    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "properties": {
         "DomainDescription": {
@@ -51,12 +51,12 @@
                 "NumberOfInitialConfigurations": {
                     "type": "integer",
                     "minimum": 0,
-                    "exclusiveMinimum": true  
+                    "exclusiveMinimum": true
                 },
                 "Step": {
                     "type": "integer",
                     "minimum": 0,
-                    "exclusiveMinimum": true 
+                    "exclusiveMinimum": true
                 }
             },
             "required": [
@@ -95,19 +95,15 @@
                 },
                 "ResultStructure": {
                     "type": "array",
-                    "items": [
-                        {
-                            "type": "string"
-                        }
-                    ]
+                    "items": [{
+                        "type": "string"
+                    }]
                 },
                 "ResultDataTypes": {
                     "type": "array",
-                    "items": [
-                        {
-                            "type": "string"
-                        }
-                    ]
+                    "items": [{
+                        "type": "string"
+                    }]
                 },
                 "RepeaterDecisionFunction": {
                     "type": "string"
@@ -139,49 +135,58 @@
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1,
-                    "exclusiveMaximum": true
+                    "exclusiveMaximum": true,
+                    "exclusiveMinimum": true
                 },
                 "MinimumAccuracy": {
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1,
-                    "exclusiveMaximum": true
+                    "exclusiveMaximum": true,
+                    "exclusiveMinimum": true
                 },
                 "ModelType": {
                     "type": "string",
-                    "pattern": "^regression$|^BO$"
+                    "enum": ["BO", "regression"]
                 },
-                "MinimizationExperiment": {
+                "isMinimizationExperiment": {
                     "type": "boolean"
                 },
                 "FeaturesLabelsStructure": {
                     "type": "array",
-                    "items": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "string"
-                        }
-                    ]
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
                 }
             },
             "required": [
                 "ModelTestSize",
                 "MinimumAccuracy",
                 "ModelType",
-                "MinimizationExperiment",
+                "isMinimizationExperiment",
                 "FeaturesLabelsStructure"
             ]
+        },
+        "StopCondition": {
+            "anyOf": [{
+                    "$ref": "./stop_condition/schema/adaptive.schema.json#"
+                }, 
+                {
+                    "$ref": "./stop_condition/schema/default.schema.json#"
+                },
+                {
+                    "$ref": "./stop_condition/schema/impr.schema.json#"
+                }
+            ]
+
         }
     },
     "required": [
         "DomainDescription",
         "SelectionAlgorithm",
         "TaskConfiguration",
-        "ModelConfiguration"
+        "ModelConfiguration",
+        "StopCondition"
     ]
 }
