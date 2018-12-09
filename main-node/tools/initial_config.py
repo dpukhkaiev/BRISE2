@@ -25,7 +25,7 @@ def read_global_config(global_config_path):
         exit(3)
 
 
-def load_task(path_to_file="./Resources/task.json"):
+def load_task(path_to_file="./Resources/NB/taskNB1.json"):
     """
     Method reads task configuration from task.json file.
     :param path_to_file: sting path to task file.
@@ -57,7 +57,7 @@ def initialize_config(argv):
     """
     logger = logging.getLogger(__name__)
 
-    taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
+    taskPath = argv[1] if len(argv) > 1 else './Resources/NB/taskNB1.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
     logger.info("Global BRISE configuration file: %s, task description file path: %s" % (taskPath, global_config_path))
     #   Reading config file

@@ -1,27 +1,27 @@
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 
 // Service
+import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
-// Events
-import { MainEvent } from '../../../data/client-enums';
-import { Task } from '../../../data/taskData.model';
+import { Event as SocketEvent } from '../../../data/client-enums';
+import { MainEvent, SubEvent } from '../../../data/client-enums';
 import { ExperimentDescription } from '../../../data/experimentDescription.model';
-import { Solution } from '../../../data/taskData.model';
 
-interface PointExp {
-  laplace_correction: any
-  estimation_mode: any
-  bandwidth_selection: any
-  bandwidth: any
-  minimum_bandwidth: any
-  number_of_kernels: any
-  use_application_grid: any
-  application_grid_size: any
+// Plot
+import { PlotType as type } from '../../../data/client-enums';
+import { Color as colors } from '../../../data/client-enums';
+import { Smooth as smooth } from '../../../data/client-enums';
+import {Solution, Task} from '../../../data/taskData.model';
 
-  accuracy: any;
+
+interface PointExp {[Key: string]: any;}
+
+interface string_parameters {
+  'length': any
+  'parameters_digits': Array<any>
+  'parameters_names': Array<any>
 }
-
 
 @Component({
   selector: 'multi-dim',
@@ -32,45 +32,31 @@ export class MultiDimComponent implements OnInit {
 
   // The experements results
   result = new Map()
-  // Best point 
+
+  // Best point
   solution: Solution
-  default_configuration: any
+  // Measured points for the Regresion model from worker-service
+  measPoints: Array<Array<number>> = []
+  defaultConfiguration: PointExp
 
   globalConfig: object
+  list_of_parameters = []
   experimentDescription: ExperimentDescription
 
   dimensions: Array<any>
 
   // TODO: Rewrite the structure for a valid answer. Use the appropriate pattern
-  ranges: {
-    'laplace_correction': {
-      'length': any,
-      'parameters_digits': Array<any>,
-      'parameters_names': Array<any>
-    },
-    'estimation_mode': {
-      'length': any,
-      'parameters_digits': Array<any>,
-      'parameters_names': Array<any>
-    },
-    'bandwidth_selection': {
-      'length': any,
-      'parameters_digits': Array<any>,
-      'parameters_names': Array<any>
-    },
-    'use_application_grid': {
-      'length': any,
-      'parameters_digits': Array<any>,
-      'parameters_names': Array<any>
-    }
-  }
+  // for string parameters
+  // ranges: {}
+
+
+
+  array_for_colours: Array<any>
+
+  ranges: {[key: string]: string_parameters;} = {}
 
   allRes = new Set<PointExp>()
   BestPoint = new Set<PointExp>()
-
-  isModelType(type: String) {
-    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
-  }
 
   resetRes() {
     this.result.clear()
@@ -80,100 +66,143 @@ export class MultiDimComponent implements OnInit {
   // poiner to DOM element #multi
   @ViewChild('multi') multi: ElementRef;
 
-  constructor(private ioMain: MainSocketService) { }
+  constructor(
+    private ioWs: WsSocketService,
+    private ioMain: MainSocketService,
+  ) {  }
 
   ngOnInit() {
-    this.initMainEvents()
+    this.initWsEvents();
+    this.initMainEvents();
+  }
+
+  isModelType(type: String) {
+    return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
 
-  // main-node socket events
-  private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.FINAL)
-      .subscribe((obj: any) => {
-        this.solution = obj['best point']
-        let tmp: PointExp = {
-          'laplace_correction': obj['best point']['configuration'][0],
-          'estimation_mode': obj['best point']['configuration'][1],
-          'bandwidth_selection': obj['best point']['configuration'][2],
-          'bandwidth': obj['best point']['configuration'][3],
-          'minimum_bandwidth': obj['best point']['configuration'][4],
-          'number_of_kernels': obj['best point']['configuration'][5],
-          'use_application_grid': obj['best point']['configuration'][6],
-          'application_grid_size': obj['best point']['configuration'][7],
-
-          'accuracy': obj['best point']['result']
-        }
-        this.BestPoint.add(tmp)
-        this.render()
+  //                              WebSocket
+  // --------------------------   Worker-service
+  private initWsEvents(): void {
+    this.ioWs.initSocket();
+    this.ioWs.onEvent(SocketEvent.CONNECT)
+      .subscribe(() => {
+        console.log(' multi-dim: connected');
+        this.ioWs.reqForAllRes();
       });
+    this.ioWs.onEvent(SocketEvent.DISCONNECT)
+      .subscribe(() => {
+        console.log(' multi-dim: disconnected');
+      });
+  }
+
+  //                              WebSocket
+  // --------------------------   Main-node
+  private initMainEvents(): void {
+
+    this.ioMain.onEmptyEvent(MainEvent.CONNECT)
+      .subscribe(() => {
+        console.log(' multi-dim: connected');
+      });
+    this.ioMain.onEmptyEvent(MainEvent.DISCONNECT)
+      .subscribe(() => {
+        console.log(' multi-dim: disconnected');
+      });
+
+
+    //                            Main events
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
-        this.dimensions = this.experimentDescription['DomainDescription']['AllConfigurations']
-        // this.resetRes() // Clear the old data and results
-        this.ranges = {
-          'laplace_correction': {
-            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][0].length,
-            'parameters_digits': Array.apply(null, { length: this.experimentDescription['DomainDescription']['AllConfigurations'][0].length}).map(Number.call, Number),
-            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][0]
-          },
-          'estimation_mode': {
-            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][1].length,
-            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][1].length}).map(Number.call, Number),
-            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][1]
-          },
-          'bandwidth_selection': {
-            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][2].length,
-            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][2].length}).map(Number.call, Number),
-            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][2]
-          },
-          'use_application_grid': {
-            'length': this.experimentDescription['DomainDescription']['AllConfigurations'][6].length,
-            'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][6].length}).map(Number.call, Number),
-            'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][6]
+
+        for (let index in this.experimentDescription['TaskConfiguration']['TaskParameters']) {
+          this.list_of_parameters.push(this.experimentDescription['TaskConfiguration']['TaskParameters'][index])
+        }
+        console.log('Name of all parameters: ' + this.list_of_parameters)
+
+        for (let index in this.experimentDescription['DomainDescription']['AllConfigurations']) {
+          if (typeof this.experimentDescription['DomainDescription']['AllConfigurations'][index][0] !== "number") {
+            this.ranges[String(this.list_of_parameters[index])] = {
+              'length': this.experimentDescription['DomainDescription']['AllConfigurations'][index].length,
+              'parameters_digits': Array.apply(null, {length: this.experimentDescription['DomainDescription']['AllConfigurations'][index].length}).map(Number.call, Number),
+              'parameters_names': this.experimentDescription['DomainDescription']['AllConfigurations'][index]
+            }
           }
         }
       });
-    this.ioMain.onEvent(MainEvent.DEFAULT)
+
+    this.ioMain.onEvent(MainEvent.NEW) // New task results
       .subscribe((obj: any) => {
-        if (obj['configuration']) {
-          obj["configuration"].forEach(configuration => {
-            this.default_configuration = obj
-            this.result.set(String(obj['configurations']), obj['results'])
-          })
-        }
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.result.set(String(configuration['configurations']), configuration['results'])
+            this.measPoints.push(configuration['configurations'])
+            console.log('New:', configuration)
+
+            let tmp: PointExp = {}
+            for (let index in this.list_of_parameters) {
+              let is_exists_in_ranges = false
+              for (let key in this.ranges) {
+                if (key == this.list_of_parameters[index]) {
+                  is_exists_in_ranges = true
+                }
+              }
+              if (is_exists_in_ranges) {
+                tmp[this.list_of_parameters[index]] = this.ranges[this.list_of_parameters[index]]['parameters_names'].indexOf(configuration['configurations'][index])
+              }
+              else {
+                tmp[this.list_of_parameters[index]] = configuration['configurations'][index]
+                // tmp.this.list_of_parameters[index] =
+              }
+            }
+            tmp['result'] = configuration['results'][0]
+            this.allRes.add(tmp)
+
+            let chart_dimensions = new Set()
+            for (let index in this.list_of_parameters) {
+              let is_exists_in_ranges = false
+              for (let key in this.ranges) {
+                if (key == this.list_of_parameters[index]) {
+                  is_exists_in_ranges = true
+                }
+              }
+              let dict_dimension = {}
+              if (is_exists_in_ranges) {
+                dict_dimension = {
+                  label: this.list_of_parameters[index],
+                  range: [0, this.ranges[this.list_of_parameters[index]]['length'] - 1],
+                  values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])),
+                  tickvals: this.ranges[this.list_of_parameters[index]]['parameters_digits'],
+                  ticktext: this.ranges[this.list_of_parameters[index]]['parameters_names']
+                }
+              }
+              else {
+                dict_dimension = {
+                  label: this.list_of_parameters[index],
+                  range: [Math.min(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))), Math.max(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])))],
+                  values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))
+                }
+              }
+              chart_dimensions.add(dict_dimension)
+            }
+            let dict_result = {
+              label: 'result',
+              range: [Math.min(...Array.from(this.allRes).map(i => Number(i['result']))), Math.max(...Array.from(this.allRes).map(i => Number(i['result'])))],
+              values: Array.from(this.allRes).map(i => Number(i['result']))
+            }
+            chart_dimensions.add(dict_result)
+            this.render(chart_dimensions)
+          }
+          else {
+            console.log("Empty task")
+          }
+        })
       });
-
-    this.ioMain.onEvent(MainEvent.NEW)
-      .subscribe((obj: any) => {
-        obj = obj["configuration"]
-        this.result.set(String(obj['configurations']), obj['results'])
-
-        let tmp: PointExp = {
-          'laplace_correction': this.ranges['laplace_correction']['parameters_names'].indexOf(obj['configuration'][0]),
-          'estimation_mode': this.ranges['estimation_mode']['parameters_names'].indexOf(obj['configuration'][1]),
-          'bandwidth_selection': this.ranges['bandwidth_selection']['parameters_names'].indexOf(obj['configuration'][2]),
-          'bandwidth': obj['configuration'][3],
-          'minimum_bandwidth': obj['configuration'][4],
-          'number_of_kernels': obj['configuration'][5],
-          'use_application_grid': this.ranges['use_application_grid']['parameters_names'].indexOf(obj['configuration'][6]),
-          'application_grid_size': obj['configuration'][7],
-
-          'accuracy': (obj['result'])
-        }
-        this.allRes.add(tmp)
-        this.render()
-      });
-    // this.ioMain.onEvent(MainEvent.MAIN_CONF)
-    //   .subscribe((obj: any) => {
-    //     this.allRes.clear()
-    //     this.solution = undefined
-    //   });
   }
-  render() {
+
+  render(char_dimensions) {
     const element = this.multi.nativeElement
     var trace = [{
       type: 'parcoords',
@@ -181,51 +210,11 @@ export class MultiDimComponent implements OnInit {
         showscale: true,
         reversescale: true,
         colorscale: 'Jet',
-        cmin: 0,
-        cmax: 1,
-        color: Array.from(this.allRes).map(i => Number(i['accuracy']))
+        cmin: Math.min(...Array.from(this.allRes).map(i => Number(i['result']))),
+        cmax: Math.max(...Array.from(this.allRes).map(i => Number(i['result']))),
+        color: Array.from(this.allRes).map(i => Number(i['result']))
       },
-      dimensions: [{
-        label: 'laplace_correction',
-        range: [0, this.ranges['laplace_correction']['length'] - 1],
-        values: Array.from(this.allRes).map(i =>  Number(i['laplace_correction'])),
-        tickvals: this.ranges['laplace_correction']['parameters_digits'],
-        ticktext: this.ranges['laplace_correction']['parameters_names']
-      }, {
-        label: 'estimation_mode',
-        range: [0, this.ranges['estimation_mode']['length'] - 1],
-        values: Array.from(this.allRes).map(i =>  Number(i['estimation_mode'])),
-        tickvals: this.ranges['estimation_mode']['parameters_digits'],
-        ticktext: this.ranges['estimation_mode']['parameters_names']
-      }, {
-        label: 'bandwidth_selection',
-        range: [0, this.ranges['bandwidth_selection']['length'] - 1],
-        values: Array.from(this.allRes).map(i =>  Number(i['bandwidth_selection'])),
-        tickvals: this.ranges['bandwidth_selection']['parameters_digits'],
-        ticktext: this.ranges['bandwidth_selection']['parameters_names']
-      }, {
-        label: 'bandwidth',
-        range: [Math.min(...Array.from(this.allRes).map(i =>  Number(i['bandwidth']))), Math.max(...Array.from(this.allRes).map(i =>  Number(i['bandwidth'])))],
-        values: Array.from(this.allRes).map(i =>  Number(i['bandwidth']))
-      }, {
-        label: 'minimum_bandwidth',
-        range: [Math.min(...Array.from(this.allRes).map(i =>  Number(i['minimum_bandwidth']))), Math.max(...Array.from(this.allRes).map(i =>  Number(i['minimum_bandwidth'])))],
-        values: Array.from(this.allRes).map(i =>  Number(i['minimum_bandwidth']))
-      }, {
-        label: 'number_of_kernels',
-        range: [Math.min(...Array.from(this.allRes).map(i =>  Number(i['number_of_kernels']))), Math.max(...Array.from(this.allRes).map(i =>  Number(i['number_of_kernels'])))],
-        values: Array.from(this.allRes).map(i =>  Number(i['number_of_kernels']))
-      }, {
-        label: 'use_application_grid',
-        range: [0, this.ranges['use_application_grid']['length'] - 1],
-        values: Array.from(this.allRes).map(i =>  Number(i['use_application_grid'])),
-        tickvals: this.ranges['use_application_grid']['parameters_digits'],
-        ticktext: this.ranges['use_application_grid']['parameters_names']
-      },{
-        label: 'application_grid_size',
-        range: [Math.min(...Array.from(this.allRes).map(i =>  Number(i['application_grid_size']))), Math.max(...Array.from(this.allRes).map(i =>  Number(i['application_grid_size'])))],
-        values: Array.from(this.allRes).map(i =>  Number(i['application_grid_size']))
-      }]
+      dimensions: Array.from(char_dimensions).map(i => (i))
     }];
 
     Plotly.react(element, trace)
