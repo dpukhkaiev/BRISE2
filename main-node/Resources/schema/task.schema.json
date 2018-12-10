@@ -8,8 +8,7 @@
             "properties": {
                 "FeatureNames": {
                     "type": "array",
-                    "items": [
-                        {
+                    "items": [{
                             "type": "string"
                         },
                         {
@@ -25,8 +24,7 @@
                 },
                 "DefaultConfiguration": {
                     "type": "array",
-                    "items": [
-                        {
+                    "items": [{
                             "type": "number"
                         },
                         {
@@ -43,27 +41,9 @@
             ]
         },
         "SelectionAlgorithm": {
-            "type": "object",
-            "properties": {
-                "SelectionType": {
-                    "type": "string"
-                },
-                "NumberOfInitialConfigurations": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
-                },
-                "Step": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
-                }
-            },
-            "required": [
-                "SelectionType",
-                "NumberOfInitialConfigurations",
-                "Step"
-            ]
+            "anyOf": [{
+                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/SobolSequence"
+            }]
         },
         "TaskConfiguration": {
             "type": "object",
@@ -84,8 +64,7 @@
                 },
                 "TaskParameters": {
                     "type": "array",
-                    "items": [
-                        {
+                    "items": [{
                             "type": "string"
                         },
                         {
@@ -147,7 +126,7 @@
                 },
                 "ModelType": {
                     "type": "string",
-                    "enum": ["BO", "regression"]
+                    "enum": [ "BO", "regression"]
                 },
                 "isMinimizationExperiment": {
                     "type": "boolean"
@@ -169,9 +148,10 @@
             ]
         },
         "StopCondition": {
+            "description": "Conditions for stopping an experiment.",
             "anyOf": [{
                     "$ref": "./stop_condition/schema/adaptive.schema.json#"
-                }, 
+                },
                 {
                     "$ref": "./stop_condition/schema/default.schema.json#"
                 },
@@ -179,7 +159,6 @@
                     "$ref": "./stop_condition/schema/impr.schema.json#"
                 }
             ]
-
         }
     },
     "required": [
