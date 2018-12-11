@@ -108,47 +108,18 @@
             ]
         },
         "ModelConfiguration": {
-            "type": "object",
-            "properties": {
-                "ModelTestSize": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
+            "description": "Conditions for stopping an experiment.",
+            "anyOf": [
+                {
+                    "$ref": "./model/schema/model.schema.json#/definitions/BayesianOptimization"
                 },
-                "MinimumAccuracy": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
-                },
-                "ModelType": {
-                    "type": "string",
-                    "enum": [ "BO", "regression"]
-                },
-                "isMinimizationExperiment": {
-                    "type": "boolean"
-                },
-                "FeaturesLabelsStructure": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
+                {
+                    "$ref": "./model/schema/model.schema.json#/definitions/Regression"
                 }
-            },
-            "required": [
-                "ModelTestSize",
-                "MinimumAccuracy",
-                "ModelType",
-                "isMinimizationExperiment",
-                "FeaturesLabelsStructure"
             ]
         },
         "StopCondition": {
-            "description": "Conditions for stopping an experiment.",
+            "description": "Configuration related to the prediction model creating process.",
             "anyOf": [{
                     "$ref": "./stop_condition/schema/adaptive.schema.json#"
                 },

@@ -1,5 +1,5 @@
 {
-    "$id": "http://example.com/entry-schema",
+    "$id": "http://brise.com/selection.schema.json",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Schemes of the algorithm of selection",
     "description": "Approach for exploration and describing all possible configuration (search space).",
@@ -11,7 +11,8 @@
             "type": "object",
             "properties": {
                 "SelectionType": {
-                    "const": "SobolSequence"
+                    "type": "string",
+                    "enum": ["SobolSequence"]
                 },
                 "NumberOfInitialConfigurations": {
                     "description": "The number of configurations that will be tested before making any attempts to build prediction model.",
