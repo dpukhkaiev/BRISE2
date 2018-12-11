@@ -34,8 +34,6 @@ def run():
 
     logger.info("Starting BRISE")
     sub.send('log', 'info', message="Starting BRISE")
-    if not sub:
-        logger.warning("Running BRISE without provided API object.")
     # argv is a run parameters for main - using for configuration
     experiment = Experiment()
     global_config, experiment.description = initialize_config(argv)
@@ -70,13 +68,13 @@ def run():
     repeater.measure_configuration(experiment, [default_configuration])
     selector.disable_point(default_configuration.configuration)
 
-    temp_msg = "Results of measuring default value: %s" % default_configuration.average_result
+    temp_msg = "Results of measuring default value: %s" % default_configuration.get_average_result()
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
 
     # TODO An array in the array with one value.
     # Events 'default conf' and 'task result' must be similar
-    sub.send('default', 'configuration', configurations=[default_configuration.configuration], results=[default_configuration.average_result])
+    sub.send('default', 'configuration', configurations=[default_configuration.configuration], results=[default_configuration.get_average_result()])
 
     temp_msg = "Running initial configurations, while there is no sense in trying to create the model without a data..."
     logger.info(temp_msg)
@@ -88,7 +86,7 @@ def run():
         initial_configurations.append(configuration)
 
     repeater = change_decision_function(repeater, experiment.description["TaskConfiguration"]["RepeaterDecisionFunction"])
-    repeater.measure_configuration(experiment, initial_configurations, default_point=default_configuration.average_result)
+    repeater.measure_configuration(experiment, initial_configurations, default_point=default_configuration.get_average_result())
     logger.info("Results got. Building model..")
     sub.send('log', 'info', message="Results got. Building model..")
 
@@ -123,14 +121,13 @@ def run():
                 predicted_configuration = model.predict_solution()
                 experiment.put(predicted_configuration)
 
-                temp_msg = "Predicted solution configuration: %s, Quality: %s." % (str(predicted_configuration.configuration),
-                                                                            str(predicted_configuration.predicted_result))
+                temp_msg = "Predicted solution configuration: %s, Quality: %s." \
+                           % (str(predicted_configuration.configuration), str(predicted_configuration.predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
                 repeater.measure_configuration(experiment=experiment, configurations=[predicted_configuration])
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
                                                           current_best_configurations=[default_configuration])
-                # TODO: Storing possible result should be in `experiment` object.
                 model.solution_configuration = [predicted_configuration]
                 selector.disable_point(predicted_configuration.configuration)
 
@@ -157,18 +154,18 @@ def run():
         logger.info(temp_msg)
         sub.send('log', 'info', message=temp_msg)
 
-        cur_task = []
+        current_configurations_for_measuring = [] # list of Configuration instances
         for counter in range(experiment.description["SelectionAlgorithm"]["Step"]):
             configuration = Configuration(selector.get_next_point())
-            cur_task.append(configuration)
+            current_configurations_for_measuring.append(configuration)
 
-        repeater.measure_configuration(experiment=experiment, configurations=cur_task,
-                              default_point=default_configuration.average_result)
+        repeater.measure_configuration(experiment=experiment, configurations=current_configurations_for_measuring,
+                              default_point=default_configuration.get_average_result())
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(experiment.all_configurations) > len(experiment.search_space):
             logger.info("Unable to finish normally, terminating with best of measured results.")
-            model.add_data(configurations=cur_task)
+            model.add_data(configurations=experiment.all_configurations)
             optimal_configuration = model.get_result(repeater)
             write_results(global_config=global_config, experiment_description=experiment.description,
                           time_started=time_started, configurations=[predicted_configuration],

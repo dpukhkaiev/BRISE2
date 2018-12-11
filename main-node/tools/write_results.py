@@ -22,7 +22,7 @@ def write_results(global_config, experiment_description, time_started, configura
     labels = []
     for config in configurations:
         features.append(config.configuration)
-        labels.append(config.average_result)
+        labels.append(config.get_average_result())
     try:
         with open(file_path, 'a') as results_file:
             results_file.write("####: START results of BRISE run at %s. ####\n" % time_started.strftime("%d.%m.%Y - %H:%M:%S"))
@@ -32,10 +32,10 @@ def write_results(global_config, experiment_description, time_started, configura
             results_file.write("Number of tested configurations     : %s\n" % len(features))
             results_file.write("Number of performed experiments     : %s\n" % performed_measurements)
             results_file.write("Default configuration               : %s\n" % default_configurations[0].configuration)
-            results_file.write("Default configuration results       : %s\n" % default_configurations[0].average_result)
+            results_file.write("Default configuration results       : %s\n" % default_configurations[0].get_average_result())
             results_file.write("Time used for balancing             : %s\n" % str(datetime.datetime.now() - time_started))
             results_file.write("BRISE optimal configuration         : %s\n" % optimal_configuration[0].configuration)
-            results_file.write("BRISE optimal configuration results : %s\n" % optimal_configuration[0].average_result)
+            results_file.write("BRISE optimal configuration results : %s\n" % optimal_configuration[0].get_average_result())
             results_file.write("####: END results of BRISE run.                 ####\n\n\n\n")
     except IOError as e:
         logger.error("ERROR: %s occurred when tried to write final report to file." % e, exc_info=True)

@@ -78,10 +78,15 @@ class BayesianOptimization(Model):
         self.vartypes = []
 
         for h in hps:
+            # TODO : hook for future continuous configuration ranges
+            # if hasattr(h, 'choices'):
             # Ordered, cause our data is ordered, possible variants:
             #             - c : continuous
             #             - u : unordered (discrete)
             #             - o : ordered (discrete)
+            # else:
+            #     self.kde_vartypes += 'c'
+            #     self.vartypes += [0]
             self.kde_vartypes += 'u'
             self.vartypes += [len(h)]
 
@@ -138,12 +143,16 @@ class BayesianOptimization(Model):
         all_labels = []
         for config in self.all_configurations:
             all_features.append(config.configuration_in_indexes)
-            all_labels.append(config.average_result)
+            all_labels.append(config.get_average_result())
 
         train_features = np.array(all_features)
         train_labels = np.array(all_labels)
 
         n_good = max(self.min_points_in_model, (self.top_n_percent * train_features.shape[0])//100)
+
+        # TODO : developing minimization-maximization configuration
+        # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100), 10)
+
         n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100)
 
         # Refit KDE for the current budget
@@ -278,10 +287,12 @@ class BayesianOptimization(Model):
         self.logger.debug('done sampling a new configuration.')
         for configuration in self.all_configurations:
             if configuration.configuration == predicted_configuration:
-                configuration.add_predicted_result(configuration=predicted_configuration, predicted_result=[predicted_result])
+                configuration.add_predicted_result(configuration=predicted_configuration,
+                                                   predicted_result=[predicted_result])
                 return configuration
         predicted_configuration_class = Configuration(predicted_configuration)
-        predicted_configuration_class.add_predicted_result(configuration=predicted_configuration, predicted_result=[predicted_result])
+        predicted_configuration_class.add_predicted_result(configuration=predicted_configuration,
+                                                           predicted_result=[predicted_result])
         return predicted_configuration_class
 
     def get_result(self, repeater):
@@ -297,7 +308,7 @@ class BayesianOptimization(Model):
                     self.solution_configuration = [configuration]
             self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
             self.sub.send('log', 'info', message="Optimal configuration was not found. Configuration: %s, Quality: %s" %
-                          (self.solution_configuration[0].configuration, self.solution_configuration[0].average_result))
+                          (self.solution_configuration[0].configuration, self.solution_configuration[0].get_average_result()))
         else:
             min_configuration = [self.all_configurations[0]]
             for configuration in self.all_configurations:
@@ -308,18 +319,18 @@ class BayesianOptimization(Model):
                 temp_message = ("Configuration: %s, Quality: %s, "
                       "that model gave worse that one of measured previously, but better than default."
                       "Reporting best of measured." % (self.solution_configuration[0].configuration,
-                                                       self.solution_configuration[0].average_result))
+                                                       self.solution_configuration[0].get_average_result()))
                 self.logger.info(temp_message)
                 self.sub.send('log', 'info', message=temp_message)
                 self.solution_configuration = min_configuration
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:")
         for configuration in self.all_configurations:
-            self.logger.info("%s: %s" % (str(configuration.configuration), str(configuration.average_result)))
+            self.logger.info("%s: %s" % (str(configuration.configuration), str(configuration.get_average_result())))
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s"
-                         % (self.solution_configuration[0].average_result,
+                         % (self.solution_configuration[0].get_average_result(),
                             self.solution_configuration[0].configuration))
 
         all_features = []
@@ -327,7 +338,7 @@ class BayesianOptimization(Model):
             all_features.append(configuration.configuration)
         self.sub.send('final', 'configuration',
                       configurations=[self.solution_configuration[0].configuration],
-                      results=[self.solution_configuration[0].average_result],
+                      results=[self.solution_configuration[0].get_average_result()],
                       type=['bayesian solution'],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])

@@ -18,5 +18,5 @@ class StopConditionAdaptive(StopCondition):
         # then validation is True.
         self.logger.info("Solution validation success! Solution features: %s, solution labels: %s."
                          %(self.best_solution_configuration[0].configuration,
-                           self.best_solution_configuration[0].average_result))
+                           self.best_solution_configuration[0].get_average_result()))
         return True

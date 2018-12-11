@@ -4,59 +4,80 @@ import logging
 class Configuration:
 
     def __init__(self, configuration):
+        """
+        :param configuration: list with parameters
+               shape - list, e.g. ``[1200, 32]``
+
+
+        During initializing following fields are declared:
+
+        self.configuration:             shape - list, e.g. ``[2900.0, 32]``
+        self.configuration_in_indexes:  shape - list, e.g. ``[1, 8]``
+        self._tasks:                    shape - dict, e.g.
+                                               ``{
+                                                    id_task_1: {
+                                                       "result": result1,
+                                                       "worker": worker_name1
+                                                    }
+                                                    id_task_2: {
+                                                      "result": result2,
+                                                      "worker": worker_name2
+                                                    }
+                                                    ...
+                                                 }``
+                                        id_task_1:    shape - int or string
+                                        result:       shape - list, e.g. ``[700.56]``
+                                        worker_name:  shape - string
+
+        self._average_result:            shape - list, e.g. ``[806.43]``
+        self._predicted_result:          shape - list, e.g. ``[0.0098776]``
+        """
+
         self.logger = logging.getLogger(__name__)
-        # The shape of configuration - list, e.g.
-        #                              [2900.0, 32]
+
         self.configuration = configuration
         self.configuration_in_indexes = []
-
-        # The shape of data - dict, e.g.
-        #                     {
-        #                        id_task_1: {
-        #                           "result": result,
-        #                           "worker": worker_name
-        #                        }
-        #                        id_task_1: {
-        #                          "result": result,
-        #                          "worker": worker_name
-        #                        }
-        #                        ...
-        #                     }
-        # The shape of id_task_1 - int
-        # The shape of result - list with one value, e.g.
-        #                       [700.56]
-        # The shape of worker_name - string
-        self.data = {}
-
-        # The shape of average_result - list with one average value of 'result' fields in 'data', e.g.
-        #                               [806.43]
-        self.average_result = []
-
+        self._tasks = {}
+        self._average_result = []
         self.predicted_result = []
 
     def add_predicted_result(self, configuration, predicted_result):
 
-        if self.configuration == configuration:
+        if self.__is_valid_configuration(configuration):
             self.predicted_result = predicted_result
 
-    def add_data(self, configuration, task_id=None, result=None, worker=None):
+    def add_tasks(self, configuration, task_id, result, worker):
 
-        if self.configuration == configuration:
+        if self.__is_valid_configuration(configuration) and self.__is_valid_task(task_id, result, worker):
             if task_id and result and worker:
-                self.data[task_id] = {
+                self._tasks[task_id] = {
                     "result": result,
                     "worker": worker
                 }
-                self.calculate_average_result()
-        else:
-            self.logger.error('New configuration %s does not match with current configuration %s'
-                              % (configuration, self.configuration), exc_info=True)
+                self.__calculate_average_result()
 
-    def get_data(self):
-        return self.data
+    def get_tasks(self):
+        return self._tasks.copy()
 
     def get_average_result(self):
-        return self.average_result
+        return self._average_result.copy()
+
+    def is_better_configuration(self, is_minimization_experiment, current_best_solution):
+        if self.get_average_result() != [] and current_best_solution.get_average_result() != []:
+            if is_minimization_experiment is True:
+                if self < current_best_solution:
+                    return True
+                else:
+                    return False
+            elif is_minimization_experiment is False:
+                if self > current_best_solution:
+                    return True
+                else:
+                    return False
+        elif self.get_average_result() == [] or current_best_solution.get_average_result() == []:
+            self.logger.error('On of the object has empty average_result: self.average_result = %s, \
+                               solution_candidate.get_average_result = %s'
+                              % (self.get_average_result(), current_best_solution.get_average_result()))
 
     def __lt__(self, compared_configuration):
         """
@@ -64,7 +85,7 @@ class Configuration:
         :param compared_configuration: instance of Configuration class
         :return: True or False
         """
-        return self.average_result[0] < compared_configuration.average_result[0]
+        return self.get_average_result()[0] < compared_configuration.get_average_result()[0]
 
     def __gt__(self, compared_configuration):
         """
@@ -74,43 +95,50 @@ class Configuration:
         """
         return compared_configuration.__lt__(self)
 
-    def calculate_average_result(self):
+    def __is_valid_task(self, task_id, result, worker):
+        if isinstance(result, list) and type(task_id) in [int, float, str] and worker is not "":
+            return True
+
+        if not isinstance(result, list):
+            self.logger.error('Current result %s is a list' % result)
+        if type(task_id) not in [int, float, str]:
+            self.logger.error('Current task_id %s is not int or float or str type' % task_id)
+        if worker is "":
+            self.logger.error('Current worker is empty string')
+        return False
+
+    def __is_valid_configuration(self, configuration):
+        if configuration == self.configuration:
+            return True
+        else:
+            self.logger.error('New configuration %s does not match with current configuration %s'
+                              % (configuration, self.configuration))
+            return False
+
+    def __calculate_average_result(self):
         """
          Calculating average result for configuration
         """
         # create a list
         average_result_length = 0
-        for sub_dictionary_key, sub_dictionary in self.data.items():
+        for sub_dictionary_key, sub_dictionary in self.get_tasks().items():
             average_result_length = len(sub_dictionary["result"])
             break
-        self.average_result = [0 for x in range(average_result_length)]
+        self._average_result = [0 for x in range(average_result_length)]
 
-        for key, key_dict in self.data.items():
+        for key, key_dict in self.get_tasks().items():
             for index, value in enumerate(key_dict["result"]):
                 # If the result doesn't have digital values, these values should be assigned  to the result variable
                 # without averaging
                 if type(value) not in [int, float]:
-                    self.average_result[index] = value
+                    self._average_result[index] = value
                 else:
-                    self.average_result[index] += value
+                    self._average_result[index] += value
 
         # Calculating average.
-        for index, value in enumerate(self.average_result):
+        for index, value in enumerate(self._average_result):
             # If the result has not digital values, we should assign this values to the result variable without averaging
             if type(value) not in [int, float]:
-                self.average_result[index] = value
+                self._average_result[index] = value
             else:
-                self.average_result[index] = round(value / len(self.data), 3)
-
-    def is_better_point(self, is_minimization_experiment, solution_candidate):
-        if is_minimization_experiment is True:
-            if solution_candidate < self:
-                return True
-            else:
-                return False
-        elif is_minimization_experiment is False:
-            if solution_candidate > self:
-                return True
-            else:
-                return False
-
+                self._average_result[index] = value / len(self.get_tasks())

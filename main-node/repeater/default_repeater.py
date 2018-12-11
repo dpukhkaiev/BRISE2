@@ -30,7 +30,7 @@ class DefaultRepeater(Repeater):
         point_results = []
         average_result = []
         if configuration_object:
-            point_results = experiment.get(point).get_data()
+            point_results = experiment.get(point).get_tasks()
             average_result = experiment.get(point).get_average_result()
 
         if len(point_results) < self.max_tasks_per_configuration:

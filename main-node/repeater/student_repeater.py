@@ -46,7 +46,7 @@ class StudentRepeater(Repeater):
         average_result = []
         configuration_data = []
         if configuration_object:
-            configuration_data = experiment.get(point).get_data()
+            configuration_data = experiment.get(point).get_tasks()
             average_result = experiment.get(point).get_average_result()
 
         if len(configuration_data) < 2:

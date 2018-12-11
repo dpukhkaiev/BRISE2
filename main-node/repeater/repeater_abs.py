@@ -36,7 +36,7 @@ class Repeater(ABC):
         for configuration in configurations:
             # Evaluating decision function for each configuration in configurations list
             self.current_measurement[str(configuration.configuration)] = {'data': configuration.configuration,
-                                                                   'Finished': False}
+                                                                          'Finished': False}
             result = self.decision_function(experiment, configuration.configuration, **decis_func_config)
             if result: 
                 self.current_measurement[str(configuration.configuration)]['Finished'] = True
@@ -63,7 +63,7 @@ class Repeater(ABC):
             for task, result in zip(configurations_to_send, results):
                 for config in configurations:
                     if config.configuration == task:
-                        config.add_data(task, str(self.task_id), result, self.worker)
+                        config.add_tasks(task, str(self.task_id), result, self.worker)
                         experiment.put(configuration_instance=config)
                 API().send('new', 'task', configurations=[task], results=[result])
                 self.task_id += 1
@@ -74,8 +74,8 @@ class Repeater(ABC):
                 result = self.decision_function(experiment, configuration, **decis_func_config)
                 if result:
                     temp_msg = ("Configuration %s is finished after %s measurements. Result: %s"
-                                % (str(configuration), len(experiment.get(configuration).data),
-                                   str(experiment.get(configuration).average_result)))
+                                % (str(configuration), len(experiment.get(configuration).get_tasks()),
+                                   str(experiment.get(configuration).get_average_result())))
                     self.logger.info(temp_msg)
                     API().send('log', 'info', message=temp_msg)
                     API().send('new', 'configuration', configurations=[configuration], results=[result])
