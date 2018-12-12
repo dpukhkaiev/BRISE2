@@ -23,7 +23,7 @@
                 "Step": {
                     "description": "The number of configurations that will be tested simultaneously.",
                     "type": "integer",
-                    "minimum": 0,
+                    "minimum": 1,
                     "exclusiveMinimum": true
                 }
             },

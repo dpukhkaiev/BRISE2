@@ -34,7 +34,6 @@ Possible values of configurations for your system should be provided in separate
     - `ModelTestSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
     - `MinimumAccuracy` - `float`. A minimum accuracy that model should provide before making any predictions/testing.
     - `ModelType` - `string`. Type of prediction model. Currently available `regression`.
-    - `FeaturesLabelsStructure` - `list of strings 'label' or 'feature'`. Specifies what in the `ResultStructure` field is the optimization goal(`label`) and what is the optimization parameters (`feature`).
        
 
 #### Example of configuration file:
@@ -66,8 +65,7 @@ Possible values of configurations for your system should be provided in separate
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression",
-        "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
+        "ModelType"         : "regression"
       }
 }
 ```

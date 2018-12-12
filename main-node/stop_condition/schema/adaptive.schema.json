@@ -8,7 +8,9 @@
                 "SearchSpacePercentageWithoutImprovement": {
                     "type": "integer",
                     "minimum": 0,
-                    "exclusiveMinimum": true
+                    "maximum": 100,
+                    "exclusiveMinimum": true,
+                    "exclusiveMaximum": true
                 }
             },
             "required": [

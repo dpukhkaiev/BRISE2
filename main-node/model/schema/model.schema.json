@@ -25,25 +25,17 @@
                 },
                 "ModelType": {
                     "type": "string",
-                    "enum": ["BO", "regression"]
+                    "enum": ["BO"]
                 },
                 "isMinimizationExperiment": {
                     "type": "boolean"
-                },
-                "FeaturesLabelsStructure": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
                 }
             },
             "required": [
                 "ModelTestSize",
                 "MinimumAccuracy",
                 "ModelType",
-                "isMinimizationExperiment",
-                "FeaturesLabelsStructure"
+                "isMinimizationExperiment"
             ]
         },
         "Regression": {
@@ -70,21 +62,13 @@
                 },
                 "isMinimizationExperiment": {
                     "type": "boolean"
-                },
-                "FeaturesLabelsStructure": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "string"
-                    }
                 }
             },
             "required": [
                 "ModelTestSize",
                 "MinimumAccuracy",
                 "ModelType",
-                "isMinimizationExperiment",
-                "FeaturesLabelsStructure"
+                "isMinimizationExperiment"
             ]
         }
     }

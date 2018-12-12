@@ -19,12 +19,12 @@ def is_experiment_description_valid(schema_path="resources/schema/task.schema.js
     :file_path: string. The file for validation.
     :return: boolean. Is file valid
     """
-    data = load_json_file(file_path)
+    config_description = load_json_file(file_path)
     schema = load_json_file(schema_path)
     
     resolver = RefResolver('file:///' + abspath('.').replace("\\", "/") + '/', schema)
 
-    return Draft4Validator(schema, resolver=resolver).validate(data) == None
+    return Draft4Validator(schema, resolver=resolver).validate(config_description) == None
 
 
 if __name__ == "__main__":

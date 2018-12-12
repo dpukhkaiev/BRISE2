@@ -1,6 +1,6 @@
 {
     "$id": "http://brise.com/task.schema.json",
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
         "DomainDescription": {
@@ -23,12 +23,23 @@
                     "type": "string"
                 },
                 "DefaultConfiguration": {
-                    "type": "array",
-                    "items": [{
-                            "type": "number"
+                    "anyOf": [
+                        {
+                            "type": "array",
+                            "description": "Default configuration for multidimensional parameters",
+                            "minItems": 3,
+                            "items": [{
+                                "type": ["number", "string"]
+                            }]
                         },
                         {
-                            "type": "number"
+                            "type": "array",
+                            "description": "Default configuration with numbers for the energy consumption",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": [{
+                                "type": "number"
+                            }]
                         }
                     ]
                 }
@@ -57,10 +68,7 @@
                         "ws_file": {
                             "type": "string"
                         }
-                    },
-                    "required": [
-                        "ws_file"
-                    ]
+                    }
                 },
                 "TaskParameters": {
                     "type": "array",

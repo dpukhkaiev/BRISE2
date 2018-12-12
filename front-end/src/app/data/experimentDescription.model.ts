@@ -22,7 +22,6 @@ interface TaskConfiguration {
     WorkerConfiguration
 }
 interface ModelCreation {
-    FeaturesLabelsStructure: Array<String>
     MinimumAccuracy: number
     ModelTestSize: number
     ModelType: String // "regression" or "BO"
