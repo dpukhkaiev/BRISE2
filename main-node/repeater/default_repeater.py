@@ -13,27 +13,27 @@ class DefaultRepeater(Repeater):
         # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
     
-    def decision_function(self, experiment, point, **configuration):
+    def decision_function(self, experiment, current_configuration, **configuration):
         """
         Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
         In other case - compute result as average between all experiments for one specific configuration.
         :param experiment: the instance of Experiment class
-        :param point: a configuration under evaluation
-                      shape - list, e.g. ``[1200, 32]``
+        :param current_configuration: a configuration under evaluation
+                                    shape - list, e.g. ``[1200, 32]``
         :return: result or False
         """
 
         # Getting all results from experiment;
-        # point_results is a list of lists of numbers: [exp1, exp2...], where exp1 = [123.1, 123.4, ...]
+        # configuration_results is a list of lists of numbers: [exp1, exp2...], where exp1 = [123.1, 123.4, ...]
 
-        configuration_object = experiment.get(point)
-        point_results = []
+        configuration_object = experiment.get(current_configuration)
+        configuration_results = []
         average_result = []
         if configuration_object:
-            point_results = experiment.get(point).get_tasks()
-            average_result = experiment.get(point).get_average_result()
+            configuration_results = experiment.get(current_configuration).get_tasks()
+            average_result = experiment.get(current_configuration).get_average_result()
 
-        if len(point_results) < self.max_tasks_per_configuration:
+        if len(configuration_results) < self.max_tasks_per_configuration:
             return False
         else:
             return average_result

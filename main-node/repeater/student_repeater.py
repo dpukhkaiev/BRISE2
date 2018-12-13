@@ -11,12 +11,12 @@ class StudentRepeater(Repeater):
         # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
 
-    def decision_function(self, experiment, point, threshold=15, **configuration):
+    def decision_function(self, experiment, current_configuration, threshold=15, **configuration):
         """
         Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
         In other case - compute result as average between all experiments.
         :param experiment: instance of Experiment class
-        :param point: a configuration under evaluation
+        :param current_configuration: a configuration under evaluation
                       shape - list, e.g. ``[1200, 32]``
         :param threshold: the maximum value of the relative error(in percents) that could be accepted.
                             Used mostly for the default configuration result
@@ -25,7 +25,7 @@ class StudentRepeater(Repeater):
         # Preparing configuration
         params = configuration.keys()
 
-        default_point = configuration['default_point'] if 'default_point' in params else None
+        default_configuration = configuration['default_point'] if 'default_point' in params else None
 
         # For trusted probability 0.95
         student_coefficients = {
@@ -42,35 +42,35 @@ class StudentRepeater(Repeater):
         }
 
         # first of all - need at least 2 measurements
-        configuration_object = experiment.get(point)
+        configuration_object = experiment.get(current_configuration)
         average_result = []
-        configuration_data = []
+        tasks_data = []
         if configuration_object:
-            configuration_data = experiment.get(point).get_tasks()
-            average_result = experiment.get(point).get_average_result()
+            tasks_data = experiment.get(current_configuration).get_tasks()
+            average_result = experiment.get(current_configuration).get_average_result()
 
-        if len(configuration_data) < 2:
+        if len(tasks_data) < 2:
             return False
 
-        elif len(configuration_data) >= self.max_tasks_per_configuration:
+        elif len(tasks_data) >= self.max_tasks_per_configuration:
             return average_result
 
         else:
             # Calculating average for all dimensions
-            point_results = []
-            for key, key_dict in configuration_data.items():
-                point_results.append(key_dict["result"])
+            configuration_results = []
+            for key, key_dict in tasks_data.items():
+                configuration_results.append(key_dict["result"])
 
-            point_results_np = np.matrix(point_results)
+            configuration_results_np = np.matrix(configuration_results)
 
             # Calculating standard deviation
-            all_dim_sko = np.std(point_results_np, axis=0)
+            all_dim_sko = np.std(configuration_results_np, axis=0)
 
             # Pick the Student's coefficient, if number of experiments is 11 or more - pick coefficient for 11
-            student_coefficient = student_coefficients[len(configuration_data) if len(configuration_data) < 11 else 11]
+            student_coefficient = student_coefficients[len(tasks_data) if len(tasks_data) < 11 else 11]
 
             # Calculating confidence interval for each dimension
-            conf_interval = [student_coefficient * dim_sko / pow(len(configuration_data), 0.5) for dim_sko in all_dim_sko]
+            conf_interval = [student_coefficient * dim_sko / pow(len(tasks_data), 0.5) for dim_sko in all_dim_sko]
 
             # Calculating relative error for each dimension
             relative_errors = [interval / avg * 100 for interval, avg in zip(conf_interval, average_result)][0].tolist()[0]
@@ -78,8 +78,8 @@ class StudentRepeater(Repeater):
             # Verifying that deviation of errors in each dimension is
             for index, error in enumerate(relative_errors):
                 # Selecting needed threshold - 100/(1+exp(-x+3.3)) where x is value of measured point divided to default
-                threshold = 100/(1+exp(-float((average_result[index] / default_point[index]))+3.3))\
-                            + len(configuration_data) - 2 if default_point else threshold + len(configuration_data)
+                threshold = 100/(1+exp(-float((average_result[index] / default_configuration[index]))+3.3))\
+                            + len(tasks_data) - 2 if default_configuration else threshold + len(tasks_data)
                 # If for any dimension relative error is > that threshold - abort
                 if error > threshold:
                     return False

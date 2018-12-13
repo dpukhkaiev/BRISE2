@@ -17,7 +17,7 @@ def get_model(experiment, log_file_name):
     elif experiment.description["ModelConfiguration"]["ModelType"] == "BO":
         from model.bayesian_optimization import BayesianOptimization
         logger.info("Bayesian Optimization prediction model selected.")
-        return BayesianOptimization(experiment.description)
+        return BayesianOptimization(experiment)
     else:
         logger.error("Configuration error - model type not supported: %s"
                      % experiment.description["ModelConfiguration"]["ModelType"])

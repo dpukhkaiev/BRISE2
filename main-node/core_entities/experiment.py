@@ -32,11 +32,11 @@ class Experiment:
             else:
                 is_exists = False
                 for value in self.all_configurations:
-                    if value.configuration == configuration_instance.configuration:
+                    if value.parameters == configuration_instance.parameters:
                         is_exists = True
                 if not is_exists:
                     self.all_configurations.append(configuration_instance)
-                    self.logger.info("Configuration %s is added to Experiment" % configuration_instance.configuration)
+                    self.logger.info("Configuration %s is added to Experiment" % configuration_instance.parameters)
 
     def get(self, configuration):
         """
@@ -47,7 +47,7 @@ class Experiment:
         :return: instance of Configuration class
         """
         for configuration_instance in self.all_configurations:
-            if configuration_instance.configuration == configuration:
+            if configuration_instance.parameters == configuration:
                 return configuration_instance
         return None
 

@@ -3,16 +3,16 @@ import logging
 
 class Configuration:
 
-    def __init__(self, configuration):
+    def __init__(self, parameters):
         """
-        :param configuration: list with parameters
+        :param parameters: list with parameters
                shape - list, e.g. ``[1200, 32]``
 
 
         During initializing following fields are declared:
 
-        self.configuration:             shape - list, e.g. ``[2900.0, 32]``
-        self.configuration_in_indexes:  shape - list, e.g. ``[1, 8]``
+        self.parameters:             shape - list, e.g. ``[2900.0, 32]``
+        self.parameters_in_indexes:  shape - list, e.g. ``[1, 8]``
         self._tasks:                    shape - dict, e.g.
                                                ``{
                                                     id_task_1: {
@@ -35,20 +35,20 @@ class Configuration:
 
         self.logger = logging.getLogger(__name__)
 
-        self.configuration = configuration
-        self.configuration_in_indexes = []
+        self.parameters = parameters
+        self.parameters_in_indexes = []
         self._tasks = {}
         self._average_result = []
         self.predicted_result = []
 
-    def add_predicted_result(self, configuration, predicted_result):
+    def add_predicted_result(self, parameters, predicted_result):
 
-        if self.__is_valid_configuration(configuration):
+        if self.__is_valid_configuration(parameters):
             self.predicted_result = predicted_result
 
-    def add_tasks(self, configuration, task_id, result, worker):
+    def add_tasks(self, parameters, task_id, result, worker):
 
-        if self.__is_valid_configuration(configuration) and self.__is_valid_task(task_id, result, worker):
+        if self.__is_valid_configuration(parameters) and self.__is_valid_task(task_id, result, worker):
             if task_id and result and worker:
                 self._tasks[task_id] = {
                     "result": result,
@@ -107,12 +107,12 @@ class Configuration:
             self.logger.error('Current worker is empty string')
         return False
 
-    def __is_valid_configuration(self, configuration):
-        if configuration == self.configuration:
+    def __is_valid_configuration(self, parameters):
+        if parameters == self.parameters:
             return True
         else:
             self.logger.error('New configuration %s does not match with current configuration %s'
-                              % (configuration, self.configuration))
+                              % (parameters, self.parameters))
             return False
 
     def __calculate_average_result(self):

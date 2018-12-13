@@ -21,7 +21,7 @@ def write_results(global_config, experiment_description, time_started, configura
     features = []
     labels = []
     for config in configurations:
-        features.append(config.configuration)
+        features.append(config.parameters)
         labels.append(config.get_average_result())
     try:
         with open(file_path, 'a') as results_file:
@@ -31,10 +31,10 @@ def write_results(global_config, experiment_description, time_started, configura
             results_file.write("Search space size                   : %s\n" % len(search_space))
             results_file.write("Number of tested configurations     : %s\n" % len(features))
             results_file.write("Number of performed experiments     : %s\n" % performed_measurements)
-            results_file.write("Default configuration               : %s\n" % default_configurations[0].configuration)
+            results_file.write("Default configuration               : %s\n" % default_configurations[0].parameters)
             results_file.write("Default configuration results       : %s\n" % default_configurations[0].get_average_result())
             results_file.write("Time used for balancing             : %s\n" % str(datetime.datetime.now() - time_started))
-            results_file.write("BRISE optimal configuration         : %s\n" % optimal_configuration[0].configuration)
+            results_file.write("BRISE optimal configuration         : %s\n" % optimal_configuration[0].parameters)
             results_file.write("BRISE optimal configuration results : %s\n" % optimal_configuration[0].get_average_result())
             results_file.write("####: END results of BRISE run.                 ####\n\n\n\n")
     except IOError as e:

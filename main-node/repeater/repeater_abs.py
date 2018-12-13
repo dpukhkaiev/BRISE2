@@ -35,12 +35,12 @@ class Repeater(ABC):
         # Creating holders for current measurements
         for configuration in configurations:
             # Evaluating decision function for each configuration in configurations list
-            self.current_measurement[str(configuration.configuration)] = {'data': configuration.configuration,
+            self.current_measurement[str(configuration.parameters)] = {'data': configuration.parameters,
                                                                           'Finished': False}
-            result = self.decision_function(experiment, configuration.configuration, **decis_func_config)
+            result = self.decision_function(experiment, configuration.parameters, **decis_func_config)
             if result: 
-                self.current_measurement[str(configuration.configuration)]['Finished'] = True
-                self.current_measurement[str(configuration.configuration)]['Results'] = result
+                self.current_measurement[str(configuration.parameters)]['Finished'] = True
+                self.current_measurement[str(configuration.parameters)]['Results'] = result
 
         # Continue to make measurements while decision function will not terminate it.
         while not self.current_measurement_finished:
@@ -62,7 +62,7 @@ class Repeater(ABC):
             # Writing data to experiment.
             for task, result in zip(configurations_to_send, results):
                 for config in configurations:
-                    if config.configuration == task:
+                    if config.parameters == task:
                         config.add_tasks(task, str(self.task_id), result, self.worker)
                         experiment.put(configuration_instance=config)
                 API().send('new', 'task', configurations=[task], results=[result])

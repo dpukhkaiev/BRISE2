@@ -45,14 +45,14 @@ from model.model_abs import Model
 class BayesianOptimization(Model):
 # TODO: need to implement Maximization/minimization model.
 
-    def __init__(self, experiment_description, min_points_in_model=None, top_n_percent=30, num_samples=96,
+    def __init__(self, experiment, min_points_in_model=None, top_n_percent=30, num_samples=96,
                  random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
 
         self.model = None
         self.top_n_percent = top_n_percent
 
         # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
-        self.experiment_description = experiment_description
+        self.experiment = experiment
 
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
@@ -63,16 +63,16 @@ class BayesianOptimization(Model):
         self.sub = API()
 
         if min_points_in_model is None:
-            self.min_points_in_model = len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1
-        elif min_points_in_model < len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1:
+            self.min_points_in_model = len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1
+        elif min_points_in_model < len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1:
             self.logger.warning('Invalid min_points_in_model value. Setting it to %i' % (
-                len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1))
-            self.min_points_in_model = len(self.experiment_description["DomainDescription"]["AllConfigurations"])+1
+                len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1))
+            self.min_points_in_model = len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1
 
         self.num_samples = num_samples
         self.random_fraction = random_fraction
 
-        hps = self.experiment_description["DomainDescription"]["AllConfigurations"]
+        hps = self.experiment.description["DomainDescription"]["AllConfigurations"]
 
         self.kde_vartypes = ""
         self.vartypes = []
@@ -109,7 +109,7 @@ class BayesianOptimization(Model):
         configuration_in_indexes = []
 
         for hyperparam_index, value in enumerate(configuration):
-            param_index = self.experiment_description["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
+            param_index = self.experiment.description["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
             configuration_in_indexes.insert(hyperparam_index, param_index)
 
         return configuration_in_indexes
@@ -142,7 +142,7 @@ class BayesianOptimization(Model):
         all_features = []
         all_labels = []
         for config in self.all_configurations:
-            all_features.append(config.configuration_in_indexes)
+            all_features.append(config.parameters_in_indexes)
             all_labels.append(config.get_average_result())
 
         train_features = np.array(all_features)
@@ -192,7 +192,7 @@ class BayesianOptimization(Model):
                           %(n_good, n_bad, np.min(train_labels)))
         return True
 
-    def validate_model(self, search_space):
+    def validate_model(self):
         #TODO how validate
         # Check if model was built.
         if not self.model:
@@ -275,7 +275,7 @@ class BayesianOptimization(Model):
                         g(predicted_result_vector)))
 
                     predicted_configuration = []
-                    for index, dimension in enumerate(self.experiment_description["DomainDescription"]["AllConfigurations"]):
+                    for index, dimension in enumerate(self.experiment.description["DomainDescription"]["AllConfigurations"]):
                         predicted_configuration.append(dimension[predicted_result_vector[index]])
 
             except:
@@ -286,12 +286,12 @@ class BayesianOptimization(Model):
 
         self.logger.debug('done sampling a new configuration.')
         for configuration in self.all_configurations:
-            if configuration.configuration == predicted_configuration:
-                configuration.add_predicted_result(configuration=predicted_configuration,
+            if configuration.parameters == predicted_configuration:
+                configuration.add_predicted_result(parameters=predicted_configuration,
                                                    predicted_result=[predicted_result])
                 return configuration
         predicted_configuration_class = Configuration(predicted_configuration)
-        predicted_configuration_class.add_predicted_result(configuration=predicted_configuration,
+        predicted_configuration_class.add_predicted_result(parameters=predicted_configuration,
                                                            predicted_result=[predicted_result])
         return predicted_configuration_class
 
@@ -308,7 +308,7 @@ class BayesianOptimization(Model):
                     self.solution_configuration = [configuration]
             self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
             self.sub.send('log', 'info', message="Optimal configuration was not found. Configuration: %s, Quality: %s" %
-                          (self.solution_configuration[0].configuration, self.solution_configuration[0].get_average_result()))
+                          (self.solution_configuration[0].parameters, self.solution_configuration[0].get_average_result()))
         else:
             min_configuration = [self.all_configurations[0]]
             for configuration in self.all_configurations:
@@ -318,7 +318,7 @@ class BayesianOptimization(Model):
             if min_configuration[0] < self.solution_configuration[0]:
                 temp_message = ("Configuration: %s, Quality: %s, "
                       "that model gave worse that one of measured previously, but better than default."
-                      "Reporting best of measured." % (self.solution_configuration[0].configuration,
+                      "Reporting best of measured." % (self.solution_configuration[0].parameters,
                                                        self.solution_configuration[0].get_average_result()))
                 self.logger.info(temp_message)
                 self.sub.send('log', 'info', message=temp_message)
@@ -326,18 +326,18 @@ class BayesianOptimization(Model):
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:")
         for configuration in self.all_configurations:
-            self.logger.info("%s: %s" % (str(configuration.configuration), str(configuration.get_average_result())))
+            self.logger.info("%s: %s" % (str(configuration.parameters), str(configuration.get_average_result())))
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s"
                          % (self.solution_configuration[0].get_average_result(),
-                            self.solution_configuration[0].configuration))
+                            self.solution_configuration[0].parameters))
 
         all_features = []
         for configuration in self.all_configurations:
-            all_features.append(configuration.configuration)
+            all_features.append(configuration.parameters)
         self.sub.send('final', 'configuration',
-                      configurations=[self.solution_configuration[0].configuration],
+                      configurations=[self.solution_configuration[0].parameters],
                       results=[self.solution_configuration[0].get_average_result()],
                       type=['bayesian solution'],
                       measured_points=[all_features],
@@ -353,7 +353,7 @@ class BayesianOptimization(Model):
         """
         self.all_configurations = configurations
         for config in self.all_configurations:
-            config.configuration_in_indexes = self._config_to_idx(config.configuration)
+            config.parameters_in_indexes = self._config_to_idx(config.parameters)
     
     def impute_conditional_data(self, array):
 

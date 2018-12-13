@@ -2,7 +2,6 @@ import logging
 
 
 def get_stop_condition(experiment):
-        # is_minimization_experiment, stop_condition_config, search_space_size):
     """
     :param experiment: the instance of Experiment class
     :return: Stop Condition object.
@@ -12,6 +11,7 @@ def get_stop_condition(experiment):
     # is_minimization_experiment: bool
     # Possible values - "True" and "False".
     # "True" for the minimization experiment. "False" for the maximization experiment.
+
     is_minimization_experiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
 
     # stop_condition_config: dict.
