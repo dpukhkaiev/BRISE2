@@ -5,15 +5,9 @@ import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
 import { Event as SocketEvent } from '../../../data/client-enums';
-import { MainEvent, SubEvent } from '../../../data/client-enums';
+import { MainEvent } from '../../../data/client-enums';
 import { ExperimentDescription } from '../../../data/experimentDescription.model';
-
-// Plot
-import { PlotType as type } from '../../../data/client-enums';
-import { Color as colors } from '../../../data/client-enums';
-import { Smooth as smooth } from '../../../data/client-enums';
-import {Solution, Task} from '../../../data/taskData.model';
-
+import { Solution } from '../../../data/taskData.model';
 
 interface PointExp {[Key: string]: any;}
 
@@ -30,36 +24,23 @@ interface string_parameters {
 })
 export class MultiDimComponent implements OnInit {
 
-  // The experements results
-  result = new Map()
-
-  // Best point
-  solution: Solution
-  // Measured points for the Regresion model from worker-service
-  measPoints: Array<Array<number>> = []
-  defaultConfiguration: PointExp
-
-  globalConfig: object
   list_of_parameters = []
   experimentDescription: ExperimentDescription
-
-  dimensions: Array<any>
-
-  // TODO: Rewrite the structure for a valid answer. Use the appropriate pattern
-  // for string parameters
-  // ranges: {}
-
-
-
-  array_for_colours: Array<any>
+  default_configuration: PointExp
 
   ranges: {[key: string]: string_parameters;} = {}
 
   allRes = new Set<PointExp>()
-  BestPoint = new Set<PointExp>()
+
+  // Best point
+  solution: Solution
 
   resetRes() {
-    this.result.clear()
+    this.list_of_parameters = []
+    this.experimentDescription = undefined
+    this.default_configuration = undefined
+    this.ranges = {}
+    this.allRes.clear()
     this.solution = undefined
   }
 
@@ -72,28 +53,11 @@ export class MultiDimComponent implements OnInit {
   ) {  }
 
   ngOnInit() {
-    this.initWsEvents();
     this.initMainEvents();
   }
 
   isModelType(type: String) {
     return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
-  }
-
-
-  //                              WebSocket
-  // --------------------------   Worker-service
-  private initWsEvents(): void {
-    this.ioWs.initSocket();
-    this.ioWs.onEvent(SocketEvent.CONNECT)
-      .subscribe(() => {
-        console.log(' multi-dim: connected');
-        this.ioWs.reqForAllRes();
-      });
-    this.ioWs.onEvent(SocketEvent.DISCONNECT)
-      .subscribe(() => {
-        console.log(' multi-dim: disconnected');
-      });
   }
 
   //                              WebSocket
@@ -114,12 +78,10 @@ export class MultiDimComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.globalConfig = obj['description']['global configuration']
+        this.resetRes()
         this.experimentDescription = obj['description']['experiment description']
 
-        for (let index in this.experimentDescription['TaskConfiguration']['TaskParameters']) {
-          this.list_of_parameters.push(this.experimentDescription['TaskConfiguration']['TaskParameters'][index])
-        }
+        this.list_of_parameters = this.experimentDescription['TaskConfiguration']['TaskParameters']
         console.log('Name of all parameters: ' + this.list_of_parameters)
 
         for (let index in this.experimentDescription['DomainDescription']['AllConfigurations']) {
@@ -133,66 +95,26 @@ export class MultiDimComponent implements OnInit {
         }
       });
 
+    this.ioMain.onEvent(MainEvent.DEFAULT) // Default configuration
+      .subscribe((obj: any) => {
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.default_configuration = configuration // In case if only one point default
+          } else {
+            console.log("Empty default")
+          }
+        })
+        console.log('Default:', obj["configuration"])
+      });
+
     this.ioMain.onEvent(MainEvent.NEW) // New task results
       .subscribe((obj: any) => {
         obj["configuration"] && obj["configuration"].forEach(configuration => {
           if (configuration) {
-            this.result.set(String(configuration['configurations']), configuration['results'])
-            this.measPoints.push(configuration['configurations'])
             console.log('New:', configuration)
 
-            let tmp: PointExp = {}
-            for (let index in this.list_of_parameters) {
-              let is_exists_in_ranges = false
-              for (let key in this.ranges) {
-                if (key == this.list_of_parameters[index]) {
-                  is_exists_in_ranges = true
-                }
-              }
-              if (is_exists_in_ranges) {
-                tmp[this.list_of_parameters[index]] = this.ranges[this.list_of_parameters[index]]['parameters_names'].indexOf(configuration['configurations'][index])
-              }
-              else {
-                tmp[this.list_of_parameters[index]] = configuration['configurations'][index]
-                // tmp.this.list_of_parameters[index] =
-              }
-            }
-            tmp['result'] = configuration['results'][0]
-            this.allRes.add(tmp)
+            let chart_dimensions = this.add_dimensions_data(configuration)
 
-            let chart_dimensions = new Set()
-            for (let index in this.list_of_parameters) {
-              let is_exists_in_ranges = false
-              for (let key in this.ranges) {
-                if (key == this.list_of_parameters[index]) {
-                  is_exists_in_ranges = true
-                }
-              }
-              let dict_dimension = {}
-              if (is_exists_in_ranges) {
-                dict_dimension = {
-                  label: this.list_of_parameters[index],
-                  range: [0, this.ranges[this.list_of_parameters[index]]['length'] - 1],
-                  values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])),
-                  tickvals: this.ranges[this.list_of_parameters[index]]['parameters_digits'],
-                  ticktext: this.ranges[this.list_of_parameters[index]]['parameters_names']
-                }
-              }
-              else {
-                dict_dimension = {
-                  label: this.list_of_parameters[index],
-                  range: [Math.min(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))), Math.max(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])))],
-                  values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))
-                }
-              }
-              chart_dimensions.add(dict_dimension)
-            }
-            let dict_result = {
-              label: 'result',
-              range: [Math.min(...Array.from(this.allRes).map(i => Number(i['result']))), Math.max(...Array.from(this.allRes).map(i => Number(i['result'])))],
-              values: Array.from(this.allRes).map(i => Number(i['result']))
-            }
-            chart_dimensions.add(dict_result)
             this.render(chart_dimensions)
           }
           else {
@@ -200,9 +122,78 @@ export class MultiDimComponent implements OnInit {
           }
         })
       });
+    this.ioMain.onEvent(MainEvent.FINAL) // The final configuration, suggested by BRISE.
+      .subscribe((obj: any) => {
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          if (configuration) {
+            this.solution = configuration // In case if only one point solution
+            console.log('Final:', obj["configuration"])
+          } else {
+            console.log("Empty solution")
+          }
+        })
+      });
   }
 
-  render(char_dimensions) {
+  add_dimensions_data(configuration) {
+    let tmp: PointExp = {}
+    for (let index in this.list_of_parameters) {
+      let is_exists_in_ranges = false
+      for (let key in this.ranges) {
+        if (key == this.list_of_parameters[index]) {
+          is_exists_in_ranges = true
+        }
+      }
+      if (is_exists_in_ranges) {
+        tmp[this.list_of_parameters[index]] = this.ranges[this.list_of_parameters[index]]['parameters_names'].indexOf(configuration['configurations'][index])
+      }
+      else {
+        tmp[this.list_of_parameters[index]] = configuration['configurations'][index]
+      }
+    }
+    tmp['result'] = configuration['results'][0]
+    this.allRes.add(tmp)
+
+    let chart_dimensions = new Set()
+    for (let index in this.list_of_parameters) {
+      let is_exists_in_ranges = false
+      for (let key in this.ranges) {
+        if (key == this.list_of_parameters[index]) {
+          is_exists_in_ranges = true
+        }
+      }
+      let dict_dimension = {}
+      if (is_exists_in_ranges) {
+        dict_dimension = {
+          label: this.list_of_parameters[index],
+          range: [0, this.ranges[this.list_of_parameters[index]]['length'] - 1],
+          values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])),
+          tickvals: this.ranges[this.list_of_parameters[index]]['parameters_digits'],
+          ticktext: this.ranges[this.list_of_parameters[index]]['parameters_names']
+        }
+      }
+      else {
+        dict_dimension = {
+          label: this.list_of_parameters[index],
+          range: [Math.min(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))), Math.max(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])))],
+          values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))
+        }
+      }
+      chart_dimensions.add(dict_dimension)
+    }
+    let dict_result = {
+      label: 'result',
+      range: [Math.min(...Array.from(this.allRes).map(i => Number(i['result']))), Math.max(...Array.from(this.allRes).map(i => Number(i['result'])))],
+      values: Array.from(this.allRes).map(i => Number(i['result']))
+    }
+    chart_dimensions.add(dict_result)
+
+    return chart_dimensions
+  }
+
+
+
+  render(chart_dimensions) {
     const element = this.multi.nativeElement
     var trace = [{
       type: 'parcoords',
@@ -214,7 +205,7 @@ export class MultiDimComponent implements OnInit {
         cmax: Math.max(...Array.from(this.allRes).map(i => Number(i['result']))),
         color: Array.from(this.allRes).map(i => Number(i['result']))
       },
-      dimensions: Array.from(char_dimensions).map(i => (i))
+      dimensions: Array.from(chart_dimensions)
     }];
 
     Plotly.react(element, trace)
