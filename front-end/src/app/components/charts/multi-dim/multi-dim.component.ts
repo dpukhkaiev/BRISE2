@@ -175,7 +175,6 @@ export class MultiDimComponent implements OnInit {
       else {
         dict_dimension = {
           label: this.list_of_parameters[index],
-          range: [Math.min(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))), Math.max(...Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]])))],
           values: Array.from(this.allRes).map(i => Number(i[this.list_of_parameters[index]]))
         }
       }
@@ -183,7 +182,6 @@ export class MultiDimComponent implements OnInit {
     }
     let dict_result = {
       label: 'result',
-      range: [Math.min(...Array.from(this.allRes).map(i => Number(i['result']))), Math.max(...Array.from(this.allRes).map(i => Number(i['result'])))],
       values: Array.from(this.allRes).map(i => Number(i['result']))
     }
     chart_dimensions.add(dict_result)
