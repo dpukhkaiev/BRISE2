@@ -1,4 +1,5 @@
 import logging
+from functools import reduce
 
 
 class Configuration:
@@ -47,6 +48,14 @@ class Configuration:
             self.predicted_result = predicted_result
 
     def add_tasks(self, parameters, task_id, result, worker):
+        """ Add new mesurments of conreat parameters
+        
+        Args:
+            parameters (List): List with parameters. Used for coincidence of parameters with class instance
+            task_id (Integer or String): Task indentificator
+            result (List): List of task results
+            worker (String): Worker identification
+        """
 
         if self.__is_valid_configuration(parameters) and self.__is_valid_task(task_id, result, worker):
             if task_id and result and worker:
@@ -96,18 +105,36 @@ class Configuration:
         return compared_configuration.__lt__(self)
 
     def __is_valid_task(self, task_id, result, worker):
+        """ Validate type of fields in configuration task
+        
+        Args:
+            task_id (number or string): task identification
+            result (list): list of task results
+            worker (string): worker identification
+        
+        Returns:
+            bool
+        """
+ 
         if isinstance(result, list) and type(task_id) in [int, float, str] and worker is not "":
             return True
-
-        if not isinstance(result, list):
-            self.logger.error('Current result %s is a list' % result)
-        if type(task_id) not in [int, float, str]:
-            self.logger.error('Current task_id %s is not int or float or str type' % task_id)
-        if worker is "":
-            self.logger.error('Current worker is empty string')
-        return False
-
+        else:
+            if not isinstance(result, list):
+                self.logger.error('Current result %s is not a list' % result)
+            if type(task_id) not in [int, float, str]:
+                self.logger.error('Current task_id %s is not int or float or str type' % task_id)
+            if worker is "":
+                self.logger.error('Current worker is empty string') 
+            return False
+        
     def __is_valid_configuration(self, parameters):
+        """ Is parameters equal to instance parameters
+        Args:
+            parameters (List)
+        
+        Returns:
+            bool
+        """
         if parameters == self.parameters:
             return True
         else:
@@ -116,29 +143,17 @@ class Configuration:
             return False
 
     def __calculate_average_result(self):
+        """ Update average result for valid configuration tasks.
+             Takes the list of results from each task, not numerical values are rejected. 
+             Calculate an average result from the final list.
         """
-         Calculating average result for configuration
-        """
-        # create a list
-        average_result_length = 0
-        for sub_dictionary_key, sub_dictionary in self.get_tasks().items():
-            average_result_length = len(sub_dictionary["result"])
-            break
-        self._average_result = [0 for x in range(average_result_length)]
-
-        for key, key_dict in self.get_tasks().items():
-            for index, value in enumerate(key_dict["result"]):
-                # If the result doesn't have digital values, these values should be assigned  to the result variable
-                # without averaging
-                if type(value) not in [int, float]:
-                    self._average_result[index] = value
-                else:
-                    self._average_result[index] += value
-
-        # Calculating average.
-        for index, value in enumerate(self._average_result):
-            # If the result has not digital values, we should assign this values to the result variable without averaging
-            if type(value) not in [int, float]:
-                self._average_result[index] = value
-            else:
-                self._average_result[index] = value / len(self.get_tasks())
+        # list of a result list from all tasks
+        results_data = [task["result"] for (_, task) in self._tasks.items()]
+        # flat list with results
+        flat_result = reduce(lambda x,y: x+y, results_data)
+        # filter not number values
+        only_num_result = list(filter(lambda x: isinstance(x, (float, int)), flat_result))
+        # sum of all tasks results
+        sum_result = reduce(lambda x,y: x+y, only_num_result)
+        
+        self._average_result = [sum_result / len(only_num_result)]
