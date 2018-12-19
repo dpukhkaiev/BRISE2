@@ -2,8 +2,16 @@ __doc__ = """
     Module to read config and tasks for execute."""
 import json
 import logging
+# import os 
+# from sys import path
+# from os.path import abspath, join
+
+# print("----------------")
+# print(os.getcwd())
+# print("----------------")
 
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
+from Resources.validator import is_experiment_description_valid
 
 
 def read_global_config(global_config_path):
@@ -58,6 +66,7 @@ def initialize_config(argv):
     logger = logging.getLogger(__name__)
 
     taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
+    schemaPath = argv[2] if len(argv) > 2 else './Resources/schema/task.schema.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
     logger.info("Global BRISE configuration file: %s, task description file path: %s" % (taskPath, global_config_path))
     #   Reading config file
@@ -66,6 +75,12 @@ def initialize_config(argv):
     #   Loading task config and creating config points distribution according to Sobol.
     # {"task_name": String, "params": Dict, "taskDataPoints": List of points }
     task = load_task(taskPath)
+
     create_folder_if_not_exists(globalConfig['results_storage'])
 
-    return globalConfig, task
+    if is_experiment_description_valid(schema_path=schemaPath, file_path=taskPath):
+        return globalConfig, task  
+    else: exit(1)
+
+if __name__ == "__main__":
+    initialize_config({})

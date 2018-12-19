@@ -17,14 +17,12 @@
                 "NumberOfInitialConfigurations": {
                     "description": "The number of configurations that will be tested before making any attempts to build prediction model.",
                     "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
+                    "minimum": 0
                 },
                 "Step": {
                     "description": "The number of configurations that will be tested simultaneously.",
                     "type": "integer",
-                    "minimum": 1,
-                    "exclusiveMinimum": true
+                    "minimum": 1
                 }
             },
             "required": [
