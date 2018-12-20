@@ -4,7 +4,7 @@ from core_entities.configuration import Configuration
 
 class Experiment:
 
-    def __init__(self):
+    def __init__(self, description):
         """
         Initialization of Experiment class
         Following fields are declared:
@@ -18,7 +18,7 @@ class Experiment:
         """
         self.logger = logging.getLogger(__name__)
         self.all_configurations = []
-        self.description = {}
+        self.description = description
         self.search_space = []
 
     def put(self, configuration_instance):
@@ -32,11 +32,11 @@ class Experiment:
             else:
                 is_exists = False
                 for value in self.all_configurations:
-                    if value.parameters == configuration_instance.parameters:
+                    if value.get_parameters() == configuration_instance.get_parameters():
                         is_exists = True
                 if not is_exists:
                     self.all_configurations.append(configuration_instance)
-                    self.logger.info("Configuration %s is added to Experiment" % configuration_instance.parameters)
+                    self.logger.info("Configuration %s is added to Experiment" % configuration_instance.get_parameters())
 
     def get(self, configuration):
         """
@@ -47,9 +47,18 @@ class Experiment:
         :return: instance of Configuration class
         """
         for configuration_instance in self.all_configurations:
-            if configuration_instance.parameters == configuration:
+            if configuration_instance.get_parameters() == configuration:
                 return configuration_instance
         return None
+
+    def current_best_configuration(self):
+
+        best_configuration = [self.all_configurations[0]]
+        for configuration in self.all_configurations:
+            if configuration.is_better_configuration(self.description["ModelConfiguration"]["isMinimizationExperiment"],
+                                                     best_configuration[0]):
+                best_configuration = [configuration]
+        return best_configuration
 
     def _is_valid_configuration_instance(self, configuration_instance):
         if isinstance(configuration_instance, Configuration):

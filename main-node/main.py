@@ -35,8 +35,8 @@ def run():
     logger.info("Starting BRISE")
     sub.send('log', 'info', message="Starting BRISE")
     # argv is a run parameters for main - using for configuration
-    experiment = Experiment()
-    global_config, experiment.description = initialize_config(argv)
+    global_config, experiment_description = initialize_config(argv)
+    experiment = Experiment(experiment_description)
 
     # Generate whole search space for model.
     experiment.search_space = [list(configuration) for configuration in itertools.product(*experiment.description["DomainDescription"]["AllConfigurations"])]
@@ -66,7 +66,8 @@ def run():
 
     default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
     repeater.measure_configuration(experiment, [default_configuration])
-    selector.disable_point(default_configuration.parameters)
+
+    selector.disable_point(default_configuration.get_parameters())
 
     temp_msg = "Results of measuring default value: %s" % default_configuration.get_average_result()
     logger.info(temp_msg)
@@ -74,7 +75,7 @@ def run():
 
     # TODO An array in the array with one value.
     # Events 'default conf' and 'task result' must be similar
-    sub.send('default', 'configuration', configurations=[default_configuration.parameters], results=[default_configuration.get_average_result()])
+    sub.send('default', 'configuration', configurations=[default_configuration.get_parameters()], results=[default_configuration.get_average_result()])
 
     temp_msg = "Running initial configurations, while there is no sense in trying to create the model without a data..."
     logger.info(temp_msg)
@@ -122,14 +123,14 @@ def run():
                 experiment.put(predicted_configuration)
 
                 temp_msg = "Predicted solution configuration: %s, Quality: %s." \
-                           % (str(predicted_configuration.parameters), str(predicted_configuration.predicted_result))
+                           % (str(predicted_configuration.get_parameters()), str(predicted_configuration.predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
                 repeater.measure_configuration(experiment=experiment, configurations=[predicted_configuration])
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
                                                           current_best_configurations=[default_configuration])
                 model.solution_configuration = [predicted_configuration]
-                selector.disable_point(predicted_configuration.parameters)
+                selector.disable_point(predicted_configuration.get_parameters())
 
                 if finish:
                     sub.send('log', 'info', message="Solution validation success!")

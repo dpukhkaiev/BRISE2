@@ -97,7 +97,7 @@ class RegressionSweetSpot(Model):
         # Check if the model is adequate - write it.
         predicted_solution = self.predict_solution()
         predicted_labels = predicted_solution.predicted_result
-        predicted_features = predicted_solution.parameters
+        predicted_features = predicted_solution.get_parameters()
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -136,7 +136,7 @@ class RegressionSweetSpot(Model):
         label, index = min(predicted_results)
         label = list(label)
         for config in self.all_configurations:
-            if config.parameters == self.experiment.search_space[index]:
+            if config.get_parameters() == self.experiment.search_space[index]:
                 config.add_predicted_result(self.experiment.search_space[index], label)
                 return config
         solution = Configuration(self.experiment.search_space[index])
@@ -153,7 +153,7 @@ class RegressionSweetSpot(Model):
         all_features = []
         all_labels = []
         for configuration in self.all_configurations:
-            all_features.append(configuration.parameters)
+            all_features.append(configuration.get_parameters())
             all_labels.append(configuration.get_average_result())
 
         feature_train, feature_test, target_train, target_test = \
@@ -189,8 +189,8 @@ class RegressionSweetSpot(Model):
         file_path = "./csv/" + load_task()["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
         for config in self.all_configurations:
-            if config.parameters in search_space:
-                search_space.remove(config.parameters)
+            if config.get_parameters() in search_space:
+                search_space.remove(config.get_parameters())
         for point in search_space:
             spl.search(str(point[0]), str(point[1]))
             all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
@@ -212,39 +212,36 @@ class RegressionSweetSpot(Model):
                 if configuration < self.solution_configuration[0]:
                     self.solution_configuration = [configuration]
             temp_message = "Optimal configuration was not found. Reporting best of the measured. Quality: %s. Configuration: %s" % \
-                           (self.solution_configuration[0].get_average_result(), self.solution_configuration[0].parameters)
+                           (self.solution_configuration[0].get_average_result(), self.solution_configuration[0].get_parameters())
             self.logger.info(temp_message)
             self.sub.send('log', 'info', message=temp_message)
 
         else:
-            min_configuration = [self.all_configurations[0]]
-            for configuration in self.all_configurations:
-                if configuration < min_configuration[0]:
-                    min_configuration = [configuration]
+            min_configuration = self.experiment.current_best_configuration()
 
             if min_configuration[0] < self.solution_configuration[0]:
                 self.solution_configuration = min_configuration
                 temp_message = ("Configuration: %s Quality: %s, "
                                 "Solution that model gave is worse that one of measured previously, but better than default."
-                                "Reporting best of measured." % (self.solution_configuration[0].parameters,
+                                "Reporting best of measured." % (self.solution_configuration[0].get_parameters(),
                                                                  self.solution_configuration[0].get_average_result()))
             self.logger.info(temp_message)
             self.sub.send('log', 'info', message=temp_message)
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n%s")
         for configuration in self.all_configurations:
-            self.logger.info("%s: %s" % (str(configuration.parameters), str(configuration.get_average_result())))
+            self.logger.info("%s: %s" % (str(configuration.get_parameters()), str(configuration.get_average_result())))
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found energy: %s, with configuration: %s"
                          % (self.solution_configuration[0].get_average_result(),
-                            self.solution_configuration[0].parameters))
+                            self.solution_configuration[0].get_parameters()))
 
         all_features = []
         for configuration in self.all_configurations:
-            all_features.append(configuration.parameters)
+            all_features.append(configuration.get_parameters())
         self.sub.send('final', 'configuration',
-                      configurations=[self.solution_configuration[0].parameters],
+                      configurations=[self.solution_configuration[0].get_parameters()],
                       results=[[round(self.solution_configuration[0].get_average_result(), 2)]],
                       type=['regresion solution'],
                       measured_points=[all_features],

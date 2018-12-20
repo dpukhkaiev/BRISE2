@@ -12,8 +12,8 @@ class Configuration:
 
         During initializing following fields are declared:
 
-        self.parameters:             shape - list, e.g. ``[2900.0, 32]``
-        self.parameters_in_indexes:  shape - list, e.g. ``[1, 8]``
+        self.__parameters:              shape - list, e.g. ``[2900.0, 32]``
+        self.__parameters_in_indexes:   shape - list, e.g. ``[1, 8]``
         self._tasks:                    shape - dict, e.g.
                                                ``{
                                                     id_task_1: {
@@ -26,9 +26,10 @@ class Configuration:
                                                     }
                                                     ...
                                                  }``
-                                        id_task_1:    shape - int or string
-                                        result:       shape - list, e.g. ``[700.56]``
-                                        worker_name:  shape - string
+
+                                         id_task:      shape - int or string
+                                         result:       shape - list, e.g. ``[700.56]``
+                                         worker_name:  shape - string
 
         self._average_result:            shape - list, e.g. ``[806.43]``
         self._predicted_result:          shape - list, e.g. ``[0.0098776]``
@@ -36,8 +37,12 @@ class Configuration:
 
         self.logger = logging.getLogger(__name__)
 
-        self.parameters = parameters
-        self.parameters_in_indexes = []
+        if all(isinstance(value, (int, float, str)) for value in parameters):
+            self.__parameters = parameters
+        else:
+            self.logger.error("Parameters %s are not int, float or str type" % parameters)
+
+        self.__parameters_in_indexes = []
         self._tasks = {}
         self._average_result = []
         self.predicted_result = []
@@ -48,13 +53,12 @@ class Configuration:
             self.predicted_result = predicted_result
 
     def add_tasks(self, parameters, task_id, result, worker):
-        """ Add new mesurments of conreat parameters
-        
-        Args:
-            parameters (List): List with parameters. Used for coincidence of parameters with class instance
-            task_id (Integer or String): Task indentificator
-            result (List): List of task results
-            worker (String): Worker identification
+        """
+        Add new measurements of concrete parameters
+        :param parameters: List with parameters. Used for validation
+        :param task_id: Integer or String, Task identifier
+        :param result: List of task results
+        :param worker: String, Worker identifier
         """
 
         if self.__is_valid_configuration(parameters) and self.__is_valid_task(task_id, result, worker):
@@ -65,6 +69,16 @@ class Configuration:
                 }
                 self.__calculate_average_result()
 
+    def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
+        if self.__is_valid_configuration(parameters):
+            self.__parameters_in_indexes = parameters_in_indexes
+
+    def get_parameters(self):
+        return self.__parameters.copy()
+
+    def get_parameters_in_indexes(self):
+        return self.__parameters_in_indexes.copy()
+
     def get_tasks(self):
         return self._tasks.copy()
 
@@ -72,6 +86,12 @@ class Configuration:
         return self._average_result.copy()
 
     def is_better_configuration(self, is_minimization_experiment, current_best_solution):
+        """
+        Returns bool value. True - self is better then  current_best_solution, otherwise False.
+        :param is_minimization_experiment: bool, is taken from json file description
+        :param current_best_solution: configuration instance
+        :return: bool
+        """
         if self.get_average_result() != [] and current_best_solution.get_average_result() != []:
             if is_minimization_experiment is True:
                 if self < current_best_solution:
@@ -105,22 +125,21 @@ class Configuration:
         return compared_configuration.__lt__(self)
 
     def __is_valid_task(self, task_id, result, worker):
-        """ Validate type of fields in configuration task
-        
-        Args:
-            task_id (number or string): task identification
-            result (list): list of task results
-            worker (string): worker identification
-        
-        Returns:
-            bool
         """
- 
-        if isinstance(result, list) and type(task_id) in [int, float, str] and worker is not "":
+        Validate type of fields in configuration task
+        :param task_id: number or string, task identifier
+        :param result: list of task results
+        :param worker: string, worker identifier
+        :return: bool
+        """
+        if isinstance(result, list) and all(isinstance(value, (int, float)) for value in result) \
+                and type(task_id) in [int, float, str] and worker is not "":
             return True
         else:
             if not isinstance(result, list):
                 self.logger.error('Current result %s is not a list' % result)
+            if not all(isinstance(value, (int, float)) for value in result):
+                self.logger.error('Current results\' values %s are not int or float type' % result)
             if type(task_id) not in [int, float, str]:
                 self.logger.error('Current task_id %s is not int or float or str type' % task_id)
             if worker is "":
@@ -128,32 +147,31 @@ class Configuration:
             return False
         
     def __is_valid_configuration(self, parameters):
-        """ Is parameters equal to instance parameters
-        Args:
-            parameters (List)
-        
-        Returns:
-            bool
         """
-        if parameters == self.parameters:
+         Is parameters equal to instance parameters
+        :param parameters: list
+        :return: bool
+        """
+        if parameters == self.get_parameters():
             return True
         else:
             self.logger.error('New configuration %s does not match with current configuration %s'
-                              % (parameters, self.parameters))
+                              % (parameters, self.get_parameters()))
             return False
 
     def __calculate_average_result(self):
-        """ Update average result for valid configuration tasks.
-             Takes the list of results from each task, not numerical values are rejected. 
-             Calculate an average result from the final list.
+        """
+        Updates average result for valid configuration tasks.
+        Takes the list of results from each task, not numerical values are rejected.
+        Calculates an average result from the final list.
         """
         # list of a result list from all tasks
         results_data = [task["result"] for (_, task) in self._tasks.items()]
         # flat list with results
-        flat_result = reduce(lambda x,y: x+y, results_data)
+        flat_result = reduce(lambda x, y: x + y, results_data)
         # filter not number values
         only_num_result = list(filter(lambda x: isinstance(x, (float, int)), flat_result))
         # sum of all tasks results
-        sum_result = reduce(lambda x,y: x+y, only_num_result)
+        sum_result = reduce(lambda x, y: x + y, only_num_result)
         
         self._average_result = [sum_result / len(only_num_result)]

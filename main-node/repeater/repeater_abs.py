@@ -35,12 +35,12 @@ class Repeater(ABC):
         # Creating holders for current measurements
         for configuration in configurations:
             # Evaluating decision function for each configuration in configurations list
-            self.current_measurement[str(configuration.parameters)] = {'data': configuration.parameters,
+            self.current_measurement[str(configuration.get_parameters())] = {'data': configuration.get_parameters(),
                                                                           'Finished': False}
-            result = self.decision_function(experiment, configuration.parameters, **decis_func_config)
+            result = self.decision_function(experiment, configuration.get_parameters(), **decis_func_config)
             if result: 
-                self.current_measurement[str(configuration.parameters)]['Finished'] = True
-                self.current_measurement[str(configuration.parameters)]['Results'] = result
+                self.current_measurement[str(configuration.get_parameters())]['Finished'] = True
+                self.current_measurement[str(configuration.get_parameters())]['Results'] = result
 
         # Continue to make measurements while decision function will not terminate it.
         while not self.current_measurement_finished:
@@ -60,12 +60,13 @@ class Repeater(ABC):
             results = self.WSClient.work(configurations_to_send)
 
             # Writing data to experiment.
-            for task, result in zip(configurations_to_send, results):
+            for parameters, result in zip(configurations_to_send, results):
                 for config in configurations:
-                    if config.parameters == task:
-                        config.add_tasks(task, str(self.task_id), result, self.worker)
-                        experiment.put(configuration_instance=config)
-                API().send('new', 'task', configurations=[task], results=[result])
+                    if config.get_parameters() == parameters:
+                        config.add_tasks(parameters, str(self.task_id), result, self.worker)
+                        if experiment.get(parameters) == None:
+                            experiment.put(configuration_instance=config)
+                API().send('new', 'task', configurations=[parameters], results=[result])
                 self.task_id += 1
 
 
