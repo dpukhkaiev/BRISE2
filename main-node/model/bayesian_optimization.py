@@ -98,7 +98,6 @@ class BayesianOptimization(Model):
 
         # Data holding fields.
         self.all_configurations = []
-        self.solution_configuration = []
         self.good_config_rankings = dict()
 
     def _config_to_idx(self, configuration):

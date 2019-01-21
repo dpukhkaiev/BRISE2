@@ -138,13 +138,13 @@ def run():
                 experiment.put(predicted_configuration)
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
                                                           current_best_configurations=experiment.default_configuration)
-                model.solution_configuration = [predicted_configuration]
+                # model.solution_configuration = [predicted_configuration]
                 selector.disable_point(predicted_configuration.get_parameters())
 
                 if finish:
                     sub.send('log', 'info', message="Solution validation success!")
                     model.add_data(experiment.all_configurations)
-                    optimal_configuration = experiment.get_final_report_and_result(model, repeater)
+                    optimal_configuration = experiment.get_final_report_and_result(model.type, repeater)
                     write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
                     return optimal_configuration
 
@@ -160,21 +160,21 @@ def run():
         logger.info(temp_msg)
         sub.send('log', 'info', message=temp_msg)
 
-        current_configurations_for_measuring = [] # list of Configuration instances
+        configurations_to_be_measured = [] # list of Configuration instances
         for counter in range(experiment.description["SelectionAlgorithm"]["Step"]):
             configuration = Configuration(selector.get_next_point())
-            current_configurations_for_measuring.append(configuration)
+            configurations_to_be_measured.append(configuration)
 
-        repeater.measure_configuration(experiment=experiment, configurations=current_configurations_for_measuring,
+        repeater.measure_configuration(experiment=experiment, configurations=configurations_to_be_measured,
                               default_point=experiment.default_configuration[0].get_average_result())
-        for config in current_configurations_for_measuring:
+        for config in configurations_to_be_measured:
             experiment.put(configuration_instance=config)
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(experiment.all_configurations) > len(experiment.search_space):
             logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(configurations=experiment.all_configurations)
-            optimal_configuration = experiment.get_final_report_and_result(model, repeater)
+            optimal_configuration = experiment.get_final_report_and_result(model.type, repeater)
             write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
             return optimal_configuration
 

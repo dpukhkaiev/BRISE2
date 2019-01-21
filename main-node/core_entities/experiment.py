@@ -66,30 +66,18 @@ class Experiment:
                 return configuration_instance
         return None
 
-
-
-    def get_final_report_and_result(self, model, repeater):
+    def get_final_report_and_result(self, model_type, repeater):
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
 
         self.logger.info("\n\nFinal report:")
 
-        if model.solution_configuration == []:
-            model.solution_configuration = self.current_best_configuration
-            temp_message = "Optimal configuration was not found. Reporting best of the measured. Quality: %s. Configuration: %s" % \
-                           (model.solution_configuration[0].get_average_result(), model.solution_configuration[0].get_parameters())
-            self.logger.info(temp_message)
-            self.sub.send('log', 'info', message=temp_message)
-        else:
-            min_configuration = self.current_best_configuration
-            if min_configuration[0] < model.solution_configuration[0]:
-                model.solution_configuration = min_configuration
-                temp_message = ("Configuration: %s Quality: %s, "
-                                "Solution that model gave is worse that one of measured previously, but better than default."
-                                "Reporting best of measured." % (model.solution_configuration[0].get_parameters(),
-                                                                 model.solution_configuration[0].get_average_result()))
-                self.logger.info(temp_message)
-                self.sub.send('log', 'info', message=temp_message)
+        temp_message = ("Configuration: %s Quality: %s, "
+                        "Solution that model gave is worse that one of measured previously, but better than default."
+                        "Reporting best of measured." % (self.current_best_configuration[0].get_parameters(),
+                                                         self.current_best_configuration[0].get_average_result()))
+        self.logger.info(temp_message)
+        self.sub.send('log', 'info', message=temp_message)
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
         for configuration in self.all_configurations:
@@ -97,21 +85,20 @@ class Experiment:
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found point: %s, with configuration: %s"
-                         % (model.solution_configuration[0].get_average_result(),
-                            model.solution_configuration[0].get_parameters()))
+                         % (self.current_best_configuration[0].get_average_result(),
+                            self.current_best_configuration[0].get_parameters()))
 
         all_features = []
         for configuration in self.all_configurations:
             all_features.append(configuration.get_parameters())
         self.sub.send('final', 'configuration',
-                      configurations=[model.solution_configuration[0].get_parameters()],
-                      results=[[round(model.solution_configuration[0].get_average_result()[0], 2)]],
-                      type=[model.type],
+                      configurations=[self.current_best_configuration[0].get_parameters()],
+                      results=[[round(self.current_best_configuration[0].get_average_result()[0], 2)]],
+                      type=[model_type],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])
-        if self.current_best_configuration > model.solution_configuration:
-            self.current_best_configuration = model.solution_configuration
-        return model.solution_configuration
+
+        return self.current_best_configuration
 
     def get_current_status(self):
         features = []

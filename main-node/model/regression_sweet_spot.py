@@ -38,7 +38,6 @@ class RegressionSweetSpot(Model):
         # Data holding fields.
         self.experiment = experiment
         self.all_configurations = []
-        self.solution_configuration = []
 
     def build_model(self, degree=6, tries=20):
         """
