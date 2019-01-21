@@ -68,6 +68,7 @@ def run():
     default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
     experiment.put_default_configuration([default_configuration])
     repeater.measure_configuration(experiment, experiment.default_configuration)
+    experiment.put(configuration_instance=default_configuration)
 
     selector.disable_point(default_configuration.get_parameters())
 
@@ -92,6 +93,9 @@ def run():
     repeater = change_decision_function(repeater, experiment.description["TaskConfiguration"]["RepeaterDecisionFunction"])
     repeater.measure_configuration(experiment, initial_configurations,
                                    default_point=experiment.default_configuration[0].get_average_result())
+    for config in initial_configurations:
+        experiment.put(configuration_instance=config)
+
     logger.info("Results got. Building model..")
     sub.send('log', 'info', message="Results got. Building model..")
 
@@ -124,13 +128,14 @@ def run():
             if model_validated:
                 # TODO: Need to agree on return structure (nested or not).
                 predicted_configuration = model.predict_solution()
-                experiment.put(predicted_configuration)
+
 
                 temp_msg = "Predicted solution configuration: %s, Quality: %s." \
                            % (str(predicted_configuration.get_parameters()), str(predicted_configuration.predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
                 repeater.measure_configuration(experiment=experiment, configurations=[predicted_configuration])
+                experiment.put(predicted_configuration)
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
                                                           current_best_configurations=experiment.default_configuration)
                 model.solution_configuration = [predicted_configuration]
@@ -162,6 +167,8 @@ def run():
 
         repeater.measure_configuration(experiment=experiment, configurations=current_configurations_for_measuring,
                               default_point=experiment.default_configuration[0].get_average_result())
+        for config in current_configurations_for_measuring:
+            experiment.put(configuration_instance=config)
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(experiment.all_configurations) > len(experiment.search_space):

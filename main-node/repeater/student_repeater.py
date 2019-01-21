@@ -11,13 +11,11 @@ class StudentRepeater(Repeater):
         # Initiating parent class and transferring WSClient in *args and other params in **kwargs
         super().__init__(*args, **kwargs)
 
-    def decision_function(self, experiment, current_configuration, threshold=15, **configuration):
+    def decision_function(self, current_configuration, threshold=15, **configuration):
         """
         Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
         In other case - compute result as average between all experiments.
-        :param experiment: instance of Experiment class
-        :param current_configuration: a configuration under evaluation
-                      shape - list, e.g. ``[1200, 32]``
+        :param current_configuration: instance of Configuration class
         :param threshold: the maximum value of the relative error(in percents) that could be accepted.
                             Used mostly for the default configuration result
         :return: result or False
@@ -42,12 +40,11 @@ class StudentRepeater(Repeater):
         }
 
         # first of all - need at least 2 measurements
-        configuration_object = experiment.get(current_configuration)
         average_result = []
         tasks_data = []
-        if configuration_object:
-            tasks_data = experiment.get(current_configuration).get_tasks()
-            average_result = experiment.get(current_configuration).get_average_result()
+        if current_configuration:
+            tasks_data = current_configuration.get_tasks()
+            average_result = current_configuration.get_average_result()
 
         if len(tasks_data) < 2:
             return False

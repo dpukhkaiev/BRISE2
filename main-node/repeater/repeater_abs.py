@@ -20,7 +20,7 @@ class Repeater(ABC):
         self.worker = "alpha"  # should be deleted, receive from WSClient
 
     @abstractmethod
-    def decision_function(self, experiment, point, iterations=3, **configuration): pass
+    def decision_function(self, current_configuration, iterations=3, **configuration): pass
     
     def measure_configuration(self, experiment, configurations, **decis_func_config):
         """
@@ -36,8 +36,8 @@ class Repeater(ABC):
         for configuration in configurations:
             # Evaluating decision function for each configuration in configurations list
             self.current_measurement[str(configuration.get_parameters())] = {'data': configuration.get_parameters(),
-                                                                          'Finished': False}
-            result = self.decision_function(experiment, configuration.get_parameters(), **decis_func_config)
+                                                                             'Finished': False}
+            result = self.decision_function(configuration, **decis_func_config)
             if result: 
                 self.current_measurement[str(configuration.get_parameters())]['Finished'] = True
                 self.current_measurement[str(configuration.get_parameters())]['Results'] = result
@@ -59,29 +59,30 @@ class Repeater(ABC):
             # Send this configurations to Worker service
             results = self.WSClient.work(configurations_to_send)
 
-            # Writing data to experiment.
+            # Sending data to API
             for parameters, result in zip(configurations_to_send, results):
                 for config in configurations:
                     if config.get_parameters() == parameters:
                         config.add_tasks(parameters, str(self.task_id), result, self.worker)
-                        if experiment.get(parameters) == None:
-                            experiment.put(configuration_instance=config)
+
                 API().send('new', 'task', configurations=[parameters], results=[result])
                 self.task_id += 1
 
 
             # Evaluating decision function for each configuration
             for configuration in configurations_to_send:
-                result = self.decision_function(experiment, configuration, **decis_func_config)
-                if result:
-                    temp_msg = ("Configuration %s is finished after %s measurements. Result: %s"
-                                % (str(configuration), len(experiment.get(configuration).get_tasks()),
-                                   str(experiment.get(configuration).get_average_result())))
-                    self.logger.info(temp_msg)
-                    API().send('log', 'info', message=temp_msg)
-                    API().send('new', 'configuration', configurations=[configuration], results=[result])
-                    self.current_measurement[str(configuration)]['Finished'] = True
-                    self.current_measurement[str(configuration)]['Results'] = result
+                for config in configurations:
+                    if configuration == config.get_parameters():
+                        result = self.decision_function(config, **decis_func_config)
+                        if result:
+                            temp_msg = ("Configuration %s is finished after %s measurements. Result: %s"
+                                        % (str(configuration), len(config.get_tasks()),
+                                           str(config.get_average_result())))
+                            self.logger.info(temp_msg)
+                            API().send('log', 'info', message=temp_msg)
+                            API().send('new', 'configuration', configurations=[configuration], results=[result])
+                            self.current_measurement[str(configuration)]['Finished'] = True
+                            self.current_measurement[str(configuration)]['Results'] = result
     
     def cast_results(self, results):
         """
