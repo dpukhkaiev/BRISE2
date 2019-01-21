@@ -32,7 +32,8 @@ RUN apt-get update \
     && python3 -m pip install python-socketio \
     && python3 -m pip install socketIO-client \
     && python3 -m pip install eventlet \
-    && python3 -m pip install statsmodels
+    && python3 -m pip install statsmodels \
+    && python3 -m pip install jsonschema 
     
 
 # Install pytest for covering code by tests

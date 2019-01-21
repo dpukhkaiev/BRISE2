@@ -66,8 +66,9 @@ def initialize_config(argv):
     logger = logging.getLogger(__name__)
 
     taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
-    schemaPath = argv[2] if len(argv) > 2 else './Resources/schema/task.schema.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
+    schemaPath = './Resources/schema/task.schema.json' # validation for task.json in `taskPath`
+
     logger.info("Global BRISE configuration file: %s, task description file path: %s" % (taskPath, global_config_path))
     #   Reading config file
     globalConfig = read_global_config(global_config_path)
