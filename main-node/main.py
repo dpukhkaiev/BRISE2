@@ -24,7 +24,7 @@ from core_entities.configuration import Configuration
 
 
 def run():
-    time_started = datetime.datetime.now()
+
     sub = API() # subscribers
 
     if __name__ == "__main__":
@@ -37,6 +37,7 @@ def run():
     # argv is a run parameters for main - using for configuration
     global_config, experiment_description = initialize_config(argv)
     experiment = Experiment(experiment_description)
+    experiment.put_start_time(datetime.datetime.now())
 
     # Generate whole search space for model.
     experiment.search_space = [list(configuration) for configuration in itertools.product(*experiment.description["DomainDescription"]["AllConfigurations"])]
@@ -65,17 +66,19 @@ def run():
     sub.send('log', 'info', message=temp_msg)
 
     default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
-    repeater.measure_configuration(experiment, [default_configuration])
+    experiment.put_default_configuration([default_configuration])
+    repeater.measure_configuration(experiment, experiment.default_configuration)
 
     selector.disable_point(default_configuration.get_parameters())
 
-    temp_msg = "Results of measuring default value: %s" % default_configuration.get_average_result()
+    temp_msg = "Results of measuring default value: %s" % experiment.default_configuration[0].get_average_result()
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
 
     # TODO An array in the array with one value.
     # Events 'default conf' and 'task result' must be similar
-    sub.send('default', 'configuration', configurations=[default_configuration.get_parameters()], results=[default_configuration.get_average_result()])
+    sub.send('default', 'configuration', configurations=[experiment.default_configuration[0].get_parameters()],
+             results=[experiment.default_configuration[0].get_average_result()])
 
     temp_msg = "Running initial configurations, while there is no sense in trying to create the model without a data..."
     logger.info(temp_msg)
@@ -87,7 +90,8 @@ def run():
         initial_configurations.append(configuration)
 
     repeater = change_decision_function(repeater, experiment.description["TaskConfiguration"]["RepeaterDecisionFunction"])
-    repeater.measure_configuration(experiment, initial_configurations, default_point=default_configuration.get_average_result())
+    repeater.measure_configuration(experiment, initial_configurations,
+                                   default_point=experiment.default_configuration[0].get_average_result())
     logger.info("Results got. Building model..")
     sub.send('log', 'info', message="Results got. Building model..")
 
@@ -128,7 +132,7 @@ def run():
                 sub.send('log', 'info', message=temp_msg)
                 repeater.measure_configuration(experiment=experiment, configurations=[predicted_configuration])
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
-                                                          current_best_configurations=[default_configuration])
+                                                          current_best_configurations=experiment.default_configuration)
                 model.solution_configuration = [predicted_configuration]
                 selector.disable_point(predicted_configuration.get_parameters())
 
@@ -136,11 +140,7 @@ def run():
                     sub.send('log', 'info', message="Solution validation success!")
                     model.add_data(experiment.all_configurations)
                     optimal_configuration = experiment.get_final_report_and_result(model, repeater)
-                    write_results(global_config=global_config, experiment_description=experiment.description,
-                                  time_started=time_started, configurations=[predicted_configuration],
-                                  performed_measurements=repeater.performed_measurements,
-                                  optimal_configuration=optimal_configuration,
-                                  default_configurations=[default_configuration])
+                    write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
                     return optimal_configuration
 
                 else:
@@ -161,17 +161,14 @@ def run():
             current_configurations_for_measuring.append(configuration)
 
         repeater.measure_configuration(experiment=experiment, configurations=current_configurations_for_measuring,
-                              default_point=default_configuration.get_average_result())
+                              default_point=experiment.default_configuration[0].get_average_result())
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(experiment.all_configurations) > len(experiment.search_space):
             logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(configurations=experiment.all_configurations)
             optimal_configuration = experiment.get_final_report_and_result(model, repeater)
-            write_results(global_config=global_config, experiment_description=experiment.description,
-                          time_started=time_started, configurations=[predicted_configuration],
-                          performed_measurements=repeater.performed_measurements,
-                          optimal_configuration=optimal_configuration, default_configurations=[default_configuration])
+            write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
             return optimal_configuration
 
 
