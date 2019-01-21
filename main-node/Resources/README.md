@@ -56,16 +56,22 @@ Possible values of configurations for your system should be provided in separate
           "ws_file": "Radix-500mio.csv"
         },
         "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["frequency", "threads", "energy"],
-        "ResultDataTypes"  : ["float", "int", "float"],
+        "ResultStructure"   : ["energy"],
+        "ResultDataTypes"  : ["float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsPerConfiguration": 10,
+        "MaxTasksPerConfiguration": 10,
         "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression"
+        "ModelType"         : "BO",
+        "isMinimizationExperiment"  : true
+      },
+      "StopCondition": {
+        "adaptive": {
+          "SearchSpacePercentageWithoutImprovement": 10
+        }
       }
 }
 ```
@@ -78,3 +84,7 @@ Possible values of configurations for your system should be provided in separate
       2900.0, 2901.0]
 }
 ```
+
+#### Validate the configuration file:
+Run `is_experiment_description_valid()` from `\main-node\Resources\validator.py`
+If necessary, use committed code

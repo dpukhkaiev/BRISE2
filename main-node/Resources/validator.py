@@ -1,15 +1,17 @@
-from jsonschema import validate, RefResolver, Draft4Validator
+from os.path import abspath
 import json
 
+from jsonschema import validate, RefResolver, Draft4Validator
 
-# from os import chdir
-from os.path import abspath
+# # [ Uncomment in emergency case ]
+# # ImportError: No module named tools.file_system_io
+# from os import chdir, getcwd
 # from sys import path
-# path.append(join(abspath('.'), 'main-node'))
-# chdir(join(abspath('.'), 'main-node'))
-
+# # chdir('..')
+# path.append(abspath('.'))
+# print(getcwd())
+# print("----------------")
 from tools.file_system_io import load_json_file
-
 
 def is_experiment_description_valid(schema_path="resources/schema/task.schema.json", 
                                     file_path="resources/task.json"):
