@@ -25,6 +25,7 @@ class RegressionSweetSpot(Model):
         self.sub = API()
 
         # Model configuration - related fields.
+        self.type = "regresion solution"
         self.initial_test_size = experiment.description["ModelConfiguration"]["ModelTestSize"]
         self.log_file_name = log_file_name
 
@@ -199,55 +200,6 @@ class RegressionSweetSpot(Model):
         score = self.model.score(features, labels)
 
         self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
-
-    def get_result(self, repeater):
-        #   In case, if the model predicted the final point, that has less value, than the default, but there is
-        # a point, that has less value, than the predicted point - report this point instead of predicted point.
-
-        self.logger.info("\n\nFinal report:")
-
-        if self.solution_configuration == []:
-            self.solution_configuration = [self.all_configurations[0]]
-            for configuration in self.all_configurations:
-                if configuration < self.solution_configuration[0]:
-                    self.solution_configuration = [configuration]
-            temp_message = "Optimal configuration was not found. Reporting best of the measured. Quality: %s. Configuration: %s" % \
-                           (self.solution_configuration[0].get_average_result(), self.solution_configuration[0].get_parameters())
-            self.logger.info(temp_message)
-            self.sub.send('log', 'info', message=temp_message)
-
-        else:
-            min_configuration = self.experiment.current_best_configuration()
-
-            if min_configuration[0] < self.solution_configuration[0]:
-                self.solution_configuration = min_configuration
-                temp_message = ("Configuration: %s Quality: %s, "
-                                "Solution that model gave is worse that one of measured previously, but better than default."
-                                "Reporting best of measured." % (self.solution_configuration[0].get_parameters(),
-                                                                 self.solution_configuration[0].get_average_result()))
-            self.logger.info(temp_message)
-            self.sub.send('log', 'info', message=temp_message)
-
-        self.logger.info("ALL MEASURED CONFIGURATIONS:\n%s")
-        for configuration in self.all_configurations:
-            self.logger.info("%s: %s" % (str(configuration.get_parameters()), str(configuration.get_average_result())))
-        self.logger.info("Number of measured points: %s" % len(self.all_configurations))
-        self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
-        self.logger.info("Best found energy: %s, with configuration: %s"
-                         % (self.solution_configuration[0].get_average_result(),
-                            self.solution_configuration[0].get_parameters()))
-
-        all_features = []
-        for configuration in self.all_configurations:
-            all_features.append(configuration.get_parameters())
-        self.sub.send('final', 'configuration',
-                      configurations=[self.solution_configuration[0].get_parameters()],
-                      results=[[round(self.solution_configuration[0].get_average_result(), 2)]],
-                      type=['regresion solution'],
-                      measured_points=[all_features],
-                      performed_measurements=[repeater.performed_measurements])
-
-        return self.solution_configuration
 
     def add_data(self, configurations):
         """

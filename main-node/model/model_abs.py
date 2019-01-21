@@ -12,10 +12,6 @@ class Model(ABC):
     def predict_solution(self):
         # TODO: Make it `template method`.
         pass
-
-
-    @abstractmethod
-    def get_result(self): pass
     
     @abstractmethod
     def add_data(self): pass

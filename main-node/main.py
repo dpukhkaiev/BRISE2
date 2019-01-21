@@ -135,7 +135,7 @@ def run():
                 if finish:
                     sub.send('log', 'info', message="Solution validation success!")
                     model.add_data(experiment.all_configurations)
-                    optimal_configuration = model.get_result(repeater)
+                    optimal_configuration = experiment.get_final_report_and_result(model, repeater)
                     write_results(global_config=global_config, experiment_description=experiment.description,
                                   time_started=time_started, configurations=[predicted_configuration],
                                   performed_measurements=repeater.performed_measurements,
@@ -167,7 +167,7 @@ def run():
         if len(experiment.all_configurations) > len(experiment.search_space):
             logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(configurations=experiment.all_configurations)
-            optimal_configuration = model.get_result(repeater)
+            optimal_configuration = experiment.get_final_report_and_result(model, repeater)
             write_results(global_config=global_config, experiment_description=experiment.description,
                           time_started=time_started, configurations=[predicted_configuration],
                           performed_measurements=repeater.performed_measurements,

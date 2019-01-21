@@ -48,6 +48,7 @@ class BayesianOptimization(Model):
     def __init__(self, experiment, min_points_in_model=None, top_n_percent=30, num_samples=96,
                  random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
 
+        self.type = "bayesian solution"
         self.model = None
         self.top_n_percent = top_n_percent
 
@@ -295,53 +296,6 @@ class BayesianOptimization(Model):
                                                            predicted_result=[predicted_result])
         return predicted_configuration_class
 
-    def get_result(self, repeater):
-        # TODO: need to review a way of features and labels addition here.
-        #   In case, if the model predicted the final point, that has less value, than the default, but there is
-        # a point, that has less value, than the predicted point - report this point instead of predicted point.
-        self.logger.info("\n\nFinal report:")
-
-        if self.solution_configuration == []:
-            self.solution_configuration = [self.all_configurations[0]]
-            for configuration in self.all_configurations:
-                if configuration < self.solution_configuration[0]:
-                    self.solution_configuration = [configuration]
-            self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
-            self.sub.send('log', 'info', message="Optimal configuration was not found. Configuration: %s, Quality: %s" %
-                          (self.solution_configuration[0].get_parameters(), self.solution_configuration[0].get_average_result()))
-        else:
-            min_configuration = self.experiment.current_best_configuration()
-
-            if min_configuration[0] < self.solution_configuration[0]:
-                temp_message = ("Configuration: %s, Quality: %s, "
-                      "that model gave worse that one of measured previously, but better than default."
-                      "Reporting best of measured." % (self.solution_configuration[0].get_parameters(),
-                                                       self.solution_configuration[0].get_average_result()))
-                self.logger.info(temp_message)
-                self.sub.send('log', 'info', message=temp_message)
-                self.solution_configuration = min_configuration
-
-        self.logger.info("ALL MEASURED CONFIGURATIONS:")
-        for configuration in self.all_configurations:
-            self.logger.info("%s: %s" % (str(configuration.get_parameters()), str(configuration.get_average_result())))
-        self.logger.info("Number of measured points: %s" % len(self.all_configurations))
-        self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
-        self.logger.info("Best found energy: %s, with configuration: %s"
-                         % (self.solution_configuration[0].get_average_result(),
-                            self.solution_configuration[0].get_parameters()))
-
-        all_features = []
-        for configuration in self.all_configurations:
-            all_features.append(configuration.get_parameters())
-        self.sub.send('final', 'configuration',
-                      configurations=[self.solution_configuration[0].get_parameters()],
-                      results=[self.solution_configuration[0].get_average_result()],
-                      type=['bayesian solution'],
-                      measured_points=[all_features],
-                      performed_measurements=[repeater.performed_measurements])
-
-        return self.solution_configuration
-
     def add_data(self, configurations):
         """
         Method adds configurations to whole set of configurations. Convert configurations to its indexes.
@@ -378,5 +332,5 @@ class BayesianOptimization(Model):
                         datum[nan_idx] = np.random.randint(t)
 
                 nan_indices = np.argwhere(np.isnan(datum)).flatten()
-            return_array[i,:] = datum
-        return(return_array)
+            return_array[i, :] = datum
+        return return_array
