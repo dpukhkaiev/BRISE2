@@ -1,5 +1,6 @@
 import logging
 from functools import reduce
+import numpy as np
 
 
 class Configuration:
@@ -19,11 +20,11 @@ class Configuration:
                                                     id_task_1: {
                                                        "result": result1,
                                                        "worker": worker_name1
-                                                    }
+                                                    },
                                                     id_task_2: {
                                                       "result": result2,
                                                       "worker": worker_name2
-                                                    }
+                                                    },
                                                     ...
                                                  }``
 
@@ -162,16 +163,10 @@ class Configuration:
     def __calculate_average_result(self):
         """
         Updates average result for valid configuration tasks.
-        Takes the list of results from each task, not numerical values are rejected.
+        Takes the list of results from each task, it is considered there are no numerical values.
         Calculates an average result from the final list.
         """
         # list of a result list from all tasks
-        results_data = [task["result"] for (_, task) in self._tasks.items()]
-        # flat list with results
-        flat_result = reduce(lambda x, y: x + y, results_data)
-        # filter not number values
-        only_num_result = list(filter(lambda x: isinstance(x, (float, int)), flat_result))
-        # sum of all tasks results
-        sum_result = reduce(lambda x, y: x + y, only_num_result)
-        
-        self._average_result = [sum_result / len(only_num_result)]
+        results_tuples = [task["result"] for (_, task) in self._tasks.items()]
+        # calculating the average over all result items
+        self._average_result = np.mean(results_tuples, axis=0).tolist()
