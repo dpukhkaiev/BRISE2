@@ -137,7 +137,7 @@ def run():
                 repeater.measure_configuration(experiment=experiment, configurations=[predicted_configuration])
                 experiment.put(predicted_configuration)
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
-                                                          current_best_configurations=experiment.default_configuration)
+                                                          current_best_configurations=experiment.current_best_configuration)
                 # model.solution_configuration = [predicted_configuration]
                 selector.disable_point(predicted_configuration.get_parameters())
 

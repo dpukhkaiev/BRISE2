@@ -25,7 +25,7 @@ class Experiment:
         self.all_configurations = []
         self.description = description
         self.search_space = []
-        self.current_best_configuration = None
+        self.current_best_configuration = []
         self.start_time = None
 
     def put_start_time(self, start_time):
@@ -52,6 +52,9 @@ class Experiment:
                     self.all_configurations.append(configuration_instance)
                     self.logger.info("Configuration %s is added to Experiment" % configuration_instance.get_parameters())
                     self.current_best_configuration = self._calculate_current_best_configuration()
+                    if self.current_best_configuration[0] == configuration_instance:
+                        self.logger.info("New solution found: %s with result %s" % (configuration_instance.get_parameters(),
+                                                                        configuration_instance.get_average_result()))
 
     def get(self, configuration):
         """
@@ -66,7 +69,7 @@ class Experiment:
                 return configuration_instance
         return None
 
-    def get_final_report_and_result(self, model_type, repeater):
+    def get_final_report_and_result(self, repeater):
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
 
@@ -94,7 +97,6 @@ class Experiment:
         self.sub.send('final', 'configuration',
                       configurations=[self.current_best_configuration[0].get_parameters()],
                       results=[[round(self.current_best_configuration[0].get_average_result()[0], 2)]],
-                      type=[model_type],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])
 
