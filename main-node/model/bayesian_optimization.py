@@ -48,7 +48,6 @@ class BayesianOptimization(Model):
     def __init__(self, experiment, min_points_in_model=None, top_n_percent=30, num_samples=96,
                  random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
 
-        self.type = "bayesian solution"
         self.model = None
         self.top_n_percent = top_n_percent
 

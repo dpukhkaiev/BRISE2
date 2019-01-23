@@ -2,7 +2,6 @@ __doc__ = """
 Main module for running BRISE configuration balancing."""
 
 import itertools
-import datetime
 from sys import argv
 import logging
 
@@ -37,7 +36,6 @@ def run():
     # argv is a run parameters for main - using for configuration
     global_config, experiment_description = initialize_config(argv)
     experiment = Experiment(experiment_description)
-    experiment.put_start_time(datetime.datetime.now())
 
     # Generate whole search space for model.
     experiment.search_space = [list(configuration) for configuration in itertools.product(*experiment.description["DomainDescription"]["AllConfigurations"])]
@@ -144,7 +142,7 @@ def run():
                 if finish:
                     sub.send('log', 'info', message="Solution validation success!")
                     model.add_data(experiment.all_configurations)
-                    optimal_configuration = experiment.get_final_report_and_result(model.type, repeater)
+                    optimal_configuration = experiment.get_final_report_and_result(repeater)
                     write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
                     return optimal_configuration
 
@@ -174,7 +172,7 @@ def run():
         if len(experiment.all_configurations) > len(experiment.search_space):
             logger.info("Unable to finish normally, terminating with best of measured results.")
             model.add_data(configurations=experiment.all_configurations)
-            optimal_configuration = experiment.get_final_report_and_result(model.type, repeater)
+            optimal_configuration = experiment.get_final_report_and_result(repeater)
             write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
             return optimal_configuration
 

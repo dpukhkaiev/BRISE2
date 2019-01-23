@@ -1,6 +1,7 @@
 import logging
 from core_entities.configuration import Configuration
 from tools.front_API import API
+import datetime
 
 
 class Experiment:
@@ -26,10 +27,7 @@ class Experiment:
         self.description = description
         self.search_space = []
         self.current_best_configuration = []
-        self.start_time = None
-
-    def put_start_time(self, start_time):
-        self.start_time = start_time
+        self.start_time = datetime.datetime.now()
 
     def put_default_configuration(self, default_configuration):
         self.default_configuration = default_configuration

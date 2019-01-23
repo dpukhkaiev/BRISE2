@@ -25,7 +25,6 @@ class RegressionSweetSpot(Model):
         self.sub = API()
 
         # Model configuration - related fields.
-        self.type = "regresion solution"
         self.initial_test_size = experiment.description["ModelConfiguration"]["ModelTestSize"]
         self.log_file_name = log_file_name
 
