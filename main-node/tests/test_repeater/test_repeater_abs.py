@@ -36,7 +36,7 @@ def test_default_repeater():
 #     result_exp = [13000, 1400]
 #     task = [(1200, 32), (1900, 2)]
 #     io = "io"
-#     result = def_Repeater.measure_task(task, io)
+#     result = def_Repeater.measure_task(measure_task, task, io)
 #     assert result == result_exp
 
 

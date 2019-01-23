@@ -6,6 +6,8 @@
 
 #### Adaptive Stop Condition
 
+The Solution finding stops if the solution candidate's value is not improved more, then `N` times successively. `N` is calculated as part of full search space size. The part is determined by configs's value - `SearchSpacePercentageWithoutImprovement`.
+
 ```json
 "StopCondition": { 
    "adaptive": { 
@@ -16,6 +18,8 @@
 
 #### Default Stop Condition
 
+The Solution finding stops if the solution candidate's value is not improved more, then `stop_condition_type["MaxConfigsWithoutImprovement"]` times successively.
+
 ```json
 "StopCondition": { 
    "default": { 
@@ -25,6 +29,8 @@
 ```
 
 #### Improvement Based Stop Condition
+
+The Solution finding stops if the solution candidate's value is not improved more, then `stop_condition_type["MaxConfigsWithoutImprovement"]` times successively and is better, then the value of default point.
 
 ```json
 "StopCondition": { 

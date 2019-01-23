@@ -1,41 +1,33 @@
 from abc import ABC, abstractmethod
 import logging
 
-from repeater.history import History
 from tools.front_API import API
 
 
 class Repeater(ABC):
-    def __init__(self, WorkerServiceClient, experiment_description):
+    def __init__(self, WorkerServiceClient, experiment):
 
         self.WSClient = WorkerServiceClient
-        self.history = History()
         self.current_measurement = {}
         self.current_measurement_finished = False
         self.performed_measurements = 0
-        self.feature_names = experiment_description["DomainDescription"]["FeatureNames"]
-        self.max_tasks_per_configuration = experiment_description["TaskConfiguration"]["MaxTasksPerConfiguration"]
+        self.feature_names = experiment.description["DomainDescription"]["FeatureNames"]
+        self.max_tasks_per_configuration = experiment.description["TaskConfiguration"]["MaxTasksPerConfiguration"]
+
         self.logger = logging.getLogger(__name__)
 
+        self.task_id = 0       # should be deleted, receive from WSClient
+        self.worker = "alpha"  # should be deleted, receive from WSClient
+
     @abstractmethod
-    def decision_function(self, point, iterations=3, **configuration): pass
+    def decision_function(self, current_configuration, iterations=3, **configuration): pass
     
-    def measure_configuration(self, configurations, **decis_func_config):
+    def measure_configuration(self, experiment, configurations, **decis_func_config):
         """
 
-        :param configurations: List of lists.
-                Represents set of configurations for Worker Service.
-                Each entity is a final configuration for target system.
-                For example, for energy consumption experiments, system configures with concrete
-            frequency and threads values (e.g. frequency - 2900 MHz, threads - 3).
-                So, if configuration structure defined as [frequency, threads], configurations object with 3 different
-            configurations will be like:
-            [[1800.0, 32], [2000.0, 16], [2900.0, 8]]
+        :param experiment: the instance of Experiment class
+        :param configurations: list of instances of Configuration class
 
-        :return: List of lists.
-                Results formatted according to configured structure. E.g. if required result structure is
-            [frequency, threads, energy], the result for configurations above will be like:
-            [[1800.0, 32, 1231.1], [2000.0, 16, 5121.32], [2900.0, 8, 1215.12]]
         """
         # Removing previous measurements
         self.current_measurement.clear()
@@ -43,12 +35,12 @@ class Repeater(ABC):
         # Creating holders for current measurements
         for configuration in configurations:
             # Evaluating decision function for each configuration in configurations list
-            self.current_measurement[str(configuration)] = {'data': configuration,
-                                                            'Finished': False}
+            self.current_measurement[str(configuration.get_parameters())] = {'data': configuration.get_parameters(),
+                                                                             'Finished': False}
             result = self.decision_function(configuration, **decis_func_config)
             if result: 
-                self.current_measurement[str(configuration)]['Finished'] = True
-                self.current_measurement[str(configuration)]['Results'] = result
+                self.current_measurement[str(configuration.get_parameters())]['Finished'] = True
+                self.current_measurement[str(configuration.get_parameters())]['Results'] = result
 
         # Continue to make measurements while decision function will not terminate it.
         while not self.current_measurement_finished:
@@ -67,27 +59,30 @@ class Repeater(ABC):
             # Send this configurations to Worker service
             results = self.WSClient.work(configurations_to_send)
 
-            # Writing data to history.
-            for task, result in zip(configurations_to_send, results):
-                self.history.put(task, result)
-                API().send('new', 'task', configurations=[task], results=[result])
+            # Sending data to API
+            for parameters, result in zip(configurations_to_send, results):
+                for config in configurations:
+                    if config.get_parameters() == parameters:
+                        config.add_tasks(parameters, str(self.task_id), result, self.worker)
+
+                API().send('new', 'task', configurations=[parameters], results=[result])
+                self.task_id += 1
+
 
             # Evaluating decision function for each configuration
             for configuration in configurations_to_send:
-                result = self.decision_function(configuration, **decis_func_config)
-                if result:
-                    temp_msg = ("Configuration %s is finished after %s measurements. Result: %s"
-                                % (str(configuration), len(self.history.get(configuration)), str(result)))
-                    self.logger.info(temp_msg)
-                    API().send('log', 'info', message=temp_msg)
-                    API().send('new', 'configuration', configurations=[configuration], results=[result])
-                    self.current_measurement[str(configuration)]['Finished'] = True
-                    self.current_measurement[str(configuration)]['Results'] = result
-
-        results = []
-        for configuration in configurations:
-            results.append(self.current_measurement[str(configuration)]['Results'])
-        return results
+                for config in configurations:
+                    if configuration == config.get_parameters():
+                        result = self.decision_function(config, **decis_func_config)
+                        if result:
+                            temp_msg = ("Configuration %s is finished after %s measurements. Result: %s"
+                                        % (str(configuration), len(config.get_tasks()),
+                                           str(config.get_average_result())))
+                            self.logger.info(temp_msg)
+                            API().send('log', 'info', message=temp_msg)
+                            API().send('new', 'configuration', configurations=[configuration], results=[result])
+                            self.current_measurement[str(configuration)]['Finished'] = True
+                            self.current_measurement[str(configuration)]['Results'] = result
     
     def cast_results(self, results):
         """
@@ -104,39 +99,3 @@ class Repeater(ABC):
             return_for_main.append(eval(self.WSClient._results_data_types[index])(value)
                                    for index, value in enumerate(point))
         return return_for_main
-
-    def calculate_config_average(self, tasks_results):
-        """
-            Summary of all Results. Calculating avarage result for configuration
-        :param tasks_results: List of all results(list) in specific point(configuration)
-                    shape - list, e.g. ``[[465], [246.423]]``
-        :return: List with 1 average value.
-        """
-        result = [0 for _ in range(len(tasks_results[0]))]
-        for task_result in tasks_results:
-            for index, value in enumerate(task_result):
-                # If the result is not a digital value, we should use this value variable without averaging
-                if type(value) not in [int, float]:
-                    result[index] = value
-                else:
-                    result[index] += value
-        # Calculating average.
-        for index, value in enumerate(result):
-            # If the result is not a digital value, we should use this value variable without averaging
-            if type(value) not in [int, float]:
-                result[index] = value
-            else:
-                result[index] = eval(self.WSClient._result_data_types[index])(round(value / len(tasks_results), 3))
-        return result
-
-    def point_to_dictionary(self, point):
-        """
-            Transform list of features values to dict
-        :param point: concrete experiment configuration that is evaluating
-                      shape - list, e.g. ``[1200, 32]``
-        :return: Dict with keys - feature name and value - value of this feature.
-        """
-        dict_point = dict()
-        for i in range(0, len(point)):
-            dict_point[self.feature_names[i]] = point[i]
-        return dict_point

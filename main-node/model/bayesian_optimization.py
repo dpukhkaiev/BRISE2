@@ -31,11 +31,12 @@
 import traceback
 
 import numpy as np
-# TODO: Need to uncomment it!
 import statsmodels.api as sm
 import scipy.stats as sps
 
 import logging
+
+from core_entities.configuration import Configuration
 from tools.front_API import API
 
 from model.model_abs import Model
@@ -44,12 +45,15 @@ from model.model_abs import Model
 class BayesianOptimization(Model):
 # TODO: need to implement Maximization/minimization model.
 
-    def __init__(self, whole_task_config, min_points_in_model=None, top_n_percent=30, num_samples=96, random_fraction=1/3,
-                 bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
+    def __init__(self, experiment, min_points_in_model=None, top_n_percent=30, num_samples=96,
+                 random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
 
         self.model = None
         self.top_n_percent = top_n_percent
-        self.task_config = whole_task_config
+
+        # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
+        self.experiment = experiment
+
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
 
@@ -59,31 +63,32 @@ class BayesianOptimization(Model):
         self.sub = API()
 
         if min_points_in_model is None:
-            self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
-        elif min_points_in_model < len(self.task_config["DomainDescription"]["AllConfigurations"])+1:
+            self.min_points_in_model = len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1
+        elif min_points_in_model < len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1:
             self.logger.warning('Invalid min_points_in_model value. Setting it to %i' % (
-                len(self.task_config["DomainDescription"]["AllConfigurations"])+1))
-            self.min_points_in_model = len(self.task_config["DomainDescription"]["AllConfigurations"])+1
+                len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1))
+            self.min_points_in_model = len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1
 
         self.num_samples = num_samples
         self.random_fraction = random_fraction
 
-        hps = self.task_config["DomainDescription"]["AllConfigurations"]
+        hps = self.experiment.description["DomainDescription"]["AllConfigurations"]
 
         self.kde_vartypes = ""
         self.vartypes = []
 
         for h in hps:
+            # TODO : hook for future continuous configuration ranges
             # if hasattr(h, 'choices'):
             # Ordered, cause our data is ordered, possible variants:
             #             - c : continuous
             #             - u : unordered (discrete)
             #             - o : ordered (discrete)
-            self.kde_vartypes += 'u'
-            self.vartypes += [len(h)]
             # else:
             #     self.kde_vartypes += 'c'
             #     self.vartypes += [0]
+            self.kde_vartypes += 'u'
+            self.vartypes += [len(h)]
 
         self.vartypes = np.array(self.vartypes, dtype=int)
 
@@ -91,51 +96,26 @@ class BayesianOptimization(Model):
         self.cat_probs = []
 
         # Data holding fields.
-        self.all_features = []
-        self.all_labels = []
-        self.solution_features = []
-        self.solution_labels = []
+        self.all_configurations = []
         self.good_config_rankings = dict()
 
-    def _idx_to_config(self, indexes):
+    def _config_to_idx(self, configuration):
         """
-        Helper function to transform list of indexes in search space of configurations to the real configurations
-        :param indexes: List. indexes (integers)
-        :return: List. Target system configurations.
-        """
-        configurations = []
-
-        for cur_index in indexes:
-            configuration = []
-            for hyperparam_index, index in enumerate(cur_index):
-                hyperparam_value = self.task_config["DomainDescription"]["AllConfigurations"][hyperparam_index][index]
-                configuration.insert(hyperparam_index, hyperparam_value)
-            configurations.append(configuration)
-
-        return configurations
-
-    def _config_to_idx(self, configs):
-        """
-        Helper function to real configuration to its indexes in the search space.
-        :param config: List. Target system configurations.
+        Helper function to convert real configuration to its indexes in the search space.
+        :param configuration: List. Target system configurations.
         :return: List. Indexes (integers).
         """
-        indexes = []
+        configuration_in_indexes = []
 
-        for config in configs:
-            cur_indexes = []
-            for hyperparam_index, value in enumerate(config):
-                param_index = self.task_config["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
-                cur_indexes.insert(hyperparam_index, param_index)
-            indexes.append(cur_indexes)
+        for hyperparam_index, value in enumerate(configuration):
+            param_index = self.experiment.description["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
+            configuration_in_indexes.insert(hyperparam_index, param_index)
 
-        return indexes
+        return configuration_in_indexes
 
     def build_model(self, update_model=True):
         """
-
         Tries to build the new Bayesian Optimization model.
-
         :return: Boolean. True if the model was successfully built, otherwise - False.
         """
 
@@ -147,8 +127,8 @@ class BayesianOptimization(Model):
             return False
 
         # b) if not enough points are available
-        if len(self.all_features) <= self.min_points_in_model-1:
-            self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"%(len(self.all_features), self.min_points_in_model+1))
+        if len(self.all_configurations) <= self.min_points_in_model-1:
+            self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"%(len(self.all_configurations), self.min_points_in_model+1))
             return False
 
         # c) during warnm starting when we feed previous results in and only update once
@@ -158,18 +138,27 @@ class BayesianOptimization(Model):
 
         self.logger.info("INFO: Building the Bayesian optimization models..")
 
-        train_features = np.array(self.all_features)
-        train_labels = np.array(self.all_labels)
+        all_features = []
+        all_labels = []
+        for config in self.all_configurations:
+            all_features.append(config.get_parameters_in_indexes())
+            all_labels.append(config.get_average_result())
+
+        train_features = np.array(all_features)
+        train_labels = np.array(all_labels)
 
         n_good = max(self.min_points_in_model, (self.top_n_percent * train_features.shape[0])//100)
+
+        # TODO : developing minimization-maximization configuration
         # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100), 10)
+
         n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100)
 
         # Refit KDE for the current budget
         idx = np.argsort(train_labels, axis=0)
 
         train_data_good = self.impute_conditional_data(train_features[idx[:n_good]])
-        train_data_bad  = self.impute_conditional_data(train_features[idx[n_good:n_good+n_bad]])
+        train_data_bad = self.impute_conditional_data(train_features[idx[n_good:n_good+n_bad]])
 
         if train_data_good.shape[0] <= train_data_good.shape[1]:
             return False
@@ -194,7 +183,7 @@ class BayesianOptimization(Model):
 
         self.model = {
             'good': good_kde,
-            'bad' : bad_kde
+            'bad': bad_kde
         }
 
         # update probs for the categorical parameters for later sampling
@@ -202,14 +191,19 @@ class BayesianOptimization(Model):
                           %(n_good, n_bad, np.min(train_labels)))
         return True
 
-    def validate_model(self, search_space):
+    def validate_model(self):
         #TODO how validate
         # Check if model was built.
         if not self.model:
             return False
         return True
 
-    def predict_solution(self, search_space):
+    def predict_solution(self):
+        """
+        Predicts the solution candidate of the model. Returns old Configuration instance if configuration is already
+        exists in all_configuration list, otherwise creates new Configuration instance.
+        :return Configuration instance
+        """
         predicted_configuration = None
         info_dict = {}
 
@@ -273,14 +267,14 @@ class BayesianOptimization(Model):
                     # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                     info_dict['model_based_pick'] = False
                 else:
-                    self.logger.debug('predicted_result_vector: {}, {}, {}, {}'.format(
+                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(
                         predicted_result_vector,
                         predicted_result,
                         l(predicted_result_vector),
                         g(predicted_result_vector)))
 
                     predicted_configuration = []
-                    for index, dimension in enumerate(self.task_config["DomainDescription"]["AllConfigurations"]):
+                    for index, dimension in enumerate(self.experiment.description["DomainDescription"]["AllConfigurations"]):
                         predicted_configuration.append(dimension[predicted_result_vector[index]])
 
             except:
@@ -290,86 +284,25 @@ class BayesianOptimization(Model):
                 info_dict['model_based_pick'] = False
 
         self.logger.debug('done sampling a new configuration.')
-        return predicted_result, predicted_configuration
+        for configuration in self.all_configurations:
+            if configuration.get_parameters() == predicted_configuration:
+                configuration.add_predicted_result(parameters=predicted_configuration,
+                                                   predicted_result=[predicted_result])
+                return configuration
+        predicted_configuration_class = Configuration(predicted_configuration)
+        predicted_configuration_class.add_predicted_result(parameters=predicted_configuration,
+                                                           predicted_result=[predicted_result])
+        return predicted_configuration_class
 
-
-    def get_result(self, repeater):
-        # TODO: need to review a way of features and labels addition here.
-        #   In case, if the model predicted the final point, that has less value, than the default, but there is
-        # a point, that has less value, than the predicted point - report this point instead of predicted point.
-        self.logger.info("\n\nFinal report:")
-
-        if not self.solution_labels:
-            self.solution_labels = min(self.all_labels)
-            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
-
-            self.logger.info("Optimal configuration was not found. Reporting best of the measured.")
-            self.sub.send('log', 'info', message="Optimal configuration was not found. Quality: %s, Configuration: %s" %
-            (self.solution_labels, self.solution_features))
-
-        elif min(self.all_labels) < self.solution_labels:
-            temp_message = ("Configuration: %s, Quality: %s, "
-                  "that model gave worse that one of measured previously, but better than default."
-                  "Reporting best of measured." %
-                  (self.solution_features, self.solution_labels))
-            self.logger.info(temp_message)
-            self.sub.send('log', 'info', message=temp_message)
-
-
-            self.solution_labels = min(self.all_labels)
-            index_of_the_best_labels = self.all_labels.index(self.solution_labels)
-            self.solution_features = self.all_features[index_of_the_best_labels]
-
-        self.logger.info("ALL MEASURED FEATURES:\n%s" % str(self.all_features))
-        self.logger.info("ALL MEASURED LABELS:\n%s" % str(self.all_labels))
-        self.logger.info("Number of measured points: %s" % len(self.all_features))
-        self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
-        self.logger.info("Best found energy: %s, with configuration: %s" % (self.solution_labels, self.solution_features))
-
-        self.sub.send('final', 'configuration',
-                      configurations=[self.solution_features],
-                      results=[self.solution_labels],
-                      type=['bayesian solution'],
-                      measured_points=[self.all_features],
-                      performed_measurements=[[repeater.performed_measurements]])
-
-        return self.solution_labels, self.solution_features
-
-    def add_data(self, features, labels): 
+    def add_data(self, configurations):
         """
-        
-        Method adds new features and labels to whole set of features and labels.
+        Method adds configurations to whole set of configurations. Convert configurations to its indexes.
 
-        :param features: List. features in machine learning meaning selected by Sobol
-        :param labels: List. labels in machine learning meaning selected by Sobol
+        :param configurations: List of Configuration's instances
         """
-        # An input validation and updating of the features and labels set.
-        # 1. Tests if lists of features and labels are same length.
-        # 2. Tests if all lists are nested.
-        # 3. Tests if all values of nested fields are ints or floats. (Because regression works only with those data).
-        # These all(all(...)..) returns true if all data
-        try:
-
-            assert len(features) == len(labels) > 0, \
-                "Incorrect length!\nFeatures:%s\nLabels:%s" % (str(features), str(labels))
-
-            assert all(all(isinstance(value, (int, float, str)) for value in feature) for feature in features), \
-                "Incorrect data types in features: %s" % str(features)
-
-            assert all(all(isinstance(value, (int, float, str)) for value in label) for label in labels), \
-                "Incorrect data types in labelss: %s" % str(labels)
-            if labels is None:
-                # One could skip crashed results, but we decided 
-                # assign a +inf loss and count them as bad configurations
-                self.all_labels += np.inf
-            else:
-                self.all_features += self._config_to_idx(features)
-                self.all_labels += labels
-
-        except AssertionError as err:
-            self.logger.error("Input data validation error:%s\nAdding Features: %s\nAdding Labels:%s"
-                              % (err, features, labels))
+        self.all_configurations = configurations
+        for config in self.all_configurations:
+            config.add_parameters_in_indexes(config.get_parameters(), self._config_to_idx(config.get_parameters()))
     
     def impute_conditional_data(self, array):
 
@@ -397,5 +330,5 @@ class BayesianOptimization(Model):
                         datum[nan_idx] = np.random.randint(t)
 
                 nan_indices = np.argwhere(np.isnan(datum)).flatten()
-            return_array[i,:] = datum
-        return(return_array)
+            return_array[i, :] = datum
+        return return_array
