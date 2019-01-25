@@ -80,6 +80,7 @@ def initialize_config(argv):
     create_folder_if_not_exists(globalConfig['results_storage'])
 
     if is_experiment_description_valid(schema_path=schemaPath, file_path=taskPath):
+        logger.info(" Task file %s is valid" % taskPath)
         return globalConfig, task  
     else: exit(1)
 

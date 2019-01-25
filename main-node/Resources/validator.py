@@ -7,7 +7,7 @@ from jsonschema import validate, RefResolver, Draft4Validator
 # # ImportError: No module named tools.file_system_io
 # from os import chdir, getcwd
 # from sys import path
-# # chdir('..')
+# chdir('..')
 # path.append(abspath('.'))
 # print(getcwd())
 # print("----------------")

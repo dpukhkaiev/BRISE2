@@ -89,5 +89,5 @@ Possible values of configurations for your system should be provided in separate
 * For validation JSON documents use [json-schema](https://json-schema.org/)
 * Useful examples. [Understanding-json-schema] (https://json-schema.org/understanding-json-schema/index.html)
 
-Run `is_experiment_description_valid()` from `\main-node\Resources\validator.py`
-If necessary, use committed code
+Run `is_experiment_description_valid()` from `/main-node/Resources/validator.py`
+If necessary, use commented code
