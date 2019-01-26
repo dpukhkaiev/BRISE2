@@ -9,20 +9,6 @@
             "description": "Global optimization of black-box functions that doesn't require derivatives.",
             "type": "object",
             "properties": {
-                "ModelTestSize": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
-                },
-                "MinimumAccuracy": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
-                },
                 "ModelType": {
                     "type": "string",
                     "enum": ["BO"]
@@ -32,8 +18,6 @@
                 }
             },
             "required": [
-                "ModelTestSize",
-                "MinimumAccuracy",
                 "ModelType",
                 "isMinimizationExperiment"
             ]
