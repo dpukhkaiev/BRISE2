@@ -2,16 +2,9 @@ __doc__ = """
     Module to read config and tasks for execute."""
 import json
 import logging
-# import os 
-# from sys import path
-# from os.path import abspath, join
-
-# print("----------------")
-# print(os.getcwd())
-# print("----------------")
 
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
-from Resources.validator import is_experiment_description_valid
+from tools.json_validator import is_experiment_description_valid
 
 
 def read_global_config(global_config_path):
