@@ -26,7 +26,14 @@
             "title": "Regression sweet spot",
             "type": "object",
             "properties": {
-                "ModelTestSize": {
+                "minimalTestingSize": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "exclusiveMaximum": true,
+                    "exclusiveMinimum": true
+                },
+                "maximalTestingSize": {
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1,
@@ -49,7 +56,8 @@
                 }
             },
             "required": [
-                "ModelTestSize",
+                "minimalTestingSize",
+                "maximalTestingSize",
                 "MinimumAccuracy",
                 "ModelType",
                 "isMinimizationExperiment"

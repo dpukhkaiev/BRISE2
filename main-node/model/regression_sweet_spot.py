@@ -25,7 +25,8 @@ class RegressionSweetSpot(Model):
         self.sub = API()
 
         # Model configuration - related fields.
-        self.initial_test_size = experiment.description["ModelConfiguration"]["ModelTestSize"]
+        self.minimal_test_size = experiment.description["ModelConfiguration"]["minimalTestingSize"]
+        self.maximal_test_size = experiment.description["ModelConfiguration"]["maximalTestingSize"]
         self.log_file_name = log_file_name
 
         # Built model - related fields.
@@ -52,8 +53,8 @@ class RegressionSweetSpot(Model):
         best_got = -10e10
         best_model = None
         while cur_accuracy > self.minimum_model_accuracy:
-            current_test_size = self.initial_test_size
-            while current_test_size > 0.3:
+            current_test_size = self.maximal_test_size
+            while current_test_size > self.minimal_test_size:
                 for x in range(tries):
                     feature_train, feature_test, target_train, target_test = self.resplit_data(current_test_size)
                     model = Pipeline(
@@ -141,7 +142,6 @@ class RegressionSweetSpot(Model):
         solution = Configuration(self.experiment.search_space[index])
         solution.add_predicted_result(self.experiment.search_space[index], label)
         return solution
-
 
     def resplit_data(self, test_size):
         """

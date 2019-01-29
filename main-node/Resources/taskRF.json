@@ -2,7 +2,8 @@
   "task_name"  : "taskRF", 
   "params": {
     "ExperimentNumber"  : 1,
-    "ModelTestSize"  : 0.9,
+    "minimalTestingSize": 0.3,
+    "maximalTestingSize": 0.9,
     "SobolInitLength" : 10,
     "step": 2,
     "DataFile"        : "./taskRFData.json",

@@ -31,7 +31,8 @@ Possible values of configurations for your system should be provided in separate
     - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
     
 - `ModelConfiguration` - section with the configuration related to the prediction model creating process.
-    - `ModelTestSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
+    - `minimalTestingSize` - `float`. A minimum possible fraction that specifies an amount of data for testing the created prediction model.
+    - `maximalTestingSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
     - `MinimumAccuracy` - `float`. A minimum accuracy that model should provide before making any predictions/testing.
     - `ModelType` - `string`. Type of prediction model. Currently available `regression`.
        
@@ -63,7 +64,8 @@ Possible values of configurations for your system should be provided in separate
         "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
-        "ModelTestSize"     : 0.9,
+        "minimalTestingSize": 0.3,
+        "maximalTestingSize": 0.9, 
         "MinimumAccuracy"   : 0.85,
         "ModelType"         : "BO",
         "isMinimizationExperiment"  : true

@@ -23,7 +23,8 @@ interface TaskConfiguration {
 }
 interface ModelCreation {
     MinimumAccuracy: number
-    ModelTestSize: number
+    minimalTestingSize: number
+    maximalTestingSize: number
     ModelType: String // "regression" or "BO"
 
 }
