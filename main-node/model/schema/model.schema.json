@@ -1,0 +1,59 @@
+{
+    "$id": "http://brise.com/model.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "Model make a hypothesis about the solution of the experiment",
+
+    "definitions": {
+        "BayesianOptimization": {
+            "title": "Bayesian optimization",
+            "description": "Global optimization of black-box functions that doesn't require derivatives.",
+            "type": "object",
+            "properties": {
+                "ModelType": {
+                    "type": "string",
+                    "enum": ["BO"]
+                },
+                "isMinimizationExperiment": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "ModelType",
+                "isMinimizationExperiment"
+            ]
+        },
+        "Regression": {
+            "title": "Regression sweet spot",
+            "type": "object",
+            "properties": {
+                "ModelTestSize": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "exclusiveMaximum": true,
+                    "exclusiveMinimum": true
+                },
+                "MinimumAccuracy": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "exclusiveMaximum": true,
+                    "exclusiveMinimum": true
+                },
+                "ModelType": {
+                    "type": "string",
+                    "enum": ["regression"]
+                },
+                "isMinimizationExperiment": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "ModelTestSize",
+                "MinimumAccuracy",
+                "ModelType",
+                "isMinimizationExperiment"
+            ]
+        }
+    }
+}

@@ -27,7 +27,5 @@
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
         "ModelType"         : "BO",
-        "isMinimizationExperiment"  : false,
-        "FeaturesLabelsStructure"  : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
-      }
+        "isMinimizationExperiment"  : false
 }

@@ -8,8 +8,7 @@
             "properties": {
                 "FeatureNames": {
                     "type": "array",
-                    "items": [
-                        {
+                    "items": [{
                             "type": "string"
                         },
                         {
@@ -24,13 +23,23 @@
                     "type": "string"
                 },
                 "DefaultConfiguration": {
-                    "type": "array",
-                    "items": [
+                    "anyOf": [
                         {
-                            "type": "number"
+                            "type": "array",
+                            "description": "Default configuration for multidimensional parameters",
+                            "minItems": 3,
+                            "items": [{
+                                "type": ["number", "string"]
+                            }]
                         },
                         {
-                            "type": "number"
+                            "type": "array",
+                            "description": "Default configuration with numbers for the energy consumption",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": [{
+                                "type": "number"
+                            }]
                         }
                     ]
                 }
@@ -43,27 +52,9 @@
             ]
         },
         "SelectionAlgorithm": {
-            "type": "object",
-            "properties": {
-                "SelectionType": {
-                    "type": "string"
-                },
-                "NumberOfInitialConfigurations": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true  
-                },
-                "Step": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true 
-                }
-            },
-            "required": [
-                "SelectionType",
-                "NumberOfInitialConfigurations",
-                "Step"
-            ]
+            "anyOf": [{
+                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/SobolSequence"
+            }]
         },
         "TaskConfiguration": {
             "type": "object",
@@ -77,15 +68,11 @@
                         "ws_file": {
                             "type": "string"
                         }
-                    },
-                    "required": [
-                        "ws_file"
-                    ]
+                    }
                 },
                 "TaskParameters": {
                     "type": "array",
-                    "items": [
-                        {
+                    "items": [{
                             "type": "string"
                         },
                         {
@@ -95,19 +82,15 @@
                 },
                 "ResultStructure": {
                     "type": "array",
-                    "items": [
-                        {
-                            "type": "string"
-                        }
-                    ]
+                    "items": [{
+                        "type": "string"
+                    }]
                 },
                 "ResultDataTypes": {
                     "type": "array",
-                    "items": [
-                        {
-                            "type": "string"
-                        }
-                    ]
+                    "items": [{
+                        "type": "string"
+                    }]
                 },
                 "RepeaterDecisionFunction": {
                     "type": "string"
@@ -133,48 +116,27 @@
             ]
         },
         "ModelConfiguration": {
-            "type": "object",
-            "properties": {
-                "ModelTestSize": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true
+            "description": "Conditions for stopping an experiment.",
+            "anyOf": [
+                {
+                    "$ref": "./model/schema/model.schema.json#/definitions/BayesianOptimization"
                 },
-                "MinimumAccuracy": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true
-                },
-                "ModelType": {
-                    "type": "string",
-                    "pattern": "^regression$|^BO$"
-                },
-                "MinimizationExperiment": {
-                    "type": "boolean"
-                },
-                "FeaturesLabelsStructure": {
-                    "type": "array",
-                    "items": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "string"
-                        }
-                    ]
+                {
+                    "$ref": "./model/schema/model.schema.json#/definitions/Regression"
                 }
-            },
-            "required": [
-                "ModelTestSize",
-                "MinimumAccuracy",
-                "ModelType",
-                "MinimizationExperiment",
-                "FeaturesLabelsStructure"
+            ]
+        },
+        "StopCondition": {
+            "description": "Configuration related to the prediction model creating process.",
+            "anyOf": [{
+                    "$ref": "./stop_condition/schema/adaptive.schema.json#"
+                },
+                {
+                    "$ref": "./stop_condition/schema/default.schema.json#"
+                },
+                {
+                    "$ref": "./stop_condition/schema/impr.schema.json#"
+                }
             ]
         }
     },
@@ -182,6 +144,7 @@
         "DomainDescription",
         "SelectionAlgorithm",
         "TaskConfiguration",
-        "ModelConfiguration"
+        "ModelConfiguration",
+        "StopCondition"
     ]
 }

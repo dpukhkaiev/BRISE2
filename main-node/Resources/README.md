@@ -34,7 +34,6 @@ Possible values of configurations for your system should be provided in separate
     - `ModelTestSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
     - `MinimumAccuracy` - `float`. A minimum accuracy that model should provide before making any predictions/testing.
     - `ModelType` - `string`. Type of prediction model. Currently available `regression`.
-    - `FeaturesLabelsStructure` - `list of strings 'label' or 'feature'`. Specifies what in the `ResultStructure` field is the optimization goal(`label`) and what is the optimization parameters (`feature`).
        
 
 #### Example of configuration file:
@@ -57,17 +56,22 @@ Possible values of configurations for your system should be provided in separate
           "ws_file": "Radix-500mio.csv"
         },
         "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["frequency", "threads", "energy"],
-        "ResultDataTypes"  : ["float", "int", "float"],
+        "ResultStructure"   : ["energy"],
+        "ResultDataTypes"  : ["float"],
         "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxRepeatsPerConfiguration": 10,
+        "MaxTasksPerConfiguration": 10,
         "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
         "ModelTestSize"     : 0.9,
         "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression",
-        "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
+        "ModelType"         : "BO",
+        "isMinimizationExperiment"  : true
+      },
+      "StopCondition": {
+        "adaptive": {
+          "SearchSpacePercentageWithoutImprovement": 10
+        }
       }
 }
 ```
@@ -80,3 +84,7 @@ Possible values of configurations for your system should be provided in separate
       2900.0, 2901.0]
 }
 ```
+
+#### Validate the configuration file:
+* For validation JSON documents use [json-schema](https://json-schema.org/)
+* Useful examples. [Understanding-json-schema] (https://json-schema.org/understanding-json-schema/index.html)
