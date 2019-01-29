@@ -18,6 +18,22 @@
     svg {
         margin-left: 5px;
     }
+    .haec {
+        align-self: center;
+        margin-left: auto;
+        margin-right: 25px;
+        img {
+            height: 40px; 
+            -webkit-filter: grayscale(100%);
+            filter: grayscale(100%);
+            -webkit-transition: .3s ease-in-out;
+            transition: .3s ease-in-out;
+        }
+        &:hover img {
+            -webkit-filter: grayscale(0);
+            filter: grayscale(0);
+        }
+    }
 }
 #logo {
     fill: $primary-color-dark;
