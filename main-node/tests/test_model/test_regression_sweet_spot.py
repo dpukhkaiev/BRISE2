@@ -10,8 +10,7 @@ G_LOG_FILE_NAME = "file"
 G_MODEL_REGRESSION_CONFIG = {
     "ModelTestSize": 0.9,
     "MinimumAccuracy": 0.85,
-    "ModelType": "regression",
-    "FeaturesLabelsStructure": ["feature", "feature", "label"]
+    "ModelType": "regression"
 }
 G_FEATURES = [(1200, 1), (1200, 2), (1200, 4), (1200, 8),
               (1600, 1), (1600, 2), (1600, 4), (1600, 8),

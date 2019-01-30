@@ -17,7 +17,7 @@ export enum MainEvent {
 
 export const SubEvent = {
     EXPERIMENT: ['description'],
-    DEFAUL: ['configuration'],
+    DEFAULT: ['configuration'],
     NEW: ['task', 'configuration'],
     PREDICTIONS: ['configurations'],
     FINAL: ['configuration'],

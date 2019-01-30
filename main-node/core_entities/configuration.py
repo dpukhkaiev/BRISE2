@@ -170,3 +170,13 @@ class Configuration:
         results_tuples = [task["result"] for (_, task) in self._tasks.items()]
         # calculating the average over all result items
         self._average_result = np.mean(results_tuples, axis=0).tolist()
+
+    def __repr__(self):
+        """
+        String representation of Configuration object.
+        """
+        return "Configuration obj. Params: {params}, Tasks: {num_of_tasks}, Avg.result: {avg_res}.".format(
+            params=str(self.get_parameters()),
+            num_of_tasks=len(self._tasks), 
+            avg_res=str(self.get_average_result()))
+

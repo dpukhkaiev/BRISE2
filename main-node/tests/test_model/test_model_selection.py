@@ -6,8 +6,7 @@ import pytest
 MODEL_CREATION_CONFIG = {
         "ModelTestSize": 0.9,
         "MinimumAccuracy": 0.85,
-        "ModelType": "regression",
-        "FeaturesLabelsStructure": ["feature", "feature", "label"]
+        "ModelType": "regression"
     }
 LOG_FILE_NAME = "should_be_log_file_name"
 FEATURES = []
@@ -17,8 +16,7 @@ LABELS = []
 def test_get_model_without_model_test_size():
     model_creation_config = {
         "MinimumAccuracy": 0.85,
-        "ModelType": "regression",
-        "FeaturesLabelsStructure": ["feature", "feature", "label"]
+        "ModelType": "regression"
     }
     with pytest.raises(KeyError):  # fail if there is no "ModelTestSize"
         get_model(model_creation_config, LOG_FILE_NAME, FEATURES, LABELS)

@@ -26,8 +26,7 @@ DATA_FOR_JSON_FILE = {
     "ModelCreation": {
         "ModelTestSize": 0.9,
         "MinimumAccuracy": 0.85,
-        "ModelType": "regression",
-        "FeaturesLabelsStructure": ["feature", "feature", "label"]
+        "ModelType": "regression"
     }
 }
 

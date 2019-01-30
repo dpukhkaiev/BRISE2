@@ -181,11 +181,10 @@ class RegressionSweetSpot(Model):
                                          }
         """
         from tools.features_tools import split_features_and_labels
-        from tools.initial_config import load_task
         from tools.splitter import Splitter
         all_data = []
 
-        file_path = "./csv/" + load_task()["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]
+        file_path = "./csv/" + self.experiment.description["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]
         spl = Splitter(file_path)
         for config in self.all_configurations:
             if config.get_parameters() in search_space:

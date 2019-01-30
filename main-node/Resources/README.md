@@ -67,7 +67,7 @@ Possible values of configurations for your system should be provided in separate
         "minimalTestingSize": 0.3,
         "maximalTestingSize": 0.9, 
         "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "BO",
+        "ModelType"         : "regression",
         "isMinimizationExperiment"  : true
       },
       "StopCondition": {

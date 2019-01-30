@@ -19,8 +19,7 @@ class Experiment:
                             shape - list of lists, e.g. ``[[2900, 32], [2800, 32], [2500, 32], ... ]``
         """
         self.logger = logging.getLogger(__name__)
-        # Send updates to subscribers
-        self.sub = API()
+        self.api = API()
 
         self.default_configuration = []
         self.all_configurations = []
@@ -29,30 +28,37 @@ class Experiment:
         self.current_best_configuration = []
         self.start_time = datetime.datetime.now()
 
-    def put_default_configuration(self, default_configuration):
-        self.default_configuration = default_configuration
+    def put_default_configuration(self, default_configuration: Configuration):
+        if self._is_valid_configuration_instance(default_configuration):
+            if not self.default_configuration:
+                self.default_configuration = default_configuration
+                self.api.send("default", "configuration",
+                              configurations=[default_configuration.get_parameters()],
+                              results=[default_configuration.get_average_result()])
+                if default_configuration not in self.all_configurations:
+                    self.all_configurations.append(default_configuration)
+                    self.current_best_configuration = self._calculate_current_best_configuration()
+            else:
+                raise ValueError("The default Configuration was registered already.")
 
-    def put(self, configuration_instance):
+    def put(self, configuration_instance: Configuration):
         """
         Takes instance of Configuration class and appends it to the list with all configuration instances.
-        :param configuration_instance: Object. instance of Configuration class
+        :param configuration_instance: Configuration class instance.
         """
         if self._is_valid_configuration_instance(configuration_instance):
-            if self.all_configurations == []:
-                self.all_configurations.append(configuration_instance)
-                self.current_best_configuration = [configuration_instance]
+            if self.all_configurations is []:
+                self._add_configuration_to_experiment(configuration_instance)
             else:
                 is_exists = False
                 for value in self.all_configurations:
                     if value.get_parameters() == configuration_instance.get_parameters():
                         is_exists = True
                 if not is_exists:
-                    self.all_configurations.append(configuration_instance)
-                    self.logger.info("Configuration %s is added to Experiment" % configuration_instance.get_parameters())
-                    self.current_best_configuration = self._calculate_current_best_configuration()
-                    if self.current_best_configuration[0] == configuration_instance:
-                        self.logger.info("New solution found: %s with result %s" % (configuration_instance.get_parameters(),
-                                                                        configuration_instance.get_average_result()))
+                    self._add_configuration_to_experiment(configuration_instance)
+                else:
+                    self.logger.warning("Attempt of adding Configuration that is already in Experiment: %s" %
+                                        configuration_instance)
 
     def get(self, configuration):
         """
@@ -73,16 +79,14 @@ class Experiment:
 
         self.logger.info("\n\nFinal report:")
 
-        temp_message = ("Configuration: %s Quality: %s, "
-                        "Solution that model gave is worse that one of measured previously, but better than default."
-                        "Reporting best of measured." % (self.current_best_configuration[0].get_parameters(),
-                                                         self.current_best_configuration[0].get_average_result()))
+        temp_message = ("Solution that model gave: %s,  worse that one of previously measured, but better than default."
+                        "Reporting best of measured." % self.current_best_configuration[0])
         self.logger.info(temp_message)
-        self.sub.send('log', 'info', message=temp_message)
+        self.api.send('log', 'info', message=temp_message)
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
         for configuration in self.all_configurations:
-            self.logger.info("%s: %s" % (str(configuration.get_parameters()), str(configuration.get_average_result())))
+            self.logger.info(configuration)
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found point: %s, with configuration: %s"
@@ -92,7 +96,7 @@ class Experiment:
         all_features = []
         for configuration in self.all_configurations:
             all_features.append(configuration.get_parameters())
-        self.sub.send('final', 'configuration',
+        self.api.send('final', 'configuration',
                       configurations=[self.current_best_configuration[0].get_parameters()],
                       results=[[round(self.current_best_configuration[0].get_average_result()[0], 2)]],
                       measured_points=[all_features],
@@ -122,7 +126,7 @@ class Experiment:
         if isinstance(configuration_instance, Configuration):
             return True
         else:
-            self.logger.error('Current object is not a Configuration instance')
+            self.logger.error('Current object is not a Configuration instance, but %s' % type(configuration_instance))
             return False
 
     def _calculate_current_best_configuration(self):
@@ -133,3 +137,21 @@ class Experiment:
                                                      best_configuration[0]):
                 best_configuration = [configuration]
         return best_configuration
+
+    def _add_configuration_to_experiment(self, configuration: Configuration) -> None:
+        """
+        Save configuration after passing all checks.
+        This method also sends an update to API (front-end), calculates current best Configuration.
+        :param configuration: Configuration object.
+        :return: None
+        """
+        self.all_configurations.append(configuration)
+        self.api.send("new", "configuration",
+                      configurations=[configuration.get_parameters()],
+                      results=[configuration.get_average_result()])
+        self.logger.info("Adding to Experiment: %s" % configuration)
+        self.current_best_configuration = self._calculate_current_best_configuration()
+        if self.current_best_configuration[0] == configuration:
+            self.logger.info("New solution found: %s" % configuration)
+
+

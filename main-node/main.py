@@ -40,7 +40,6 @@ def run():
     # Generate whole search space for model.
     experiment.search_space = [list(configuration) for configuration in itertools.product(*experiment.description["DomainDescription"]["AllConfigurations"])]
 
-
     sub.send('experiment', 'description', global_config=global_config, experiment_description=experiment.description)
     logger.debug("Experiment description and global configuration sent to the API.")
 
@@ -64,20 +63,14 @@ def run():
     sub.send('log', 'info', message=temp_msg)
 
     default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
-    experiment.put_default_configuration([default_configuration])
-    repeater.measure_configuration(experiment, experiment.default_configuration)
-    experiment.put(configuration_instance=default_configuration)
+    repeater.measure_configurations(experiment, [default_configuration])
+    experiment.put_default_configuration(default_configuration)
 
     selector.disable_point(default_configuration.get_parameters())
 
-    temp_msg = "Results of measuring default value: %s" % experiment.default_configuration[0].get_average_result()
+    temp_msg = "Results of measuring default value: %s" % experiment.default_configuration.get_average_result()
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
-
-    # TODO An array in the array with one value.
-    # Events 'default conf' and 'task result' must be similar
-    sub.send('default', 'configuration', configurations=[experiment.default_configuration[0].get_parameters()],
-             results=[experiment.default_configuration[0].get_average_result()])
 
     temp_msg = "Running initial configurations, while there is no sense in trying to create the model without a data..."
     logger.info(temp_msg)
@@ -89,8 +82,8 @@ def run():
         initial_configurations.append(configuration)
 
     repeater = change_decision_function(repeater, experiment.description["TaskConfiguration"]["RepeaterDecisionFunction"])
-    repeater.measure_configuration(experiment, initial_configurations,
-                                   default_point=experiment.default_configuration[0].get_average_result())
+    repeater.measure_configurations(experiment, initial_configurations,
+                                    default_point=experiment.default_configuration.get_average_result())
     for config in initial_configurations:
         experiment.put(configuration_instance=config)
 
@@ -132,7 +125,7 @@ def run():
                            % (str(predicted_configuration.get_parameters()), str(predicted_configuration.predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
-                repeater.measure_configuration(experiment=experiment, configurations=[predicted_configuration])
+                repeater.measure_configurations(experiment=experiment, configurations=[predicted_configuration])
                 experiment.put(predicted_configuration)
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
                                                           current_best_configurations=experiment.current_best_configuration)
@@ -163,8 +156,8 @@ def run():
             configuration = Configuration(selector.get_next_point())
             configurations_to_be_measured.append(configuration)
 
-        repeater.measure_configuration(experiment=experiment, configurations=configurations_to_be_measured,
-                              default_point=experiment.default_configuration[0].get_average_result())
+        repeater.measure_configurations(experiment=experiment, configurations=configurations_to_be_measured,
+                                        default_point=experiment.default_configuration.get_average_result())
         for config in configurations_to_be_measured:
             experiment.put(configuration_instance=config)
 

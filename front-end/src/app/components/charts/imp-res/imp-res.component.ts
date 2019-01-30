@@ -64,6 +64,22 @@ export class ImpResComponent implements OnInit {
         this.render() // Render chart when all points got
       });
 
+      this.ioMain.onEvent(MainEvent.DEFAULT).subscribe((obj: any) => {
+        obj["configuration"] && obj["configuration"].forEach(configuration => {
+          this.solution = configuration
+          let min = new Date().getMinutes()
+          let sec = new Date().getSeconds()
+          let temp: PointExp = {
+            'configurations': configuration['configurations'],
+            'results': configuration['results'],
+            'time': min + 'm ' + sec + 's',
+            'measured points': this.allRes.size + 1
+          }
+          this.allRes.add(temp)
+          this.bestRes.add(temp) // There is no check if this solution is the best decision 
+        })
+        this.render() // Render chart when all points got         
+    });
 
     this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: any) => {
@@ -93,7 +109,6 @@ export class ImpResComponent implements OnInit {
           })
           this.bestRes.add(temp) // Add the best available point(result)
         })
-        this.render() // Render chart
         this.bestRes.size>2 && this.render()
       });
 

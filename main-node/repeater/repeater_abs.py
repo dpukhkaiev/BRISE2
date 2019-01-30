@@ -22,7 +22,7 @@ class Repeater(ABC):
     @abstractmethod
     def decision_function(self, current_configuration, iterations=3, **configuration): pass
     
-    def measure_configuration(self, experiment, configurations, **decis_func_config):
+    def measure_configurations(self, experiment, configurations, **decis_func_config):
         """
 
         :param experiment: the instance of Experiment class
@@ -80,7 +80,6 @@ class Repeater(ABC):
                                            str(config.get_average_result())))
                             self.logger.info(temp_msg)
                             API().send('log', 'info', message=temp_msg)
-                            API().send('new', 'configuration', configurations=[configuration], results=[result])
                             self.current_measurement[str(configuration)]['Finished'] = True
                             self.current_measurement[str(configuration)]['Results'] = result
     

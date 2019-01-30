@@ -157,7 +157,7 @@ class APIMessageBuilder:
                 "Different sizes of provided parameters!\n%s" % str(kwargs)
         except AssertionError as err:
             getLogger(__name__).error(err)
-            raise KeyError("Invalid parameters passed to send message via API.")
+            raise KeyError("Invalid parameters passed to send message via API: %s" % err)
 
         message = []
 

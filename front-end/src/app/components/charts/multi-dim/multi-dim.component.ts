@@ -100,6 +100,8 @@ export class MultiDimComponent implements OnInit {
         obj["configuration"] && obj["configuration"].forEach(configuration => {
           if (configuration) {
             this.default_configuration = configuration // In case if only one point default
+            let chart_dimensions = this.add_dimensions_data(configuration)
+            this.render(chart_dimensions)
           } else {
             console.log("Empty default")
           }
