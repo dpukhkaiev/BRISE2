@@ -24,9 +24,6 @@
     "MaxTimeToRunTask": 10
   },
   "ModelConfiguration":{
-    "minimalTestingSize": 0.3,
-    "maximalTestingSize": 0.9,
-    "MinimumAccuracy"   : 0.85,
     "ModelType"         : "BO",
     "isMinimizationExperiment"  : false
   },

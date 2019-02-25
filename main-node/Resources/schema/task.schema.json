@@ -29,7 +29,7 @@
                             "description": "Default configuration for multidimensional parameters",
                             "minItems": 3,
                             "items": [{
-                                "type": ["number", "string"]
+                                "type": ["number", "string","boolean"]
                             }]
                         },
                         {

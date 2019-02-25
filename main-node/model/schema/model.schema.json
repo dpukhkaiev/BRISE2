@@ -20,7 +20,8 @@
             "required": [
                 "ModelType",
                 "isMinimizationExperiment"
-            ]
+            ],
+            "additionalProperties": false
         },
         "Regression": {
             "title": "Regression sweet spot",
@@ -61,7 +62,8 @@
                 "MinimumAccuracy",
                 "ModelType",
                 "isMinimizationExperiment"
-            ]
+            ],
+            "additionalProperties": false
         }
     }
 }

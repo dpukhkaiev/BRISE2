@@ -43,7 +43,6 @@ from model.model_abs import Model
 
 
 class BayesianOptimization(Model):
-# TODO: need to implement Maximization/minimization model.
 
     def __init__(self, experiment, min_points_in_model=None, top_n_percent=30, num_samples=96,
                  random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
@@ -53,6 +52,7 @@ class BayesianOptimization(Model):
 
         # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
         self.experiment = experiment
+        self.isMinimizationExperiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
 
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
@@ -149,16 +149,17 @@ class BayesianOptimization(Model):
 
         n_good = max(self.min_points_in_model, (self.top_n_percent * train_features.shape[0])//100)
 
-        # TODO : developing minimization-maximization configuration
-        # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100), 10)
-
         n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100)
 
         # Refit KDE for the current budget
-        idx = np.argsort(train_labels, axis=0)
+
+        if self.isMinimizationExperiment:
+            idx = np.argsort(train_labels, axis=0)
+        else:
+            idx = np.argsort(-train_labels, axis=0)
 
         train_data_good = self.impute_conditional_data(train_features[idx[:n_good]])
-        train_data_bad = self.impute_conditional_data(train_features[idx[n_good:n_good+n_bad]])
+        train_data_bad = self.impute_conditional_data(train_features[idx[n_good:n_good + n_bad]])
 
         if train_data_good.shape[0] <= train_data_good.shape[1]:
             return False
@@ -206,8 +207,10 @@ class BayesianOptimization(Model):
         """
         predicted_configuration = None
         info_dict = {}
-
-        predicted_result = np.inf
+        if self.isMinimizationExperiment:
+            predicted_result = np.inf
+        else:
+            predicted_result = -np.inf
         predicted_result_vector = None
 
         if predicted_configuration is None:
@@ -215,7 +218,7 @@ class BayesianOptimization(Model):
                 
                 l = self.model['good'].pdf
                 g = self.model['bad'].pdf
-                #TODO test max_me
+
                 minimize_me = lambda x: max(1e-32, g(x))/max(l(x), 1e-32)
 
                 kde_good = self.model['good']
@@ -259,7 +262,7 @@ class BayesianOptimization(Model):
                             predicted_result_vector = vector
                             break
 
-                    if val < predicted_result:
+                    if (val < predicted_result and self.isMinimizationExperiment) or (val > predicted_result and not self.isMinimizationExperiment):
                         predicted_result = val
                         predicted_result_vector = vector
 

@@ -24,10 +24,7 @@
         "MaxTimeToRunTask": 10
       },
       "ModelConfiguration":{
-        "minimalTestingSize": 0.2,
-        "maximalTestingSize": 0.7,
-        "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression",
+        "ModelType"         : "BO",
         "isMinimizationExperiment"  : true
       },
       "StopCondition": {
