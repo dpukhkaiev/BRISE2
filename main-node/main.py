@@ -10,7 +10,7 @@ filterwarnings("ignore")    # disable warnings for demonstration.
 
 from WorkerServiceClient.WSClient_sockets import WSClient
 from model.model_selection import get_model
-from repeater.repeater_selection import get_repeater, change_decision_function
+from repeater.repeater import Repeater
 from tools.initial_config import initialize_config
 from tools.write_results import write_results
 from tools.front_API import API
@@ -50,12 +50,13 @@ def run():
     # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
     # (task.json)
 
-    WS = WSClient(experiment.description["TaskConfiguration"], global_config["WorkerService"]["Address"],
-                  logfile='%s%s_WSClient.csv' % (global_config['results_storage'],
-                                                 experiment.description["TaskConfiguration"]["WorkerConfiguration"]["ws_file"]))
+    worker_service_client = WSClient(experiment.description["TaskConfiguration"], global_config["WorkerService"]["Address"],
+                                     logfile='%s%s_WSClient.csv' % (global_config['results_storage'],
+                                                                    experiment.description["TaskConfiguration"]
+                                                                    ["WorkerConfiguration"]["ws_file"]))
 
     # Creating runner for experiments that will repeat the configuration measurement to avoid fluctuations.
-    repeater = get_repeater("default", WS, experiment)
+    repeater = Repeater(worker_service_client, experiment)
 
     temp_msg = "Measuring default configuration that we will used in regression to evaluate solution."
     # TODO: Logging messages to the API could be sent from the logger.
@@ -63,7 +64,7 @@ def run():
     sub.send('log', 'info', message=temp_msg)
 
     default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
-    repeater.measure_configurations(experiment, [default_configuration])
+    repeater.measure_configurations([default_configuration])
     experiment.put_default_configuration(default_configuration)
 
     selector.disable_point(default_configuration.get_parameters())
@@ -81,9 +82,9 @@ def run():
         configuration = Configuration(selector.get_next_point())
         initial_configurations.append(configuration)
 
-    repeater = change_decision_function(repeater, experiment.description["TaskConfiguration"]["RepeaterDecisionFunction"])
-    repeater.measure_configurations(experiment, initial_configurations,
-                                    default_point=experiment.default_configuration.get_average_result())
+    repeater.set_judge(experiment.description["RepeaterConfiguration"]["Judge"])
+    repeater.measure_configurations(initial_configurations, current_solution=experiment.current_best_configuration)
+
     for config in initial_configurations:
         experiment.put(configuration_instance=config)
 
@@ -111,7 +112,6 @@ def run():
     while not finish:
         model.add_data(experiment.all_configurations)
         model_built = model.build_model()
-        predicted_configuration = None
 
         if model_built:
             model_validated = model.validate_model()
@@ -120,12 +120,11 @@ def run():
                 # TODO: Need to agree on return structure (nested or not).
                 predicted_configuration = model.predict_solution()
 
-
                 temp_msg = "Predicted solution configuration: %s, Quality: %s." \
                            % (str(predicted_configuration.get_parameters()), str(predicted_configuration.predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
-                repeater.measure_configurations(experiment=experiment, configurations=[predicted_configuration])
+                repeater.measure_configurations([predicted_configuration], current_solution=experiment.current_best_configuration)
                 experiment.put(predicted_configuration)
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
                                                           current_best_configurations=experiment.current_best_configuration)
@@ -156,8 +155,7 @@ def run():
             configuration = Configuration(selector.get_next_point())
             configurations_to_be_measured.append(configuration)
 
-        repeater.measure_configurations(experiment=experiment, configurations=configurations_to_be_measured,
-                                        default_point=experiment.default_configuration.get_average_result())
+        repeater.measure_configurations(configurations_to_be_measured, current_solution=experiment.current_best_configuration)
         for config in configurations_to_be_measured:
             experiment.put(configuration_instance=config)
 

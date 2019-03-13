@@ -1,17 +1,26 @@
-from repeater.repeater_abs import Repeater
-from repeater.default_repeater import DefaultRepeater
 import numpy as np
 from math import exp
-import copy
 
 
-class StudentRepeater(Repeater):
-    def __init__(self, *args, **kwargs):
+class StudentJudge:
+    """
+        Repeats each Configuration until results for reach acceptable accuracy,
+    the quality of each Configuration (better Configuration - better quality)
+    and deviation of all Tasks are taken into account.
+    """
+    def __init__(self, repeater_configuration: dict):
+        """
+        :param repeater_configuration: RepeaterConfiguration part of experiment description
+        """
+        self.max_tasks_per_configuration = repeater_configuration["MaxTasksPerConfiguration"]
 
-        # Initiating parent class and transferring WSClient in *args and other params in **kwargs
-        super().__init__(*args, **kwargs)
+        if self.max_tasks_per_configuration < repeater_configuration["MinTasksPerConfiguration"]:
+            raise ValueError("Invalid configuration of Repeater provided: MinTasksPerConfiguration(%s) "
+                             "is greater than ManTasksPerConfiguration(%s)!" %
+                             (self.max_tasks_per_configuration, repeater_configuration["MinTasksPerConfiguration"]))
+        self.min_tasks_per_configuration = repeater_configuration["MinTasksPerConfiguration"]
 
-    def decision_function(self, current_configuration, threshold=15, **configuration):
+    def verdict(self, current_configuration, threshold=15, **params):
         """
         Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
         In other case - compute result as average between all experiments.
@@ -21,9 +30,10 @@ class StudentRepeater(Repeater):
         :return: result or False
         """
         # Preparing configuration
-        params = configuration.keys()
-
-        default_configuration = configuration['default_point'] if 'default_point' in params else None
+        if 'current_solution' in params.keys():
+            current_solution = params['current_solution'][0].get_average_result()
+        else:
+            current_solution = None
 
         # For trusted probability 0.95
         student_coefficients = {
@@ -46,7 +56,7 @@ class StudentRepeater(Repeater):
             tasks_data = current_configuration.get_tasks()
             average_result = current_configuration.get_average_result()
 
-        if len(tasks_data) < 2:
+        if len(tasks_data) < self.min_tasks_per_configuration:
             return False
 
         elif len(tasks_data) >= self.max_tasks_per_configuration:
@@ -75,8 +85,8 @@ class StudentRepeater(Repeater):
             # Verifying that deviation of errors in each dimension is
             for index, error in enumerate(relative_errors):
                 # Selecting needed threshold - 100/(1+exp(-x+3.3)) where x is value of measured point divided to default
-                threshold = 100/(1+exp(-float((average_result[index] / default_configuration[index]))+3.3))\
-                            + len(tasks_data) - 2 if default_configuration else threshold + len(tasks_data)
+                threshold = 100/(1+exp(-float((average_result[index] / current_solution[index]))+3.3))\
+                            + len(tasks_data) - 2 if current_solution else threshold + len(tasks_data)
                 # If for any dimension relative error is > that threshold - abort
                 if error > threshold:
                     return False

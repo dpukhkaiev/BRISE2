@@ -9,7 +9,7 @@ EXPERIMENTS = {
         "FileToRead": "Radix-500mio.csv",
         "ResultStructure": ["frequency", "threads", "energy"],
         "ResultDataTypes": ["float", "int", "float"],
-        "RepeaterDecisionFunction": "student_deviation",
+        "Judge": "student_deviation",
         "MaxTasksPerConfiguration": 4
     }
 

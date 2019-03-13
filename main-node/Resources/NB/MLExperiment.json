@@ -1,7 +1,7 @@
 {
   "DomainDescription":{
     "FeatureNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-    "DataFile"          : "./Resources/NB/taskNB1Data.json",
+    "DataFile"          : "./Resources/NB/MLExperimentData.json",
     "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
     "DefaultConfiguration": [true, "full", "heuristic", 0.5, 0.5, 4, true, 200]
 
@@ -19,9 +19,12 @@
     "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
     "ResultStructure"   : ["accuracy"],
     "ResultDataTypes"  : ["float"],
-    "RepeaterDecisionFunction"  : "student_deviation",
-    "MaxTasksPerConfiguration": 2,
     "MaxTimeToRunTask": 10
+  },
+  "RepeaterConfiguration":{
+        "MinTasksPerConfiguration": 1,
+        "MaxTasksPerConfiguration": 1,
+        "Judge"  : "default"
   },
   "ModelConfiguration":{
     "ModelType"         : "BO",

@@ -22,7 +22,7 @@
 #### How to run 
 Entry point - main.py Python 3 file.
 
-- Run BRISE with default configuration files ([task configuration](./Resources/task.json) and [global configuration](./GlobalConfig.json)):
+- Run BRISE with default configuration files ([task configuration](Resources/EnergyExperiment.json) and [global configuration](./GlobalConfig.json)):
 
 `python3 main.py` 
 

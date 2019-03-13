@@ -50,7 +50,6 @@ class BayesianOptimization(Model):
         self.model = None
         self.top_n_percent = top_n_percent
 
-        # 'ExperimentsConfiguration', 'ModelConfiguration', 'DomainDescription', 'SelectionAlgorithm'
         self.experiment = experiment
         self.isMinimizationExperiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
 
@@ -59,7 +58,6 @@ class BayesianOptimization(Model):
 
         if "logger" not in dir(self):
             self.logger = logging.getLogger(__name__)
-        # Send updates to subscribers
         self.sub = API()
 
         if min_points_in_model is None:

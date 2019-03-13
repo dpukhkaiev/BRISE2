@@ -1,0 +1,54 @@
+{
+    "$id": "http://brise.com/repeater.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Repeater configuration.",
+    "description": "Approach for configuration variance reduction.",
+
+    "definitions": {
+        "Default": {
+            "title": "Default Judge.",
+            "description": "Evaluates Configuration MaxTasksPerConfiguration times. Good for default Configuration estimation.",
+            "type": "object",
+            "properties": {
+                "Judge": {
+                    "type": "string",
+                    "enum": ["default"]
+                },
+                "MaxTasksPerConfiguration": {
+                    "description": "Minimum times to evaluate (run) each Configuration.",
+                    "type": "integer",
+                    "minimum": 1
+                }
+            },
+            "required": [
+                "Judge",
+                "MaxTasksPerConfiguration"
+            ]
+        },
+        "Student":{
+            "title": "Student Judge.",
+            "description": "Checks the overall absolute deviation between Tasks and takes into account Configuration quality (how it close to default / current best Configuration). Good for further Configuration estimation.",
+            "type": "object",
+            "properties": {
+                "Judge": {
+                    "type": "string",
+                    "enum": ["student_deviation"]
+                },
+                "MinTasksPerConfiguration": {
+                    "description": "Minimum times to evaluate (run) each Configuration.",
+                    "type": "integer",
+                    "minimum": 2
+                },
+                "MaxTasksPerConfiguration": {
+                    "description": "Maximum times to evaluate (run) each Configuration.",
+                    "type": "integer",
+                    "minimum": 2
+                }
+            },
+            "required": [
+                "Judge",
+                "MaxTasksPerConfiguration"
+            ]
+      }
+    }
+}

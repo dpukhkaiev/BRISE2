@@ -1,7 +1,7 @@
 {
       "DomainDescription":{
         "FeatureNames"      : ["frequency", "threads"],
-        "DataFile"          : "./Resources/taskData.json",
+        "DataFile"          : "./Resources/EnergyExperimentData.json",
         "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
         "DefaultConfiguration": [2900.0, 32]
 
@@ -19,9 +19,12 @@
         "TaskParameters"   : ["frequency", "threads"],
         "ResultStructure"   : ["energy"],
         "ResultDataTypes"  : ["float"],
-        "RepeaterDecisionFunction"  : "student_deviation",
-        "MaxTasksPerConfiguration": 10,
         "MaxTimeToRunTask": 10
+      },
+      "RepeaterConfiguration":{
+        "MinTasksPerConfiguration": 2,
+        "MaxTasksPerConfiguration": 10,
+        "Judge"  : "student_deviation"
       },
       "ModelConfiguration":{
         "ModelType"         : "BO",

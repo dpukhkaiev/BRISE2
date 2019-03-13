@@ -1,5 +1,5 @@
 {
-    "$id": "http://brise.com/task.schema.json",
+    "$id": "http://brise.com/experiment.schema.json",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
@@ -29,7 +29,7 @@
                             "description": "Default configuration for multidimensional parameters",
                             "minItems": 3,
                             "items": [{
-                                "type": ["number", "string","boolean"]
+                                "type": ["number", "string", "boolean"]
                             }]
                         },
                         {
@@ -92,13 +92,6 @@
                         "type": "string"
                     }]
                 },
-                "RepeaterDecisionFunction": {
-                    "type": "string"
-                },
-                "MaxTasksPerConfiguration": {
-                    "type": "integer",
-                    "minimum": 0
-                },
                 "MaxTimeToRunTask": {
                     "type": "integer",
                     "minimum": 0
@@ -110,13 +103,22 @@
                 "TaskParameters",
                 "ResultStructure",
                 "ResultDataTypes",
-                "RepeaterDecisionFunction",
-                "MaxTasksPerConfiguration",
                 "MaxTimeToRunTask"
             ]
         },
+        "RepeaterConfiguration": {
+            "description": "Parameters related to Configuration evaluation accuracy.",
+            "anyOf": [
+                {
+                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/Default"
+                },
+                {
+                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/Student"
+                }
+            ]
+        },
         "ModelConfiguration": {
-            "description": "Conditions for stopping an experiment.",
+            "description": "Configuration related to the prediction model creation process.",
             "anyOf": [
                 {
                     "$ref": "./model/schema/model.schema.json#/definitions/BayesianOptimization"
@@ -127,7 +129,7 @@
             ]
         },
         "StopCondition": {
-            "description": "Configuration related to the prediction model creating process.",
+            "description": "Conditions for stopping an experiment.",
             "anyOf": [{
                     "$ref": "./stop_condition/schema/adaptive.schema.json#"
                 },
@@ -144,6 +146,7 @@
         "DomainDescription",
         "SelectionAlgorithm",
         "TaskConfiguration",
+        "RepeaterConfiguration",
         "ModelConfiguration",
         "StopCondition"
     ]

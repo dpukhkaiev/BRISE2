@@ -6,7 +6,7 @@ EXPERIMENTS = {
         "FileToRead": "Radix-500mio.csv",
         "ResultStructure": ["frequency", "threads", "energy"],
         "ResultDataTypes": ["float", "int", "float"],
-        "RepeaterDecisionFunction": "student_deviation",
+        "Judge": "student_deviation",
         "MaxTasksPerConfiguration": 4
 }
 WS = "should be WS"
@@ -39,6 +39,3 @@ def test_default_repeater():
 #     result = def_Repeater.measure_task(measure_task, task, io)
 #     assert result == result_exp
 
-
-# TODO - "cast_results" function , WSClient - line 80
-# def test_cast_results():

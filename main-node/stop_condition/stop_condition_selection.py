@@ -38,20 +38,20 @@ def get_stop_condition(experiment):
 
     if stop_condition_type == "default":
         from stop_condition.stop_condition_default import StopConditionDefault
-        logger.info("Default stop condition is selected.")
+        logger.info("Default stop condition was selected.")
         return StopConditionDefault(is_minimization_experiment=is_minimization_experiment,
                                     stop_condition_config=stop_condition_config_specific)
     elif stop_condition_type == "improvement_based":
         from stop_condition.stop_condition_improvement_based import StopConditionImprovementBased
-        logger.info("Improved stop condition is selected.")
+        logger.info("Improvement based stop condition was selected.")
         return StopConditionImprovementBased(is_minimization_experiment=is_minimization_experiment,
                                              stop_condition_config=stop_condition_config_specific)
     elif stop_condition_type == "adaptive":
         from stop_condition.stop_condition_adaptive import StopConditionAdaptive
-        logger.info("Adaptive stop condition is selected.")
+        logger.info("Adaptive stop condition was selected.")
         return StopConditionAdaptive(is_minimization_experiment=is_minimization_experiment,
                                      stop_condition_config=stop_condition_config_specific,
                                      search_space_size=len(experiment.search_space))
     else:
-        logger.error("Invalid stop condition type is provided!")
-        raise KeyError("Invalid stop condition name is provided!: %s" % stop_condition_config["StopConditionName"])
+        logger.error("Invalid stop condition type was provided!")
+        raise KeyError("Invalid stop condition name was provided!: %s" % stop_condition_config["StopConditionName"])
