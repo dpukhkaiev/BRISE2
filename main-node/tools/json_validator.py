@@ -1,7 +1,10 @@
 from os.path import abspath
+import logging
 import json
 
 from jsonschema import validate, RefResolver, Draft4Validator
+
+from jsonschema.exceptions import ValidationError
 
 # # [ Uncomment in emergency case ]
 # # ImportError: No module named tools.file_system_io
@@ -26,7 +29,11 @@ def is_experiment_description_valid(schema_path="Resources/schema/task.schema.js
     
     resolver = RefResolver('file:///' + abspath('.').replace("\\", "/") + '/', schema)
 
-    return Draft4Validator(schema, resolver=resolver).validate(entity_description) == None
+    try:
+        return Draft4Validator(schema, resolver=resolver).validate(entity_description) == None
+    except ValidationError as e:
+        logging.getLogger(__name__).error(e)
+        return False
 
 
 if __name__ == "__main__":

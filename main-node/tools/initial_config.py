@@ -5,7 +5,7 @@ import logging
 
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
 from tools.json_validator import is_experiment_description_valid
-
+from tools.front_API import API
 
 def read_global_config(global_config_path):
     """
@@ -14,16 +14,19 @@ def read_global_config(global_config_path):
     :return: dict with configuration for BRISE
     """
     logger = logging.getLogger(__name__)
+    sub = API()
     try:
         config = load_json_file(global_config_path)
         return config
 
     except IOError as e:
         logger.error('No config file found: %s' % e, exc_info=True)
-        exit(3)
+        sub.send('log', 'error', message='No config file found: %s' % e)
+        raise e
     except ValueError as e:
         logger.error('Invalid configuration file: %s' % e, exc_info=True)
-        exit(3)
+        sub.send('log', 'error', message='Invalid configuration file: %s' % e)
+        raise e
 
 
 def load_experiment_description(path_to_file):
@@ -34,6 +37,7 @@ def load_experiment_description(path_to_file):
     """
     # TODO: Add task file validation. The file contains all parameters of the task that BRISE require
     logger = logging.getLogger(__name__)
+    sub = API()
     try:
         experiment_description = load_json_file(path_to_file)
         data = load_json_file(experiment_description["DomainDescription"]["DataFile"])
@@ -44,10 +48,12 @@ def load_experiment_description(path_to_file):
         experiment_description["DomainDescription"]["AllConfigurations"] = all_configurations
     except IOError as e:
         logger.error('Error with reading task.json file: %s' % e, exc_info=True)
-        exit(1)
+        sub.send('log', 'error', message='Error with reading task.json file: %s' % e)
+        raise e
     except json.JSONDecodeError as e:
         logger.error('Error with decoding task: %s' % e, exc_info=True)
-        exit(1)
+        sub.send('log', 'error', message='Error with decoding task: %s' % e)
+        raise e
     return experiment_description
 
 
@@ -57,8 +63,10 @@ def initialize_config(argv):
     :return: (dict globalConfiguration, dict taskConfiguration)
     """
     logger = logging.getLogger(__name__)
+    sub = API()
 
     experiment_description_path = argv[1] if len(argv) > 1 else './Resources/EnergyExperiment.json'
+    taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
     experiment_schema_path = './Resources/schema/experiment.schema.json'  # validation for experiment.json in `taskPath`
 
@@ -78,7 +86,8 @@ def initialize_config(argv):
         return globalConfig, experiment_description
     else:
         logger.error("Experiment file %s have not passed the validation." % experiment_description_path)
-        exit(1)
+        sub.send('log', 'error', message=" Task file %s is NOT valid" % taskPath)
+        raise ValueError(" Task file %s is NOT valid" % taskPath)
 
 
 if __name__ == "__main__":

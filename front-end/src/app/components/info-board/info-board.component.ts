@@ -85,8 +85,8 @@ export class InfoBoardComponent implements OnInit {
 
     this.ioMain.onEvent(MainEvent.LOG) // For information messages
       .subscribe((obj: any) => {
-        if (obj['info']) {
-          let temp = { 'time': Date.now(), 'message': obj['info'] }
+        if (obj['info'] || obj['error']) {
+          let temp = { 'time': Date.now(), 'message': obj['info'] || obj['error'] }
           this.snackBar.open(temp['message'], '×', {
             duration: 3000
           });

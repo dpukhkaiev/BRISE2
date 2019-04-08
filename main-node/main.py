@@ -35,6 +35,7 @@ def run():
     sub.send('log', 'info', message="Starting BRISE")
     # argv is a run parameters for main - using for configuration
     global_config, experiment_description = initialize_config(argv)
+
     experiment = Experiment(experiment_description)
 
     # Generate whole search space for model.
