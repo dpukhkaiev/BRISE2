@@ -47,7 +47,7 @@ class StopCondition(ABC):
         # Decrease self.configs_without_improvement by 1
         else:
             self.configs_without_improvement += 1
-            self.logger.info("Predicted value %s is worse than previous value %s. Configs Without Improvement = %s"
+            self.logger.info("Predicted value %s is not better than previous value %s. Configs Without Improvement = %s"
                              % (solution_candidate_configurations[0].get_average_result(),
                                 self.best_solution_configuration[0].get_average_result(),
                                 self.configs_without_improvement))

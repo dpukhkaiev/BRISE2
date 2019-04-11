@@ -79,19 +79,12 @@ class Experiment:
 
         self.logger.info("\n\nFinal report:")
 
-        temp_message = ("Solution that model gave: %s,  worse that one of previously measured, but better than default."
-                        "Reporting best of measured." % self.current_best_configuration[0])
-        self.logger.info(temp_message)
-        self.api.send('log', 'info', message=temp_message)
-
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
         for configuration in self.all_configurations:
             self.logger.info(configuration)
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
-        self.logger.info("Best found point: %s, with configuration: %s"
-                         % (self.current_best_configuration[0].get_average_result(),
-                            self.current_best_configuration[0].get_parameters()))
+        self.logger.info("Best found: %s" % self.current_best_configuration[0])
 
         all_features = []
         for configuration in self.all_configurations:
