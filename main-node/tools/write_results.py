@@ -28,8 +28,8 @@ def write_results(global_config, experiment_current_status):
             results_file.write("Default configuration               : %s\n" % experiment_current_status["default_configuration"].get_parameters())
             results_file.write("Default configuration results       : %s\n" % experiment_current_status["default_configuration"].get_average_result())
             results_file.write("Time used for balancing             : %s\n" % str(datetime.datetime.now() - experiment_current_status["start_time"]))
-            results_file.write("BRISE optimal configuration         : %s\n" % experiment_current_status["current_best_configuration"][0].get_parameters())
-            results_file.write("BRISE optimal configuration results : %s\n" % experiment_current_status["current_best_configuration"][0].get_average_result())
+            results_file.write("BRISE optimal configuration         : %s\n" % experiment_current_status["current_best_configuration"].get_parameters())
+            results_file.write("BRISE optimal configuration results : %s\n" % experiment_current_status["current_best_configuration"].get_average_result())
             results_file.write("####: END results of BRISE run.                 ####\n\n\n\n")
     except IOError as e:
         logger.error("ERROR: %s occurred when tried to write final report to file." % e, exc_info=True)

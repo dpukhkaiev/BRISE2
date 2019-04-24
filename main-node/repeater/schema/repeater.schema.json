@@ -6,49 +6,166 @@
 
     "definitions": {
         "Default": {
-            "title": "Default Judge.",
+            "title": "Default.",
             "description": "Evaluates Configuration MaxTasksPerConfiguration times. Good for default Configuration estimation.",
             "type": "object",
             "properties": {
-                "Judge": {
+                "Type": {
                     "type": "string",
                     "enum": ["default"]
                 },
-                "MaxTasksPerConfiguration": {
-                    "description": "Minimum times to evaluate (run) each Configuration.",
-                    "type": "integer",
-                    "minimum": 1
+                "Parameters":{
+                    "type": "object",
+                    "description": "Configuration used in Default Repeater.",
+                    "properties":{
+                        "MaxTasksPerConfiguration": {
+                            "description": "Minimum times to evaluate (run) each Configuration.",
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    "required": [
+                        "MaxTasksPerConfiguration"
+                    ],
+                    "additionalProperties": false
                 }
             },
             "required": [
-                "Judge",
-                "MaxTasksPerConfiguration"
-            ]
+                "Type",
+                "Parameters"
+            ],
+            "additionalProperties": false
         },
-        "Student":{
-            "title": "Student Judge.",
+        "Student": {
+            "title": "Student Deviation.",
             "description": "Checks the overall absolute deviation between Tasks and takes into account Configuration quality (how it close to default / current best Configuration). Good for further Configuration estimation.",
             "type": "object",
             "properties": {
-                "Judge": {
+                "Type": {
                     "type": "string",
                     "enum": ["student_deviation"]
                 },
-                "MinTasksPerConfiguration": {
-                    "description": "Minimum times to evaluate (run) each Configuration.",
-                    "type": "integer",
-                    "minimum": 2
+                "Parameters": {
+                    "type": "object",
+                    "description": "Configuration used in Student Repeater.",
+                    "properties":{
+                        "MinTasksPerConfiguration": {
+                            "description": "Minimum times to evaluate (run) each Configuration.",
+                            "type": "integer",
+                            "minimum": 2
+                        },
+                        "MaxTasksPerConfiguration": {
+                            "description": "Maximum times to evaluate (run) each Configuration.",
+                            "type": "integer",
+                            "minimum": 2
+                        },
+                        "BaseAcceptableErrors": {
+                    "description": "Starting values for an acceptable Relative Errors.",
+                    "type": "array",
+                    "items":[{
+                        "type": "number",
+                        "minimum": 0,
+                        "exclusiveMinimum": true
+                            }]
                 },
-                "MaxTasksPerConfiguration": {
-                    "description": "Maximum times to evaluate (run) each Configuration.",
-                    "type": "integer",
-                    "minimum": 2
+                        "ConfidenceLevels": {
+                            "description": "Probabilities, that configuration results (each dimension) will appear in boundary of Relative error.",
+                            "type": "array",
+                            "items":[{
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "exclusiveMaximum": true,
+                                "exclusiveMinimum": true
+                            }]
+                        },
+                        "DevicesScaleAccuracies": {
+                            "description": "Minimal value on a device scale, that is possible to distinguish.",
+                            "type": "array",
+                            "items": [{
+                                "type": "number"
+                            }]
+                        },
+                        "DevicesAccuracyClasses": {
+                            "description": "Accuracy classes of devices that is used to estimate each dimension of the result.",
+                            "type": "array",
+                            "items": [{
+                                "type": "number"
+                            }]
+                        },
+                        "ModelAwareness": {
+                            "description": "Model awareness of the Repeater.",
+                            "anyOf": [
+                                {
+                                    "title": "Enabled",
+                                    "description": "Repeater compares current Configuration with a Solution.",
+                                    "type": "object",
+                                    "properties": {
+                                        "isEnabled": {
+                                            "description": "Model awareness is enabled.",
+                                            "type": "boolean",
+                                            "enum": [true]
+                                        },
+                                        "RatiosMax": {
+                                            "description": "Relation between current solution Configuration and current Configuration, when Relative error threshold will reach MaxAffordableErrors value. Specified separately for each dimension in a results.",
+                                            "type": "array",
+                                            "items":[{
+                                                "type": "number",
+                                                "minimum": 0,
+                                                "exclusiveMinimum": true
+                                                    }]
+                                        },
+                                        "MaxAcceptableErrors": {
+                                            "description": "Maximal values for acceptable Relative errors, used if Repeater is model-aware.",
+                                            "type": "array",
+                                            "items":[{
+                                                "type": "number",
+                                                "minimum": 0,
+                                                "exclusiveMinimum": true
+                                                    }]
+                                        }
+                                    },
+                                    "required": [
+                                        "isEnabled",
+                                        "RatiosMax",
+                                        "MaxAcceptableErrors"
+                                    ]
+                                },
+                                {
+                                    "title": "Disabled",
+                                    "description": "Repeater evaluates only an accuracy of the Configuration.",
+                                    "type": "object",
+                                    "properties": {
+                                        "isEnabled": {
+                                            "description": "Model awareness is disabled.",
+                                            "type": "boolean",
+                                            "enum": [false]
+                                        }
+                                    },
+                                    "required": [
+                                        "isEnabled"
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "MinTasksPerConfiguration",
+                        "MaxTasksPerConfiguration",
+                        "BaseAcceptableErrors",
+                        "ConfidenceLevels",
+                        "DevicesScaleAccuracies",
+                        "DevicesAccuracyClasses",
+                        "ModelAwareness"
+                    ],
+                    "additionalProperties": false
                 }
             },
             "required": [
-                "Judge",
-                "MaxTasksPerConfiguration"
-            ]
-      }
+                "Type",
+                "Parameters"
+            ],
+            "additionalProperties": false
+        }
     }
 }

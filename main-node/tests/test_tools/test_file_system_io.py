@@ -20,7 +20,7 @@ DATA_FOR_JSON_FILE = {
         "FileToRead": "Radix-500mio.csv",
         "ResultStructure": ["frequency", "threads", "energy"],
         "ResultDataTypes": ["float", "int", "float"],
-        "Judge": "student_deviation",
+        "Type": "student_deviation",
         "MaxTasksPerConfiguration": 4
     },
     "ModelCreation": {

@@ -21,11 +21,12 @@
     "ResultDataTypes"  : ["float"],
     "MaxTimeToRunTask": 10
   },
-  "RepeaterConfiguration":{
-        "MinTasksPerConfiguration": 1,
-        "MaxTasksPerConfiguration": 1,
-        "Judge"  : "default"
-  },
+  "Repeater":{
+        "Type": "default",
+        "Parameters": {
+          "MaxTasksPerConfiguration": 1
+        }
+      },
   "ModelConfiguration":{
     "ModelType"         : "BO",
     "isMinimizationExperiment"  : false

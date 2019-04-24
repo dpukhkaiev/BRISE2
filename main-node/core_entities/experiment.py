@@ -1,7 +1,10 @@
 import logging
-from core_entities.configuration import Configuration
-from tools.front_API import API
 import datetime
+from typing import List
+
+
+from tools.front_API import API
+from core_entities.configuration import Configuration
 
 
 class Experiment:
@@ -25,8 +28,11 @@ class Experiment:
         self.all_configurations = []
         self.description = description
         self.search_space = []
-        self.current_best_configuration = []
         self.start_time = datetime.datetime.now()
+
+        # TODO MultiOpt: Currently we store only one solution configuration here,
+        #  but it was made as a possible Hook for multidimensional optimization.
+        self.current_best_configurations = []
 
     def put_default_configuration(self, default_configuration: Configuration):
         if self._is_valid_configuration_instance(default_configuration):
@@ -37,11 +43,18 @@ class Experiment:
                               results=[default_configuration.get_average_result()])
                 if default_configuration not in self.all_configurations:
                     self.all_configurations.append(default_configuration)
-                    self.current_best_configuration = self._calculate_current_best_configuration()
+                    self.current_best_configurations = self._calculate_current_best_configurations()
             else:
                 raise ValueError("The default Configuration was registered already.")
 
-    def put(self, configuration_instance: Configuration):
+    def add_configurations(self, configurations: List[Configuration]):
+        """Takes the List of Configuration objects and adds it to Experiment state.
+        :param configurations: List of Configuration instances.
+        """
+        for configuration in configurations:
+            self._put(configuration)
+
+    def _put(self, configuration_instance: Configuration):
         """
         Takes instance of Configuration class and appends it to the list with all configuration instances.
         :param configuration_instance: Configuration class instance.
@@ -60,16 +73,16 @@ class Experiment:
                     self.logger.warning("Attempt of adding Configuration that is already in Experiment: %s" %
                                         configuration_instance)
 
-    def get(self, configuration):
+    def get_configuration_by_parameters(self, parameters):
         """
         Returns the instance of Configuration class, which contains the concrete configuration, if configuration the exists
 
-        :param configuration: list. Concrete experiment configuration
+        :param parameters: list. Concrete experiment configuration
                shape - list, e.g. [2900.0, 32]
         :return: instance of Configuration class
         """
         for configuration_instance in self.all_configurations:
-            if configuration_instance.get_parameters() == configuration:
+            if configuration_instance.get_parameters() == parameters:
                 return configuration_instance
         return None
 
@@ -84,18 +97,18 @@ class Experiment:
             self.logger.info(configuration)
         self.logger.info("Number of measured points: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
-        self.logger.info("Best found: %s" % self.current_best_configuration[0])
+        self.logger.info("Best found: %s" % self.get_current_solution())
 
         all_features = []
         for configuration in self.all_configurations:
             all_features.append(configuration.get_parameters())
         self.api.send('final', 'configuration',
-                      configurations=[self.current_best_configuration[0].get_parameters()],
-                      results=[[round(self.current_best_configuration[0].get_average_result()[0], 2)]],
+                      configurations=[self.get_current_solution().get_parameters()],
+                      results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])
 
-        return self.current_best_configuration
+        return self.current_best_configurations
 
     def get_current_status(self):
         features = []
@@ -109,11 +122,15 @@ class Experiment:
             "labels": labels,
             "search_space": self.search_space,
             "start_time": self.start_time,
-            "current_best_configuration": self.current_best_configuration,
+            "current_best_configuration": self.get_current_solution(),
             "default_configuration": self.default_configuration,
             "experiment_description": self.description
         }
         return current_status
+
+    def get_current_solution(self):
+        self.current_best_configurations = self._calculate_current_best_configurations()
+        return self.current_best_configurations[0]
 
     def _is_valid_configuration_instance(self, configuration_instance):
         if isinstance(configuration_instance, Configuration):
@@ -122,7 +139,7 @@ class Experiment:
             self.logger.error('Current object is not a Configuration instance, but %s' % type(configuration_instance))
             return False
 
-    def _calculate_current_best_configuration(self):
+    def _calculate_current_best_configurations(self):
 
         best_configuration = [self.all_configurations[0]]
         for configuration in self.all_configurations:
@@ -143,8 +160,8 @@ class Experiment:
                       configurations=[configuration.get_parameters()],
                       results=[configuration.get_average_result()])
         self.logger.info("Adding to Experiment: %s" % configuration)
-        self.current_best_configuration = self._calculate_current_best_configuration()
-        if self.current_best_configuration[0] == configuration:
+        self.current_best_configurations = self._calculate_current_best_configurations()
+        if self.get_current_solution() == configuration:
             self.logger.info("New solution found: %s" % configuration)
 
 

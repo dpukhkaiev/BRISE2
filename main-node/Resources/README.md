@@ -29,12 +29,22 @@ Possible values of configurations for your system should be provided in separate
     - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
 
 - `RepeaterConfiguration` - Results of each Configuration evaluation could not be precise/deterministic. The intent of Repeater is to reduce the variance between the evaluation of each Configuration by running it several times (Tasks).
-    - `MinTasksPerConfiguration` - `int` - minimum number of times to evaluate (run) each Configuration *(used for the student_deviation Judge, see below)*.
-    - `MaxTasksPerConfiguration` - `int` - maximum number of times to evaluate (run) each Configuration.
-    - `Judge` - `string` - strategy to check accuracy of Configuration evaluation. *Variants:*
-        - `default` - evaluates Configuration *MaxTasksPerConfiguration* times. Good for default Configuration estimation.
-        - `student_deviation` - checks the overall absolute deviation between Tasks and takes into account Configuration quality (how it close to currently best found Configuration). Good for further Configuration estimation.
-    - *To disable repeater* (if the target algorithm is deterministic or Configuration evaluation considered precise) set `MaxTasksPerConfiguration` equal to `1` and `Judge` to `default`.
+    - `Type` - `string` - a type of repeater represents a strategy to check the accuracy of the Configuration measurement. Variants: `default`, `student_deviation`
+        - `default` - evaluates Configuration *MaxTasksPerConfiguration* times. Required parameters:
+            - `MaxTasksPerConfiguration` - a maximum number of times to evaluate (run) each Configuration.
+        - `student_deviation` - checks the overall absolute deviation between Tasks and takes into account the Configuration quality (how close it is to the currently best Configuration found). Required parameters:
+            - `MinTasksPerConfiguration` - `int` - a minimum number of repetitions to evaluate (run) each Configuration.
+            - `MaxTasksPerConfiguration` - `int` - a maximum number of repetitions to evaluate (run) each Configuration. After reaching this amount new Tasks will not be added to the Configuration.
+            - `BaseAcceptableErrors` - `array of floating numbers` - A starting value for an acceptable Relative Error for each dimension in result.
+            - `ConfidenceLevels` - `array of floating numbers 0..1` - Probabilities, that Configuration results (each dimension) will appear in a boundary of an Acceptable Relative error.
+            - `DevicesScaleAccuracies` - `array of floating numbers` - A minimal value on a device scale, that is possible to distinguish for each dimension in results.
+            - `DevicesAccuracyClasses` - `array of integers` - Accuracy classes of devices that is used to estimate each dimension of the result.
+            - `ModelAware` - `boolean` - Is Repeater is in model-aware mode? If yes (`true`), the following parameters are obligatory:
+                - `MaxAcceptableErrors` - `array of floating numbers` - A maximal value for the Acceptable Relative errors, used if the Repeater is model-aware.
+                - `RatioMax` - `array of floating numbers` - A relation between current solution Configuration and current Configuration, when Relative error threshold will reach MaxAcceptableErrors value. Specified separately for each dimension in a results.
+            
+    - *To disable repeater* (if the target algorithm is deterministic or Configuration evaluation considered precise) set `MaxTasksPerConfiguration` equal to `1` and `Type` to `default`.
+ 
      
 - `ModelConfiguration` - section with the configuration related to the prediction model creating process.
     - `minimalTestingSize` - `float`. A minimum possible fraction that specifies an amount of data for testing the created prediction model.
@@ -61,7 +71,6 @@ Possible values of configurations for your system should be provided in separate
         "DataFile"          : "./Resources/EnergyExperimentData.json",
         "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
         "DefaultConfiguration": [2900.0, 32]
-
       },
       "SelectionAlgorithm":{
         "SelectionType"     : "SobolSequence",
@@ -78,16 +87,24 @@ Possible values of configurations for your system should be provided in separate
         "ResultDataTypes"  : ["float"],
         "MaxTimeToRunTask": 10
       },
-      "RepeaterConfiguration":{
-        "MinTasksPerConfiguration": 2,
-        "MaxTasksPerConfiguration": 10,
-        "Judge"  : "student_deviation"
+      "Repeater":{
+        "Type": "student_deviation",
+        "Parameters": {
+          "MaxTasksPerConfiguration": 10,
+          "MinTasksPerConfiguration": 2,
+          "BaseAcceptableErrors": [10],
+          "ConfidenceLevels": [0.95],
+          "DevicesScaleAccuracies": [0],
+          "DevicesAccuracyClasses": [0],
+          "ModelAwareness": {
+            "isEnabled": true,
+            "MaxAcceptableErrors": [70],
+            "RatiosMax": [10]
+          }
+        }
       },
       "ModelConfiguration":{
-        "minimalTestingSize": 0.2,
-        "maximalTestingSize": 0.7,
-        "MinimumAccuracy"   : 0.85,
-        "ModelType"         : "regression",
+        "ModelType"         : "BO",
         "isMinimizationExperiment"  : true
       },
       "StopCondition": {

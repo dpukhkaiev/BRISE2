@@ -4,13 +4,12 @@ from sklearn import model_selection
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import Pipeline
-
 from functools import reduce
 
 from model.model_abs import Model
 from core_entities.configuration import Configuration
-
 from tools.front_API import API
+
 
 class RegressionSweetSpot(Model):
 
@@ -97,7 +96,6 @@ class RegressionSweetSpot(Model):
         # Check if the model is adequate - write it.
         predicted_solution = self.predict_solution()
         predicted_labels = predicted_solution.predicted_result
-        predicted_features = predicted_solution.get_parameters()
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -198,10 +196,12 @@ class RegressionSweetSpot(Model):
 
         self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
-    def add_data(self, configurations):
+    def update_data(self, configurations):
         """
         Method adds configurations to whole set of configurations.
 
         :param configurations: List of Configuration's instances
+        :return: self
         """
         self.all_configurations = configurations
+        return self

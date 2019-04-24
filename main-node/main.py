@@ -65,7 +65,7 @@ def run():
     sub.send('log', 'info', message=temp_msg)
 
     default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
-    repeater.measure_configurations([default_configuration])
+    repeater.measure_configurations([default_configuration], experiment=experiment)
     experiment.put_default_configuration(default_configuration)
 
     selector.disable_point(default_configuration.get_parameters())
@@ -78,16 +78,12 @@ def run():
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
 
-    initial_configurations = []
-    for counter in range(experiment.description["SelectionAlgorithm"]["NumberOfInitialConfigurations"]):
-        configuration = Configuration(selector.get_next_point())
-        initial_configurations.append(configuration)
+    initial_configurations = [Configuration(selector.get_next_point()) for _ in
+                              range(experiment.description["SelectionAlgorithm"]["NumberOfInitialConfigurations"])]
 
-    repeater.set_judge(experiment.description["RepeaterConfiguration"]["Judge"])
-    repeater.measure_configurations(initial_configurations, current_solution=experiment.current_best_configuration)
-
-    for config in initial_configurations:
-        experiment.put(configuration_instance=config)
+    repeater.set_type(experiment.description["Repeater"]["Type"])
+    repeater.measure_configurations(initial_configurations, experiment=experiment)
+    experiment.add_configurations(initial_configurations)
 
     logger.info("Results got. Building model..")
     sub.send('log', 'info', message="Results got. Building model..")
@@ -101,44 +97,38 @@ def run():
     # The main effort does here.
     # 1. Building model.
     # 2. If model built - validation of model.
-    # 3. If model is valid - prediction solution and verification it by measuring.
-    # 4. If solution is OK - reporting and terminating. If not - add it to all data set and go to 1.
+    # 3. If model is valid - prediction and evaluation of current solution Configuration, else - go to 5.
+    # 4. Evaluation of Stop Condition, afterwards - terminating or going to 5.
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
 
     stop_condition = get_stop_condition(experiment=experiment)
 
     finish = False
-    cur_stats_message = "-- New configuration measurement is needed to proceed. " \
-                        "%s configuration points of %s was evaluated. %s retrieved from the selection algorithm.\n"
+    cur_stats_message = "-- New Configuration(s) measured. Currently were evaluated %s of %s Configurations." \
+                        "%s of them out of the Selection Algorithm. Building Target System model.\n"
+
     while not finish:
-        model.add_data(experiment.all_configurations)
-        model_built = model.build_model()
-
+        model_built = model.update_data(experiment.all_configurations).build_model()
         if model_built:
-            model_validated = model.validate_model()
-
-            if model_validated:
+            # TODO: move behavior for 'else' here (out of models)?
+            if model.validate_model():
                 # TODO: Need to agree on return structure (nested or not).
                 predicted_configuration = model.predict_solution()
-
+                selector.disable_point(predicted_configuration.get_parameters())
                 temp_msg = "Predicted solution configuration: %s, Quality: %s." \
                            % (str(predicted_configuration.get_parameters()), str(predicted_configuration.predicted_result))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
-                repeater.measure_configurations([predicted_configuration], current_solution=experiment.current_best_configuration)
-                experiment.put(predicted_configuration)
+                repeater.measure_configurations([predicted_configuration], experiment=experiment)
+                experiment.add_configurations([predicted_configuration])
                 finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
-                                                          current_best_configurations=experiment.current_best_configuration)
-                # model.solution_configuration = [predicted_configuration]
-                selector.disable_point(predicted_configuration.get_parameters())
-
+                                                          current_best_configurations=experiment.current_best_configurations)
                 if finish:
                     sub.send('log', 'info', message="Solution validation success!")
-                    model.add_data(experiment.all_configurations)
                     optimal_configuration = experiment.get_final_report_and_result(repeater)
+                    # TODO: Store global_config im Experiment?
                     write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
                     return optimal_configuration
-
                 else:
                     temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space),
                                                     str(selector.numOfGeneratedPoints))
@@ -146,27 +136,25 @@ def run():
                     sub.send('log', 'info', message=temp_msg)
                     continue
 
-        temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space), str(selector.numOfGeneratedPoints))
+        configs_from_selector = [Configuration(selector.get_next_point()) for _ in
+                                 range(experiment.description["SelectionAlgorithm"]["Step"])]
 
-        logger.info(temp_msg)
-        sub.send('log', 'info', message=temp_msg)
-
-        configurations_to_be_measured = [] # list of Configuration instances
-        for counter in range(experiment.description["SelectionAlgorithm"]["Step"]):
-            configuration = Configuration(selector.get_next_point())
-            configurations_to_be_measured.append(configuration)
-
-        repeater.measure_configurations(configurations_to_be_measured, current_solution=experiment.current_best_configuration)
-        for config in configurations_to_be_measured:
-            experiment.put(configuration_instance=config)
+        repeater.measure_configurations(configs_from_selector, experiment=experiment)
+        experiment.add_configurations(configs_from_selector)
 
         # If BRISE cannot finish his work properly - terminate it.
         if len(experiment.all_configurations) > len(experiment.search_space):
+            # TODO: @Zhenya, Is it possible to replace this 'if' with following comment?
+            #  finish = stop_condition.validate_solution(solution_candidate_configurations=configs_from_selector,
+            #         current_best_configurations=experiment.current_best_configurations)
             logger.info("Unable to finish normally, terminating with best of measured results.")
-            model.add_data(configurations=experiment.all_configurations)
             optimal_configuration = experiment.get_final_report_and_result(repeater)
             write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
             return optimal_configuration
+
+        temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space), str(selector.numOfGeneratedPoints))
+        logger.info(temp_msg)
+        sub.send('log', 'info', message=temp_msg)
 
 
 if __name__ == "__main__":

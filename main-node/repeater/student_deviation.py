@@ -1,0 +1,130 @@
+import numpy as np
+from math import exp, sqrt
+from scipy.stats import t
+
+from repeater.default import DefaultType
+from core_entities.configuration import Configuration
+from core_entities.experiment import Experiment
+
+
+class StudentDeviationType(DefaultType):
+    """
+        Repeats each Configuration until results for reach acceptable accuracy,
+    the quality of each Configuration (better Configuration - better quality)
+    and deviation of all Tasks are taken into account.
+    """
+    def __init__(self, repeater_configuration: dict):
+        """
+        :param repeater_configuration: RepeaterConfiguration part of experiment description
+        """
+        self.max_tasks_per_configuration = repeater_configuration["MaxTasksPerConfiguration"]
+
+        if self.max_tasks_per_configuration < repeater_configuration["MinTasksPerConfiguration"]:
+            raise ValueError("Invalid configuration of Repeater provided: MinTasksPerConfiguration(%s) "
+                             "is greater than ManTasksPerConfiguration(%s)!" %
+                             (self.max_tasks_per_configuration, repeater_configuration["MinTasksPerConfiguration"]))
+        self.min_tasks_per_configuration = repeater_configuration["MinTasksPerConfiguration"]
+
+        self.base_acceptable_errors = repeater_configuration["BaseAcceptableErrors"]
+        self.confidence_levels = repeater_configuration["ConfidenceLevels"]
+        self.device_scale_accuracies = repeater_configuration["DevicesScaleAccuracies"]
+        self.device_accuracy_classes = repeater_configuration["DevicesAccuracyClasses"]
+        self.is_model_aware = repeater_configuration["ModelAwareness"]["isEnabled"]
+
+        if self.is_model_aware:
+            self.ratios_max = repeater_configuration["ModelAwareness"]["RatiosMax"]
+            self.max_acceptable_errors = repeater_configuration["ModelAwareness"]["MaxAcceptableErrors"]
+            if not all(b_e < m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
+                raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
+
+    def evaluate(self, current_configuration: Configuration, experiment: Experiment):
+        """
+        Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
+        In other case - compute result as average between all experiments.
+        :param current_configuration: instance of Configuration class
+        :param experiment: instance of 'experiment' is required for model-awareness.
+        :return: bool True if Configuration was measured precisely or False if not
+        """
+        tasks_data = current_configuration.get_tasks()
+
+        if len(tasks_data) < self.min_tasks_per_configuration:
+            return False
+
+        elif len(tasks_data) >= self.max_tasks_per_configuration:
+            return True
+        else:
+            average_result = current_configuration.get_average_result()
+            # Calculating standard deviation
+            all_dim_std = current_configuration.get_standard_deviation()
+
+            # The number of Degrees of Freedom generally equals the number of observations (Tasks) minus
+            # the number of estimated parameters.
+            degrees_of_freedom = len(tasks_data) - len(average_result)
+
+            # Calculate the critical t-student value from the t distribution
+            student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in self.confidence_levels]
+
+            # Calculating confidence interval for each dimension, that contains a confidence intervals for
+            # singular measurements and confidence intervals for multiple measurements.
+            # First - singular measurements errors:
+            conf_intervals_sm = []
+            for c_l, d_s_a, d_a_c, avg in zip(self.confidence_levels, self.device_scale_accuracies, self.device_accuracy_classes, average_result):
+                d = sqrt((c_l * d_s_a / 2)**2 + (d_a_c * avg/100)**2)
+                conf_intervals_sm.append(c_l * d)
+
+            # Calculation of confidence interval for multiple measurements:
+            conf_intervals_mm = []
+            for student_coefficient, dim_skd in zip(student_coefficients, all_dim_std):
+                conf_intervals_mm.append(student_coefficient * dim_skd / sqrt(len(tasks_data)))
+
+            # confidence interval, or in other words absolute error
+            absolute_errors = []
+            for c_i_ss, c_i_mm in zip(conf_intervals_sm, conf_intervals_mm):
+                absolute_errors.append(sqrt(pow(c_i_ss, 2) + pow(c_i_mm, 2)))
+
+            # Calculating relative error for each dimension
+            relative_errors = []
+            for interval, avg_res in zip(absolute_errors, average_result):
+                if not avg_res:     # it is 0 or 0.0
+                    # TODO: WorkAround for cases where avg = 0, need to review it here and in \ratio\ calculation
+                    # if new use-cases appear with the same behaviour.
+                    if interval == 0:
+                        avg_res = 1  # Anyway relative error will be 0 and avg will not be changed.
+                    else:
+                        return False
+                relative_errors.append(interval / avg_res * 100)
+
+            # Thresholds for relative errors that should not be exceeded for accurate measurement.
+            thresholds = []
+            if self.is_model_aware:
+                # We adapt thresholds
+                current_solution = experiment.get_current_solution().get_average_result()
+                minimization_experiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
+
+                for b_t, max_t, r_max, avg_res, cur_solution_avg in \
+                        zip(self.base_acceptable_errors, self.max_acceptable_errors, self.ratios_max, average_result, current_solution):
+                    if minimization_experiment:
+                        if not cur_solution_avg:
+                            ratio = 1
+                        else:
+                            ratio = avg_res / cur_solution_avg
+                    else:
+                        if not avg_res:
+                            ratio = 1
+                        else:
+                            ratio = cur_solution_avg / avg_res
+
+                    adopted_threshold = b_t + (max_t - b_t) / (1 + exp(-1 * (ratio - r_max/2)))
+                    thresholds.append(adopted_threshold)
+
+            else:
+                # Or we don't adapt thresholds
+                for acceptable_error in self.base_acceptable_errors:
+                    thresholds.append(acceptable_error)
+
+            # Simple implementation of possible multi-dim Repeater decision making:
+            # If any of resulting dimensions are not accurate - just terminate.
+            for threshold, error in zip(thresholds, relative_errors):
+                if error > threshold:
+                    return False
+            return True

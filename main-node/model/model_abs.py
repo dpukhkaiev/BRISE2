@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import List
+
+from core_entities.configuration import Configuration
 
 
 class Model(ABC):
@@ -10,8 +13,9 @@ class Model(ABC):
 
     @abstractmethod
     def predict_solution(self):
-        # TODO: Make it `template method`.
-        pass
+        # TODO: Make it `template method` or 'strategy'.
+        return Configuration
     
     @abstractmethod
-    def add_data(self): pass
+    def update_data(self, configurations: List[Configuration]):
+        return self

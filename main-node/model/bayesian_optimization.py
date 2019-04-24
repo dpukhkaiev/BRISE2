@@ -29,16 +29,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import traceback
-
+import logging
 import numpy as np
 import statsmodels.api as sm
 import scipy.stats as sps
 
-import logging
-
 from core_entities.configuration import Configuration
 from tools.front_API import API
-
 from model.model_abs import Model
 
 
@@ -121,6 +118,7 @@ class BayesianOptimization(Model):
 
         # a) With the certain probability at all (to continue with picking a random point).
         if np.random.rand() < self.random_fraction:
+            # TODO refactoring: Should be generalized?..
             self.logger.info("Skipping building the model in order to pick a random configuration point.")
             return False
 
@@ -174,7 +172,7 @@ class BayesianOptimization(Model):
         good_kde = sm.nonparametric.KDEMultivariate(data=train_data_good, var_type=self.kde_vartypes, bw=bw_estimation)
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,  var_type=self.kde_vartypes, bw=bw_estimation)
 
-        self.logger.info("The models built with bandwidth: good - %s, bad - %s. Minimum from the configurations %s"
+        self.logger.debug("The models built with bandwidth: good - %s, bad - %s. Minimum from the configurations %s"
                          % (good_kde.bw, bad_kde.bw, self.min_bandwidth))
 
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth,None)
@@ -296,7 +294,7 @@ class BayesianOptimization(Model):
                                                            predicted_result=[predicted_result])
         return predicted_configuration_class
 
-    def add_data(self, configurations):
+    def update_data(self, configurations):
         """
         Method adds configurations to whole set of configurations. Convert configurations to its indexes.
 
@@ -305,6 +303,7 @@ class BayesianOptimization(Model):
         self.all_configurations = configurations
         for config in self.all_configurations:
             config.add_parameters_in_indexes(config.get_parameters(), self._config_to_idx(config.get_parameters()))
+        return self
     
     def impute_conditional_data(self, array):
 

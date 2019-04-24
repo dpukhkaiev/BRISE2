@@ -1,5 +1,4 @@
 import logging
-from functools import reduce
 import numpy as np
 
 
@@ -48,6 +47,9 @@ class Configuration:
         self._average_result = []
         self.predicted_result = []
 
+        # Meta information
+        self._standard_deviation = []
+
     def add_predicted_result(self, parameters, predicted_result):
 
         if self.__is_valid_configuration(parameters):
@@ -68,7 +70,7 @@ class Configuration:
                     "result": result,
                     "worker": worker
                 }
-                self.__calculate_average_result()
+                self.__assemble_tasks_results()
 
     def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
         if self.__is_valid_configuration(parameters):
@@ -85,6 +87,9 @@ class Configuration:
 
     def get_average_result(self):
         return self._average_result.copy()
+
+    def get_standard_deviation(self):
+        return self._standard_deviation.copy()
 
     def is_better_configuration(self, is_minimization_experiment, current_best_solution):
         """
@@ -160,23 +165,24 @@ class Configuration:
                               % (parameters, self.get_parameters()))
             return False
 
-    def __calculate_average_result(self):
+    def __assemble_tasks_results(self):
         """
-        Updates average result for valid configuration tasks.
-        Takes the list of results from each task, it is considered there are no numerical values.
-        Calculates an average result from the final list.
+        Updates the results of Configuration measurement aggregating the results from all available Tasks.
+        The Average Results of Configuration and Standard Deviation between the Tasks are calculated.
         """
         # list of a result list from all tasks
         results_tuples = [task["result"] for (_, task) in self._tasks.items()]
-        # calculating the average over all result items
+
         self._average_result = np.mean(results_tuples, axis=0).tolist()
+        self._standard_deviation = np.std(results_tuples, axis=0).tolist()
 
     def __repr__(self):
         """
         String representation of Configuration object.
         """
-        return "Configuration obj. Params: {params}, Tasks: {num_of_tasks}, Avg.result: {avg_res}.".format(
+        return "Configuration(Params={params}, Tasks={num_of_tasks}, Avg.result={avg_res}, STD={std})".format(
             params=str(self.get_parameters()),
             num_of_tasks=len(self._tasks), 
-            avg_res=str(self.get_average_result()))
+            avg_res=str(self.get_average_result()),
+            std=str(self.get_standard_deviation()))
 

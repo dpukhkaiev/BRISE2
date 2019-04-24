@@ -199,7 +199,7 @@ if __name__ == "__main__":
         "TaskParameters"   : ["frequency", "threads"],
         "ResultStructure"   : ["frequency", "threads", "energy"],
         "ResultDataTypes"  : ["float", "int", "float"],
-        "Judge"  : "student_deviation",
+        "Type"  : "student_deviation",
         "MaxTasksPerConfiguration": 10,
         "MaxTimeToRunTask": 10
     }
