@@ -1,7 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 
 import { RestService as mainREST } from '../../core/services/rest.service';
+import { MainSocketService } from '../../core/services/main.socket.service';
 
+import { MainEvent } from '../../data/client-enums';
+
+import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 @Component({
   selector: 'launch-control-bar',
@@ -12,10 +16,11 @@ export class LaunchControlBarComponent implements OnInit {
 
   // Flag for runing main-node
   isRuning: boolean = false
-
-  constructor(private mainREST: mainREST, ) { }
+  experimentDescription: ExperimentDescription
+  constructor(private mainREST: mainREST, private ioMain: MainSocketService) { }
 
   ngOnInit() {
+    this.initMainEvents()
   }
 
   // HTTP: Main-node
@@ -39,6 +44,13 @@ export class LaunchControlBarComponent implements OnInit {
         }
         );
     }
+  }
+
+  private initMainEvents(): void {
+    this.ioMain.onEvent(MainEvent.EXPERIMENT)
+      .subscribe((obj: any) => {
+        this.experimentDescription = obj['description']['experiment description'];
+      });
   }
 
 }

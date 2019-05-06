@@ -1,7 +1,6 @@
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 
 // Service
-import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
 import { Event as SocketEvent } from '../../../data/client-enums';
@@ -48,7 +47,6 @@ export class MultiDimComponent implements OnInit {
   @ViewChild('multi') multi: ElementRef;
 
   constructor(
-    private ioWs: WsSocketService,
     private ioMain: MainSocketService,
   ) {  }
 

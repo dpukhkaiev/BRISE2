@@ -185,7 +185,7 @@ class WSClient(SocketIO):
             self.logger.info("All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)))
         self.logger.info("Results: %s" % str(self._report_according_to_required_structure()))
         self._dump_results_to_csv()
-        return self._report_according_to_required_structure()
+        return self.current_results
 
 
 # A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".

@@ -1,4 +1,3 @@
-<!-- <div class="box"  *ngIf="isModelType('regression')"> -->
 <div class="box" *ngIf="isModelType('regression')">
     <!-- RESULT table -->
     <mat-card class="result">   
@@ -25,38 +24,21 @@
                 Configuration
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.run?.param?.frequency}} - {{task.run?.param?.threads}}
-                <!-- <p>{{task.run?.method}}</p> -->
-              </td>
-            </ng-container>
-              
-            <!-- File Column -->
-            <ng-container matColumnDef="file">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                File
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{task.config?.ws_file | lowercase}}
+                <span *ngFor="let p of task.config | keyvalue; let i = index; let first = first">
+                    <span *ngIf="!first"> - </span> {{p.value}} 
+                </span>
               </td>
             </ng-container>
         
             <!-- Result Column -->
             <ng-container matColumnDef="result">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                Energy
+                  Result
               </th>
               <td mat-cell *matCellDef="let task">
-                {{task.meta?.result?.energy}}
-              </td>
-            </ng-container>
-        
-            <!-- Time Column -->
-            <ng-container matColumnDef="time">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>
-                Time (m:ss`SS)
-              </th>
-              <td mat-cell *matCellDef="let task">
-                {{ (task.meta?.result?.time > 0) ? (task.meta?.result?.time | date: 'mm:ss`SS') : ""}}
+                  <span *ngFor="let p of task.meta?.result | keyvalue; let i = index; let first = first">
+                      {{p.key}} - {{p.value}} 
+                  </span>
               </td>
             </ng-container>
 
@@ -68,38 +50,9 @@
                 [@detailExpand]="task == focus ? 'expanded' : 'collapsed'" *ngIf="task == focus">
                   <mat-list dense role="list">
                     <mat-list-item role="listitem">
-                      <mat-icon>gradient</mat-icon>
-                      <span>Method: </span>
-                      <span> {{task?.run?.method}}</span>
-                    </mat-list-item>
-                    <mat-list-item role="listitem">
                       <mat-icon>rowing</mat-icon>
                       <span>Worker:</span>
-                      <span>{{task?.meta?.appointment}}</span>
-                    </mat-list-item>
-                  </mat-list>
-                  <mat-list dense role="list">
-                    <mat-list-item role="listitem">
-                      <mat-icon>list</mat-icon>
-                      <span>Accept:</span>
-                      <span>{{ (task?.meta?.accept > 0) ? (task.meta?.accept | date: 'EEEE, h:mm:ss`S') : ""}}</span>
-                    </mat-list-item>
-                    <mat-list-item role="listitem">
-                      <mat-icon>directions</mat-icon>
-                      <span>Receive:</span>
-                      <span>{{ (task?.meta?.receive > 0) ? (task.meta?.receive | date: 'EEEE, h:mm:ss`SS') : ""}}</span>
-                    </mat-list-item>
-                  </mat-list>
-                  <mat-list dense role="list">
-                    <mat-list-item role="listitem">
-                      <mat-icon>done_all</mat-icon>
-                      <span>Reiteration:</span>
-                      <span>{{searchTasks([task.run?.param?.frequency, task.run?.param?.threads]).length}}</span>
-                    </mat-list-item>
-                    <mat-list-item role="listitem">
-                      <mat-icon>settings_ethernet</mat-icon>
-                      <span>Average energy:</span>
-                      <span>{{getAverageResult([task.run?.param?.frequency, task.run?.param?.threads]) | number: '2.1-2'}} </span>
+                      <span>{{task?.meta?.worker}}</span>
                     </mat-list-item>
                   </mat-list>
                 </div>

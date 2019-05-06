@@ -5,7 +5,6 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 
 // Service
 import { RestService } from '../../core/services/rest.service';
-import { WsSocketService } from '../../core/services/ws.socket.service';
 import { MainSocketService } from '../../core/services/main.socket.service';
 
 
@@ -13,7 +12,6 @@ import { Task } from '../../data/taskData.model';
 import { Event } from '../../data/client-enums';
 import { MainEvent } from '../../data/client-enums';
 
-// import { resolve } from 'path';
 import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 
@@ -39,13 +37,12 @@ export class TaskListBoComponent implements OnInit {
   result: Array<Task> = []
  
   focus: any
-  displayedColumns: string[] = ['id', 'run', 'file', 'result'];
-  ioConnection: any;
+  displayedColumns: string[] = ['id', 'run', 'result'];
   experimentDescription: ExperimentDescription
 
   public resultData: MatTableDataSource<Task>
 
-  constructor(private ws: RestService, private io: WsSocketService, private ioMain: MainSocketService) {
+  constructor(private ws: RestService, private ioMain: MainSocketService) {
     this.resultData = new MatTableDataSource(this.result);
 
     this.resultData.filterPredicate = (task, filter) => {
@@ -58,7 +55,6 @@ export class TaskListBoComponent implements OnInit {
   ngOnInit() {
     this.resultData.paginator = this.paginator;
     this.resultData.sort = this.sort;
-    this.initIoConnection();
     this.initMainEvents()
   }
 
@@ -78,27 +74,14 @@ export class TaskListBoComponent implements OnInit {
   private initMainEvents(): void {
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
-        this.experimentDescription = obj['description']['experiment description']
+        this.experimentDescription = obj['description']['experiment description'];
       });
-  }
-  private initIoConnection(): void {
-    this.io.initSocket();
-
-    // Fresh updates. Each time +1 task
-    this.ioConnection = this.io.onResults()
+    
+    this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: JSON) => {
         var fresh: Task = new Task(obj)
         !this.result.includes(fresh, -1) && this.result.push(fresh);
-
         this.resultData.data = this.result;
-        // console.log("List +", fresh)
-        // this.table.renderRows();
-      });
-
-    this.io.onEvent(Event.CONNECT)
-      .subscribe(() => {
-        this.io.reqForAllRes();
       });
   }
-
 }

@@ -5,7 +5,6 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 
 // Service
 import { RestService } from '../../core/services/rest.service';
-import { WsSocketService } from '../../core/services/ws.socket.service';
 import { MainSocketService } from '../../core/services/main.socket.service';
 
 
@@ -14,8 +13,6 @@ import { Event } from '../../data/client-enums';
 import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 import { MainEvent } from '../../data/client-enums';
-
-// import { resolve } from 'path';
 
 @Component({
   selector: 'app-task-list',
@@ -37,17 +34,14 @@ export class TaskListComponent implements OnInit {
   
   stack: Array<any> = []
   result: Array<Task> = []
-  // [new Task({'id': 1, 'run': {'start': 'da--'}, 'conf': {'sds': 1234}, 'meta': {'gogogogog': 1212}}), 
-  // new Task({ 'id': 1, 'run': { 'start2': 'daqq--' }, 'conf': { 'sds2': 1234 }, 'meta': { 'gogogogog2': 92 } })] 
   focus: any
-  displayedColumns: string[] = ['id', 'run', 'file', 'result', 'time'];
-  ioConnection: any;
+  displayedColumns: string[] = ['id', 'run', 'result'];
 
   experimentDescription: ExperimentDescription
 
   public resultData: MatTableDataSource<Task>
 
-  constructor(private ws: RestService, private io: WsSocketService, private ioMain: MainSocketService) {
+  constructor(private ws: RestService, private ioMain: MainSocketService) {
     this.resultData = new MatTableDataSource(this.result);
 
     this.resultData.filterPredicate = (task, filter) => {
@@ -57,7 +51,6 @@ export class TaskListComponent implements OnInit {
       task.config.ws_file + 
       task.meta.result.energy +
       task.meta.result.time;
-      // JSON.stringify(task).includes(filter)
       return dataStr.indexOf(filter) != -1;
     }
   }
@@ -66,7 +59,6 @@ export class TaskListComponent implements OnInit {
     this.resultData.paginator = this.paginator;
     this.resultData.sort = this.sort;
     this.resultData.sortingDataAccessor = this.sortingDataAccessor;
-    this.initIoConnection();
     this.initMainEvents()
 
   }
@@ -88,9 +80,7 @@ export class TaskListComponent implements OnInit {
     switch (sortHeaderId) {
       case 'id': return data.id ? data.id : null;
       case 'run': return data.run.param.frequency ? data.run.param.frequency : null;
-      case 'file': return data.config.ws_file ? data.config.ws_file : null;
       case 'result': return data.meta ? Number(data.meta.result.energy) : null;
-      case 'time': return data.meta ? String(data.meta.result.time) : null;
       default: return data[sortHeaderId];
     }
   }
@@ -124,44 +114,13 @@ export class TaskListComponent implements OnInit {
       .subscribe((obj: any) => {
         this.experimentDescription = obj['description']['experiment description']
       });
-  }
-  private initIoConnection(): void {
-    this.io.initSocket();
-
-    // Fresh updates. Each time +1 task
-    this.ioConnection = this.io.onResults()
+    
+    this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: JSON) => {
         var fresh: Task = new Task(obj)
         !this.result.includes(fresh, -1) && this.result.push(fresh);
 
         this.resultData.data = this.result;
-        // this.table.renderRows();
-      });
-    // Rewrite task stack
-    this.ioConnection = this.io.stack()
-      .subscribe((obj: Array<Object>) => {
-        this.stack = obj.map(i => new Task(i));
-        // console.log(' Stack:', obj);
-      });
-
-    // Observer for stack and all results from workers service
-    this.ioConnection = this.io.onAllResults()
-      .subscribe((obj: any) => {
-        // console.log("onAllResults ::", JSON.parse(obj))
-        var data = JSON.parse(obj)
-        // this.result = (data.hasOwnProperty('res') && data['res'].length) ? data['res'].map((t) => new Task(t)) : [];
-        this.stack = (data.hasOwnProperty('stack') && data['stack'].length) ? data['stack'].map((t) => new Task(t)) : [];
-      });
-
-    this.io.onEvent(Event.CONNECT)
-      .subscribe(() => {
-        console.log(' task-list: connected');
-        // get init data
-        this.io.reqForAllRes();
-      });
-    this.io.onEvent(Event.DISCONNECT)
-      .subscribe(() => {
-        console.log(' task-list: disconnected');
       });
   }
 }

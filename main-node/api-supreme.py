@@ -132,4 +132,4 @@ def front_disconnect():
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', debug=True, port=49152)
+    socketio.run(app, host='0.0.0.0', debug=False, port=49152)

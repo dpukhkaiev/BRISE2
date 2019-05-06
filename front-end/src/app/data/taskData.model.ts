@@ -4,10 +4,10 @@ export class Task {
     config: Configuration;
     meta: MetaData;
     constructor(item) {
-        this.id = item.id;
-        this.run = item.run;
-        this.config = item.config;
-        this.meta = item.meta_data;
+        this.id = item.task[0].results["task id"];
+        this.run = item.task[0].run;
+        this.config = item.task[0].configurations;
+        this.meta = item.task[0].results;
     }
 }
 interface MetaData {

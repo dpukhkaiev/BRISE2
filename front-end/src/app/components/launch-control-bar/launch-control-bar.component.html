@@ -1,5 +1,5 @@
 <div class="button-row">
-  <h3>Experiment: </h3>
+  <h3>Experiment: Method: {{experimentDescription?.TaskConfiguration?.TaskName}}; Worker configration: {{experimentDescription?.TaskConfiguration?.WorkerConfiguration?.ws_file}}</h3> 
   <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
   <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
   <mat-progress-bar mode="indeterminate" *ngIf=isRuning></mat-progress-bar>

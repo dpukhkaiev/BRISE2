@@ -15,9 +15,6 @@ class Repeater:
 
         self.logger = logging.getLogger(__name__)
 
-        self.task_id = 0       # should be deleted, receive from worker_service_client
-        self.worker = "alpha"  # should be deleted, receive from worker_service_client
-
         self._type = None
         self.set_type("Default")  # Default Configuration will be measured precisely with Default Repeater Type.
 
@@ -89,10 +86,9 @@ class Repeater:
             for parameters, result in zip(tasks_to_send, results):
                 for config in configurations:
                     if config.get_parameters() == parameters:
-                        config.add_tasks(parameters, str(self.task_id), result, self.worker)
+                        config.add_tasks(parameters, result)
 
                 API().send('new', 'task', configurations=[parameters], results=[result])
-                self.task_id += 1
 
             # Evaluating each Configuration in configurations list
             for task in tasks_to_send:

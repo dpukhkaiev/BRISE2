@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 // Service
-import { WsSocketService } from '../../../core/services/ws.socket.service';
 import { MainSocketService } from '../../../core/services/main.socket.service';
 
 import { Event as SocketEvent } from '../../../data/client-enums';
@@ -69,16 +68,13 @@ export class HeatMapComponent implements OnInit {
   @ViewChild('map') map: ElementRef;
 
   constructor(
-    private ioWs: WsSocketService, 
     private ioMain: MainSocketService,
   ) {  }
 
   ngOnInit() {
-    this.initWsEvents();
     this.initMainEvents();
-
-    // window.onresize = () => Plotly.relayout(this.map.nativeElement, {})
   }
+  
   isModelType(type: String) {
     return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
@@ -152,22 +148,6 @@ export class HeatMapComponent implements OnInit {
 
       Plotly.react(element, data, layout);
     }
-  }
-
-
-  //                              WebSocket
-  // --------------------------   Worker-service
-  private initWsEvents(): void {
-    this.ioWs.initSocket();
-    this.ioWs.onEvent(SocketEvent.CONNECT)
-      .subscribe(() => {
-        console.log(' heat-map: connected');
-        this.ioWs.reqForAllRes();
-      });
-    this.ioWs.onEvent(SocketEvent.DISCONNECT)
-      .subscribe(() => {
-        console.log(' heat-map: disconnected');
-    });
   }
 
   //                              WebSocket

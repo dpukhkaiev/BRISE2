@@ -3,7 +3,6 @@ import { Component, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material';
 
 // Service
-import { WsSocketService } from '../../core/services/ws.socket.service';
 import { MainSocketService } from '../../core/services/main.socket.service';
 
 // Constant
@@ -34,7 +33,6 @@ export class InfoBoardComponent implements OnInit {
   experimentDescription: object
 
   constructor(
-    private ioWs: WsSocketService,
     private ioMain: MainSocketService,
     public snackBar: MatSnackBar
   ) { }

@@ -4,6 +4,11 @@ import numpy as np
 
 class Configuration:
 
+    TaskConfiguration = {}
+    @classmethod
+    def set_task_config(cls, tasrConfig):
+        cls.TaskConfiguration = tasrConfig
+
     def __init__(self, parameters):
         """
         :param parameters: list with parameters
@@ -34,7 +39,6 @@ class Configuration:
         self._average_result:            shape - list, e.g. ``[806.43]``
         self._predicted_result:          shape - list, e.g. ``[0.0098776]``
         """
-
         self.logger = logging.getLogger(__name__)
 
         if all(isinstance(value, (int, float, str)) for value in parameters):
@@ -55,22 +59,17 @@ class Configuration:
         if self.__is_valid_configuration(parameters):
             self.predicted_result = predicted_result
 
-    def add_tasks(self, parameters, task_id, result, worker):
+    def add_tasks(self, parameters, task):
         """
         Add new measurements of concrete parameters
         :param parameters: List with parameters. Used for validation
-        :param task_id: Integer or String, Task identifier
-        :param result: List of task results
-        :param worker: String, Worker identifier
+        :param task: List of task results
         """
 
-        if self.__is_valid_configuration(parameters) and self.__is_valid_task(task_id, result, worker):
-            if task_id and result and worker:
-                self._tasks[task_id] = {
-                    "result": result,
-                    "worker": worker
-                }
-                self.__assemble_tasks_results()
+        if self.__is_valid_configuration(parameters) and self.__is_valid_task(task):
+            task_id = task["task id"]
+            self._tasks[str(task_id)] = task
+            self.__assemble_tasks_results()
 
     def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
         if self.__is_valid_configuration(parameters):
@@ -118,7 +117,7 @@ class Configuration:
         """
         Returns True, if 'self' < 'compared_configuration'. Otherwise - False
         :param compared_configuration: instance of Configuration class
-        :return: True or False
+        :return: bool
         """
         return self.get_average_result()[0] < compared_configuration.get_average_result()[0]
 
@@ -126,30 +125,29 @@ class Configuration:
         """
         Returns True, if 'self' > 'compared_configuration'. Otherwise - False
         :param compared_configuration: instance of Configuration class
-        :return: True or False
-        """
-        return compared_configuration.__lt__(self)
-
-    def __is_valid_task(self, task_id, result, worker):
-        """
-        Validate type of fields in configuration task
-        :param task_id: number or string, task identifier
-        :param result: list of task results
-        :param worker: string, worker identifier
         :return: bool
         """
-        if isinstance(result, list) and all(isinstance(value, (int, float)) for value in result) \
-                and type(task_id) in [int, float, str] and worker is not "":
+        return compared_configuration.__lt__(self)
+    @classmethod
+    def __is_valid_task(cls, task):
+        """
+        Validate type of fields in configuration task
+        :param task: list of task results
+        :return: bool
+        """
+
+        try:
+            assert isinstance(task, dict), "Task is not a dictionary object."
+            assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
+            assert task['worker'], "Worker is not specified: %s" % task
+            # assuming, we have a 'TaskConfiguration' field of Experiment description stored in Configuration (could be as static field)
+            assert len(list(task['result'].keys())) == len(cls.TaskConfiguration["ResultStructure"]), \
+                "Results are not match Experiment Description: %s. Expected: %s." % (cls.TaskConfiguration["ResultStructure"], task['result'])
+            assert all(type(dim).__name__ == dim_type for dim, dim_type in zip(list(task['result'].values()), cls.TaskConfiguration["ResultDataTypes"])), \
+                "Result type are not match Experiment Description: %s. Expected: %s." % (str([str(type(x)) for x in task['result']]), cls.TaskConfiguration["ResultDataTypes"])
             return True
-        else:
-            if not isinstance(result, list):
-                self.logger.error('Current result %s is not a list' % result)
-            if not all(isinstance(value, (int, float)) for value in result):
-                self.logger.error('Current results\' values %s are not int or float type' % result)
-            if type(task_id) not in [int, float, str]:
-                self.logger.error('Current task_id %s is not int or float or str type' % task_id)
-            if worker is "":
-                self.logger.error('Current worker is empty string') 
+        except AssertionError as error:
+            logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
             return False
         
     def __is_valid_configuration(self, parameters):
@@ -171,8 +169,8 @@ class Configuration:
         The Average Results of Configuration and Standard Deviation between the Tasks are calculated.
         """
         # list of a result list from all tasks
-        results_tuples = [task["result"] for (_, task) in self._tasks.items()]
-
+        results_tuples = [list(task["result"].values()) for (_, task) in self._tasks.items()]
+        # calculating the average over all result items
         self._average_result = np.mean(results_tuples, axis=0).tolist()
         self._standard_deviation = np.std(results_tuples, axis=0).tolist()
 

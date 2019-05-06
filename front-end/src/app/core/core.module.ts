@@ -3,14 +3,12 @@ import { CommonModule } from '@angular/common';
 
 /* Shared Service */
 import { RestService } from './services/rest.service';
-import { WsSocketService } from './services/ws.socket.service';
 import { MainSocketService } from './services/main.socket.service';
 
 @NgModule({
   imports: [],
   providers: [
     { provide: RestService, useClass: RestService },
-    { provide: WsSocketService, useClass: WsSocketService },
     { provide: MainSocketService, useClass: MainSocketService }
   ],
   declarations: []

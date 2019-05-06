@@ -29,14 +29,14 @@ def run():
     if __name__ == "__main__":
         logger = BRISELogConfigurator().get_logger(__name__)
     else:
-        logger = logging.getLogger(__name__)
-
+        logger = logging.getLogger(__name__) 
     logger.info("Starting BRISE")
     sub.send('log', 'info', message="Starting BRISE")
     # argv is a run parameters for main - using for configuration
     global_config, experiment_description = initialize_config(argv)
 
     experiment = Experiment(experiment_description)
+    Configuration.set_task_config(experiment.description["TaskConfiguration"])
 
     # Generate whole search space for model.
     experiment.search_space = [list(configuration) for configuration in itertools.product(*experiment.description["DomainDescription"]["AllConfigurations"])]

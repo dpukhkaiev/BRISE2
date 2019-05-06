@@ -30,7 +30,6 @@ def create_app(script_info=None):
 
                     for item in task_list:
                         hr.new_task(item)
-                    socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
                     self.emit('task_accepted', id_list)
 
                 except Exception as e:
@@ -133,9 +132,6 @@ def create_app(script_info=None):
             for item in task_list:
                 hr.new_task(item)
 
-            # upd stack obj on the client's side
-            socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
-
             response_object['status'] = 'success'
             response_object['response_type'] = 'send_task'
             response_object['id'] = id_list
@@ -197,28 +193,6 @@ def create_app(script_info=None):
         hr.workers.remove(request.sid)
         socketio.emit("ping_response", hr.workers)
 
-    # --------------------------------------------
-    # managing array with curent Front-end clients
-    @socketio.on('join', namespace='/front-end')
-    def on_join(data):
-        room = data['room']
-        print("SERVER connection. Room", data)
-        join_room(room)
-        front_clients.append(request.sid)
-
-    @socketio.on('leave', namespace='/front-end')
-    def on_leave(data):
-        room = data['room']
-        leave_room(room)
-        front_clients.remove(request.sid)
-
-    # BUG There is a problem when the server gets up later than the clientt
-    @socketio.on('disconnect', namespace='/front-end')
-    def front_disconnect():
-        if request.sid in front_clients:
-            front_clients.remove(request.sid)
-    # --------------------------------------------
-
     @socketio.on('ping')
     def ping_pong(json):
         print(' Ping from: ' + str(request.sid))
@@ -229,8 +203,6 @@ def create_app(script_info=None):
     @socketio.on('assign', namespace='/task')
     def task_confirm(*argv):
         hr.task_confirm(argv[0])
-        # upd stack obj on the client's side
-        socketio.emit('stack', flow.get_stack(), room='/front-end', namespace='/front-end')
 
     # Listen to the results from the worker
     @socketio.on('result', namespace='/task')
@@ -238,13 +210,6 @@ def create_app(script_info=None):
         temp_id = hr.analysis_res(json)
         if temp_id is not None:
             socketio.emit('task_results', json, namespace='/main_node')
-            socketio.emit('result', hr.result[temp_id], room='/front-end', namespace='/front-end')
-
-    @socketio.on('all result', namespace='/front-end')
-    def all_result():
-        emit('all result',
-        json.dumps({'res': list(hr.result.values()), 'stack': hr.flow.get_stack()}),
-        namespace='/front-end')
 
     return socketio, app
 

@@ -128,10 +128,11 @@ def term_task(req_id):
         return response_object
 
 def task_result(data):
-    ''' Get results '''
+    ''' Get results 
+        The same structure will be send to main-node
+    '''
     return {
-        'worker status': 'online',
-        'node': os.environ['workername'],
+        'worker': os.environ['workername'],
         'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else str(data),
         'task id': task_id or 'null'
     }
