@@ -40,7 +40,7 @@ def taskNB(param):
                       str(param['use_application_grid']), str(param['application_grid_size']))
         result = choice(data.new_data)
         return {
-            'PREC_AT_99_REC': result["PREC_AT_99_REC"]
+            'PREC_AT_99_REC': float(result["PREC_AT_99_REC"])
         }
     except Exception as e:
         print("ERROR IN WORKER during performing energy consumption with parameters: %s" %param)
