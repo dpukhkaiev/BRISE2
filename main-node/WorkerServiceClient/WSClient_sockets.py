@@ -1,4 +1,4 @@
-from socketIO_client import SocketIO, BaseNamespace
+import socketio
 from math import ceil
 from time import time
 from os.path import isfile
@@ -6,7 +6,7 @@ import csv
 import logging
 
 
-class WSClient(SocketIO):
+class WSClient():
 
     def __init__(self, task_configuration, wsclient_addr, logfile):
         """
@@ -19,10 +19,8 @@ class WSClient(SocketIO):
         self.logger = logging.getLogger(__name__)
         # Creating the SocketIO object and connecting to main node namespace - "/main_node"
         self.logger.info("INFO: Connecting to the Worker Service at '%s' ..." % wsclient_addr)
-        super().__init__(wsclient_addr)
-        self.ws_namespace = self.define(BaseNamespace, "/main_node")
-        self.logger.info("Connect OK!")
-
+        self.socketIO = socketio.Client()
+        self.servername = wsclient_addr
         # Properties that holds general task configuration (shared between task runs).
         self._exp_config = task_configuration
         self._task_name = task_configuration["TaskName"]
@@ -32,44 +30,59 @@ class WSClient(SocketIO):
         self._worker_config = task_configuration["WorkerConfiguration"]
         self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"]
         self._log_file_path = logfile
-
+        self._connection_ok = False
+        self._number_of_workers = 0
         # Properties that holds current task data.
         self.cur_tasks_ids = []
         self.current_results = []
 
         # Defining events that will be processed by the Worker Service Client.
-        self.ws_namespace.on("connect", self.__reconnect)
-        self.ws_namespace.on("ping_response", self.__ping_response)
-        self.ws_namespace.on("task_accepted", self.__task_accepted)
-        self.ws_namespace.on("wrong_task_structure", self.__wrong_task_structure)
-        self.ws_namespace.on("task_results", self.__task_results)
-
-        # Verifying connection by sending "ping" event to Worker Service into main node namespace.
-        # Waiting for response, if response is OK - proceed.
-        self._connection_ok = False
-        while not self._connection_ok:
-            self.logger.debug("Sending 'ping' event to the Worker Service...")
-            self.ws_namespace.emit('ping')
-            self.wait(1)
-
+        self.socketIO.on("connect", self.__connect, namespace="/main_node")
+        self.socketIO.on("disconnect", self.__disconnect, namespace="/main_node")
+        self.socketIO.on("ping_response", self.__ping_response, namespace="/main_node")
+        self.socketIO.on("task_accepted", self.__task_accepted, namespace="/main_node")
+        self.socketIO.on("wrong_task_structure", self.__wrong_task_structure, namespace="/main_node")
+        self.socketIO.on("task_results", self.__task_results, namespace="/main_node")
+        self.connect()
+        
     ####################################################################################################################
     # Private methods that are reacting to the events FROM Worker Service Described below.
     # They cannot be accessed from outside of the class and manipulates task data stored inside object.
     #
-    def __reconnect(self):
+    
+    def __connect(self):
         self.logger.info("Worker Service has been connected!")
 
+    def __disconnect(self):
+        self._connection_ok = False
+        self._number_of_workers = 0
+        self.logger.info("Worker Service has been disconnected!")
+        self.__reconnect()
+
+    def __reconnect(self):
+        self.logger.info("Trying to reconnect...")
+        self.socketIO.connect('http://'+ self.servername, namespaces= ['/main_node'])
+
     def __ping_response(self, *args):
-        self.logger.info("Worker Service have {0} connected workers: {1}".format(len(args[0]), str(args[0])))
         self._connection_ok = True
+        self.logger.info("Worker Service has {0} connected workers: {1}".format(len(args[0]), str(args[0])))
         self._number_of_workers = len(args[0])
+        
+    def connect(self):
+        # Verifying connection by sending "ping" event to Worker Service into main node namespace.
+        # Waiting for response, if response is OK - proceed.
+        self.socketIO.connect('http://'+ self.servername, namespaces= ['/main_node'])
+        self.logger.debug("Sending 'ping' event to the Worker Service...")
+        
+        self.socketIO.emit('ping', namespace='/main_node')
+        while not self._connection_ok:
+            self.socketIO.sleep(0.1)
 
     def __task_accepted(self, ids):
         self.cur_tasks_ids = ids
 
     def __wrong_task_structure(self, received_task):
-        self.ws_namespace.disconnect()
-        self.disconnect()
+        self.socketIO.disconnect()
         self.logger.error("Worker Service does not supports specified task structure:\n%s" % received_task)
         raise TypeError("Incorrect task structure:\n%s" % received_task)
 
@@ -105,14 +118,13 @@ class WSClient(SocketIO):
                 task_description["params"][parameter] = str(task_parameter[index])
             tasks_to_send.append(task_description)
 
-        self.ws_namespace.emit('add_tasks', tasks_to_send)  # response - task_accepted or wrong_task_structure
-        self.wait(0.2)    # wait to get back task IDs
+        self.socketIO.emit('add_tasks', tasks_to_send, '/main_node')  # response - task_accepted or wrong_task_structure
 
     def _terminate_not_finished_tasks(self):
         termination_candidates = self.cur_tasks_ids
         for result in self.current_results:
             termination_candidates.remove(result["task id"])
-        self.ws_namespace.emit("terminate_tasks", termination_candidates)
+        self.socketIO.emit("terminate_tasks", termination_candidates, '/main_node')
 
     def _report_according_to_required_structure(self):
         results_to_report = []
@@ -174,7 +186,7 @@ class WSClient(SocketIO):
         # BUG Throw the Error if no workers at all. Division by zero
         max_given_time_to_run_all_tasks = ceil(len(task) / self._number_of_workers) * self._time_for_one_task_running
         while time() - waiting_started < max_given_time_to_run_all_tasks:
-            self.wait(0.5)
+            self.socketIO.sleep(0.2)
             if len(self.current_results) >= len(self.cur_tasks_ids):
                 break
 
@@ -197,7 +209,7 @@ if __name__ == "__main__":
             "ws_file": "Radix-500mio.csv"
         },
         "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["frequency", "threads", "energy"],
+        "ResultStructure"   : ["energy"],
         "ResultDataTypes"  : ["float", "int", "float"],
         "Type"  : "student_deviation",
         "MaxTasksPerConfiguration": 10,
@@ -208,5 +220,6 @@ if __name__ == "__main__":
     from time import sleep
     client = WSClient(config, wsclient, 'TEST_WSClient_results.csv')
     for x in range(30):
-        client.work(task_data[:randint(0, len(task_data))])
+        tasks = task_data[:randint(0, len(task_data))]
+        result1 = client.work(tasks)
         sleep(4)

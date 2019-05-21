@@ -1,12 +1,12 @@
 from flask import Flask, jsonify, request
 from flask import render_template
-
 from flask_cors import CORS
-from flask_socketio import SocketIO, join_room, leave_room
+import socketio
 import time
 
 # USER
 from logger.default_logger import BRISELogConfigurator
+
 logger = BRISELogConfigurator().get_logger(__name__)
 
 from tools.front_API import API
@@ -16,17 +16,17 @@ from main import run as main_run
 import eventlet
 eventlet.monkey_patch()
 
+socketIO = socketio.Server(logger=True, engineio_logger=True)
 # instance of Flask app
 app = Flask(__name__, static_url_path='', template_folder="static")
 CORS(app)
+app.wsgi_app = socketio.WSGIApp(socketIO, app.wsgi_app)
 
 # WebSocket
 app.config['SECRET_KEY'] = 'galamaga'
-socketio = SocketIO(app, logger=False, engineio_logger=True)
-socketio.heartbeatTimeout = 15000
 
 # Initialize the API singleton
-API(api_object=socketio)
+API(api_object=socketIO)
 
 MAIN_PROCESS = None
 data_header = {
@@ -94,42 +94,42 @@ def main_process_stop():
     return main_process_status()
 
 # ---------------------------- Events ------------ 
-@socketio.on('ping')
-def ping_pong(json):
-    logger.info(' Ping from: ' + str(request.sid))
+@socketIO.on('ping')
+def ping_pong(sid, json):
+    logger.info(' Ping from: ' + str(sid))
     return 'main node: pong!'
 
 # --------------
 # managing array with curent clients
-@socketio.on('connect') 
-def connected():
-    clients.append(request.sid)
+@socketIO.on('connect') 
+def connected(sid, environ):
+    clients.append(sid)
     return "main: OK"
 
-@socketio.on('disconnect')
-def disconnect():
-    clients.remove(request.sid)
+@socketIO.on('disconnect')
+def disconnect(sid):
+    clients.remove(sid)
 
 # managing room with curent Front-end clients
-@socketio.on('join', namespace='/front-end')
-def on_join(data):
+@socketIO.on('join', namespace='/front-end')
+def on_join(sid, data):
     room = data['room']
-    logger.info("Main connection. Room", data)
-    join_room(room)
-    front_clients.append(request.sid)
+    logger.info("Main connection. Room", data = data)
+    socketIO.enter_room(sid, room)
+    front_clients.append(sid)
 
-@socketio.on('leave', namespace='/front-end')
-def on_leave(data):
+@socketIO.on('leave', namespace='/front-end')
+def on_leave(sid, data):
     room = data['room']
-    leave_room(room)
-    front_clients.remove(request.sid)
+    socketIO.leave_room(sid, room)
+    front_clients.remove(sid)
 
-@socketio.on('disconnect', namespace='/front-end')
-def front_disconnect():
+@socketIO.on('disconnect', namespace='/front-end')
+def front_disconnect(sid):
     if request.sid in front_clients:
-        front_clients.remove(request.sid)
+        front_clients.remove(sid)
 # ------------------------------------------------
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', debug=False, port=49152)
+    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 49152)), app)

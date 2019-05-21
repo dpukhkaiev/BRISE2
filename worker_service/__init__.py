@@ -1,10 +1,7 @@
-import os
 import json
 
-from flask import Flask, jsonify, request
-from flask_socketio import SocketIO, send, emit, join_room, leave_room, Namespace
-from flask_cors import CORS
-import time
+from flask import Flask, jsonify
+import socketio
 
 from api.tasks_manager.workflow import Workflow, Task
 from api.tasks_manager.model import t_parser, t_parser_2
@@ -15,47 +12,18 @@ import logging
 logging.getLogger('flask.app').setLevel(logging.INFO)
 
 def create_app(script_info=None):
-
-    class MainNodeNamespace(Namespace):
-        def on_ping(self, *params):
-            print("\tReceived ping from main node. Arguments:", params)
-            self.emit("ping_response", hr.workers)
-            # return "pong", params
-
-        def on_add_tasks(self, *payload):
-            if len(payload) > 0:
-                print('Received new tasks: %s' % len(payload[0]))
-                try:
-                    id_list, task_list = t_parser(payload[0])
-
-                    for item in task_list:
-                        hr.new_task(item)
-                    self.emit('task_accepted', id_list)
-
-                except Exception as e:
-                    logging.error("ERROR '%s' in parsing received task, nothing will be added to task stack. " % e)
-                    logging.error("Received task: " % payload[0])
-                    self.emit("wrong_task_structure", payload[0])
-
-        def on_terminate_tasks(self, ids):
-            print("Terminating tasks: %s" % str(ids))
-            for id in ids:
-                socketio.emit("terminate", id, namespace="/task")
-
+    socketIO = socketio.Server(logger=True, engineio_logger=False)
     # instantiate the app
-    app = Flask(__name__)
-    CORS(app) # !!!     
-
+    app = Flask(__name__) 
+    app.wsgi_app = socketio.WSGIApp(socketIO, app.wsgi_app)
     # WebSocket
     app.config['SECRET_KEY'] = 'secret!'
-    socketio = SocketIO(app, logger=True, engineio_logger=True)
-    socketio.on_namespace(MainNodeNamespace("/main_node"))
 
     # workflow instance with tasks stack
     flow = Workflow()
 
     # worker manager/explorer
-    hr = Recruit(flow, socketio)
+    hr = Recruit(flow, socketIO)
     hr.status()
 
     # Front-end clients
@@ -71,145 +39,81 @@ def create_app(script_info=None):
         'front-end': front_clients
         }),200
 
-    @app.route('/ping', methods=['GET'])
-    def ping():
-        return jsonify({
-            'status': 'success',
-            'message': 'pong!'
-        }), 200
+    # -------------------------------------- EVENTS 
+    #
 
-    @app.route('/stack', methods=['GET'])
-    def get_stack():
-        '''
-        Get current task stack
-        '''
-        response_object = {
-            'status': 'fail',
-            'message': 'No answer'
-        }
-        try:
-            stack = flow.get_stack()
-            if not stack:
-                response_object['message'] = 'empty'
-                return jsonify(response_object), 200
-            else:
-                response_object = {
-                    'status': 'success',
-                    'data': stack
-                }
-                return jsonify(response_object), 200
-        except ValueError:
-            return jsonify(response_object), 404
+    #------------- Main-node events ------------------
+    #
 
-    @app.route('/task/add', methods=['POST'])
-    def add_tasks():
-        ''' Get new tasks from JSON
-            Mimetype - application/json
-        '''
-        # request data
-        post_data = request.get_json()
+    @socketIO.on('ping', namespace='/main_node')
+    def main_ping(self, *params):
+            print("\tReceived ping from main node. Arguments:", params)
+            socketIO.emit("ping_response", hr.workers, namespace='/main_node')
 
-        response_object = {
-            # default response
-            'status': 'fail',
-            'message': 'invalid payload.'
-        }
+    @socketIO.on('add_tasks', namespace='/main_node')
+    def add_tasks_event(self, *tasks):
+        if len(tasks) > 0:
+            print('Received new tasks: %s' % len(tasks[0]))
+            try:
+                id_list, task_list = t_parser(tasks[0])
+                for item in task_list:
+                    hr.new_task(item)
+                socketIO.emit('task_accepted', id_list, namespace='/main_node')
+            except Exception as e:
+                logging.error("ERROR '%s' in parsing received task, nothing will be added to task stack. " % e)
+                logging.error("Received task: " % tasks[0])
+                socketIO.emit("wrong_task_structure", tasks[0], namespace='/main_node')
 
-        if not post_data:
-            return jsonify(response_object), 400
+    @socketIO.on('terminate_tasks', namespace='/main_node')
+    def terminate_tasks_event(self, ids):
+        print("Terminating tasks: %s" % str(ids))
+        for task_id in ids:
+            socketIO.emit("terminate", task_id, namespace="/worker_management")
 
-        # try:
-        # parse data in to task list
-        if 'request_type' in post_data and post_data['request_type'] == 'send_task':
-            id_list, task_list = t_parser_2(post_data)
-        else:
-            id_list, task_list = t_parser(post_data)
+    #------------- Workers management events ------------------
+    #
 
+    # Checking if worker confirm a task
+    @socketIO.on('assign', namespace='/worker_management')
+    def task_confirm(sid, data):
+        hr.task_confirm(data)
 
-        print(" New tasks:", len(task_list))
+    # Listen to the results from the worker
+    @socketIO.on('result', namespace='/worker_management')
+    def handle_result(sid, json):
+        temp_id = hr.analysis_res(json)
+        if temp_id is not None:
+            socketIO.emit('task_results', json, namespace='/main_node')
 
-        if bool(task_list):
-            for item in task_list:
-                hr.new_task(item)
+    @socketIO.on('register_worker', namespace='/worker_management')
+    def register(sid):
+        hr.workers.append(sid)
+        print('Worker ' + sid + ' has been registered at Worker Service')
+        socketIO.emit('reg_response', namespace='/worker_management', room=sid)
+        return 'Server confirmed registration'
+    
+    @socketIO.on('unregister_worker', namespace='/worker_management')
+    def unregister(sid):
+        hr.workers.remove(sid)
 
-            response_object['status'] = 'success'
-            response_object['response_type'] = 'send_task'
-            response_object['id'] = id_list
-            response_object['message'] = str(len(task_list)) + ' task(s) are accepted!'
-            return jsonify(response_object), 201
-        else:
-            response_object['message'] = 'Sorry. That task can not run.'
-            return jsonify(response_object), 400
-        # except:
-        #     return jsonify(response_object), 400
-
-    @app.route('/result/format', methods=['PUT'])
-    def get_via_format():
-        """ Reply with special fields
-            Mimetype - application/json
-        """
-        # request data
-        post_data = request.get_json()
-        # default response
-        response_object = {
-            'status': 'fail',
-            'message': 'invalid payload.'
-        }
-
-        if not post_data:
-            return jsonify(response_object), 400
-
-        structure = hr.results_struct(post_data)
-        return jsonify(structure), 200
-
-    @app.route('/result/<task_id>', methods=['GET'])
-    def get_single_node(task_id):
-        """Get single result"""
-        response_object = {
-            'status': 'fail',
-            'message': 'task does not exist'
-        }
-        result = hr.results(task_id)
-        if not result:
-            return jsonify(response_object), 404
-        else:
-            response_object = {
-                'time': time.time(),
-                'result': result
-            }
-            return jsonify(response_object), 200
-
-    # ---------------------------- Events ------------
+    # ------------ General events --------------------
     #
 
     # managing array with curent workers
-    @socketio.on('connect', namespace='/status')
-    def connected():
-        hr.workers.append(request.sid)
-        socketio.emit("ping_response", hr.workers)
+    @socketIO.on('connect')
+    def connected(sid, environ):
+        print(sid + ' has been connected to Worker Service')
 
-    @socketio.on('disconnect', namespace='/status')
-    def disconnect():
-        hr.workers.remove(request.sid)
-        socketio.emit("ping_response", hr.workers)
+    @socketIO.on('disconnect')
+    def disconnect(sid):
+        print(sid + 'has been disconnected from Worker Service')
+        if (hr.workers.__contains__(sid)):
+            hr.workers.remove(sid)
 
-    @socketio.on('ping')
-    def ping_pong(json):
-        print(' Ping from: ' + str(request.sid))
-        return 'server: pong!'
+    @socketIO.on('ping')
+    def ping_pong(sid, data):
+        print(' Ping from: ' + str(sid))
+        socketIO.emit("ping")
 
-    #-- Task workflow
-    # Checking if worker confirm a task
-    @socketio.on('assign', namespace='/task')
-    def task_confirm(*argv):
-        hr.task_confirm(argv[0])
-
-    # Listen to the results from the worker
-    @socketio.on('result', namespace='/task')
-    def handle_result(json):
-        temp_id = hr.analysis_res(json)
-        if temp_id is not None:
-            socketio.emit('task_results', json, namespace='/main_node')
-
-    return socketio, app
+    return socketIO, app
 

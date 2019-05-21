@@ -117,10 +117,13 @@ export class TaskListComponent implements OnInit {
     
     this.ioMain.onEvent(MainEvent.NEW)
       .subscribe((obj: JSON) => {
-        var fresh: Task = new Task(obj)
-        !this.result.includes(fresh, -1) && this.result.push(fresh);
+        if (obj["task"]) {
+          var fresh: Task = new Task(obj)
+          // add a new task if it is not in the this.result
+          !this.result.includes(fresh, -1) && this.result.push(fresh);
 
-        this.resultData.data = this.result;
+          this.resultData.data = this.result;
+        }
       });
   }
 }

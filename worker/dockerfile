@@ -4,7 +4,8 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 RUN pip install --upgrade pip && \
-pip install -U socketIO-client
+pip install -U python-socketio && \
+pip install -U "python-engineio[client]"
 
 COPY . /usr/src/app
 

@@ -45,6 +45,8 @@ services:
       - workername=alpha
     networks:
       - worker_net
+    depends_on:
+      - "w_service"
 
   w_beta:
     build: ./worker/
@@ -53,14 +55,18 @@ services:
       - workername=beta
     networks:
       - worker_net
+    depends_on:
+      - "w_service"
 
   w_gamma:
-     build: ./worker/
-     container_name: w_gamma
-     environment:
-       - workername=gamma
-     networks:
-       - worker_net
+    build: ./worker/
+    container_name: w_gamma
+    environment:
+      - workername=gamma
+    networks:
+      - worker_net
+    depends_on:
+      - "w_service"  
 
 networks:
   worker_net:

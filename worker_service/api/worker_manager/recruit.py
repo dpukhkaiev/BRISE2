@@ -126,7 +126,7 @@ class Recruit():
                 try:
                     chosen = tmp_worker_iterator.__next__()
                     print(" Task send to", chosen)
-                    self.socket.emit('assign', payload, namespace='/task', room=chosen)
+                    self.socket.emit('assign', payload, namespace='/worker_management', room=chosen)
                 except StopIteration:
                     shuffle(self.workers)
                     tmp_worker_iterator = self.workers.__iter__()
