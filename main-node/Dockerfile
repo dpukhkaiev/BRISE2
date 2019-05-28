@@ -35,6 +35,9 @@ RUN apt-get update \
     && python3 -m pip install jsonschema 
     
 
+# TODO change to the newest version after closing issue#
+RUN python3 -m pip install scipy==1.2
+
 # Install pytest for covering code by tests
 RUN python3 -m pip install pytest
 
