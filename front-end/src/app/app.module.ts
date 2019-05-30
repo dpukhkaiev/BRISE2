@@ -19,6 +19,7 @@ import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.component';
 import { LaunchControlBarComponent } from './components/launch-control-bar/launch-control-bar.component';
+import { DownloadPopUp } from './components/download-pop-up/download-pop-up.component';
 
 
 @NgModule({ 
@@ -32,12 +33,16 @@ import { LaunchControlBarComponent } from './components/launch-control-bar/launc
     ImpResComponent,
     FooterComponent,
     MultiDimComponent,
-    LaunchControlBarComponent
+    LaunchControlBarComponent,
+    DownloadPopUp
   ],
   imports: [
     BrowserModule, HttpModule,
     CoreModule,
     SharedModule
+  ],
+  entryComponents: [
+    DownloadPopUp
   ],
   providers: [],
   bootstrap: [AppComponent]

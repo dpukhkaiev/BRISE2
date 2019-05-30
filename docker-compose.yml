@@ -12,6 +12,8 @@ services:
       - "49152:49152"
     depends_on:
       - "w_service"
+    environment:
+      - EXP_DUMP_NAME=undefined
 
   w_service:
     build: ./worker_service/

@@ -1,0 +1,61 @@
+FROM ubuntu:16.04
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    wget \
+    cmake \
+    bsdtar  \
+    rsync \
+    libnss3-dev \
+    libasound2 \
+    gnuplot-x11 \
+    xvfb \
+    libxtst6 \
+    libgtk2.0.0 \
+    libgconf2-4 \
+    libxss1 \
+    libopenblas-base \
+    gcc \
+    python3-dev \
+    python3-pip \ 
+    && pip3 install --upgrade pip setuptools \
+    && apt-get clean \
+    && apt-get autoremove \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Project dependencies
+COPY ./benchmark/requirements.txt /app/requirements.txt
+RUN mkdir -p app/static \
+    # Scripts and styles for report and plots
+    && wget -O app/static/materialize.min.css https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css \
+    && wget -O app/static/plotly.min.js https://cdn.plot.ly/plotly-latest.min.js \
+    && wget -O app/static/font.woff2 https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2 \
+    # Download Orca AppImage
+    && wget https://github.com/plotly/orca/releases/download/v1.2.1/orca-1.2.1-x86_64.AppImage -P /home \
+    && chmod 777 /home/orca-1.2.1-x86_64.AppImage \
+    && pip3 install -r app/requirements.txt
+
+# Make Orca executable under xvfb
+RUN cd /home \
+    && /home/orca-1.2.1-x86_64.AppImage --appimage-extract \
+    && printf '#!/bin/bash \nxvfb-run --auto-servernum --server-args "-screen 0 1280x1024x24" /home/squashfs-root/app/orca "$@"' > /usr/bin/orca \
+    && chmod 777 /usr/bin/orca \
+    && chmod -R 777 /home/squashfs-root/
+
+# Inner project dependencies
+COPY ./main-node/core_entities /app/core_entities
+COPY ./main-node/tools/front_API.py /app/tools/front_API.py
+COPY ./main-node/tools/file_system_io.py /app/tools/file_system_io.py
+COPY ./main-node/tools/singleton.py /app/tools/singleton.py
+
+# For changing an owner of report files
+ARG host_uid
+ARG host_gid
+ENV host_uid=$host_uid
+ENV host_gid=$host_gid
+
+WORKDIR /app
+
+CMD [ "python3", "./volume/benchmark.py" ]
+# CMD [ "bash" ]

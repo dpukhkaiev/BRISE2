@@ -21,7 +21,7 @@ interface PointExp {
   styleUrls: ['./imp-res.component.scss']
 })
 export class ImpResComponent implements OnInit {
-  // The experements results
+  // The experiments results
   bestRes = new Set<PointExp>()
   allRes = new Set<PointExp>()
   // Best point 

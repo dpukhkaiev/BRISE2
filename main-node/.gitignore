@@ -1,3 +1,4 @@
+benchmark/results/serialized/*
 Results
 test*py
 csv

@@ -1,15 +1,3 @@
 <mat-card *ngIf="isModelType('BO')">
   <div #multi></div>
-
-  <mat-card *ngIf=solution class="chart-solution">
-    <mat-list-item>
-      <mat-icon matListIcon>outlined_flag</mat-icon>
-      <span class="desc">Configuration: </span> <span>{{solution.configurations}}</span>
-    </mat-list-item>
-    <mat-list-item>
-      <mat-icon matListIcon>network_check</mat-icon>
-      <span class="desc">Quality gain: </span> <span>{{100*(solution.results[0] - (default_configuration.results[0]))/(default_configuration.results[0]) | number:'2.0-2'}}%</span>
-    </mat-list-item>
-
-  </mat-card>
 </mat-card>

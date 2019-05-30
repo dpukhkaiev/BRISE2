@@ -33,7 +33,7 @@
   },
   "StopCondition": {
     "adaptive": {
-          "SearchSpacePercentageWithoutImprovement": 1
-        }
+      "SearchSpacePercentageWithoutImprovement": 1
+     }
   }
 }

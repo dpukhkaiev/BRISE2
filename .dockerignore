@@ -1,0 +1,7 @@
+.git/
+dist/
+docker-compose.yml
+front-end
+rapid_miner_worker
+worker
+worker_service

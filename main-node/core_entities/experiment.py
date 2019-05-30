@@ -1,9 +1,16 @@
-import logging
 import datetime
+import pickle
+import copy
+import random
+import string
+import csv
+import os
+
+import logging
 from typing import List
 
-
 from tools.front_API import API
+from tools.file_system_io import create_folder_if_not_exists
 from core_entities.configuration import Configuration
 
 
@@ -29,10 +36,21 @@ class Experiment:
         self.description = description
         self.search_space = []
         self.start_time = datetime.datetime.now()
-
+        self.name = 'None'
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
+
+    def __getstate__(self):
+        space = self.__dict__.copy()
+        del space['api']
+        del space['logger']         
+        return space
+
+    def __setstate__(self, space):
+        self.__dict__ = space 
+        self.logger = logging.getLogger(__name__)
+        self.api = API()
 
     def put_default_configuration(self, default_configuration: Configuration):
         if self._is_valid_configuration_instance(default_configuration):
@@ -107,6 +125,7 @@ class Experiment:
                       results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])
+        self.dump() # pickle instance
 
         return self.current_best_configurations
 
@@ -164,4 +183,91 @@ class Experiment:
         if self.get_current_solution() == configuration:
             self.logger.info("New solution found: %s" % configuration)
 
+    def dump(self):
+        """ save instance of experiment class
+        """
+        # generate file name
+        chars = string.ascii_lowercase + string.digits
+        rand_str = ''.join(random.choice(chars) for _ in range(6))
+        param = str(self.get_current_solution().get_parameters())
+        model = self.description['ModelConfiguration']['ModelType']
+        self.name = "exp_{0}_#p{1}_{2}.{3}".format(
+            model, len(self.all_configurations), param, rand_str)
+        os.environ["EXP_DUMP_NAME"] = self.name
 
+        create_folder_if_not_exists('Results/serialized/')
+        file_path = 'Results/serialized/{}.pkl'.format(self.name)
+
+        # copy and delete unnecessary information
+        self.end_time = datetime.datetime.now()
+
+
+        # write pickl
+        with open(file_path, 'wb') as output:
+            pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
+            self.logger.info("Saved experiment instance. Path: %s" % file_path)
+
+        # write csv
+        self.write_csv()
+
+    def write_csv(self, path='Results/serialized/'):
+
+        search_space = 1
+        for dim in self.description['DomainDescription']['AllConfigurations']:
+            search_space *= len(dim)
+
+        data = dict({
+            'model': self.description['ModelConfiguration']['ModelType'],
+            'default configuration': [' '.join(
+                str(v) for v in self.default_configuration.get_parameters())],
+            'solution configuration': [' '.join(
+                str(v) for v in self.get_current_solution().get_parameters())],
+            'default result': self.default_configuration.get_average_result()[0],
+            'solution result': self.get_current_solution().get_average_result()[0],
+            'result improvement': str(round(self.get_solution_relative_impr(), 1)) + '%',
+            'number of measured configurations': len(self.all_configurations),
+            'search space coverage': str(round((len(self.all_configurations)/search_space)*100)) + '%',
+            'number of repetitions': len(self.get_all_repetition_tasks()),
+            'execution time': (self.end_time - self.start_time).seconds,
+            'repeater': self.description['Repeater']['Type']
+        })
+
+        file_path = '{0}{1}.csv'.format(path, self.name)
+        keys = list(data.keys())
+        values = list(data.values())
+
+
+        with open(file_path, 'a') as csvFile:
+            writer = csv.writer(csvFile)
+            writer.writerow(keys)
+            writer.writerow(values)
+            self.logger.info("Saved csv file. Path: %s" % file_path)
+
+
+    def get_name(self):
+        return self.name
+
+    def get_solution_relative_impr(self):
+        """Deviation of a solution result relative to the default value
+        
+        Returns:
+            [Float] -- Round number in percent
+        """
+        default_avg_result = self.default_configuration.get_average_result()[0]
+        solution_avg_result = self.get_current_solution().get_average_result()[0]
+        return (default_avg_result - solution_avg_result)/default_avg_result*100
+
+    def get_all_repetition_tasks(self):
+        """ List of results for all tasks that were received on workers
+        
+        Returns:
+            [List] -- List with results for all atom-tasks
+        """
+
+        all_tasks = []
+        result_key = self.description['TaskConfiguration']['ResultStructure'][0]
+        for configuration in self.all_configurations:
+            for task in configuration.get_tasks().values():
+                if 'result' in task:
+                    all_tasks.append(task['result'][result_key])
+        return all_tasks

@@ -26,6 +26,7 @@ import {
   MatSortModule,
   MatChipsModule
 } from '@angular/material';
+import {MatBottomSheetModule} from '@angular/material/bottom-sheet';
 
 import { LoaderComponent } from './loader/loader.component';
 
@@ -51,7 +52,8 @@ import { LoaderComponent } from './loader/loader.component';
     MatInputModule,
     MatPaginatorModule,
     MatSortModule,
-    MatChipsModule
+    MatChipsModule,
+    MatBottomSheetModule
   ],
   declarations: [LoaderComponent],
   exports: [
@@ -76,7 +78,8 @@ import { LoaderComponent } from './loader/loader.component';
     MatInputModule,
     MatPaginatorModule,
     MatSortModule,
-    MatChipsModule
+    MatChipsModule,
+    MatBottomSheetModule
   ]
 })
 export class SharedModule { }

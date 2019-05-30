@@ -25,7 +25,7 @@ interface Configuration {
 })
 export class HeatMapComponent implements OnInit {
   
-  // The experements results
+  // The experiments results
   result = new Map()
 
   // The prediction results from model

@@ -50,9 +50,18 @@ class Configuration:
         self._tasks = {}
         self._average_result = []
         self.predicted_result = []
-
         # Meta information
         self._standard_deviation = []
+
+    def __getstate__(self):
+        space = self.__dict__.copy()    
+        del space['logger']          
+        return space
+
+    def __setstate__(self, space):
+        self.__dict__ = space 
+        self.logger = logging.getLogger(__name__)
+
 
     def add_predicted_result(self, parameters, predicted_result):
 
@@ -65,7 +74,7 @@ class Configuration:
         :param parameters: List with parameters. Used for validation
         :param task: List of task results
         """
-
+        
         if self.__is_valid_configuration(parameters) and self.__is_valid_task(task):
             task_id = task["task id"]
             self._tasks[str(task_id)] = task

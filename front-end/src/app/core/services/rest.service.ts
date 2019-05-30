@@ -37,17 +37,6 @@ export class RestService {
       .catch(this.handleError);
   }
 
-  // GET /result/:id
-  getTaskById(id: string): any {
-    return this.http
-      .get(SERVICE_URL + '/result/'+ id)
-      .map(response => {
-        const task = response.json();
-        return task/*.map((t) => new Task)/*/;
-      })
-      .catch(this.handleError);
-  }
-
   // GET all result
   getAllResult(): any {
     return this.http
@@ -84,6 +73,14 @@ export class RestService {
       .map(response => {
         const res = response.json();
         return res;
+      })
+      .catch(this.handleError);
+  }
+  downloadDump(format='pkl'): any {
+    return this.http
+      .get(MAIN_URL + '/download_dump/' + format)
+      .map(response => {
+        return response
       })
       .catch(this.handleError);
   }

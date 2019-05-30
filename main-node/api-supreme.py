@@ -1,4 +1,6 @@
-from flask import Flask, jsonify, request
+import os
+
+from flask import Flask, jsonify, request, send_from_directory
 from flask import render_template
 from flask_cors import CORS
 import socketio
@@ -60,7 +62,7 @@ def main_process_start():
         time.sleep(0.1)
 
     return main_process_status()
- 
+
 # ---   STATUS
 @app.route('/status')
 def main_process_status():
@@ -71,7 +73,7 @@ def main_process_status():
     """
     result = {}
     result['MAIN_PROCESS'] = {"main process": bool(MAIN_PROCESS),
-                            "status": "running" if MAIN_PROCESS else 'none'}
+                              "status": "running" if MAIN_PROCESS else 'none'}
     # Probably, we will have more processes at the BG.
     return jsonify(result)
 
@@ -92,6 +94,20 @@ def main_process_stop():
         time.sleep(0.5)
 
     return main_process_status()
+
+@app.route('/download_dump/<file_format>')
+def download_dump(file_format):
+    dump_name = os.environ.get('EXP_DUMP_NAME')
+    try:
+        if(dump_name == 'undefined'):
+            return jsonify(message='missing experiment file', href='#')
+        else:
+            filename = "{name}.{format}".format(
+                name=dump_name, format=file_format)
+            return send_from_directory('/root/Results/serialized/', filename, as_attachment=True)
+    except Exception as e:
+        logger.error('Download dump file of the experiment: %s' % e)
+        return str(e)
 
 # ---------------------------- Events ------------ 
 @socketIO.on('ping')

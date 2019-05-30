@@ -1,12 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 
+import { MatBottomSheet } from '@angular/material';
+
+// Enums
+import { MainEvent } from '../../data/client-enums';
+import { ExperimentDescription } from '../../data/experimentDescription.model';
+
+// Service
 import { RestService as mainREST } from '../../core/services/rest.service';
 import { MainSocketService } from '../../core/services/main.socket.service';
 
-import { MainEvent } from '../../data/client-enums';
+// Download Popup
+import {DownloadPopUp} from '../download-pop-up/download-pop-up.component'
 
-import { ExperimentDescription } from '../../data/experimentDescription.model';
 
+// -- Main
 @Component({
   selector: 'launch-control-bar',
   templateUrl: './launch-control-bar.component.html',
@@ -16,11 +24,23 @@ export class LaunchControlBarComponent implements OnInit {
 
   // Flag for runing main-node
   isRuning: boolean = false
+  // Flag for finish experiment
+  isFinish: boolean = false
+
   experimentDescription: ExperimentDescription
-  constructor(private mainREST: mainREST, private ioMain: MainSocketService) { }
+
+  constructor(
+    private mainREST: mainREST, 
+    private ioMain: MainSocketService,
+    private DownloadOption: MatBottomSheet
+  ) { }
 
   ngOnInit() {
-    this.initMainEvents()
+    this.initMainEvents();
+  }
+
+  openDownloadOption(): void {
+    this.DownloadOption.open(DownloadPopUp);
   }
 
   // HTTP: Main-node
@@ -46,7 +66,13 @@ export class LaunchControlBarComponent implements OnInit {
     }
   }
 
+  // Socket
   private initMainEvents(): void {
+    this.ioMain.onEvent(MainEvent.FINAL) 
+    .subscribe((obj: any) => {
+      this.isRuning = false
+      this.isFinish = true
+    });
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
         this.experimentDescription = obj['description']['experiment description'];
