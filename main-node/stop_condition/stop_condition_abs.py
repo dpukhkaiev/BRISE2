@@ -12,25 +12,38 @@ class StopCondition(ABC):
         self.best_solution_configuration = []
 
     # Template method
-    def validate_solution(self, solution_candidate_configurations, current_best_configurations):
+    def __validate_solution_candidate(self, solution_candidate_configuration, current_best_configurations):
         """
         Returns prediction_is_final=True if configs_without_improvement >= "MaxConfigsWithoutImprovement",
                 otherwise prediction_is_final=False
-        :param solution_candidate_configurations: list of instances of Configuration class
+        :param solution_candidate_configurations: instance of Configuration class
         :param current_best_configurations: list of instances of Configuration class
-
         :return: prediction_is_final
         """
         if self.best_solution_configuration == [] or self.best_solution_configuration[0] > current_best_configurations[0]:
             self.best_solution_configuration = current_best_configurations
 
         if self.configs_without_improvement < self.max_configs_without_improvement:
-            self.compare_configurations(solution_candidate_configurations, current_best_configurations)
+            self.compare_configurations([solution_candidate_configuration], current_best_configurations)
+        
+        return self.prediction_is_final
 
-        if self.prediction_is_final is True:
-            return self.best_solution_configuration, self.prediction_is_final
-        else:
-            return self.prediction_is_final
+    def validate_solution_candidates(self, solution_candidates_configurations, current_best_configurations):
+        """
+        Returns prediction_is_final=True if configs_without_improvement >= "MaxConfigsWithoutImprovement",
+                otherwise prediction_is_final=False
+        :param solution_candidates_configurations: list of instances of Configuration class
+        :param current_best_configurations: list of instances of Configuration class
+
+        :return: bool True if predicted solution candidate was final, Flase if not final
+        """
+        was_final = False
+        for configuration in solution_candidates_configurations:
+            if self.__validate_solution_candidate(configuration, current_best_configurations):
+                was_final = True
+        return was_final
+        
+        
 
     def compare_configurations(self, solution_candidate_configurations, current_best_configurations):
         # If the measured point is better than previous best value - add this point to data set and rebuild model.

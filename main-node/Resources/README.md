@@ -9,6 +9,10 @@ Possible values of configurations for your system should be provided in separate
 
 **All specified here configurations are required.**
 
+- `General` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
+    - `isMinimizationExperiment` - `bool`. Minimization or maximization experiment
+    - `ConfigurationsPerIteration` - `int`. The number of configurations that will be measured simultaneously. **optional**
+
 - `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
     - `FeatureNames` - `list of strings`. The names of configurations.
     - `DataFile` - `string`. Path to json file with all possible values of all configurations. 
@@ -18,7 +22,6 @@ Possible values of configurations for your system should be provided in separate
 - `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
     - `SelectionType` - `string`. An exploration algorithm specification. Currently only `SobolSequence` available.
     - `NumberOfInitialConfigurations` - `int`. The number of configurations that will be tested before making any attempts to build prediction model.
-    - `Step` - `int`. The number of configurations that will be tested simultaneously.
 
 - `TaskConfiguration` - this section describes general configuration for Worker Service and your system during testing.
     - `TaskName` - `string`. The Worker nodes are able to run different experiments/tasks. This value identifies needed.
@@ -66,6 +69,9 @@ Possible values of configurations for your system should be provided in separate
 #### Example of configuration file:
 ```json
 {
+      "General":{
+        "isMinimizationExperiment"  : true
+      },
       "DomainDescription":{
         "FeatureNames"      : ["frequency", "threads"],
         "DataFile"          : "./Resources/EnergyExperimentData.json",
@@ -74,8 +80,7 @@ Possible values of configurations for your system should be provided in separate
       },
       "SelectionAlgorithm":{
         "SelectionType"     : "SobolSequence",
-        "NumberOfInitialConfigurations"   : 10,
-        "Step"              : 1
+        "NumberOfInitialConfigurations": 10
       },
       "TaskConfiguration":{
         "TaskName"          : "energy_consumption",
@@ -104,8 +109,7 @@ Possible values of configurations for your system should be provided in separate
         }
       },
       "ModelConfiguration":{
-        "ModelType"         : "BO",
-        "isMinimizationExperiment"  : true
+        "ModelType"         : "BO"
       },
       "StopCondition": {
         "adaptive": {

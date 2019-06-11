@@ -12,14 +12,10 @@
                 "ModelType": {
                     "type": "string",
                     "enum": ["BO"]
-                },
-                "isMinimizationExperiment": {
-                    "type": "boolean"
                 }
             },
             "required": [
-                "ModelType",
-                "isMinimizationExperiment"
+                "ModelType"
             ],
             "additionalProperties": false
         },
@@ -51,17 +47,13 @@
                 "ModelType": {
                     "type": "string",
                     "enum": ["regression"]
-                },
-                "isMinimizationExperiment": {
-                    "type": "boolean"
                 }
             },
             "required": [
                 "minimalTestingSize",
                 "maximalTestingSize",
                 "MinimumAccuracy",
-                "ModelType",
-                "isMinimizationExperiment"
+                "ModelType"
             ],
             "additionalProperties": false
         }

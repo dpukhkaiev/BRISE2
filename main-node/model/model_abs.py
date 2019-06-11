@@ -12,7 +12,7 @@ class Model(ABC):
     def validate_model(self): pass
 
     @abstractmethod
-    def predict_solution(self):
+    def predict_next_configurations(self, amount):
         # TODO: Make it `template method` or 'strategy'.
         return Configuration
     

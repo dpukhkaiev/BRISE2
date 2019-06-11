@@ -12,7 +12,7 @@ def get_stop_condition(experiment):
     # Possible values - "True" and "False".
     # "True" for the minimization experiment. "False" for the maximization experiment.
 
-    is_minimization_experiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
+    is_minimization_experiment = experiment.is_minimization()
 
     # stop_condition_config: dict.
     #                        key - string, stop condition type.

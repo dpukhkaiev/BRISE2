@@ -39,19 +39,19 @@ class StudentDeviationType(DefaultType):
 
     def evaluate(self, current_configuration: Configuration, experiment: Experiment):
         """
-        Return False while number of measurements less than max_tasks_per_configuration (inherited from abstract class).
+        Return number of measurements to finish Configuration or 0 if it finished.
         In other case - compute result as average between all experiments.
         :param current_configuration: instance of Configuration class
         :param experiment: instance of 'experiment' is required for model-awareness.
-        :return: bool True if Configuration was measured precisely or False if not
+        :return: int min_tasks_per_configuration if Configuration was not measured at all or 1 if Configuration was not measured precisely or 0 if it finished
         """
         tasks_data = current_configuration.get_tasks()
 
         if len(tasks_data) < self.min_tasks_per_configuration:
-            return False
+            return self.min_tasks_per_configuration - len(tasks_data)
 
         elif len(tasks_data) >= self.max_tasks_per_configuration:
-            return True
+            return 0
         else:
             average_result = current_configuration.get_average_result()
             # Calculating standard deviation
@@ -91,7 +91,7 @@ class StudentDeviationType(DefaultType):
                     if interval == 0:
                         avg_res = 1  # Anyway relative error will be 0 and avg will not be changed.
                     else:
-                        return False
+                        return 1
                 relative_errors.append(interval / avg_res * 100)
 
             # Thresholds for relative errors that should not be exceeded for accurate measurement.
@@ -99,7 +99,7 @@ class StudentDeviationType(DefaultType):
             if self.is_model_aware:
                 # We adapt thresholds
                 current_solution = experiment.get_current_solution().get_average_result()
-                minimization_experiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
+                minimization_experiment = experiment.is_minimization()
 
                 for b_t, max_t, r_max, avg_res, cur_solution_avg in \
                         zip(self.base_acceptable_errors, self.max_acceptable_errors, self.ratios_max, average_result, current_solution):
@@ -126,5 +126,5 @@ class StudentDeviationType(DefaultType):
             # If any of resulting dimensions are not accurate - just terminate.
             for threshold, error in zip(thresholds, relative_errors):
                 if error > threshold:
-                    return False
-            return True
+                    return 1
+            return 0

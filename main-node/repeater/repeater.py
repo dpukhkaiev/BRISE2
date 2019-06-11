@@ -23,7 +23,7 @@ class Repeater:
         Forwards a call to specific Repeater Type to evaluate if Configuration was measured precisely.
         :param current_configuration: instance of Configuration class.
         :param experiment: instance of 'experiment' is required for model-awareness.
-        :return: bool True or False
+        :return: int Number of measurments of Configuration which need to be performed 
         """
 
         if self._type is None:
@@ -45,7 +45,7 @@ class Repeater:
         """
         evaluation_class = reflective_class_import(class_name=repeater_type, folder_path="repeater")
         self._type = evaluation_class(self.repeater_parameters)
-
+    
     def measure_configurations(self, configurations: list, experiment: Experiment):
         """
         Evaluates the Target System using specific Configuration while results of Evaluation will not be precise.
@@ -55,26 +55,28 @@ class Repeater:
         """
         # Removing previous measurements
         current_measurement = {}
-        current_measurement_finished = False
         # Creating holders for current measurements
         for configuration in configurations:
             # Evaluating each Configuration in configurations list
-            current_measurement[str(configuration.get_parameters())] = {'data': configuration.get_parameters(),
+            needed_tasks_count = self.evaluation_by_type(configuration, experiment)
+            current_measurement[str(configuration.get_parameters())] = {'parameters': configuration.get_parameters(),
+                                                                        'needed_tasks_count' : needed_tasks_count,
                                                                         'Finished': False}
-            measured_accurately = self.evaluation_by_type(configuration, experiment)
-            if measured_accurately:
+            
+            if needed_tasks_count == 0:
                 current_measurement[str(configuration.get_parameters())]['Finished'] = True
                 current_measurement[str(configuration.get_parameters())]['Results'] = configuration.get_average_result()
 
         # Continue to feed with a new Tasks while not passing the evaluation.
-        while not current_measurement_finished:
+        while True:
 
             # Selecting only that configurations that were not finished.
             tasks_to_send = []
             for point in current_measurement.keys():
                 if not current_measurement[point]['Finished']:
-                    tasks_to_send.append(current_measurement[point]['data'])
-                    self.performed_measurements += 1
+                    for i in range(current_measurement[point]['needed_tasks_count']):
+                        tasks_to_send.append(current_measurement[point]['parameters'])
+                        self.performed_measurements += 1
 
             if not tasks_to_send:
                 return configurations
@@ -89,15 +91,14 @@ class Repeater:
                         config.add_tasks(parameters, result)
 
                 API().send('new', 'task', configurations=[parameters], results=[result])
-
+            
             # Evaluating each Configuration in configurations list
-            for task in tasks_to_send:
-                for configuration in configurations:
-                    if task == configuration.get_parameters():
-                        measured_accurately = self.evaluation_by_type(configuration, experiment)
-                        if measured_accurately:
-                            temp_msg = ("Configuration measured: %s" % configuration)
-                            self.logger.info(temp_msg)
-                            API().send('log', 'info', message=temp_msg)
-                            current_measurement[str(task)]['Finished'] = True
-                            current_measurement[str(task)]['Results'] = configuration.get_average_result()
+            for configuration in configurations:
+                needed_tasks_count = self.evaluation_by_type(configuration, experiment)
+                current_measurement[str(configuration.get_parameters())]['needed_tasks_count'] = needed_tasks_count
+                if needed_tasks_count  == 0:
+                    temp_msg = ("Configuration measured: %s" % configuration)
+                    self.logger.info(temp_msg)
+                    API().send('log', 'info', message=temp_msg)
+                    current_measurement[str(configuration.get_parameters())]['Finished'] = True
+                    current_measurement[str(configuration.get_parameters())]['Results'] = configuration.get_average_result()

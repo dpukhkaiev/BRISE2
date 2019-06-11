@@ -199,6 +199,8 @@ class WSClient():
         self._dump_results_to_csv()
         return self.current_results
 
+    def get_number_of_workers(self):
+        return self._number_of_workers
 
 # A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
 if __name__ == "__main__":

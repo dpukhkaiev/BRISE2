@@ -3,6 +3,22 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
+        "General": {
+            "type": "object",
+            "properties": {
+                "isMinimizationExperiment": {
+                    "type": "boolean"
+                },
+                "ConfigurationsPerIteration": {
+                    "description": "The number of configurations that will be measured simultaneously.",
+                    "type": "integer",
+                    "minimum": 1
+                }
+            },
+            "required": [
+                "isMinimizationExperiment"
+            ]
+        },
         "DomainDescription": {
             "type": "object",
             "properties": {
@@ -143,6 +159,7 @@
         }
     },
     "required": [
+        "General",
         "DomainDescription",
         "SelectionAlgorithm",
         "TaskConfiguration",

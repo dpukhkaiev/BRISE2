@@ -6,7 +6,7 @@ from abc import ABC, abstractclassmethod
 
 class SelectionAlgorithm(ABC):
     @abstractclassmethod
-    def get_next_point(self): pass
+    def get_next_configuration(self): pass
 
     @abstractclassmethod
-    def disable_point(self): pass
+    def disable_configurations(self): pass

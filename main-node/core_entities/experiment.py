@@ -5,6 +5,7 @@ import random
 import string
 import csv
 import os
+import itertools
 
 import logging
 from typing import List
@@ -40,6 +41,8 @@ class Experiment:
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
+        
+        self.__generate_search_space()
 
     def __getstate__(self):
         space = self.__dict__.copy()
@@ -162,7 +165,7 @@ class Experiment:
 
         best_configuration = [self.all_configurations[0]]
         for configuration in self.all_configurations:
-            if configuration.is_better_configuration(self.description["ModelConfiguration"]["isMinimizationExperiment"],
+            if configuration.is_better_configuration(self.is_minimization(),
                                                      best_configuration[0]):
                 best_configuration = [configuration]
         return best_configuration
@@ -182,6 +185,18 @@ class Experiment:
         self.current_best_configurations = self._calculate_current_best_configurations()
         if self.get_current_solution() == configuration:
             self.logger.info("New solution found: %s" % configuration)
+
+    def is_minimization(self):
+        return self.description["General"]["isMinimizationExperiment"]
+
+    def get_number_of_configurations_per_iteration(self):
+        if "ConfigurationsPerIteration" in self.description["General"]:
+            return self.description["General"]["ConfigurationsPerIteration"]
+        else:
+            return 0
+            
+    def __generate_search_space(self):
+        self.search_space = [list(configuration) for configuration in itertools.product(*self.description["DomainDescription"]["AllConfigurations"])] 
 
     def dump(self):
         """ save instance of experiment class

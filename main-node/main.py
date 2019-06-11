@@ -1,7 +1,6 @@
 __doc__ = """
 Main module for running BRISE configuration balancing."""
 
-import itertools
 from sys import argv
 import logging
 
@@ -38,9 +37,6 @@ def run():
     experiment = Experiment(experiment_description)
     Configuration.set_task_config(experiment.description["TaskConfiguration"])
 
-    # Generate whole search space for model.
-    experiment.search_space = [list(configuration) for configuration in itertools.product(*experiment.description["DomainDescription"]["AllConfigurations"])]
-
     sub.send('experiment', 'description', global_config=global_config, experiment_description=experiment.description)
     logger.debug("Experiment description and global configuration sent to the API.")
 
@@ -68,7 +64,7 @@ def run():
     repeater.measure_configurations([default_configuration], experiment=experiment)
     experiment.put_default_configuration(default_configuration)
 
-    selector.disable_point(default_configuration.get_parameters())
+    selector.disable_configurations([default_configuration])
 
     temp_msg = "Results of measuring default value: %s" % experiment.default_configuration.get_average_result()
     logger.info(temp_msg)
@@ -78,13 +74,13 @@ def run():
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
 
-    initial_configurations = [Configuration(selector.get_next_point()) for _ in
+    initial_configurations = [Configuration(selector.get_next_configuration()) for _ in
                               range(experiment.description["SelectionAlgorithm"]["NumberOfInitialConfigurations"])]
 
     repeater.set_type(experiment.description["Repeater"]["Type"])
     repeater.measure_configurations(initial_configurations, experiment=experiment)
     experiment.add_configurations(initial_configurations)
-
+    
     logger.info("Results got. Building model..")
     sub.send('log', 'info', message="Results got. Building model..")
 
@@ -104,24 +100,27 @@ def run():
     stop_condition = get_stop_condition(experiment=experiment)
 
     finish = False
-    cur_stats_message = "-- New Configuration(s) measured. Currently were evaluated %s of %s Configurations." \
+    cur_stats_message = "-- New Configuration(s) was(were) measured. Currently were evaluated %s of %s Configurations. " \
                         "%s of them out of the Selection Algorithm. Building Target System model.\n"
 
     while not finish:
         model_built = model.update_data(experiment.all_configurations).build_model()
+        number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration() \
+                    if experiment.get_number_of_configurations_per_iteration() \
+                        else repeater.worker_service_client.get_number_of_workers()
         if model_built:
             # TODO: move behavior for 'else' here (out of models)?
             if model.validate_model():
                 # TODO: Need to agree on return structure (nested or not).
-                predicted_configuration = model.predict_solution()
-                selector.disable_point(predicted_configuration.get_parameters())
-                temp_msg = "Predicted solution configuration: %s, Quality: %s." \
-                           % (str(predicted_configuration.get_parameters()), str(predicted_configuration.predicted_result))
+                predicted_configurations = model.predict_next_configurations(number_of_configurations_in_iteration)
+                selector.disable_configurations(predicted_configurations)
+                temp_msg = "Predicted following Configuration->Quality pairs: %s" \
+                           % list((str(c.get_parameters()) + "->" + str(c.predicted_result) for c in predicted_configurations))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
-                repeater.measure_configurations([predicted_configuration], experiment=experiment)
-                experiment.add_configurations([predicted_configuration])
-                finish = stop_condition.validate_solution(solution_candidate_configurations=[predicted_configuration],
+                repeater.measure_configurations(predicted_configurations, experiment=experiment)
+                experiment.add_configurations(predicted_configurations)
+                finish = stop_condition.validate_solution_candidates(solution_candidates_configurations=predicted_configurations,
                                                           current_best_configurations=experiment.current_best_configurations)
                 if finish:
                     sub.send('log', 'info', message="Solution validation success!")
@@ -135,17 +134,16 @@ def run():
                     logger.info(temp_msg)
                     sub.send('log', 'info', message=temp_msg)
                     continue
-
-        configs_from_selector = [Configuration(selector.get_next_point()) for _ in
-                                 range(experiment.description["SelectionAlgorithm"]["Step"])]
+        configs_from_selector = [Configuration(selector.get_next_configuration()) for _ in
+                                 range(number_of_configurations_in_iteration)]
 
         repeater.measure_configurations(configs_from_selector, experiment=experiment)
         experiment.add_configurations(configs_from_selector)
 
         # If BRISE cannot finish his work properly - terminate it.
-        if len(experiment.all_configurations) > len(experiment.search_space):
+        if len(experiment.all_configurations) >= len(experiment.search_space):
             # TODO: @Zhenya, Is it possible to replace this 'if' with following comment?
-            #  finish = stop_condition.validate_solution(solution_candidate_configurations=configs_from_selector,
+            #  finish = stop_condition.validate_solution_candidates(solution_candidate_configurations=configs_from_selector,
             #         current_best_configurations=experiment.current_best_configurations)
             logger.info("Unable to finish normally, terminating with best of measured results.")
             optimal_configuration = experiment.get_final_report_and_result(repeater)

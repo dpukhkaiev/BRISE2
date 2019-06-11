@@ -48,7 +48,7 @@ class BayesianOptimization(Model):
         self.top_n_percent = top_n_percent
 
         self.experiment = experiment
-        self.isMinimizationExperiment = experiment.description["ModelConfiguration"]["isMinimizationExperiment"]
+        self.isMinimizationExperiment = experiment.is_minimization()
 
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
@@ -195,7 +195,7 @@ class BayesianOptimization(Model):
             return False
         return True
 
-    def predict_solution(self):
+    def __predict_next_configuration(self):
         """
         Predicts the solution candidate of the model. Returns old Configuration instance if configuration is already
         exists in all_configuration list, otherwise creates new Configuration instance.
@@ -293,6 +293,23 @@ class BayesianOptimization(Model):
         predicted_configuration_class.add_predicted_result(parameters=predicted_configuration,
                                                            predicted_result=[predicted_result])
         return predicted_configuration_class
+
+    def predict_next_configurations(self, amount):
+            """
+            Predict 'amount' Configurations that are the best (basing on a current model of the Target System).
+            :param amount: int number of Configurations which will be returned.
+            :return: list of Configurations that are needed to be measured.
+            """
+
+            configurations_parameters = []
+            configurations = []
+            while len(configurations) != amount:
+                conf = self.__predict_next_configuration()
+                # BO model is stochastic and could return the same Configuration several times, but we need unique ones.
+                if conf.get_parameters() not in configurations_parameters:
+                    configurations_parameters.append(conf.get_parameters())
+                    configurations.append(conf)
+            return configurations
 
     def update_data(self, configurations):
         """

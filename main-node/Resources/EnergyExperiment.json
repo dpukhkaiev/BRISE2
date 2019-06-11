@@ -1,4 +1,8 @@
 {
+      "General": {
+        "isMinimizationExperiment"  : true,
+        "ConfigurationsPerIteration" : 3
+      },
       "DomainDescription":{
         "FeatureNames"      : ["frequency", "threads"],
         "DataFile"          : "./Resources/EnergyExperimentData.json",
@@ -7,8 +11,7 @@
       },
       "SelectionAlgorithm":{
         "SelectionType"     : "SobolSequence",
-        "NumberOfInitialConfigurations"   : 10,
-        "Step"              : 1
+        "NumberOfInitialConfigurations": 10
       },
       "TaskConfiguration":{
         "TaskName"          : "energy_consumption",
@@ -37,8 +40,10 @@
         }
       },
       "ModelConfiguration":{
-        "ModelType"         : "BO",
-        "isMinimizationExperiment"  : true
+        "minimalTestingSize": 0.2,
+        "maximalTestingSize": 0.7,
+        "MinimumAccuracy"   : 0.70,
+        "ModelType"         : "regression"
       },
       "StopCondition": {
         "adaptive": {

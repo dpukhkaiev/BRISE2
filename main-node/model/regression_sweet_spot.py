@@ -94,8 +94,8 @@ class RegressionSweetSpot(Model):
         self.test_model_all_data(self.experiment.search_space.copy())
 
         # Check if the model is adequate - write it.
-        predicted_solution = self.predict_solution()
-        predicted_labels = predicted_solution.predicted_result
+        predicted_configuration = self.predict_next_configurations(1)
+        predicted_labels = predicted_configuration[0].predicted_result
         if predicted_labels[0] >= 0:
             f = open(self.log_file_name, "a")
             f.write("Search space::\n")
@@ -119,27 +119,44 @@ class RegressionSweetSpot(Model):
             self.sub.send('log', 'info', message="Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_solution(self):
+    def predict_next_configurations(self, amount):
         """
         Takes features, using previously created model makes regression to find labels and return label with the lowest value.
-        :param search_space: list of data points (each data point is also a list).
-        :return: lowest value, and related features.
+        :param amount: int number of Configurations which will be returned
+        :return: list of Configurations that are needed to be measured.
         """
+        # 1. get model's predictions
+        predicted_results = []
+        for index, predicted_result in sorted(enumerate(self.model.predict(self.experiment.search_space)), key=lambda c :c[1]):
+            conf = self.experiment.search_space[index]
+            predicted_results.append((predicted_result, conf))
 
-        predicted_results = [[predicted_result, index] for (index, predicted_result) in enumerate(self.model.predict(self.experiment.search_space))]
-        self.sub.send('predictions', 'configurations',
-                      configurations=[self.experiment.search_space[index] for (predicted_result, index) in predicted_results],
-                      results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
-
-        label, index = min(predicted_results)
-        label = list(label)
+        # Only for DEMO 
+        # self.sub.send('predictions', 'configurations',
+        #               configurations=[self.experiment.search_space[index] for (predicted_result, index) in predicted_results],
+        #               results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
+        
+        # 2. Update predicted results for already evaluated Configurations.
         for config in self.all_configurations:
-            if config.get_parameters() == self.experiment.search_space[index]:
-                config.add_predicted_result(self.experiment.search_space[index], label)
-                return config
-        solution = Configuration(self.experiment.search_space[index])
-        solution.add_predicted_result(self.experiment.search_space[index], label)
-        return solution
+            for pred_tuple in predicted_results:
+                if(pred_tuple[1] == config.get_parameters()):
+                    config.add_predicted_result(pred_tuple[1], pred_tuple[0])
+
+        # 3. Pick up requared amount of configs
+        all_config = [conf.get_parameters() for conf in self.all_configurations]
+        result = []
+        for best in predicted_results[:amount]:
+            if best[1] in all_config:
+                select = [conf for conf in self.all_configurations if conf.get_parameters() == best[1]]
+                result.append(select[0])
+            else:
+                new_conf = Configuration(best[1])
+                new_conf.add_predicted_result(best[1], best[0])
+                result.append(new_conf)
+
+        # 4. return configs
+        return result
+
 
     def resplit_data(self, test_size):
         """

@@ -1,4 +1,8 @@
 {
+  "General": {
+    "isMinimizationExperiment"  : false,
+    "ConfigurationsPerIteration" : 1
+  },
   "DomainDescription":{
     "FeatureNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
     "DataFile"          : "./Resources/NB/MLExperimentData.json",
@@ -8,8 +12,7 @@
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations"   : 10,
-    "Step"              : 1
+    "NumberOfInitialConfigurations"   : 10
   },
   "TaskConfiguration":{
     "TaskName"          : "taskNB",
@@ -28,8 +31,7 @@
         }
       },
   "ModelConfiguration":{
-    "ModelType"         : "BO",
-    "isMinimizationExperiment"  : false
+    "ModelType"         : "BO"
   },
   "StopCondition": {
     "adaptive": {

@@ -63,7 +63,7 @@ class SobolSequence(SelectionAlgorithm):
 
         return imposed_point
 
-    def get_next_point(self):
+    def get_next_configuration(self):
         """
             Will return next data point from initiated Sobol sequence imposed to the search space.
         :return: list - point in current search space.
@@ -111,7 +111,7 @@ class SobolSequence(SelectionAlgorithm):
         self.logger.debug("Retrieving new configuration from the Sobol sequence: %s" % str(unique_point))
         return unique_point
 
-    def disable_point(self, point):
+    def __disable_point(self, point):
         """
             This method should be used to let Sobol sequence know,
             that some points of search space have been already picked by prediction model.
@@ -124,6 +124,16 @@ class SobolSequence(SelectionAlgorithm):
         else:
             self.logger.warn("WARNING! Trying to disable point that have been already retrieved(or disabled).")
             return False
+
+    def disable_configurations(self, configurations):
+        """
+            This method should be used to forbid points of the Search Space that 
+            have been already picked as a Model prediction.
+        :param configurations: list of configurations. Configurations from search space.
+        :return: None
+        """
+        for p in configurations:
+            self.__disable_point(p.get_parameters())
 
 
 if __name__ == "__main__":
@@ -156,28 +166,28 @@ path.append(abspath('.'))
     print("Testing the basic functionality for retrieving an unique points.")
     started = time()
     sobol = SobolSequence(None, test_space)
-    generated_configs = [sobol.get_next_point() for _ in range(len(list(product(*test_space))))]
+    generated_configs = [sobol.get_next_configuration() for _ in range(len(list(product(*test_space))))]
     assert test_for_duplicates(generated_configs) is False, 'Got duplicates in normal search space.'
     print("Time to generate all(%s) points in these search space: %s " % (len(generated_configs), time() - started))
 
     print("Testing basic functionality for retrieving more points that the search space contains. Duplicates appears.")
     sobol = SobolSequence(None, test_space)
-    generated_configs = [sobol.get_next_point() for _ in range(len(list(product(*test_space))) + 1)]
+    generated_configs = [sobol.get_next_configuration() for _ in range(len(list(product(*test_space))) + 1)]
     assert test_for_duplicates(generated_configs) is True, 'Unique configs with exceeding search space, investigate.'
 
     print("Testing disabling the same point multiple times and further proper work of the Sobol.")
     sobol = SobolSequence(None, test_space)
     configuration = choice(list(product(*test_space)))
-    assert sobol.disable_point(configuration) is True, "Unable to disable configuration!"
-    assert sobol.disable_point(configuration) is False, "Able to disable same configuration twice!"
-    generated_configs = [sobol.get_next_point() for _ in range(len(list(product(*test_space))) - 1)]
+    assert sobol.__disable_point(configuration) is True, "Unable to disable configuration!"
+    assert sobol.__disable_point(configuration) is False, "Able to disable same configuration twice!"
+    generated_configs = [sobol.get_next_configuration() for _ in range(len(list(product(*test_space))) - 1)]
     assert test_for_duplicates(generated_configs) is False, "Got duplicates in search space with disabled configurations."
 
     print("Testing the multiple points disabling and further proper work of the Sobol.")
     sobol = SobolSequence(None, test_space)
     for point in list(product(*test_space))[0: int(len(list(product(*test_space)))/3)]:
-        sobol.disable_point(point)
-    generated_configs = [sobol.get_next_point() for _ in range(int(len(list(product(*test_space)))/3))]
+        sobol.__disable_point(point)
+    generated_configs = [sobol.get_next_configuration() for _ in range(int(len(list(product(*test_space)))/3))]
     assert test_for_duplicates(generated_configs) is False, \
         "Got duplicates with multiple (%s) disabled points!" % len(sobol.returned_points)
 

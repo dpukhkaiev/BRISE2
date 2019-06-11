@@ -17,15 +17,13 @@ class DefaultType:
 
     def evaluate(self, current_configuration: Configuration, experiment: Experiment):
         """
-        Return False while number of measurements less than max_tasks_per_configuration.
+        Return max_tasks_per_configuration to measure default Configuration or 0.
         :param current_configuration: instance of Configuration class.
         :param experiment: instance of 'experiment' is required for model-awareness.
-        :return: True or False
+        :return: max_tasks_per_configuration or 0
         """
 
         if len(current_configuration.get_tasks()) < self.max_tasks_per_configuration:
-            # TODO: Predict number of tasks
-            # return abs(self.max_tasks_per_configuraiton - len(configuration_results))
-            return False
+            return self.max_tasks_per_configuration - len(current_configuration.get_tasks())
         else:
-            return True
+            return 0
