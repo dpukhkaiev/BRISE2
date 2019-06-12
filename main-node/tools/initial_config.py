@@ -66,7 +66,7 @@ def initialize_config(argv):
     sub = API()
 
     experiment_description_path = argv[1] if len(argv) > 1 else './Resources/EnergyExperiment.json'
-    taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
+    taskPath = argv[1] if len(argv) > 1 else './Resources/EnergyExperiment.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
     experiment_schema_path = './Resources/schema/experiment.schema.json'  # validation for experiment.json in `taskPath`
 

@@ -21,6 +21,15 @@ class Splitter:
         except EnvironmentError as e:
             self.logger.error("Error in splitter: %s" % e, exc_info=True)
 
+    @staticmethod
+    def __str_to_bool(string):
+        if string.lower() in ("true"):
+            return True
+        elif string.lower() in ("false"):
+            return False
+        else:
+            raise ValueError("String \"%s\" is not equal to \"True\" or \"False\"" % string)
+
     def split(self, param):
         del self.new_data[:] 
         for d in self.data:
@@ -39,7 +48,29 @@ class Splitter:
             'frequency': self.new_data[0]["FR"], 
             'energy': self.new_data[0]["EN"], 
             'time': self.new_data[0]["TIM"]
-        } if self.new_data else {"worker": "Error! Incorect worker config"}
+        } if self.new_data else {"splitter": "Error! Incorrect incoming data"}
+
+    def searchNB(self, LC, EM, BwS, Bw, MBw, NoK, UAG, AGS):
+        del self.new_data[:]
+        if self.data:
+            for i in self.data:
+                if self.__str_to_bool(i['laplace_correction']) == self.__str_to_bool(LC) and \
+                        i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and \
+                        float(i['bandwidth']) == float(Bw) and \
+                        float(i['minimum_bandwidth']) == float(MBw) and \
+                        i['number_of_kernels'] == NoK and \
+                        self.__str_to_bool(i['use_application_grid']) == self.__str_to_bool(UAG) and \
+                        i['application_grid_size'] == AGS:
+                    self.new_data.append(i)
+        if self.new_data == []:
+            self.new_data.append({})
+            self.new_data[0]["PREC_AT_99_REC"] = (str(0.2435))
+            return {
+                'PREC_AT_99_REC': str(0.2435)
+            }
+        return {
+            'PREC_AT_99_REC': self.new_data[0]["PREC_AT_99_REC"]
+        } if self.new_data else {"splitter": "Error! Incorrect incoming data"}
 
     def make_csv(self, name, data_type):
         csv_name = "tmp/" + name[:-4] + "_" + data_type + ".csv"

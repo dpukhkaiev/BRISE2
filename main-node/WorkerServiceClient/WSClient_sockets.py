@@ -99,7 +99,7 @@ class WSClient():
             else:
                 self.current_results.append(results)
 
-    def __perform_cleanup(self):
+    def _perform_cleanup(self):
         self.cur_tasks_ids = []
         self.current_results = []
 
@@ -171,7 +171,7 @@ class WSClient():
         specified in the experiments_configuration["TaskParameters"], next all values will be casted to data types,
         specified in the experiments_configuration["ResultDataTypes"].
         """
-        self.__perform_cleanup()
+        self._perform_cleanup()
         self._send_task(task)
 
         #   Start waiting for result.

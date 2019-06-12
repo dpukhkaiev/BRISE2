@@ -19,6 +19,14 @@ class Splitter:
         except EnvironmentError:
             None
 
+    @staticmethod
+    def __str_to_bool(string):
+        if string.lower() in ("true"):
+            return True
+        elif string.lower() in ("false"):
+            return False
+        else:
+            raise ValueError("String \"%s\" is not equal to \"True\" or \"False\"" % string)
 
     def split(self, param):
         del self.new_data[:] 
@@ -38,13 +46,19 @@ class Splitter:
             'frequency': self.new_data[0]["FR"], 
             'energy': self.new_data[0]["EN"], 
             'time': self.new_data[0]["TIM"]
-        } if self.new_data else {"worker": "Error! Incorect worker config"}
+        } if self.new_data else {"worker": "Error! Incorrect worker config"}
 
     def searchNB(self, LC, EM, BwS, Bw, MBw, NoK, UAG, AGS):
         del self.new_data[:]
         if self.data:
             for i in self.data:
-                if bool(i['laplace_correction']) == bool(LC) and i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and float(i['bandwidth']) == float(Bw) and float(i['minimum_bandwidth']) == float(MBw) and i['number_of_kernels'] == NoK and bool(i['use_application_grid']) == bool(UAG) and i['application_grid_size'] == AGS:
+                if self.__str_to_bool(i['laplace_correction']) == self.__str_to_bool(LC) and \
+                        i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and \
+                        float(i['bandwidth']) == float(Bw) and \
+                        float(i['minimum_bandwidth']) == float(MBw) and \
+                        i['number_of_kernels'] == NoK and \
+                        self.__str_to_bool(i['use_application_grid']) == self.__str_to_bool(UAG) and \
+                        i['application_grid_size'] == AGS:
                     self.new_data.append(i)
         if self.new_data == []: 
             self.new_data.append({})
@@ -54,8 +68,7 @@ class Splitter:
             } 
         return {
             'PREC_AT_99_REC': self.new_data[0]["PREC_AT_99_REC"]
-        } if self.new_data else {"worker": "Error! Incorect worker config"}
-                
+        } if self.new_data else {"worker": "Error! Incorrect worker config"}
 
     def make_csv(self, name, data_type):
         csv_name = "tmp/" + name[:-4] + "_" + data_type + ".csv"
