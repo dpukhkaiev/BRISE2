@@ -33,9 +33,22 @@
   "ModelConfiguration":{
     "ModelType"         : "BO"
   },
-  "StopCondition": {
-    "adaptive": {
-      "SearchSpacePercentageWithoutImprovement": 1
-     }
-  }
+  "StopCondition":[
+    {
+      "Type": "Default",
+      "Parameters": {
+        "MaxConfigs": 15
+      }
+    },
+    {
+      "Type": "ImprovementBased",
+      "Parameters": {
+        "MaxConfigsWithoutImprovement": 5
+      }
+    },
+    {
+      "Type": "Guaranteed",
+      "Parameters": {      }
+    }
+  ]
 }

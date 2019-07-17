@@ -146,14 +146,112 @@
         },
         "StopCondition": {
             "description": "Conditions for stopping an experiment.",
-            "anyOf": [{
-                    "$ref": "./stop_condition/schema/adaptive.schema.json#"
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": [ 
+                {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["Default"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxConfigs": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "MaxConfigs"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
                 },
                 {
-                    "$ref": "./stop_condition/schema/default.schema.json#"
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["ImprovementBased"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxConfigsWithoutImprovement": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "MaxConfigsWithoutImprovement"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
                 },
                 {
-                    "$ref": "./stop_condition/schema/impr.schema.json#"
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["Guaranteed"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{  },
+                            "additionalProperties": false
+                          }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["Adaptive"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "SearchSpacePercentage": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 100,
+                                    "exclusiveMinimum": true
+                                }
+                            },
+                            "required": [
+                                "SearchSpacePercentage"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
                 }
             ]
         }

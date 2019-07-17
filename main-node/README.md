@@ -1,30 +1,31 @@
 ## Main node.
 ###### This folder contains main BRISE logic for parameter balancing.
 
+#### Dependencies
 
-#### Dependencies 
-###### All dependencies will be installed during docker container building, for full list check [main node dockerfile](./Dockerfile).
-- Python 3.6, 
-- Python modules: 
-    - [NumPy](www.numpy.org)
-    - [SciPy](https://www.scipy.org/)
-    - [Scikit-learn](http://scikit-learn.org/)
-    - [Sobol Sequence](https://pypi.org/project/sobol_seq/)
-    - [Flask](http://flask.pocoo.org/docs/0.12/ "Flask")
-    - [Flask-Cors](https://pypi.org/project/Flask-Cors/)
-    - [Flask-SocketIO](https://pypi.org/project/Flask-SocketIO/) 
-    - [Requests](http://docs.python-requests.org/en/master/ "Requests")
-    - [Python-SocketIO](https://pypi.org/project/python-socketio/)
-    - [Eventlen](https://pypi.org/project/eventlet/)
+###### All dependencies will be installed during docker container building, for full list check [main node dockerfile](./Dockerfile)
+
+- Python 3.6,
+- Python modules:
+  - [NumPy](www.numpy.org)
+  - [SciPy](https://www.scipy.org/)
+  - [Scikit-learn](http://scikit-learn.org/)
+  - [Sobol Sequence](https://pypi.org/project/sobol_seq/)
+  - [Flask](http://flask.pocoo.org/docs/0.12/ "Flask")
+  - [Flask-Cors](https://pypi.org/project/Flask-Cors/)
+  - [Requests](http://docs.python-requests.org/en/master/ "Requests")
+  - [Python-SocketIO](https://pypi.org/project/python-socketio/)
+  - [Eventlen](https://pypi.org/project/eventlet/)
 - [Worker Service](../worker_service/README.md "Part of this project, performs task distribution and running. See worker_service readme for more details.")
 
 
-#### How to run 
+#### How to run
+
 Entry point - main.py Python 3 file.
 
 - Run BRISE with default configuration files ([task configuration](Resources/EnergyExperiment.json) and [global configuration](./GlobalConfig.json)):
 
-`python3 main.py` 
+`python3 main.py`
 
 - Run BRISE with specific task configuration file:
 

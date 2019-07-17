@@ -80,7 +80,6 @@ def initialize_config(argv):
     experiment_description = load_experiment_description(experiment_description_path)
 
     create_folder_if_not_exists(globalConfig['results_storage'])
-
     if is_experiment_description_valid(schema_path=experiment_schema_path, file_path=experiment_description_path):
         logger.info("Experiment file %s is valid." % experiment_description_path)
         return globalConfig, experiment_description

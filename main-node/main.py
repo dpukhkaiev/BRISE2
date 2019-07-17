@@ -15,7 +15,7 @@ from tools.write_results import write_results
 from tools.front_API import API
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
-from stop_condition.stop_condition_selection import get_stop_condition
+from stop_condition.stop_condition_selector import get_stop_condition
 
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
@@ -97,7 +97,7 @@ def run():
     # 4. Evaluation of Stop Condition, afterwards - terminating or going to 5.
     # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
 
-    stop_condition = get_stop_condition(experiment=experiment)
+    stop_condition = get_stop_condition(experiment)
 
     finish = False
     cur_stats_message = "-- New Configuration(s) was(were) measured. Currently were evaluated %s of %s Configurations. " \
@@ -108,52 +108,36 @@ def run():
         number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration() \
                     if experiment.get_number_of_configurations_per_iteration() \
                         else repeater.worker_service_client.get_number_of_workers()
-        if model_built:
-            # TODO: move behavior for 'else' here (out of models)?
-            if model.validate_model():
-                # TODO: Need to agree on return structure (nested or not).
-                predicted_configurations = model.predict_next_configurations(number_of_configurations_in_iteration)
-                selector.disable_configurations(predicted_configurations)
-                temp_msg = "Predicted following Configuration->Quality pairs: %s" \
-                           % list((str(c.get_parameters()) + "->" + str(c.predicted_result) for c in predicted_configurations))
-                logger.info(temp_msg)
-                sub.send('log', 'info', message=temp_msg)
-                repeater.measure_configurations(predicted_configurations, experiment=experiment)
-                experiment.add_configurations(predicted_configurations)
-                finish = stop_condition.validate_solution_candidates(solution_candidates_configurations=predicted_configurations,
-                                                          current_best_configurations=experiment.current_best_configurations)
-                if finish:
-                    sub.send('log', 'info', message="Solution validation success!")
-                    optimal_configuration = experiment.get_final_report_and_result(repeater)
-                    # TODO: Store global_config im Experiment?
-                    write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
-                    return optimal_configuration
-                else:
-                    temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space),
-                                                    str(selector.numOfGeneratedPoints))
-                    logger.info(temp_msg)
-                    sub.send('log', 'info', message=temp_msg)
-                    continue
-        configs_from_selector = [Configuration(selector.get_next_configuration()) for _ in
-                                 range(number_of_configurations_in_iteration)]
+        stop_condition.update_number_of_configurations_in_iteration(number_of_configurations_in_iteration)
 
-        repeater.measure_configurations(configs_from_selector, experiment=experiment)
-        experiment.add_configurations(configs_from_selector)
-
-        # If BRISE cannot finish his work properly - terminate it.
-        if len(experiment.all_configurations) >= len(experiment.search_space):
-            # TODO: @Zhenya, Is it possible to replace this 'if' with following comment?
-            #  finish = stop_condition.validate_solution_candidates(solution_candidate_configurations=configs_from_selector,
-            #         current_best_configurations=experiment.current_best_configurations)
-            logger.info("Unable to finish normally, terminating with best of measured results.")
+        if model_built and model.validate_model():
+            predicted_configurations = model.predict_next_configurations(number_of_configurations_in_iteration)
+            temp_msg = "Predicted following Configuration->Quality pairs: %s" \
+                       % list((str(c.get_parameters()) + "->" + str(c.predicted_result) for c in predicted_configurations))
+            logger.info(temp_msg)
+            sub.send('log', 'info', message=temp_msg)
+            repeater.measure_configurations(predicted_configurations, experiment=experiment)
+            experiment.add_configurations(predicted_configurations)
+            selector.disable_configurations(predicted_configurations)
+        else:
+            configs_from_selector = [Configuration(selector.get_next_configuration()) for _ in
+                                     range(number_of_configurations_in_iteration)]
+    
+            repeater.measure_configurations(configs_from_selector, experiment=experiment)
+            experiment.add_configurations(configs_from_selector)
+            
+        finish = stop_condition.validate_conditions()
+        if finish:
             optimal_configuration = experiment.get_final_report_and_result(repeater)
+            # TODO: Store global_config im Experiment?
             write_results(global_config=global_config, experiment_current_status=experiment.get_current_status())
             return optimal_configuration
-
-        temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space), str(selector.numOfGeneratedPoints))
-        logger.info(temp_msg)
-        sub.send('log', 'info', message=temp_msg)
-
+        else:
+            temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space),
+                                            str(selector.numOfGeneratedPoints))
+            logger.info(temp_msg)
+            sub.send('log', 'info', message=temp_msg)
+            continue
 
 if __name__ == "__main__":
     run()

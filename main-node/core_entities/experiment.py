@@ -1,6 +1,5 @@
 import datetime
 import pickle
-import copy
 import random
 import string
 import csv
@@ -64,7 +63,7 @@ class Experiment:
                               results=[default_configuration.get_average_result()])
                 if default_configuration not in self.all_configurations:
                     self.all_configurations.append(default_configuration)
-                    self.current_best_configurations = self._calculate_current_best_configurations()
+                    self._calculate_current_best_configurations()
             else:
                 raise ValueError("The default Configuration was registered already.")
 
@@ -110,13 +109,12 @@ class Experiment:
     def get_final_report_and_result(self, repeater):
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
         # a point, that has less value, than the predicted point - report this point instead of predicted point.
-
         self.logger.info("\n\nFinal report:")
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
         for configuration in self.all_configurations:
             self.logger.info(configuration)
-        self.logger.info("Number of measured points: %s" % len(self.all_configurations))
+        self.logger.info("Number of measured configurations: %s" % len(self.all_configurations))
         self.logger.info("Number of performed measurements: %s" % repeater.performed_measurements)
         self.logger.info("Best found: %s" % self.get_current_solution())
 
@@ -151,9 +149,13 @@ class Experiment:
         return current_status
 
     def get_current_solution(self):
-        self.current_best_configurations = self._calculate_current_best_configurations()
+        self._calculate_current_best_configurations()
         return self.current_best_configurations[0]
 
+    def get_current_best_configurations(self):
+        self._calculate_current_best_configurations()
+        return self.current_best_configurations
+        
     def _is_valid_configuration_instance(self, configuration_instance):
         if isinstance(configuration_instance, Configuration):
             return True
@@ -168,12 +170,12 @@ class Experiment:
             if configuration.is_better_configuration(self.is_minimization(),
                                                      best_configuration[0]):
                 best_configuration = [configuration]
-        return best_configuration
+        self.current_best_configurations = best_configuration
 
     def _add_configuration_to_experiment(self, configuration: Configuration) -> None:
         """
         Save configuration after passing all checks.
-        This method also sends an update to API (front-end), calculates current best Configuration.
+        This method also sends an update to API (front-end).
         :param configuration: Configuration object.
         :return: None
         """
@@ -182,9 +184,6 @@ class Experiment:
                       configurations=[configuration.get_parameters()],
                       results=[configuration.get_average_result()])
         self.logger.info("Adding to Experiment: %s" % configuration)
-        self.current_best_configurations = self._calculate_current_best_configurations()
-        if self.get_current_solution() == configuration:
-            self.logger.info("New solution found: %s" % configuration)
 
     def is_minimization(self):
         return self.description["General"]["isMinimizationExperiment"]
@@ -201,6 +200,7 @@ class Experiment:
     def dump(self):
         """ save instance of experiment class
         """
+        # TODO: minimum requirements for dumping instance
         # generate file name
         chars = string.ascii_lowercase + string.digits
         rand_str = ''.join(random.choice(chars) for _ in range(6))
@@ -212,20 +212,22 @@ class Experiment:
 
         create_folder_if_not_exists('Results/serialized/')
         file_path = 'Results/serialized/{}.pkl'.format(self.name)
-
-        # copy and delete unnecessary information
         self.end_time = datetime.datetime.now()
-
 
         # write pickl
         with open(file_path, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
             self.logger.info("Saved experiment instance. Path: %s" % file_path)
-
+        
         # write csv
         self.write_csv()
 
     def write_csv(self, path='Results/serialized/'):
+        """save .csv file with main metrics of the experiment
+        
+        Args:
+            final (bool, optional): Is the Experiment finished?. Defaults to False.
+        """
 
         search_space = 1
         for dim in self.description['DomainDescription']['AllConfigurations']:
@@ -248,16 +250,15 @@ class Experiment:
         })
 
         file_path = '{0}{1}.csv'.format(path, self.name)
+
         keys = list(data.keys())
         values = list(data.values())
-
 
         with open(file_path, 'a') as csvFile:
             writer = csv.writer(csvFile)
             writer.writerow(keys)
             writer.writerow(values)
             self.logger.info("Saved csv file. Path: %s" % file_path)
-
 
     def get_name(self):
         return self.name
@@ -286,3 +287,15 @@ class Experiment:
                 if 'result' in task:
                     all_tasks.append(task['result'][result_key])
         return all_tasks
+
+    def get_number_of_measured_configurations(self):
+        return len(self.all_configurations)
+
+    def get_search_space_size(self):
+        return len(self.search_space)
+
+    def get_stop_condition_parameters(self):
+        return self.description["StopCondition"]
+    
+    def get_selection_algorithm_parameters(self):
+        return self.description["SelectionAlgorithm"]
