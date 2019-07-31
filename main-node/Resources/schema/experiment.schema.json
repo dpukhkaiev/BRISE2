@@ -147,11 +147,12 @@
         "StopCondition": {
             "description": "Conditions for stopping an experiment.",
             "type": "array",
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 4,
             "uniqueItems": true,
-            "items": [ 
-                {
+            "items": {
+                "oneOf" : [ 
+                    {
                     "type": "object",
                     "properties": {
                         "Type": {
@@ -177,8 +178,8 @@
                         "Parameters"
                     ],
                     "additionalProperties": false
-                },
-                {
+                    },
+                    {
                     "type": "object",
                     "properties": {
                         "Type": {
@@ -204,8 +205,8 @@
                         "Parameters"
                     ],
                     "additionalProperties": false
-                },
-                {
+                    },
+                    {
                     "type": "object",
                     "properties": {
                         "Type": {
@@ -223,8 +224,8 @@
                         "Parameters"
                     ],
                     "additionalProperties": false
-                },
-                {
+                    },
+                    {
                     "type": "object",
                     "properties": {
                         "Type": {
@@ -252,8 +253,9 @@
                         "Parameters"
                     ],
                     "additionalProperties": false
-                }
-            ]
+                    }
+                ]
+            }
         }
     },
     "required": [
