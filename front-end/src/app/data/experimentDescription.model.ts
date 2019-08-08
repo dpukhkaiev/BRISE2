@@ -19,7 +19,7 @@ interface TaskConfiguration {
     ResultStructure: Array<String>
     TaskName: String
     TaskParameters: Array<String>
-    WorkerConfiguration
+    Scenario
 }
 interface ModelCreation {
     MinimumAccuracy: number

@@ -1,4 +1,5 @@
 import csv
+import logging
 
 class Splitter:
     data = []
@@ -10,14 +11,15 @@ class Splitter:
                                           '16': "16",'17': "17",'18': "18",'19': "19",'20': "20",'21': "21",'22': "22", 'sort':"sort", 'encrypt':"encrypt", 'decrypt':"decrypt"}
 
     def __init__(self, file_name):
+        self.logger = logging.getLogger(__name__)
         del self.data[:]
         try:
             with open(file_name, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
                 for row in reader: 
                     self.data.append(row)
-        except EnvironmentError:
-            None
+        except EnvironmentError as error:
+            self.logger.error("ERROR in Splitter initialization: %s" % error)
 
     @staticmethod
     def __str_to_bool(string):
@@ -26,6 +28,7 @@ class Splitter:
         elif string.lower() in ("false"):
             return False
         else:
+            self.logger.error("String \"%s\" is not equal to \"True\" or \"False\"" % string)
             raise ValueError("String \"%s\" is not equal to \"True\" or \"False\"" % string)
 
     def split(self, param):
@@ -70,6 +73,26 @@ class Splitter:
             'PREC_AT_99_REC': self.new_data[0]["PREC_AT_99_REC"]
         } if self.new_data else {"worker": "Error! Incorrect worker config"}
 
+    def searchGA(self, file_name):
+        del self.new_data[:]
+        try:
+            with open(file_name, 'r') as csv_file:
+                reader = csv.DictReader(csv_file)
+                last_row = None
+                for row in reader:
+                    last_row = row
+                # selected only last row
+                self.new_data.append(last_row)
+            return {
+                'Solved': self.new_data[0]["Solved"],
+                'energy': self.new_data[0]["Obj"],
+                'Validity': self.new_data[0]["Validity"],
+                'Valid': self.new_data[0]["Valid"],
+                'TimeOut': self.new_data[0]["TimeOut"]
+            } if self.new_data else {"worker": "Error! Incorect worker config"}
+        except EnvironmentError:
+            self.logger.error("ERROR occurred in `searchGA` method")
+
     def make_csv(self, name, data_type):
         csv_name = "tmp/" + name[:-4] + "_" + data_type + ".csv"
         with open(csv_name, 'wb') as result:
@@ -79,3 +102,4 @@ class Splitter:
             for d in self.data:
                 writer.writerow(d)
         return csv_name
+\

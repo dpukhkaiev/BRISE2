@@ -28,7 +28,7 @@ def run():
     if __name__ == "__main__":
         logger = BRISELogConfigurator().get_logger(__name__)
     else:
-        logger = logging.getLogger(__name__) 
+        logger = logging.getLogger(__name__)
     logger.info("Starting BRISE")
     sub.send('log', 'info', message="Starting BRISE")
     # argv is a run parameters for main - using for configuration
@@ -45,17 +45,16 @@ def run():
 
     # Instantiate client for Worker Service, establish connection.
     # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
-    # (task.json)
+    # (ExperimentDescription.json)
 
     worker_service_client = WSClient(experiment.description["TaskConfiguration"], global_config["WorkerService"]["Address"],
                                      logfile='%s%s_WSClient.csv' % (global_config['results_storage'],
-                                                                    experiment.description["TaskConfiguration"]
-                                                                    ["WorkerConfiguration"]["ws_file"]))
+                                                                    experiment.get_name()))
 
     # Creating runner for experiments that will repeat the configuration measurement to avoid fluctuations.
     repeater = Repeater(worker_service_client, experiment)
 
-    temp_msg = "Measuring default configuration that we will used in regression to evaluate solution."
+    temp_msg = "Measuring default configuration that we will used in %s to evaluate solution." % experiment.description["ModelConfiguration"]["ModelType"]
     # TODO: Logging messages to the API could be sent from the logger.
     logger.info(temp_msg)
     sub.send('log', 'info', message=temp_msg)
@@ -80,14 +79,14 @@ def run():
     repeater.set_type(experiment.description["Repeater"]["Type"])
     repeater.measure_configurations(initial_configurations, experiment=experiment)
     experiment.add_configurations(initial_configurations)
-    
+
     logger.info("Results got. Building model..")
     sub.send('log', 'info', message="Results got. Building model..")
 
     # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
     model = get_model(experiment=experiment,
                       log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
-                                                          experiment.description["TaskConfiguration"]["WorkerConfiguration"]["ws_file"],
+                                                          experiment.get_name(),
                                                           experiment.description["ModelConfiguration"]["ModelType"]))
 
     # The main effort does here.

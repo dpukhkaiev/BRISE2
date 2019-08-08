@@ -40,8 +40,8 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
     module_path = '%s.%s' % (folder_path.replace("./", "").replace("/", "."), selected_module_file_name[0][:-3])
     try:
         found_module = importlib.import_module(module_path)
-    except ImportError as e:
-        msg = "Unable to import module %s. Following exception occurred: %s" % (module_path, e)
+    except ImportError as error:
+        msg = "Unable to import module %s. Following exception occurred: %s" % (module_path, error)
         logger.error(msg)
         raise ImportError(msg)
 

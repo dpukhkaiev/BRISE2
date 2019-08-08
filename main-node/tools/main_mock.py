@@ -31,8 +31,8 @@ def run(io=None):
     try:
         with open("./tools/main_mock_data.pkl", 'rb') as f:
             mock_data = pickle.loads(f.read())
-    except IOError or pickle.UnpicklingError as e:
-        logger.error("Unable to load saved MOCK data: %s" % e, exc_info=True)
+    except IOError or pickle.UnpicklingError as error:
+        logger.error("Unable to load saved MOCK data: %s" % error, exc_info=True)
         exit(1)
 
     sleep_between_messages = 0  # In seconds. One second + ~25 seconds to overall running for current version of mock.

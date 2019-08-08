@@ -2,10 +2,12 @@ __doc__ = """
     Module to read config and tasks for execute."""
 import json
 import logging
+import zlib
 
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
-from tools.json_validator import is_experiment_description_valid
 from tools.front_API import API
+from tools.json_validator import is_json_file_valid
+
 
 def read_global_config(global_config_path):
     """
@@ -19,19 +21,19 @@ def read_global_config(global_config_path):
         config = load_json_file(global_config_path)
         return config
 
-    except IOError as e:
-        logger.error('No config file found: %s' % e, exc_info=True)
-        sub.send('log', 'error', message='No config file found: %s' % e)
-        raise e
-    except ValueError as e:
-        logger.error('Invalid configuration file: %s' % e, exc_info=True)
-        sub.send('log', 'error', message='Invalid configuration file: %s' % e)
-        raise e
+    except IOError as error:
+        logger.error('No config file found: %s' % error, exc_info=True)
+        sub.send('log', 'error', message='No config file found: %s' % error)
+        raise error
+    except ValueError as error:
+        logger.error('Invalid configuration file: %s' % error, exc_info=True)
+        sub.send('log', 'error', message='Invalid configuration file: %s' % error)
+        raise error
 
 
 def load_experiment_description(path_to_file):
     """
-    Method reads task configuration from task.json file.
+    Method reads experiment description from ExperimentDescription.json file.
     :param path_to_file: sting path to task file.
     :return: dict with task parameters and task data.
     """
@@ -41,19 +43,19 @@ def load_experiment_description(path_to_file):
     try:
         experiment_description = load_json_file(path_to_file)
         data = load_json_file(experiment_description["DomainDescription"]["DataFile"])
-        all_configurations = []
+        experiment_data_configurations = []
         # TODO the dimensions validation in the task data file
         for dimension in experiment_description["DomainDescription"]["FeatureNames"]:
-            all_configurations.append(data[dimension])
-        experiment_description["DomainDescription"]["AllConfigurations"] = all_configurations
-    except IOError as e:
-        logger.error('Error with reading task.json file: %s' % e, exc_info=True)
-        sub.send('log', 'error', message='Error with reading task.json file: %s' % e)
-        raise e
-    except json.JSONDecodeError as e:
-        logger.error('Error with decoding task: %s' % e, exc_info=True)
-        sub.send('log', 'error', message='Error with decoding task: %s' % e)
-        raise e
+            experiment_data_configurations.append(data[dimension])
+        experiment_description["DomainDescription"]["AllConfigurations"] = experiment_data_configurations
+    except IOError as error:
+        logger.error('Error with reading ExperimentDescription.json file: %s' % error, exc_info=True)
+        sub.send('log', 'error', message='Error with reading task.json file: %s' % error)
+        raise error
+    except json.JSONDecodeError as error:
+        logger.error('Error with decoding experiment description: %s' % error, exc_info=True)
+        sub.send('log', 'error', message='Error with decoding task: %s' % error)
+        raise error
     return experiment_description
 
 
@@ -66,27 +68,26 @@ def initialize_config(argv):
     sub = API()
 
     experiment_description_path = argv[1] if len(argv) > 1 else './Resources/EnergyExperiment.json'
-    taskPath = argv[1] if len(argv) > 1 else './Resources/EnergyExperiment.json'
     global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
     experiment_schema_path = './Resources/schema/experiment.schema.json'  # validation for experiment.json in `taskPath`
 
     logger.info("Global BRISE configuration file: %s, task description file path: %s"
                 % (experiment_description_path, global_config_path))
-    #   Reading config file
-    globalConfig = read_global_config(global_config_path)
+    #   Reading global config file
+    global_config = read_global_config(global_config_path)
 
-    #   Loading task config and creating config points distribution according to Sobol.
-    # {"task_name": String, "params": Dict, "taskDataPoints": List of points }
+    #   Loading experiment description file
     experiment_description = load_experiment_description(experiment_description_path)
 
-    create_folder_if_not_exists(globalConfig['results_storage'])
-    if is_experiment_description_valid(schema_path=experiment_schema_path, file_path=experiment_description_path):
-        logger.info("Experiment file %s is valid." % experiment_description_path)
-        return globalConfig, experiment_description
+    create_folder_if_not_exists(global_config['results_storage'])
+
+    if is_json_file_valid(schema_path=experiment_schema_path, file_path=experiment_description_path):
+        logger.info("Experiment description file %s is valid." % experiment_description_path)
+        return global_config, experiment_description
     else:
-        logger.error("Experiment file %s have not passed the validation." % experiment_description_path)
-        sub.send('log', 'error', message=" Task file %s is NOT valid" % taskPath)
-        raise ValueError(" Task file %s is NOT valid" % taskPath)
+        logger.error("Experiment description file %s have not passed the validation." % experiment_description_path)
+        sub.send('log', 'error', message="Experiment description file %s is NOT valid" % experiment_description_path)
+        raise ValueError("Experiment description file %s is NOT valid" % experiment_description_path)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,9 @@ dist/
 jsconfig.json
 .vscode/
 
+#tests cache
+.pytest_cache
+
 # Typings file.
 typings/
 

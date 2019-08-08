@@ -2,10 +2,11 @@ from tools.file_system_io import load_json_file, create_folder_if_not_exists
 import pytest
 
 
+
 DATA_FOR_JSON_FILE = {
     "DomainDescription": {
         "FeatureNames": ["frequency", "threads"],
-        "DataFile": "./Resources/taskData.json",
+        "DataFile": "./Resources/GA/GAExperimentData.json",
         "AllConfigurations": "# Will be loaded from DataFile and overwritten",
         "DefaultConfiguration": [2900.0, 32]
 
@@ -30,12 +31,11 @@ DATA_FOR_JSON_FILE = {
     }
 }
 
-
 def test_(tmpdir):
     with pytest.raises(IOError):
-        load_json_file(path_to_file='task.json')
+        load_json_file(path_to_file='GAExperimentDescription.json')
 
-    file_path = tmpdir.join('task.json')
+    file_path = tmpdir.join('GAExperimentDescription.json')
     file_path.write(DATA_FOR_JSON_FILE)
 
     # TODO - JSONDecodeError

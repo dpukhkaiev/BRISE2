@@ -16,7 +16,7 @@
   },
   "TaskConfiguration":{
     "TaskName"          : "taskNB",
-    "WorkerConfiguration":{
+    "Scenario":{
       "ws_file": "taskNB1.csv"
     },
     "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],

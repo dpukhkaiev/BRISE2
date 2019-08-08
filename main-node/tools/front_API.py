@@ -65,8 +65,8 @@ class API(metaclass=Singleton):
                                          {message_subtype.lower(): APIMessageBuilder.build(message_type.upper(),
                                                                                            **key_value_params)})
 
-        except AssertionError as err:
-            self.logger.error(err)
+        except AssertionError as error:
+            self.logger.error(error)
 
 
 class APIMessageBuilder:
@@ -136,9 +136,9 @@ class APIMessageBuilder:
             # Verify that length of all parameters are the same.
             assert all(len(kwargs[key]) == len(kwargs["configurations"]) for key in kwargs.keys()), \
                 "Different sizes of provided parameters!\n%s" % str(kwargs)
-        except AssertionError as err:
-            getLogger(__name__).error(err)
-            raise KeyError("Invalid parameters passed to send message via API: %s" % err)
+        except AssertionError as error:
+            getLogger(__name__).error(error)
+            raise KeyError("Invalid parameters passed to send message via API: %s" % error)
 
         message = []
 
@@ -165,8 +165,8 @@ class APIMessageBuilder:
         try:
             assert "global_config" in kwargs.keys(), "The global configuration is not provided!"
             assert "experiment_description" in kwargs.keys(), "The experiment description is not provided!"
-        except AssertionError as err:
-            getLogger(__name__).error(err)
+        except AssertionError as error:
+            getLogger(__name__).error(error)
 
         return {
             "global configuration": kwargs["global_config"],

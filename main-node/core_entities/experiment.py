@@ -1,10 +1,12 @@
 import datetime
 import pickle
+import hashlib
 import random
 import string
 import csv
 import os
 import itertools
+import json
 
 import logging
 from typing import List
@@ -36,21 +38,27 @@ class Experiment:
         self.description = description
         self.search_space = []
         self.start_time = datetime.datetime.now()
-        self.name = 'None'
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
+        # A unique ID that is used to differentiate an Experiments by descriptions.
+        self.id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
+
+        self.name = "exp_{task_name}_{experiment_hash}".format(
+            task_name=self.description["TaskConfiguration"]["TaskName"],
+            experiment_hash=self.id)
+
         self.current_best_configurations = []
-        
+
         self.__generate_search_space()
 
     def __getstate__(self):
         space = self.__dict__.copy()
         del space['api']
-        del space['logger']         
+        del space['logger']
         return space
 
     def __setstate__(self, space):
-        self.__dict__ = space 
+        self.__dict__ = space
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
@@ -126,7 +134,7 @@ class Experiment:
                       results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])
-        self.dump() # pickle instance
+        self.dump()  # pickle instance
 
         return self.current_best_configurations
 
@@ -138,6 +146,7 @@ class Experiment:
             labels.append(config.get_average_result())
 
         current_status = {
+            "name": self.name,
             "features": features,
             "labels": labels,
             "search_space": self.search_space,
@@ -155,7 +164,7 @@ class Experiment:
     def get_current_best_configurations(self):
         self._calculate_current_best_configurations()
         return self.current_best_configurations
-        
+
     def _is_valid_configuration_instance(self, configuration_instance):
         if isinstance(configuration_instance, Configuration):
             return True
@@ -193,9 +202,10 @@ class Experiment:
             return self.description["General"]["ConfigurationsPerIteration"]
         else:
             return 0
-            
+
     def __generate_search_space(self):
-        self.search_space = [list(configuration) for configuration in itertools.product(*self.description["DomainDescription"]["AllConfigurations"])] 
+        self.search_space = [list(configuration) for configuration in
+                             itertools.product(*self.description["DomainDescription"]["AllConfigurations"])]
 
     def dump(self):
         """ save instance of experiment class
@@ -206,8 +216,6 @@ class Experiment:
         rand_str = ''.join(random.choice(chars) for _ in range(6))
         param = str(self.get_current_solution().get_parameters())
         model = self.description['ModelConfiguration']['ModelType']
-        self.name = "exp_{0}_#p{1}_{2}.{3}".format(
-            model, len(self.all_configurations), param, rand_str)
         os.environ["EXP_DUMP_NAME"] = self.name
 
         create_folder_if_not_exists('Results/serialized/')
@@ -218,7 +226,7 @@ class Experiment:
         with open(file_path, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
             self.logger.info("Saved experiment instance. Path: %s" % file_path)
-        
+
         # write csv
         self.write_csv()
 
@@ -243,7 +251,7 @@ class Experiment:
             'solution result': self.get_current_solution().get_average_result()[0],
             'result improvement': str(round(self.get_solution_relative_impr(), 1)) + '%',
             'number of measured configurations': len(self.all_configurations),
-            'search space coverage': str(round((len(self.all_configurations)/search_space)*100)) + '%',
+            'search space coverage': str(round((len(self.all_configurations) / search_space) * 100)) + '%',
             'number of repetitions': len(self.get_all_repetition_tasks()),
             'execution time': (self.end_time - self.start_time).seconds,
             'repeater': self.description['Repeater']['Type']
@@ -271,7 +279,7 @@ class Experiment:
         """
         default_avg_result = self.default_configuration.get_average_result()[0]
         solution_avg_result = self.get_current_solution().get_average_result()[0]
-        return (default_avg_result - solution_avg_result)/default_avg_result*100
+        return (default_avg_result - solution_avg_result) / default_avg_result * 100
 
     def get_all_repetition_tasks(self):
         """ List of results for all tasks that were received on workers
@@ -296,6 +304,6 @@ class Experiment:
 
     def get_stop_condition_parameters(self):
         return self.description["StopCondition"]
-    
+
     def get_selection_algorithm_parameters(self):
         return self.description["SelectionAlgorithm"]

@@ -26,7 +26,7 @@ ___
         "threads": "1",
         "frequency": "2901.0"
     },
-    "worker_config": {
+    "Scenario": {
         "ws_file": "Radix-1000mio_avg.csv"
     }
 },
@@ -36,7 +36,7 @@ ___
         "threads": "4",
         "frequency": "1900.0"
     },
-    "worker_config": {
+    "Scenario": {
         "ws_file": "Radix-1000mio_avg.csv"
     }
 
@@ -46,7 +46,7 @@ ___
 ##### Variant 2 
 ```json
 {
-  "worker_config": {
+  "Scenario": {
     "ws_file": "Radix-1000mio_avg.csv"
   },
   "params_names": ["frequency", "threads"],

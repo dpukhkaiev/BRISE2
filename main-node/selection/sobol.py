@@ -68,7 +68,6 @@ class SobolSequence(SelectionAlgorithm):
             Will return next data point from initiated Sobol sequence imposed to the search space.
         :return: list - point in current search space.
         """
-
         # Getting next point from sobol sequence.
         point = self.__generate_sobol_vector()
 

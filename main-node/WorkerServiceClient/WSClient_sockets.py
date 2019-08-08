@@ -27,11 +27,12 @@ class WSClient():
         self._task_parameters = task_configuration["TaskParameters"]
         self._result_structure = task_configuration["ResultStructure"]
         self._result_data_types = task_configuration["ResultDataTypes"]
-        self._worker_config = task_configuration["WorkerConfiguration"]
-        self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"]
+        self._scenario = task_configuration["Scenario"]
+        self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
         self._log_file_path = logfile
         self._connection_ok = False
         self._number_of_workers = 0
+
         # Properties that holds current task data.
         self.cur_tasks_ids = []
         self.current_results = []
@@ -44,12 +45,12 @@ class WSClient():
         self.socketIO.on("wrong_task_structure", self.__wrong_task_structure, namespace="/main_node")
         self.socketIO.on("task_results", self.__task_results, namespace="/main_node")
         self.connect()
-        
+
     ####################################################################################################################
     # Private methods that are reacting to the events FROM Worker Service Described below.
     # They cannot be accessed from outside of the class and manipulates task data stored inside object.
     #
-    
+
     def __connect(self):
         self.logger.info("Worker Service has been connected!")
 
@@ -67,13 +68,13 @@ class WSClient():
         self._connection_ok = True
         self.logger.info("Worker Service has {0} connected workers: {1}".format(len(args[0]), str(args[0])))
         self._number_of_workers = len(args[0])
-        
+
     def connect(self):
         # Verifying connection by sending "ping" event to Worker Service into main node namespace.
         # Waiting for response, if response is OK - proceed.
         self.socketIO.connect('http://'+ self.servername, namespaces= ['/main_node'])
         self.logger.debug("Sending 'ping' event to the Worker Service...")
-        
+
         self.socketIO.emit('ping', namespace='/main_node')
         while not self._connection_ok:
             self.socketIO.sleep(0.1)
@@ -112,13 +113,14 @@ class WSClient():
         for task_parameter in tasks_parameters:
             task_description = dict()
             task_description["task_name"] = self._task_name
-            task_description["worker_config"] = self._worker_config
+            task_description["scenario"] = self._scenario
             task_description["params"] = {}
             for index, parameter in enumerate(self._task_parameters):
                 task_description["params"][parameter] = str(task_parameter[index])
             tasks_to_send.append(task_description)
 
         self.socketIO.emit('add_tasks', tasks_to_send, '/main_node')  # response - task_accepted or wrong_task_structure
+        self.socketIO.sleep(0.2)    # wait to get back task IDs
 
     def _terminate_not_finished_tasks(self):
         termination_candidates = self.cur_tasks_ids
@@ -155,8 +157,8 @@ class WSClient():
                 writer = csv.writer(csvfile, delimiter=',')
                 for result in self._report_according_to_required_structure():
                     writer.writerow(result)
-        except Exception as e:
-            self.logger.error("Failed to write the results: %s" % e, exc_info=True)
+        except Exception as error:
+            self.logger.error("Failed to write the results: %s" % error, exc_info=True)
 
     ####################################################################################################################
     # Outgoing interface for running task(s)
@@ -207,7 +209,7 @@ if __name__ == "__main__":
     wsclient = 'w_service:49153'
     config = {
         "TaskName"          : "energy_consumption",
-        "WorkerConfiguration": {
+        "Scenario": {
             "ws_file": "Radix-500mio.csv"
         },
         "TaskParameters"   : ["frequency", "threads"],

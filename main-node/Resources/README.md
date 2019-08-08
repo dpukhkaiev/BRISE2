@@ -25,7 +25,7 @@ Possible values of configurations for your system should be provided in separate
 
 - `TaskConfiguration` - this section describes general configuration for Worker Service and your system during testing.
     - `TaskName` - `string`. The Worker nodes are able to run different experiments/tasks. This value identifies needed.
-    - `WorkerConfiguration` - `dict`. the experiments/tasks configuration that is static and is needed to be passed to Worker nodes each time.
+    - `Scenario` - `dict`. the experiments/tasks configuration that is static and is needed to be passed to Worker nodes each time.
     - `TaskParamenters` - `List of strings`. Configurations that the Worker nodes will use to run target system.
     - `ResultStructure` - `List of strings`. Configurations that the Worker nodes will report back to Main node. `TaskParameters` should be included. 
     - `ResultDataTypes` - `List of strings`. Should be a proper names of Python data types, used for casting data that arrives from Worker nodes (as strings).
@@ -84,7 +84,7 @@ Possible values of configurations for your system should be provided in separate
       },
       "TaskConfiguration":{
         "TaskName"          : "energy_consumption",
-        "WorkerConfiguration":{
+        "Scenario":{
           "ws_file": "Radix-500mio.csv"
         },
         "TaskParameters"   : ["frequency", "threads"],

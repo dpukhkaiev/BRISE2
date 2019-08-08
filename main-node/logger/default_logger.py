@@ -34,9 +34,9 @@ class BRISELogConfigurator:
         try:
             logging.config.dictConfig(dict_configuration)
             return True
-        except ValueError as e:
+        except ValueError as error:
             logging.error("Unable to configure the logging system!"
-                          "An error occurs: %s" % e, exc_info=True)
+                          "An error occurs: %s" % error, exc_info=True)
             logging.basicConfig(level=logging.DEBUG)
             return False
 
@@ -51,10 +51,10 @@ class BRISELogConfigurator:
         with open(file_path) as f:
             try:
                 config = yaml.safe_load(f.read())
-            except YAMLError or OSError as e:
+            except YAMLError or OSError as error:
                 config = {'version': 1}
                 logging.error("Unable to read the logging configuration file!"
-                              "An error occurs: %s" % e, exc_info=True)
+                              "An error occurs: %s" % error, exc_info=True)
                 logging.basicConfig(level=logging.DEBUG)
         return config
 

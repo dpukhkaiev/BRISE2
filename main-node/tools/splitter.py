@@ -18,8 +18,8 @@ class Splitter:
                 reader = csv.DictReader(csv_file)
                 for row in reader: 
                     self.data.append(row)
-        except EnvironmentError as e:
-            self.logger.error("Error in splitter: %s" % e, exc_info=True)
+        except EnvironmentError as error:
+            self.logger.error("Error in splitter: %s" % error, exc_info=True)
 
     @staticmethod
     def __str_to_bool(string):

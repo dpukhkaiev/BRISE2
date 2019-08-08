@@ -105,11 +105,11 @@ def download_dump(file_format):
             filename = "{name}.{format}".format(
                 name=dump_name, format=file_format)
             return send_from_directory('/root/Results/serialized/', filename, as_attachment=True)
-    except Exception as e:
-        logger.error('Download dump file of the experiment: %s' % e)
-        return str(e)
+    except Exception as error:
+        logger.error('Download dump file of the experiment: %s' % error)
+        return str(error)
 
-# ---------------------------- Events ------------ 
+# ---------------------------- Events ------------
 @socketIO.on('ping')
 def ping_pong(sid, json):
     logger.info(' Ping from: ' + str(sid))
@@ -117,7 +117,7 @@ def ping_pong(sid, json):
 
 # --------------
 # managing array with curent clients
-@socketIO.on('connect') 
+@socketIO.on('connect')
 def connected(sid, environ):
     clients.append(sid)
     return "main: OK"

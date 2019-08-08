@@ -78,13 +78,8 @@
                 "TaskName": {
                     "type": "string"
                 },
-                "WorkerConfiguration": {
-                    "type": "object",
-                    "properties": {
-                        "ws_file": {
-                            "type": "string"
-                        }
-                    }
+                "Scenario": {
+                    "type": "object"
                 },
                 "TaskParameters": {
                     "type": "array",
@@ -109,17 +104,17 @@
                     }]
                 },
                 "MaxTimeToRunTask": {
-                    "type": "integer",
-                    "minimum": 0
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
                 }
             },
             "required": [
                 "TaskName",
-                "WorkerConfiguration",
+                "Scenario",
                 "TaskParameters",
                 "ResultStructure",
-                "ResultDataTypes",
-                "MaxTimeToRunTask"
+                "ResultDataTypes"
             ]
         },
         "Repeater": {

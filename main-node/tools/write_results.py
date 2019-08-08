@@ -17,7 +17,7 @@ def write_results(global_config, experiment_current_status):
 
     # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
     file_path = "%sBRISE_Results_for_%s.txt" % (global_config["results_storage"],
-                                                experiment_current_status["experiment_description"]["TaskConfiguration"]["WorkerConfiguration"]["ws_file"])
+                                                experiment_current_status["name"])
     try:
         with open(file_path, 'a') as results_file:
             results_file.write("####: START results of BRISE run at %s. ####\n" % experiment_current_status["start_time"].strftime("%d.%m.%Y - %H:%M:%S"))
@@ -31,5 +31,5 @@ def write_results(global_config, experiment_current_status):
             results_file.write("BRISE optimal configuration         : %s\n" % experiment_current_status["current_best_configuration"].get_parameters())
             results_file.write("BRISE optimal configuration results : %s\n" % experiment_current_status["current_best_configuration"].get_average_result())
             results_file.write("####: END results of BRISE run.                 ####\n\n\n\n")
-    except IOError as e:
-        logger.error("ERROR: %s occurred when tried to write final report to file." % e, exc_info=True)
+    except IOError as error:
+        logger.error("ERROR: %s occurred when tried to write final report to file." % error, exc_info=True)

@@ -68,7 +68,7 @@ services:
     networks:
       - worker_net
     depends_on:
-      - "w_service"  
+      - "w_service"
 
 networks:
   worker_net:

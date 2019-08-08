@@ -4,7 +4,7 @@ from flask import Flask, jsonify
 import socketio
 
 from api.tasks_manager.workflow import Workflow, Task
-from api.tasks_manager.model import t_parser, t_parser_2
+from api.tasks_manager.model import task_parser
 from api.worker_manager.recruit import Recruit 
 
 # Logging
@@ -51,18 +51,18 @@ def create_app(script_info=None):
             socketIO.emit("ping_response", hr.workers, namespace='/main_node')
 
     @socketIO.on('add_tasks', namespace='/main_node')
-    def add_tasks_event(self, *tasks):
+    def add_tasks_event(self, tasks):
         if len(tasks) > 0:
-            print('Received new tasks: %s' % len(tasks[0]))
+            print('Received new tasks: %s' % len(tasks))
             try:
-                id_list, task_list = t_parser(tasks[0])
+                id_list, task_list = task_parser(tasks)
                 for item in task_list:
                     hr.new_task(item)
                 socketIO.emit('task_accepted', id_list, namespace='/main_node')
-            except Exception as e:
-                logging.error("ERROR '%s' in parsing received task, nothing will be added to task stack. " % e)
-                logging.error("Received task: " % tasks[0])
-                socketIO.emit("wrong_task_structure", tasks[0], namespace='/main_node')
+            except Exception as error:
+                logging.error("ERROR '%s' in parsing received task, nothing will be added to task stack. " % error)
+                logging.error("Received task: " % tasks)
+                socketIO.emit("wrong_task_structure", tasks, namespace='/main_node')
 
     @socketIO.on('terminate_tasks', namespace='/main_node')
     def terminate_tasks_event(self, ids):

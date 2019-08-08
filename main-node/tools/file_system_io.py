@@ -5,7 +5,7 @@ import logging
 from os import path, makedirs
 
 
-def load_json_file(path_to_file="./task.json"):
+def load_json_file(path_to_file):
     """
     Method reads .json file
     :param path_to_file: sting path to file.
@@ -16,12 +16,12 @@ def load_json_file(path_to_file="./task.json"):
         with open(path_to_file, 'r') as File:
             jsonFile = json.loads(File.read())
             return jsonFile
-    except IOError as e:
+    except IOError as error:
         logger.error("Error with reading %s file." % path_to_file, exc_info=True)
-        raise e
-    except json.JSONDecodeError as e:
+        raise error
+    except json.JSONDecodeError as error:
         logger.error("Error with decoding json file: %s" % path_to_file, exc_info=True)
-        raise e
+        raise error
 
 
 def create_folder_if_not_exists(folderPath):
@@ -37,6 +37,6 @@ def create_folder_if_not_exists(folderPath):
             if not path.exists(path.dirname(folderPath)):
                 makedirs(path.dirname(folderPath))
         return True
-    except IOError as e:
+    except IOError as error:
         logger.error("Unable to create folder: %s" % folderPath, exc_info=True)
-        raise e
+        raise error

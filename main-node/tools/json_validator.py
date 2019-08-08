@@ -16,8 +16,8 @@ from jsonschema.exceptions import ValidationError
 # print("----------------")
 from tools.file_system_io import load_json_file
 
-def is_experiment_description_valid(schema_path="Resources/schema/task.schema.json", 
-                                    file_path="Resources/task.json"):
+
+def is_json_file_valid(schema_path, file_path):
     """
     Validation function for json files.
     :schema_path: string. The template schema for validation.
@@ -31,10 +31,10 @@ def is_experiment_description_valid(schema_path="Resources/schema/task.schema.js
 
     try:
         return Draft4Validator(schema, resolver=resolver).validate(entity_description) == None
-    except ValidationError as e:
-        logging.getLogger(__name__).error(e)
+    except ValidationError as error:
+        logging.getLogger(__name__).error(error)
         return False
 
 
 if __name__ == "__main__":
-    print("Valid:", is_experiment_description_valid())
+    print("Valid:", is_json_file_valid())
