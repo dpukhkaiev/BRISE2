@@ -1,15 +1,23 @@
 import time
 import random
-from string import ascii_lowercase
 import os
 import logging
-
+import hashlib
+import json
+import glob
+import shutil
+import argparse
+from string import ascii_lowercase
+from functools import wraps
+from copy import deepcopy
 from jinja2 import Environment, FileSystemLoader
 from plotly.offline import plot
 
 # Tools
-from shared_tools import restore
+from shared_tools import restore, get_resource_as_string, MainAPIClient, chown_files_in_dir
 # from shared_tools import export_plot
+from tools.initial_config import load_experiment_description
+from logger.default_logger import BRISELogConfigurator
 
 # Plots
 from plots.table import table
@@ -18,29 +26,35 @@ from plots.improvements import improvements
 from plots.box_statistic import box_statistic
 from plots.exp_config import exp_description_highlight
 
-# The size of the saved images
-WIGHT = 1200
-HEIGHT = 600
+# Configuring logging
+BRISELogConfigurator()
 
-# Function for importing styles and scripts in the template
-def get_resource_as_string(name, charset='utf-8'):
-    with open(name, "r", encoding=charset) as f:
-        return f.read()
 
-def benchmark(exp_for_benchmark):
+def build_benchmark_report():
     """ Generate report files from the Experiment class instances.
-
-    Args:
-        exp_for_benchmark (List): List of file names with stored Experiments class instances. Name should include a file extension (e.g. .pkl).
     """
+    folder_with_dumps = './results/serialized/'
+    # Container creation performs --volume on `./results/` folder. Change wisely folder_with_resport.
+    folder_with_resport = './results/reports/'
+
+    # ------- List with name experiment instances. Default from ./results/serialized/ folder
+    experiment_dumps = [f for f in os.listdir(folder_with_dumps) if (f[-4:] == '.pkl')]
+    # -------
+    logger = logging.getLogger(__name__)
+    if experiment_dumps:
+        logger.info("Selected Experiment dumps for report: %s" % experiment_dumps)
+    else:
+        logger.error("Directory '%s' is empty. Terminating." % folder_with_dumps)
+        return
+
     # --- Generate template
-    file_loader = FileSystemLoader("./volume/templates")
+    file_loader = FileSystemLoader("./templates")
     env = Environment(loader=file_loader)
     env.globals['get_resource_as_string'] = get_resource_as_string
     template = env.get_template('index.html')
 
     # --- Restore experiments for benchmarking
-    exp_list = restore(*exp_for_benchmark)
+    exp_list = restore(*experiment_dumps)
 
     # --- Generate plot's hooks
     tab = plot(table(exp_list), include_plotlyjs=False, output_type='div')
@@ -67,27 +81,236 @@ def benchmark(exp_for_benchmark):
     # --- Save results
     # Write HTML report
     suffix = ''.join(random.choice(ascii_lowercase) for _ in range(10))
-    with open("./volume/results/reports/report_{}.html".format(suffix), "w", encoding='utf-8') as outf:
+    with open("{}report_{}.html".format(folder_with_resport, suffix), "w", encoding='utf-8') as outf:
         outf.write(html)
 
     # # Export plots
     # for plt in [table(exp_list), improvements(exp_list), box_statistic(exp_list)]:
-    #     export_plot(plot=plt, wight=WIGHT, height=HEIGHT)
+    #     export_plot(plot=plt, wight=1200, height=600)
 
     # Using a host machine User ID to change the owner for the files(initially, the owner was a root).
-    for root, dirs, files in os.walk("./volume/results/reports/"):
-        for f in files:
-            os.chown(os.path.abspath(os.path.join(root, f)),
-                     int(os.environ['host_uid']), int(os.environ['host_gid']))
-        break
+    chown_files_in_dir(folder_with_resport)
+
+
+class BRISEBenchmark:
+    """
+       Class for building and running the benchmarking scenarios.
+    """
+
+    def __init__(self, main_api_addr: str, results_storage: str):
+        """
+            Initializes benchmarking client.
+        :param main_api_addr: str. URL of main node API. For example "http://main-node:49152"
+        :param results_storage: str. Folder where to store benchmark results (dump files of experiments).
+        """
+        os.sys.argv.pop()   # Because load_experiment_description will consider 'benchmark' as Experiment Description).
+        self._base_experiment_description = load_experiment_description("./Resources/EnergyExperiment.json")
+        self.results_storage = results_storage if results_storage[-1] == "/" else results_storage  + "/"
+        self.main_api_client = MainAPIClient(main_api_addr, dump_storage=results_storage)
+        self.logger = logging.getLogger(__name__)
+        self.counter = 1
+        self.experiments_to_be_performed = []   # List of experiment IDs
+        self.is_calculating_number_of_experiments = False
+
+    @property
+    def base_experiment_description(self):
+        return deepcopy(self._base_experiment_description)
+
+    @base_experiment_description.setter
+    def base_experiment_description(self, description):
+        if not self._base_experiment_description:
+            self._base_experiment_description = deepcopy(description)
+        else:
+            self.logger.error("Unable to update Experiment Description: Read-only property.")
+
+    def benchmarkable(benchmarking_function):
+        """
+            Decorator that enables a pre calculation of a number of experiments in implemented benchmark scenario
+            without actually running them. It is not essential for benchmarking, but could be useful.
+        :return: original function, wrapped by wrapper.
+        """
+        @wraps(benchmarking_function)
+        def wrapper(self, *args, **kwargs):
+            logging.info("Calculating number of Experiments to perform during benchmark.")
+            self.is_calculating_number_of_experiments = True
+            logging_level = self.logger.level
+            self.logger.setLevel(logging.WARNING)
+            benchmarking_function(self, *args, *kwargs)
+            self.logger.setLevel(logging_level)
+            logging.info("Benchmark is going to run %s unique Experiments (please, take into account also the repetitions)."
+                         % len(self.experiments_to_be_performed))
+            self.is_calculating_number_of_experiments = False
+            benchmarking_function(self, *args, *kwargs)
+        return wrapper
+
+    def execute_experiment(self, experiment_description: dict, number_of_repetitions: int = 3, wait_for_results: int=30*60):
+        """
+             Check how many dumps are available for particular Experiment Description.
+
+         :param experiment_description: Dict. Experiment Description
+         :param number_of_repetitions: int. number of times to execute the same Experiment.
+         :param wait_for_results:
+            If bool ``False`` - client will only send an Experiment Description and return response with
+                                the Main node status.
+            If bool ``True`` was specified - client will wait until the end of the Experiment.
+
+            If numeric value (int or float) were specified - client will wait specified amount of time (in seconds),
+            after elapsing - ``main_stop`` command will be sent to terminate the Main node, current state of Experiment
+            will be reported be main node and saved by benchmark.
+
+         :return: int. Number of times experiment dump was found in a storage.
+        """
+        experiment_id = hashlib.sha1(json.dumps(experiment_description, sort_keys=True).encode("utf-8")).hexdigest()
+        dump_file_name = "exp_{0}_{1}".format(
+            experiment_description['TaskConfiguration']['Scenario']["ws_file"], experiment_id)
+        if self.is_calculating_number_of_experiments:
+            self.experiments_to_be_performed.append(experiment_id)
+        else:
+            number_of_available_repetitions = sum(dump_file_name in file for file in os.listdir(self.results_storage))
+            while number_of_available_repetitions < number_of_repetitions:
+                if self.main_api_client.perform_experiment(experiment_description, wait_for_results=wait_for_results):
+                    number_of_available_repetitions += 1
+                    self.logger.info("Executed Experiment #{c} out of {m_c}. ID: {eid}. Repetition: {r}.".format(
+                            c=self.counter,
+                            m_c=len(self.experiments_to_be_performed) * number_of_repetitions,
+                            eid=experiment_id,
+                            r=number_of_available_repetitions
+                        )
+                    )
+                    self.counter += 1
+            return number_of_repetitions
+
+    def move_redundant_experiments(self, location: str):
+        """
+            Move all experiment dumps that are not part of current benchmark to separate 'location' folder.
+        :param location: (str). Folder path where redundant experiment dumps will be stored.
+        """
+        os.makedirs(location, exist_ok=True)
+
+        # Mark what to move
+        redundant_experiment_files = glob.glob(self.results_storage + "*.pkl")
+        for experiment_id in self.experiments_to_be_performed:
+            for file in redundant_experiment_files:
+                if experiment_id in file:
+                    redundant_experiment_files.remove(file)
+
+        # Move
+        for file in redundant_experiment_files:
+            shutil.move(file, location + os.path.basename(file))
+
+
+    @benchmarkable
+    def benchmark_repeater(self):
+        """
+            This is an EXAMPLE of the benchmark scenario.
+
+            While benchmarking BRISE, one would like to see the influence of changing some particular parameters on the
+            overall process of running BRISE, on the results quality and on the effort.
+
+            In this particular example, the Repeater benchmark described in following way:
+                1. Using base Experiment Description for Energy Consumption.
+                2. Change ONE parameter of Repeater in a time.
+                    2.1. For each Repeater type (Default, Student and Student with enabled model-awareness).
+                    2.2. For each Target System Scenario (ws_file).
+                3. Execute BRISE with this changed Experiment Description 3 times and save Experiment dump after
+                    each execution.
+
+            Do not forget to call your benchmarking scenario in a code block of the `run_benchmark` function,
+            highlighted by
+            # ---    Add User defined benchmark scenarios execution below
+
+        :return: int, number of Experiments that were executed and experiment dumps are stored.
+                Actually you could return whatever you want, here this number is returned only for reporting purposes.
+        """
+        def_rep_skeleton = {"Repeater": {"Type": "default",
+                                          "Parameters": {
+                                              "MaxTasksPerConfiguration": 10}}}
+        student_rep_skeleton = {"Repeater": {"Type": "student_deviation",
+                                             "Parameters": {
+                                                 "ModelAwareness": {
+                                                     "MaxAcceptableErrors": [50],
+                                                     "RatiosMax": [10],
+                                                     "isEnabled": True
+                                                 },
+                                                 "MaxTasksPerConfiguration": 10,
+                                                 "MinTasksPerConfiguration": 2,
+                                                 "DevicesScaleAccuracies": [0],
+                                                 "BaseAcceptableErrors": [5],
+                                                 "DevicesAccuracyClasses": [0],
+                                                 "ConfidenceLevels": [0.95]}}}
+
+        for ws_file in os.listdir('csv'):
+            # Skip ML scenarios, only the Energy consumption scenarios are needed.
+            if ws_file in ["taskNB1.csv", "NB_final_result.csv"]:
+                continue
+            experiment_description = self.base_experiment_description
+            experiment_description['TaskConfiguration']['Scenario']['ws_file'] = ws_file
+            self.logger.info("Benchmarking next Scenario file(ws_file): %s" % ws_file)
+
+            # benchmarking a default repeater
+            experiment_description.update(deepcopy(def_rep_skeleton))
+            self.execute_experiment(experiment_description)
+
+            # benchmarking a student repeater with disabled model awareness
+            experiment_description.update(deepcopy(student_rep_skeleton))
+            experiment_description['Repeater']['Parameters']['ModelAwareness']["isEnabled"] = False
+            for BaseAcceptableErrors in [5, 15, 50]:
+                experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
+                self.logger.info("Default Repeater: Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
+                self.execute_experiment(experiment_description)
+
+            # benchmarking a student repeater with enabled model awareness
+            experiment_description.update(deepcopy(student_rep_skeleton))
+            for BaseAcceptableErrors in [5, 15, 50]:
+                experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
+                self.logger.info("Student Repeater: Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
+                self.execute_experiment(experiment_description)
+
+            experiment_description.update(deepcopy(student_rep_skeleton))
+            for MaxAcceptableErrors in [35, 50, 120]:
+                experiment_description['Repeater']['Parameters']['ModelAwareness']['MaxAcceptableErrors'] = [MaxAcceptableErrors]
+                self.logger.info("Student Repeater: Changing MaxAcceptableErrors to %s" % MaxAcceptableErrors)
+                self.execute_experiment(experiment_description)
+
+            experiment_description.update(deepcopy(student_rep_skeleton))
+            for RatiosMax in [5, 10, 30]:
+                experiment_description['Repeater']['Parameters']['ModelAwareness']['RatiosMax'] = [RatiosMax]
+                self.logger.info("Student Repeater: Changing RatiosMax to %s" % BaseAcceptableErrors)
+                self.execute_experiment(experiment_description)
+
+        return self.counter
+
+
+def run_benchmark():
+    main_api_address = "http://main-node:49152"
+    # Container creation performs --volume on `./results/` folder. Change wisely results_storage.
+    results_storage = "./results/serialized/"
+    try:
+        runner = BRISEBenchmark(main_api_address, results_storage)
+        try:
+            # ---    Add User defined benchmark scenarios execution below  ---#
+
+            runner.benchmark_repeater()
+            runner.move_redundant_experiments(location=runner.results_storage + "repeater_outdated/")
+
+            # ---   Add User defined benchmark scenarios execution above   ---#
+        except Exception as err:
+            logging.warning("The Benchmarking process interrupted by an exception: %s" % err)
+            runner.main_api_client.stop_main()
+        finally:
+            runner.main_api_client.stop_main()
+            chown_files_in_dir(results_storage)
+            logging.info("The ownership of dump files was changed, exiting.")
+    except Exception as err:
+        logging.error("Unable to create BRISEBenchmark instance: %s" % err)
+
 
 if __name__ == "__main__":
-    # ------- List with name experiment instances. Default from ./results/serialized/ folder
-    selection = [f for f in os.listdir('./volume/results/serialized/') if (f[-4:] == '.pkl')]
-    # -------
+    parser = argparse.ArgumentParser(description="The entry point of BRISE Benchmark service.")
+    parser.add_argument("mode", choices=["analyse", "benchmark"], help="Mode in which Benchmarking functionality should be runned.")
+    args = parser.parse_args()
 
-    if selection:
-        print("selection = ", selection)
-        benchmark(selection)
-    else:
-        logging.warning("Directory './volume/results/serialized/' is empty.")
+    if args.mode == "analyse":
+        build_benchmark_report()
+    else:   # args.mode == "benchmark"
+        run_benchmark()

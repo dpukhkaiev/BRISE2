@@ -5,9 +5,10 @@ from flask.cli import FlaskGroup
 from flask import jsonify, Flask
 
 # config
-from __init__ import create_app
+from __init__ import create_app, setup_logging
 
-# initialization 
+# initialization
+setup_logging()
 socketio, app = create_app()
 
 # Run server

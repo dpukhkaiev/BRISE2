@@ -3,6 +3,13 @@
       "Address" : "w_service:49153"
     },
 
+    "Main node":{
+        "COMMENT": "Configurations for API main node -> front end.",
+        "address": "0.0.0.0",
+        "port": 49152,
+        "Debug sockets": false
+    },
+    "COMMENT": "These configurations should also be moved to \"Main node\".",
     "results_storage" : "./Results/",
     "logging_level" : "DEBUG",
     "log_filename"  : "BRISE.log"

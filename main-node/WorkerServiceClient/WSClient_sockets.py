@@ -1,4 +1,4 @@
-import socketio
+import socketIO_client
 from math import ceil
 from time import time
 from os.path import isfile
@@ -10,7 +10,7 @@ class WSClient():
 
     def __init__(self, task_configuration, wsclient_addr, logfile):
         """
-        Worker Service client, that uses socketIO library to communicate with Worker Service: send task and get results
+        Worker Service client, that uses socketIO_client library to communicate with Worker Service: send task and get results
         (communication based on events).
         :param task_configuration: Dictionary. Represents "TaskConfiguration" of BRISE configuration file.
         :param wsclient_addr: String. Network address of Worker Service (including port).
@@ -19,7 +19,11 @@ class WSClient():
         self.logger = logging.getLogger(__name__)
         # Creating the SocketIO object and connecting to main node namespace - "/main_node"
         self.logger.info("INFO: Connecting to the Worker Service at '%s' ..." % wsclient_addr)
-        self.socketIO = socketio.Client()
+        # Configuring logging for SocketIO client
+        [logging.getLogger('socketIO-client').addHandler(handler) for handler in logging.getLogger().handlers]
+        self.socketIO = socketIO_client.SocketIO(wsclient_addr)
+        self.socketIO.define(socketIO_client.LoggingSocketIONamespace, "/main_node")
+
         self.servername = wsclient_addr
         # Properties that holds general task configuration (shared between task runs).
         self._exp_config = task_configuration
@@ -30,60 +34,57 @@ class WSClient():
         self._scenario = task_configuration["Scenario"]
         self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
         self._log_file_path = logfile
-        self._connection_ok = False
         self._number_of_workers = 0
+        self._got_ping_response = False
 
         # Properties that holds current task data.
         self.cur_tasks_ids = []
         self.current_results = []
 
         # Defining events that will be processed by the Worker Service Client.
-        self.socketIO.on("connect", self.__connect, namespace="/main_node")
-        self.socketIO.on("disconnect", self.__disconnect, namespace="/main_node")
-        self.socketIO.on("ping_response", self.__ping_response, namespace="/main_node")
-        self.socketIO.on("task_accepted", self.__task_accepted, namespace="/main_node")
-        self.socketIO.on("wrong_task_structure", self.__wrong_task_structure, namespace="/main_node")
-        self.socketIO.on("task_results", self.__task_results, namespace="/main_node")
+        self.socketIO.on("ping_response", self.__ping_response, path="/main_node")
+        self.socketIO.on("task_accepted", self.__task_accepted, path="/main_node")
+        self.socketIO.on("wrong_task_structure", self.__wrong_task_structure, path="/main_node")
+        self.socketIO.on("task_results", self.__task_results, path="/main_node")
         self.connect()
+
+    def __del__(self):
+        self.disconnect()
 
     ####################################################################################################################
     # Private methods that are reacting to the events FROM Worker Service Described below.
     # They cannot be accessed from outside of the class and manipulates task data stored inside object.
     #
 
-    def __connect(self):
-        self.logger.info("Worker Service has been connected!")
-
-    def __disconnect(self):
-        self._connection_ok = False
-        self._number_of_workers = 0
-        self.logger.info("Worker Service has been disconnected!")
-        self.__reconnect()
-
-    def __reconnect(self):
-        self.logger.info("Trying to reconnect...")
-        self.socketIO.connect('http://'+ self.servername, namespaces= ['/main_node'])
-
     def __ping_response(self, *args):
-        self._connection_ok = True
         self.logger.info("Worker Service has {0} connected workers: {1}".format(len(args[0]), str(args[0])))
         self._number_of_workers = len(args[0])
+        self._got_ping_response = True
+
+    def __ping_ws(self):
+        self._got_ping_response = False
+        self.socketIO.emit('ping', path='/main_node')
+        while not self._got_ping_response:
+            self.socketIO.wait(0.1)
 
     def connect(self):
         # Verifying connection by sending "ping" event to Worker Service into main node namespace.
         # Waiting for response, if response is OK - proceed.
-        self.socketIO.connect('http://'+ self.servername, namespaces= ['/main_node'])
+        self.socketIO.connect('/main_node')
         self.logger.debug("Sending 'ping' event to the Worker Service...")
+        self.__ping_ws()
 
-        self.socketIO.emit('ping', namespace='/main_node')
-        while not self._connection_ok:
-            self.socketIO.sleep(0.1)
+    def disconnect(self):
+        if self.socketIO.connected:
+            self.logger.debug("Disconnecting from Worker Service.")
+            self._terminate_not_finished_tasks()
+            self.socketIO.disconnect()
 
     def __task_accepted(self, ids):
         self.cur_tasks_ids = ids
 
     def __wrong_task_structure(self, received_task):
-        self.socketIO.disconnect()
+        self.disconnect()
         self.logger.error("Worker Service does not supports specified task structure:\n%s" % received_task)
         raise TypeError("Incorrect task structure:\n%s" % received_task)
 
@@ -100,9 +101,11 @@ class WSClient():
             else:
                 self.current_results.append(results)
 
-    def _perform_cleanup(self):
+    def _prepare(self):
         self.cur_tasks_ids = []
         self.current_results = []
+        if not self.socketIO.connected:
+            self.connect()
 
     ####################################################################################################################
     # Supporting methods.
@@ -119,14 +122,16 @@ class WSClient():
                 task_description["params"][parameter] = str(task_parameter[index])
             tasks_to_send.append(task_description)
 
-        self.socketIO.emit('add_tasks', tasks_to_send, '/main_node')  # response - task_accepted or wrong_task_structure
-        self.socketIO.sleep(0.2)    # wait to get back task IDs
+        self.socketIO.emit('add_tasks', tasks_to_send, path='/main_node')  # response - task_accepted or wrong_task_structure
 
     def _terminate_not_finished_tasks(self):
-        termination_candidates = self.cur_tasks_ids
-        for result in self.current_results:
-            termination_candidates.remove(result["task id"])
-        self.socketIO.emit("terminate_tasks", termination_candidates, '/main_node')
+        if self.cur_tasks_ids:
+            termination_candidates = self.cur_tasks_ids.copy()
+            for result in self.current_results:
+                termination_candidates.remove(result["task id"])
+            if termination_candidates:
+                self.logger.debug("Terminating unfinished Tasks.")
+                self.socketIO.emit("terminate_tasks", termination_candidates, path='/main_node')
 
     def _report_according_to_required_structure(self):
         results_to_report = []
@@ -173,7 +178,7 @@ class WSClient():
         specified in the experiments_configuration["TaskParameters"], next all values will be casted to data types,
         specified in the experiments_configuration["ResultDataTypes"].
         """
-        self._perform_cleanup()
+        self._prepare()
         self._send_task(task)
 
         #   Start waiting for result.
@@ -183,45 +188,56 @@ class WSClient():
         #   E.g. we have 7 tasks for 3 workers. Each experiment should run not more than
         #   5 seconds (specified in self._time_for_one_task_running). Resulting value will be 15 seconds.
         #   If the tasks were not finished at 15 seconds time interval, they will be terminated.
+        try:
+            waiting_started = time()
+            # BUG Throw the Error if no workers at all. Division by zero
+            max_given_time_to_run_all_tasks = ceil(
+                len(task) / self._number_of_workers) * self._time_for_one_task_running
+            while time() - waiting_started < max_given_time_to_run_all_tasks:
+                self.socketIO.wait(0.2)
+                if len(self.current_results) >= len(self.cur_tasks_ids):
+                    break
 
-        waiting_started = time()
-        # BUG Throw the Error if no workers at all. Division by zero
-        max_given_time_to_run_all_tasks = ceil(len(task) / self._number_of_workers) * self._time_for_one_task_running
-        while time() - waiting_started < max_given_time_to_run_all_tasks:
-            self.socketIO.sleep(0.2)
-            if len(self.current_results) >= len(self.cur_tasks_ids):
-                break
-
-        if len(self.current_results) < len(self.cur_tasks_ids):
-            self.logger.warning("Results were not got in time. Terminating currently running tasks.")
+            if len(self.current_results) < len(self.cur_tasks_ids):
+                raise TimeoutError("Not all Task have been finished in time.")
+            else:
+                self.logger.info(
+                    "All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)))
+                self.logger.info("Results: %s" % str(self._report_according_to_required_structure()))
+                return self.current_results
+        except Exception as e:
+            self.logger.error("Unable finish Tasks. Reporting what had got: %s" %
+                              str(self._report_according_to_required_structure()), exc_info=e)
+            return self.current_results
+        finally:
+            self._dump_results_to_csv()
             self._terminate_not_finished_tasks()
-        else:
-            self.logger.info("All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)))
-        self.logger.info("Results: %s" % str(self._report_according_to_required_structure()))
-        self._dump_results_to_csv()
-        return self.current_results
 
     def get_number_of_workers(self):
+        self.__ping_ws()
         return self._number_of_workers
 
-# A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
+
+# A small unit test. Worker service should already run on port 49153 and has a resolving domain name "w_service".
 if __name__ == "__main__":
     wsclient = 'w_service:49153'
     config = {
-        "TaskName"          : "energy_consumption",
+        "TaskName": "energy_consumption",
         "Scenario": {
             "ws_file": "Radix-500mio.csv"
         },
-        "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["energy"],
-        "ResultDataTypes"  : ["float", "int", "float"],
-        "Type"  : "student_deviation",
+        "TaskParameters": ["frequency", "threads"],
+        "ResultStructure": ["energy"],
+        "ResultDataTypes": ["float", "int", "float"],
+        "Type": "student_deviation",
         "MaxTasksPerConfiguration": 10,
         "MaxTimeToRunTask": 10
     }
-    task_data = [[2900.0, 32], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16]]
+    task_data = [[2900.0, 32], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16],
+                 [1800.0, 16], [1800.0, 16]]
     from random import randint
     from time import sleep
+
     client = WSClient(config, wsclient, 'TEST_WSClient_results.csv')
     for x in range(30):
         tasks = task_data[:randint(0, len(task_data))]

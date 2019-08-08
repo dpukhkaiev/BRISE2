@@ -34,7 +34,7 @@ class StudentDeviationType(DefaultType):
         if self.is_model_aware:
             self.ratios_max = repeater_configuration["ModelAwareness"]["RatiosMax"]
             self.max_acceptable_errors = repeater_configuration["ModelAwareness"]["MaxAcceptableErrors"]
-            if not all(b_e < m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
+            if not all(b_e <= m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
     def evaluate(self, current_configuration: Configuration, experiment: Experiment):

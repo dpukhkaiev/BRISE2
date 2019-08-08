@@ -37,7 +37,7 @@ def box_statistic(experiments):
         boxmode='group',
         yaxis=dict(zeroline=False, title='Result'),
         xaxis=dict(zeroline=False, title='Experiments'),
-                legend=dict(x=0.029, y=-0.32, font=dict(size=10))
+                legend=dict(yanchor="top", font=dict(size=10))
     )
 
     return dict(data=data, layout=layout)

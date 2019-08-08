@@ -184,7 +184,7 @@ class BayesianOptimization(Model):
         }
 
         # update probs for the categorical parameters for later sampling
-        self.logger.debug('done building a new model based on %i/%i split\nBest current result:%f\n\n\n\n\n'
+        self.logger.debug('done building a new model based on %i/%i split. Best current result:%f.'
                           %(n_good, n_bad, np.min(train_labels)))
         return True
 
@@ -267,11 +267,11 @@ class BayesianOptimization(Model):
                     # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                     info_dict['model_based_pick'] = False
                 else:
-                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(
-                        predicted_result_vector,
-                        predicted_result,
-                        l(predicted_result_vector),
-                        g(predicted_result_vector)))
+                    # self.logger.debug('best_vector: {}, {}, {}, {}'.format(
+                    #     predicted_result_vector,
+                    #     predicted_result,
+                    #     l(predicted_result_vector),
+                    #     g(predicted_result_vector)))
 
                     predicted_configuration = []
                     for index, dimension in enumerate(self.experiment.description["DomainDescription"]["AllConfigurations"]):
@@ -283,7 +283,7 @@ class BayesianOptimization(Model):
                 # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                 info_dict['model_based_pick'] = False
 
-        self.logger.debug('done sampling a new configuration.')
+        # self.logger.debug('done sampling a new configuration.')
         for configuration in self.all_configurations:
             if configuration.get_parameters() == predicted_configuration:
                 configuration.add_predicted_result(parameters=predicted_configuration,

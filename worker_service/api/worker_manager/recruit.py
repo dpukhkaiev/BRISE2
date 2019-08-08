@@ -4,11 +4,6 @@ eventlet.monkey_patch()
 import time
 from random import shuffle
 
-# LOGIN
-import logging
-logging.getLogger('socketio').setLevel(logging.DEBUG)
-logging.getLogger('engineio').setLevel(logging.DEBUG)
-
 
 class Recruit():
     '''

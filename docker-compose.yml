@@ -1,13 +1,13 @@
 # Launch & Build a bunch containers with workers and one service for them.
-version: "2"
+version: "3.7"
 services: 
   main_node:
     build: ./main-node/
-    command: python3 api-supreme.py
+    command: python3.7 api-supreme.py
     tty: true
     container_name: main-node
     networks:
-     - worker_net
+     - brise_network
     ports:
       - "49152:49152"
     depends_on:
@@ -22,7 +22,7 @@ services:
     tty: true
     container_name: w_service
     networks:
-      worker_net:
+      brise_network:
         aliases:
           - w_service
     ports:
@@ -36,7 +36,7 @@ services:
     container_name: front-end
     tty: true
     networks:
-     - worker_net
+     - brise_network
     ports:
       - "80:80"
 
@@ -46,7 +46,7 @@ services:
     environment:
       - workername=alpha
     networks:
-      - worker_net
+      - brise_network
     depends_on:
       - "w_service"
 
@@ -56,7 +56,7 @@ services:
     environment:
       - workername=beta
     networks:
-      - worker_net
+      - brise_network
     depends_on:
       - "w_service"
 
@@ -66,10 +66,11 @@ services:
     environment:
       - workername=gamma
     networks:
-      - worker_net
+      - brise_network
     depends_on:
       - "w_service"
 
 networks:
-  worker_net:
+  brise_network:
     driver: bridge
+    name: brise_network

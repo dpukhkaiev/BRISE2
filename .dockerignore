@@ -2,5 +2,4 @@
 dist/
 docker-compose.yml
 front-end
-worker
 worker_service

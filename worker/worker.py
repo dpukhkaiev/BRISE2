@@ -13,7 +13,8 @@ def energy_consumption(task_parameters: dict, scenario: dict):
         data.search(str(task_parameters['frequency']), str(task_parameters['threads']))
         result = choice(data.new_data)
         return {
-            'energy': float(result["EN"])
+            'energy': float(result["EN"]),
+            'time': float(result['TIM'])
         }
     except Exception as error:
         logging.getLogger(__name__).error("An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (task_parameters, error))

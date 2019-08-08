@@ -4,6 +4,7 @@ import logging.config
 import yaml
 from yaml.error import YAMLError
 import os
+import sys
 
 
 class BRISELogConfigurator:
@@ -22,6 +23,7 @@ class BRISELogConfigurator:
         self.__create_logging_folder(debug_log_folder[:debug_log_folder.rfind("/")])
         self.__create_logging_folder(error_log_folder[:error_log_folder.rfind("/")])
         self.__configure_logging(dict_configuration=config)
+        self.__enable_logging_uncaught_exceptions()
 
     @staticmethod
     def __configure_logging(dict_configuration: dict) -> bool:
@@ -39,6 +41,20 @@ class BRISELogConfigurator:
                           "An error occurs: %s" % error, exc_info=True)
             logging.basicConfig(level=logging.DEBUG)
             return False
+
+    @staticmethod
+    def __enable_logging_uncaught_exceptions() -> None:
+        """
+            Overrides basic method of handling exceptions in project: all uncaught exceptions will be
+            logged by the logger also, not only printed into sys.stderr.
+        :return: None
+        """
+
+        def exceptions_handler(exception_class, exception_value, traceback):
+            logging.getLogger().error("UNCAUGHT EXCEPTION IN BRISE:", exc_info=(exception_class, exception_value, traceback))
+            sys.__excepthook__(exception_class, exception_value, traceback)
+            return
+        sys.excepthook = exceptions_handler
 
     @staticmethod
     def load_dict_from_yaml(file_path: str) -> dict:

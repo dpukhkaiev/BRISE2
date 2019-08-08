@@ -3,6 +3,7 @@ __doc__ = """
 import json
 import logging
 from os import path, makedirs
+from tools.front_API import API
 
 
 def load_json_file(path_to_file):
@@ -12,15 +13,20 @@ def load_json_file(path_to_file):
     :return: object that represent .json file
     """
     logger = logging.getLogger(__name__)
+    front_api = API()
     try:
         with open(path_to_file, 'r') as File:
             jsonFile = json.loads(File.read())
             return jsonFile
     except IOError as error:
-        logger.error("Error with reading %s file." % path_to_file, exc_info=True)
+        msg = "Unable to read a json file '%s'. Error information: %s" % (path_to_file, e)
+        logger.error(msg, exc_info=True)
+        front_api.send('log', 'error', message=msg)
         raise error
     except json.JSONDecodeError as error:
-        logger.error("Error with decoding json file: %s" % path_to_file, exc_info=True)
+        msg = "Unable to decode a json file '%s'. Error information: %s" % (path_to_file, e)
+        logger.error(msg, exc_info=True)
+        front_api.send('log', 'error', message=msg)
         raise error
 
 
@@ -38,5 +44,7 @@ def create_folder_if_not_exists(folderPath):
                 makedirs(path.dirname(folderPath))
         return True
     except IOError as error:
-        logger.error("Unable to create folder: %s" % folderPath, exc_info=True)
+        msg = "Unable to create folder %s. Error information: %s" % (folderPath, e)
+        logger.error(msg, exc_info=True)
+        API().send("log", "error", message=msg)
         raise error

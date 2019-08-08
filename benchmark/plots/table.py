@@ -1,3 +1,4 @@
+from core_entities.experiment import Experiment
 import plotly.graph_objs as go
 
 def table(experiments):
@@ -41,7 +42,7 @@ def table(experiments):
         temp['default configuration'] = [' '.join(str(v) for v in exp.default_configuration.get_parameters())]
         temp['solution result'] = round(exp.get_current_solution().get_average_result()[0], 2)
         temp['solution configuration'] = ' '.join(str(v) for v in exp.get_current_solution().get_parameters())
-        temp['result improvement'] = str(round(exp.get_solution_relative_impr(), 1)) + '%'
+        temp['result improvement'] = str(round(get_relative_improvement(exp), 1)) + '%'
         temp['number of measured configurations'] = len(exp.all_configurations)
         temp['search space coverage'] = str(round((len(exp.all_configurations)/search_space)*100)) + '%',
         temp['number of repetitions'] = len(exp.get_all_repetition_tasks())
@@ -79,3 +80,17 @@ def table(experiments):
     data = [trace]
 
     return dict(data=data)
+
+
+def get_relative_improvement(experiment: Experiment) -> float:
+    """Division of a Solution Configuration result to the Default Configuraiton.
+    :param experiment: Experiment - Instance of Experiment Class.
+    Returns:
+        [Float] -- Round number in percent. If Default Configuration is 0 - returns 'inf'
+    """
+    default_avg_result = experiment.default_configuration.get_average_result()[0]
+    solution_avg_result = experiment.get_current_solution().get_average_result()[0]
+    if default_avg_result == 0:
+        return float('inf')
+    else:
+        return (default_avg_result - solution_avg_result) / default_avg_result * 100

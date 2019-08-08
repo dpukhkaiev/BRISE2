@@ -7,12 +7,29 @@ from api.tasks_manager.workflow import Workflow, Task
 from api.tasks_manager.model import task_parser
 from api.worker_manager.recruit import Recruit 
 
-# Logging
 import logging
-logging.getLogger('flask.app').setLevel(logging.INFO)
+from logging import handlers
+
+
+def setup_logging(level=logging.INFO):
+    logging.getLogger('flask.app').setLevel(level)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    formatter = logging.Formatter(fmt="%(asctime)s - %(levelname)-8s - %(name)s:%(lineno)d|> %(message)s", datefmt="%d.%m.%Y %H:%M:%S")
+    console_handler = logging.StreamHandler()
+    file_handler = logging.handlers.RotatingFileHandler("debug.log", maxBytes=1024*1024*10, backupCount=20)
+    for handler in (console_handler, file_handler):
+        handler.setFormatter(formatter)
+        handler.setLevel(level)
+        root_logger.addHandler(handler)
+
 
 def create_app(script_info=None):
-    socketIO = socketio.Server(logger=True, engineio_logger=False)
+    engineio_logger = logging.getLogger("EngineIO")
+    socketio_logger = logging.getLogger("SocketioIO")
+    engineio_logger.setLevel(logging.WARNING)
+    socketio_logger.setLevel(logging.WARNING)
+    socketIO = socketio.Server(ping_timeout=600, logger=socketio_logger, engineio_logger=engineio_logger)
     # instantiate the app
     app = Flask(__name__) 
     app.wsgi_app = socketio.WSGIApp(socketIO, app.wsgi_app)

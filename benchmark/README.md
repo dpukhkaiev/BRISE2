@@ -1,32 +1,64 @@
 # Benchmark :chart_with_upwards_trend:
  
-A comparative analysis of the experiments. Designed for understanding, interpreting and assessment of the results of the experiments.
+Service for running benchmark tests and performing a comparative analysis of experiment results. 
+Designed for understanding, interpreting and assessment of the results of the experiments.
 
+___
+### Usage 
+__We strongly recommend to execute and control benchmark tests and analysis only in a dockerized way using provided `./init.sh` control script.__
+
+##### Plan and run benchmark tests
+The general idea of writing benchmark scenario - automation of Experiment Description generation and execution. 
+1. Write your own benchmarking scenario as a separate method in class `BRISEBenchmark` (benchmark.py module).
+    - The atomic step of scenario - you have generated complete valid Experiment Description and 
+    called `self.execute_experiment` passing this description as an argument.
+    - You could mark your benchmarking scenario as `@benchmarkable` to calculate the number of Experiments 
+    that are going to be performed before their actual execution and check the overall process of Scenarios generation.
+2. Add execution of this scenario in `run_benchmark` function of `benchmark.py` module.
+3. Build an image, create a container and run the benchmark by calling `./init.sh up benchmark`
+    * in case of failure you could restart benchmarking by running `./init.sh restart benchmark`.
+    * benchmark enabled with __warm startup__ feature - in case of restart, the Experiments that were already performed
+    and stored in storage folder will be detected and skipped. Be aware that this feature fully relies on a content of 
+    the Experiment Description - benchmarking script calculates hash of Experiment that is going to be executed and 
+    checks if Experiment Dump(s) with this hash is(are) already in a storage. If you change base Experiment Description content 
+    between benchmarking it will not work.
+
+##### Run analysis
+1. Put Experiment dumps in folder `./results/serialized/` (if not exists - create it).
+2. Build an image, create container and run the analysis by calling `./init.sh up analyse`:
+3. Use the browser to open the reports files. Reports files are stored in `./results/reports` directory.
+___
+### Structure
+- `./init.sh` provides control commands. For more information `./init.sh help`
+- `./benchmark.py` is the logical entry point. Used to perform actual benchmark tests or for result analysis: in this case it combines a template with actual figures and generates a report file.
+
+###### Benchmark part
+The benchmark part realized in two logical entities: `shared_tools.py:MainAPIClient` and `benchmark.py:BRISEBenchmark`.
+
+BRISEBenchmark is a main logical class that constructs according to user defined scenario Experiment Descriptions 
+and executes them in the BRISE using instance of BRISE API client class MainAPIClient.
+
+Responsibilities:
+- `BRISEBenchmark`: Class for building and running benchmarking scenarios. 
+During initialization step it also initializes Main node API client (using provided URL address).
+BRISEBenchmark class internally stores the Experiment Description, loaded on class instantiation 
+(the `Resources` folder with all available Descriptions will be copied inside of working directory on Container creation).
+
+- `MainAPIClient`: Decouples communication process with Main node. BRISEBenchmark class relies on main API client class 
+`MainAPIClient` (shared_tools.py module), the `perform_experiment` method that encapsulates communication logic 
+(starts BRISE with provided Experiment Description, waits for the 'finish' event and download the Experiment dump 
+file or terminates execution after timeout). 
+
+###### Analysis part
+- `./results/serialized` default folder for storing dump of experiments. 
+- `./results/reports` output folder for report files
+- `./templates` template for the report file, provides slots for the atomic figures.
+- `./plots` code, generating atomic figures and tables:
   - Main metrics of the experiment. (`table.py`)
   - Improvements for the best result on each iteration of the experiment (`improvements.py`)
   - Statistical distribution for all and average results on each configuration in the experiment. (`box_statistic.py`)
   - Average results and measurement repeats for experiments. Statistical significance and invariability. Effect of the repeater (`repeat_vs_avg.py`)
   - Experiments configurations (`exp_config.py`)
-
-___
-### Usage 
-##### Structure
-- `./results/serialized` default folder for storing dump of experiments. 
-- `./results/reports` output folder for report files
-- `./plots` code, generating atomic figures and tables
-- `./templates` template for the report file, provides slots for the atomic figures.
-- `./benchmark.py` entry point. Combines a template with actual figures and generates a report file.
-- `./init.sh` provides simplify commands. For more information `./init.sh help`
-
-##### Run
-1. Run the experiment.
-2. Save experiment dump:
-	1. With front-end: After the end of the experiment running use the button "Save experiment" to download the dump. Pass this file to the `./results/serialized` directory.
-	2. Without front-end: Use the command `./init.sh extract` from the "benchmark" directory. Dump files will save to the `./results/serialized` by default. For more setting use [`docker cp`](https://docs.docker.com/engine/reference/commandline/cp/).
-3. Build and run the benchmark container:
-	1. For first run use: `$ ./init.sh up` from the "benchmark" directory.
-	2. For rerun you can use: `$ ./init.sh restart` from the "benchmark" directory.
-4. Use the browser to open the reports files. Reports files are stored in `./results/reports` directory.
 ___
 ### Play Around with Code
 

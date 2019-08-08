@@ -1,6 +1,5 @@
 from os.path import abspath
 import logging
-import json
 
 from jsonschema import validate, RefResolver, Draft4Validator
 
@@ -17,24 +16,25 @@ from jsonschema.exceptions import ValidationError
 from tools.file_system_io import load_json_file
 
 
-def is_json_file_valid(schema_path, file_path):
+def is_json_file_valid(experiment_description: dict, schema_path="Resources/schema/experiment.schema.json"):
     """
-    Validation function for json files.
+    Validates if dictionary suites provided schema.
+    :experiment_description: dict. Dictionary for validation.
     :schema_path: string. The template schema for validation.
-    :file_path: string. The file for validation.
-    :return: boolean. Is file valid
+    :return: boolean. Is dictionary is valid under provided schema.
     """
-    entity_description = load_json_file(file_path)
     schema = load_json_file(schema_path)
     
     resolver = RefResolver('file:///' + abspath('.').replace("\\", "/") + '/', schema)
 
     try:
-        return Draft4Validator(schema, resolver=resolver).validate(entity_description) == None
+        return Draft4Validator(schema, resolver=resolver).validate(experiment_description) is None
     except ValidationError as error:
         logging.getLogger(__name__).error(error)
         return False
 
 
 if __name__ == "__main__":
-    print("Valid:", is_json_file_valid())
+    # Basic unit test - load EnergyExperiment and check if it valid (should be valid).
+    entity_description = load_json_file("Resources/EnergyExperiment.json")
+    print("Valid:", is_json_file_valid(entity_description))

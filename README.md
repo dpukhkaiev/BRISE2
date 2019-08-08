@@ -8,7 +8,7 @@ different algorithms (data compressing, integers sorting, etc.), that `minimizes
 ## Getting started
 #### Requirements
 Software requirements:
-- Docker, Docker-compose.
+- Docker (with Docker Engine 18.06.0+), Docker-compose (1.22.0+).
 - Python3.
 
 Hardware requirements:

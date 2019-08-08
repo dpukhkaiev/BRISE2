@@ -45,6 +45,7 @@ class Configuration:
             self.__parameters = parameters
         else:
             self.logger.error("Parameters %s are not int, float or str type" % parameters)
+            raise TypeError("Wrong parameter types for initialization new Configuration. Supported numeric or string.")
 
         self.__parameters_in_indexes = []
         self._tasks = {}
@@ -62,11 +63,10 @@ class Configuration:
         self.__dict__ = space 
         self.logger = logging.getLogger(__name__)
 
-
-    def add_predicted_result(self, parameters, predicted_result):
+    def add_predicted_result(self, parameters: list, predicted_result: list):
 
         if self.__is_valid_configuration(parameters):
-            self.predicted_result = predicted_result
+            self.predicted_result = [float(x) for x in predicted_result]
 
     def add_tasks(self, parameters, task):
         """
@@ -95,6 +95,15 @@ class Configuration:
 
     def get_average_result(self):
         return self._average_result.copy()
+
+    def get_required_results_from_all_tasks(self):
+        from_all_tasks = []
+        for task in self._tasks.values():
+            from_one_task = []
+            for domain in self.__class__.TaskConfiguration["ResultStructure"]:
+                from_one_task.append(task['result'][domain])
+            from_all_tasks.append(from_one_task)
+        return from_all_tasks
 
     def get_standard_deviation(self):
         return self._standard_deviation.copy()
@@ -150,10 +159,12 @@ class Configuration:
             assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
             assert task['worker'], "Worker is not specified: %s" % task
             # assuming, we have a 'TaskConfiguration' field of Experiment description stored in Configuration (could be as static field)
-            assert len(list(task['result'].keys())) == len(cls.TaskConfiguration["ResultStructure"]), \
-                "Results are not match Experiment Description: %s. Expected: %s." % (cls.TaskConfiguration["ResultStructure"], task['result'])
-            assert all(type(dim).__name__ == dim_type for dim, dim_type in zip(list(task['result'].values()), cls.TaskConfiguration["ResultDataTypes"])), \
-                "Result type are not match Experiment Description: %s. Expected: %s." % (str([str(type(x)) for x in task['result']]), cls.TaskConfiguration["ResultDataTypes"])
+            assert set(cls.TaskConfiguration['ResultStructure']) <= set(task['result'].keys()), \
+                "All required result fields are not obtained. Expected: %s. Got: %s." % (
+                cls.TaskConfiguration["ResultStructure"], task['result'].keys())
+            for dim_name, dim_data_type in zip(cls.TaskConfiguration["ResultStructure"], cls.TaskConfiguration["ResultDataTypes"]):
+                assert type(task['result'][dim_name]).__name__ == dim_data_type, \
+                "Result types are not match Experiment Description: %s. Expected: %s." % (str([str(type(x)) for x in task['result']]), cls.TaskConfiguration["ResultDataTypes"])
             return True
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
@@ -174,11 +185,10 @@ class Configuration:
 
     def __assemble_tasks_results(self):
         """
-        Updates the results of Configuration measurement aggregating the results from all available Tasks.
-        The Average Results of Configuration and Standard Deviation between the Tasks are calculated.
+        Updates the results of the Configuration measurement by aggregating the results from all available Tasks.
+        The Average Results of the Configuration and the Standard Deviation between Tasks are calculated.
         """
-        # list of a result list from all tasks
-        results_tuples = [list(task["result"].values()) for (_, task) in self._tasks.items()]
+        results_tuples = self.get_required_results_from_all_tasks()
         # calculating the average over all result items
         self._average_result = np.mean(results_tuples, axis=0).tolist()
         self._standard_deviation = np.std(results_tuples, axis=0).tolist()

@@ -36,7 +36,7 @@
                     "type": "string"
                 },
                 "AllConfigurations": {
-                    "type": "string"
+                    "type": "array"
                 },
                 "DefaultConfiguration": {
                     "anyOf": [

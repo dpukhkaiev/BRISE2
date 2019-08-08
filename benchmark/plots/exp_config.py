@@ -12,7 +12,7 @@ def exp_description_highlight(experiments):
         HTML: Markup component with related styles and scripts.
     """
     # Component template
-    file_loader = FileSystemLoader("./volume/templates")
+    file_loader = FileSystemLoader("./templates")
     env = Environment(loader=file_loader)
     template = env.get_template('config_tabs.html')
 

@@ -49,7 +49,7 @@ def improvements(experiments):
                 title = 'Relatively improvements result',
                 yaxis = dict(zeroline = False, title='Result'),
                 xaxis = dict(zeroline = False, title='Iteration'),
-                legend=dict(x=0.029,y=-0.42)
+                legend=dict(yanchor="top", font=dict(size=10))
             )
 
     return dict(data=data, layout=layout)
