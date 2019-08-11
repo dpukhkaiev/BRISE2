@@ -93,6 +93,24 @@ class Splitter:
         except EnvironmentError:
             self.logger.error("ERROR occurred in `searchGA` method")
 
+    def searchSA(self, file_name):
+        del self.new_data[:]
+        try:
+            with open(file_name, 'r') as csv_file:
+                reader = csv.DictReader(csv_file)
+                last_row = None
+                for row in reader:
+                    last_row = row
+                # selected only last row
+                self.new_data.append(last_row)
+            return {
+                'hardScoreImprovement': self.new_data[0]["hardScoreImprovement"],
+                'softScoreImprovement': self.new_data[0]["softScoreImprovement"]
+            } if self.new_data else {"worker": "Error! Incorrect worker config"}
+        except EnvironmentError:
+            self.logger.error("ERROR occurred in `searchSA` method")
+
+
     def make_csv(self, name, data_type):
         csv_name = "tmp/" + name[:-4] + "_" + data_type + ".csv"
         with open(csv_name, 'wb') as result:
@@ -102,4 +120,3 @@ class Splitter:
             for d in self.data:
                 writer.writerow(d)
         return csv_name
-\

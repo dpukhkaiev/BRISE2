@@ -104,7 +104,7 @@ class BRISEBenchmark:
         :param results_storage: str. Folder where to store benchmark results (dump files of experiments).
         """
         os.sys.argv.pop()   # Because load_experiment_description will consider 'benchmark' as Experiment Description).
-        self._base_experiment_description = load_experiment_description("./Resources/EnergyExperiment.json")
+        self._base_experiment_description = load_experiment_description("./Resources/SA/SAExperiment.json")
         self.results_storage = results_storage if results_storage[-1] == "/" else results_storage  + "/"
         self.main_api_client = MainAPIClient(main_api_addr, dump_storage=results_storage)
         self.logger = logging.getLogger(__name__)
@@ -280,6 +280,38 @@ class BRISEBenchmark:
 
         return self.counter
 
+    def benchmark_SA(self):
+
+        scenarios = {
+          "trivial": { "variants": 1, "requests": 1, "depth": 1, "resources": 1.0 },
+          "small": { "variants": 2, "requests": 1, "depth": 2, "resources": 1.5 },
+          "small_hw": { "variants": 2, "requests": 1, "depth": 2, "resources": 5.0 },
+          "small_sw": { "variants": 2, "requests": 1, "depth": 5, "resources": 1.5 },
+          "medium": { "variants": 10, "requests": 15, "depth": 2, "resources": 1.5 },
+          "medium_hw": { "variants": 10, "requests": 15, "depth": 2, "resources": 5.0 },
+          "medium_sw": { "variants": 5, "requests": 10, "depth": 5, "resources": 1.5 },
+          "large": { "variants": 20, "requests": 20, "depth": 2, "resources": 1.5 },
+          "large_hw": { "variants": 20, "requests": 20, "depth": 2, "resources": 5.0 },
+          "large_sw": { "variants": 10, "requests": 20, "depth": 5, "resources": 1.5 },
+          "huge": { "variants": 50, "requests": 50, "depth": 2, "resources": 1.5 },
+          "huge_hw": { "variants": 50, "requests": 50, "depth": 2, "resources": 5.0 },
+          "huge_sw": {"variants": 20, "requests": 50, "depth": 5, "resources": 1.5 }
+        }
+
+        for s in scenarios:
+            self.logger.info("here")
+            experiment_description = self.base_experiment_description
+            experiment_description['TaskConfiguration']['Scenario']['ws_file'] = "result_v{}_q{}_d{}_r{}.csv".\
+                format(scenarios[s]["variants"], scenarios[s]["requests"], scenarios[s]["depth"], str(scenarios[s]["resources"]).replace('.', '_'))
+            experiment_description['TaskConfiguration']['Scenario']['numImplementations'] = scenarios[s]["variants"]
+            experiment_description['TaskConfiguration']['Scenario']['numRequests'] = scenarios[s]["requests"]
+            experiment_description['TaskConfiguration']['Scenario']['componentDepth'] = scenarios[s]["depth"]
+            experiment_description['TaskConfiguration']['Scenario']['excessComputeResourceRatio'] = scenarios[s]["resources"]
+            self.logger.info("Benchmarking next Scenario file(ws_file): %s" % experiment_description['TaskConfiguration']['Scenario']['ws_file'])
+            self.execute_experiment(experiment_description)
+
+        return self.counter
+
 
 def run_benchmark():
     main_api_address = "http://main-node:49152"
@@ -289,9 +321,11 @@ def run_benchmark():
         runner = BRISEBenchmark(main_api_address, results_storage)
         try:
             # ---    Add User defined benchmark scenarios execution below  ---#
-
+            # --- Possible variants: benchmark_repeater, benchmark_SA ---#
             runner.benchmark_repeater()
-            runner.move_redundant_experiments(location=runner.results_storage + "repeater_outdated/")
+
+            # --- Helper method to remove outdated experiments from `./results` folder---#
+            # runner.move_redundant_experiments(location=runner.results_storage + "outdated/")
 
             # ---   Add User defined benchmark scenarios execution above   ---#
         except Exception as err:

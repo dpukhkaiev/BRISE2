@@ -1,9 +1,9 @@
 # BRISE 2.0.0
-##### Benchmark Reduction Via Adaptive Instance Selection
-You could apply this solution for your system or algorithm to find optimal(near) parameters for running.\
-For example, it was used to find `CPU Frequency` and `number of threads`(parameters) used for running 
-different algorithms (data compressing, integers sorting, etc.), that `minimizes energy consumption` 
-(optimization goal) for this job.  
+##### Benchmark Reduction via Adaptive Instance Selection
+Hyperparameter optimization framework.\
+Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
+different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy consumption minimization` 
+(optimization goal).  
 
 ## Getting started
 #### Requirements
@@ -65,10 +65,10 @@ If require to make own front-end build:
 6. Go to [localhost:4201](http://localhost:4201)
 
 ## Questions, contributing.
-##### Have questions, proposes? Fill free to contact us via :mailbox_with_mail: 
+##### Questions, suggestions, remarks? Feel free to contact us via [:mailbox_with_mail:](mailto:dmytro.pukhkaiev@tu-dresden.de)
 
 ## Authors
-- **[Dmitrii Pukhkaiev](https://github.com/dpukhkaiev)** - *[initial idea](https://www.researchgate.net/publication/312094017_Energy-efficient_Benchmarking_for_Energy-efficient_Software)*, initial version of BRISE.
+- **[Dmytro Pukhkaiev](https://github.com/dpukhkaiev)** - *[initial idea](https://doi.org/10.1145/3194078.3194082)*, [initial version of BRISE](https://github.com/dpukhkaiev/BRISE).
 - **[Oleksandr Husak](https://github.com/Valavanca/)** - Worker service and workers, front-end developing.
 - **[Ievgeniia Svetsynska](https://github.com/IevgSvet)** - Front-end APIs, improvements.
 - **[Roman Kosonvnenko](https://github.com/pariom)** - Applying BRISE to different systems, improvements.

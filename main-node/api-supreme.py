@@ -43,9 +43,6 @@ data_header = {
 # add clients in room
 front_clients = []
 
-@app.route('/')
-def index():
-    return render_template('index.html'), 200
 
 # ---   START
 @app.route('/main_start',  methods=['GET', 'POST'])

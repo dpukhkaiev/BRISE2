@@ -103,6 +103,13 @@
                         "type": "string"
                     }]
                 },
+                "ResultPriorities": {
+                    "type": "array",
+                    "items": [{
+                        "type": "integer",
+                        "minimum": 0
+                    }]
+                },
                 "MaxTimeToRunTask": {
                     "type": "number",
                     "minimum": 0,
@@ -146,7 +153,7 @@
             "maxItems": 4,
             "uniqueItems": true,
             "items": {
-                "oneOf" : [ 
+                "oneOf" : [
                     {
                     "type": "object",
                     "properties": {

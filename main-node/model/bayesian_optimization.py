@@ -124,7 +124,8 @@ class BayesianOptimization(Model):
 
         # b) if not enough points are available
         if len(self.all_configurations) <= self.min_points_in_model-1:
-            self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"%(len(self.all_configurations), self.min_points_in_model+1))
+            self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"
+                              %(len(self.all_configurations), self.min_points_in_model+1))
             return False
 
         # c) during warnm starting when we feed previous results in and only update once
@@ -134,11 +135,20 @@ class BayesianOptimization(Model):
 
         self.logger.info("INFO: Building the Bayesian optimization models..")
 
+        # TODO: works only for single objective optimization with multiple priorities. Doesn't work with classical MOO
+        priorities = self.experiment.description["TaskConfiguration"]["ResultPriorities"] \
+            if "ResultPriorities" in self.experiment.description["TaskConfiguration"] else [0] * \
+                                        self.experiment.description["TaskConfiguration"]["ResultStructure"].__len__()
+        top_priority_index = 0
+        for i in range(priorities.__len__()):
+            if priorities[top_priority_index] < priorities[i]:
+                top_priority_index = i
+
         all_features = []
         all_labels = []
         for config in self.all_configurations:
             all_features.append(config.get_parameters_in_indexes())
-            all_labels.append(config.get_average_result())
+            all_labels.append(config.get_average_result()[top_priority_index])
 
         train_features = np.array(all_features)
         train_labels = np.array(all_labels)
@@ -149,6 +159,7 @@ class BayesianOptimization(Model):
 
         # Refit KDE for the current budget
 
+        #TODO: argsort works not as intended for MOO
         if self.isMinimizationExperiment:
             idx = np.argsort(train_labels, axis=0)
         else:

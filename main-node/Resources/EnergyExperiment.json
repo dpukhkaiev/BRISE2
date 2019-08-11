@@ -1,69 +1,69 @@
 {
-      "General": {
-        "isMinimizationExperiment"  : true,
-        "ConfigurationsPerIteration" : 3
-      },
-      "DomainDescription":{
-        "FeatureNames"      : ["frequency", "threads"],
-        "DataFile"          : "./Resources/EnergyExperimentData.json",
-        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-        "DefaultConfiguration": [2900.0, 32]
-      },
-      "SelectionAlgorithm":{
-        "SelectionType"     : "SobolSequence",
-        "NumberOfInitialConfigurations": 10
-      },
-      "TaskConfiguration":{
-        "TaskName"          : "energy_consumption",
-        "Scenario":{
-          "ws_file": "Radix-500mio.csv"
-        },
-        "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["energy"],
-        "ResultDataTypes"  : ["float"],
-        "MaxTimeToRunTask": 10
-      },
-      "Repeater":{
-        "Type": "student_deviation",
-        "Parameters": {
-          "MaxTasksPerConfiguration": 10,
-          "MinTasksPerConfiguration": 2,
-          "BaseAcceptableErrors": [5],
-          "ConfidenceLevels": [0.95],
-          "DevicesScaleAccuracies": [0],
-          "DevicesAccuracyClasses": [0],
-          "ModelAwareness": {
-            "isEnabled": true,
-            "MaxAcceptableErrors": [50],
-            "RatiosMax": [10]
-          }
-        }
-      },
-      "ModelConfiguration":{
-        "ModelType"         : "BO"
-      },
-      "StopCondition":[
-        {
-          "Type": "Default",
-          "Parameters": {
-            "MaxConfigs": 15
-          }
-        },
-        {
-          "Type": "ImprovementBased",
-          "Parameters": {
-            "MaxConfigsWithoutImprovement": 5
-          }
-        },
-        {
-          "Type": "Guaranteed",
-          "Parameters": {      }
-        },
-        {
-          "Type": "Adaptive",
-          "Parameters": {
-            "SearchSpacePercentage": 15
-          }
-        }
-      ]
+  "General":{
+    "isMinimizationExperiment"  : true,
+    "ConfigurationsPerIteration" : 3
+  },
+  "DomainDescription":{
+    "FeatureNames"      : ["frequency", "threads"],
+    "DataFile"          : "./Resources/EnergyExperimentData.json",
+    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
+    "DefaultConfiguration": [2900.0, 32]
+  },
+  "SelectionAlgorithm":{
+    "SelectionType"     : "SobolSequence",
+    "NumberOfInitialConfigurations": 10
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "energy_consumption",
+    "Scenario":{
+      "ws_file": "Radix-500mio.csv"
+    },
+    "TaskParameters"   : ["frequency", "threads"],
+    "ResultStructure"   : ["energy"],
+    "ResultDataTypes"  : ["float"],
+    "MaxTimeToRunTask": 10
+  },
+  "Repeater":{
+    "Type": "student_deviation",
+    "Parameters": {
+      "MaxTasksPerConfiguration": 10,
+      "MinTasksPerConfiguration": 2,
+      "BaseAcceptableErrors": [5],
+      "ConfidenceLevels": [0.95],
+      "DevicesScaleAccuracies": [0],
+      "DevicesAccuracyClasses": [0],
+      "ModelAwareness": {
+        "isEnabled": true,
+        "MaxAcceptableErrors": [50],
+        "RatiosMax": [10]
+      }
+    }
+  },
+  "ModelConfiguration":{
+    "ModelType"         : "BO"
+  },
+  "StopCondition":[
+    {
+      "Type": "Default",
+      "Parameters": {
+        "MaxConfigs": 15
+      }
+    },
+    {
+      "Type": "ImprovementBased",
+      "Parameters": {
+        "MaxConfigsWithoutImprovement": 5
+      }
+    },
+    {
+      "Type": "Guaranteed",
+      "Parameters": {      }
+    },
+    {
+      "Type": "Adaptive",
+      "Parameters": {
+        "SearchSpacePercentage": 15
+      }
+    }
+  ]
 }

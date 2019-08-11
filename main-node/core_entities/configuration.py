@@ -55,12 +55,12 @@ class Configuration:
         self._standard_deviation = []
 
     def __getstate__(self):
-        space = self.__dict__.copy()    
-        del space['logger']          
+        space = self.__dict__.copy()
+        del space['logger']
         return space
 
     def __setstate__(self, space):
-        self.__dict__ = space 
+        self.__dict__ = space
         self.logger = logging.getLogger(__name__)
 
     def add_predicted_result(self, parameters: list, predicted_result: list):
@@ -74,7 +74,7 @@ class Configuration:
         :param parameters: List with parameters. Used for validation
         :param task: List of task results
         """
-        
+
         if self.__is_valid_configuration(parameters) and self.__is_valid_task(task):
             task_id = task["task id"]
             self._tasks[str(task_id)] = task
@@ -137,7 +137,28 @@ class Configuration:
         :param compared_configuration: instance of Configuration class
         :return: bool
         """
-        return self.get_average_result()[0] < compared_configuration.get_average_result()[0]
+        # compare all metrics
+        dimension_wise_comparison = []
+        for i in range(len(self.get_average_result())):
+            dimension_wise_comparison.append(self.get_average_result()[i] < compared_configuration.get_average_result()[i])
+
+        # get priorities or use the same values if unspecified
+        priorities = self.__class__.TaskConfiguration["ResultPriorities"] \
+            if "ResultPriorities" in self.__class__.TaskConfiguration else [0] * len(dimension_wise_comparison)
+
+        # filter highest priorities
+        highest_priority_indexes = [index for index, priority in enumerate(priorities) if priority == max(priorities)]
+
+        # get all comparisons for the highest priority
+        dimensions_with_highest_priorities = []
+        for i in highest_priority_indexes:
+            dimensions_with_highest_priorities.append(dimension_wise_comparison[i])
+
+        # all comparisons are equal for the same priority == dominating solution
+        if all(elem == dimensions_with_highest_priorities[0] for elem in dimensions_with_highest_priorities):
+            return dimensions_with_highest_priorities[0]
+        else:
+            return False
 
     def __gt__(self, compared_configuration):
         """
@@ -146,6 +167,7 @@ class Configuration:
         :return: bool
         """
         return compared_configuration.__lt__(self)
+
     @classmethod
     def __is_valid_task(cls, task):
         """
@@ -169,7 +191,7 @@ class Configuration:
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
             return False
-        
+
     def __is_valid_configuration(self, parameters):
         """
          Is parameters equal to instance parameters
@@ -199,7 +221,7 @@ class Configuration:
         """
         return "Configuration(Params={params}, Tasks={num_of_tasks}, Avg.result={avg_res}, STD={std})".format(
             params=str(self.get_parameters()),
-            num_of_tasks=len(self._tasks), 
+            num_of_tasks=len(self._tasks),
             avg_res=str(self.get_average_result()),
             std=str(self.get_standard_deviation()))
 

@@ -24,7 +24,6 @@ pip install -U "python-engineio[client]"
 RUN apt-get update && \
     apt-get -y install unzip openjdk-8-jdk
 
-
 # Export some environment variables
 ENV PATH=$PATH:$GRADLE_HOME/bin JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
