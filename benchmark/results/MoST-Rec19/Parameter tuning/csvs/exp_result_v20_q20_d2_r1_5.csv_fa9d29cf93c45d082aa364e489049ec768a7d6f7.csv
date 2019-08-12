@@ -1,0 +1,4 @@
+model,number of measured configurations,execution time,repeater,default result,solution configuration,default configuration,number of repetitions,solution result,search space coverage
+BO,101,859,student_deviation,0.9890510948905109,['1 5 100 100 50 10000 10000'],['1 5 100 100 50 10000 10000'],202,0.9890510948905109,0%
+BO,81,657,student_deviation,0.9878345498783455,['10 3 75 10 30 10000 10000'],['1 5 100 100 50 10000 10000'],162,0.9914841849148419,0%
+BO,61,501,student_deviation,0.9878345498783455,['1 5 100 100 50 10000 10000'],['1 5 100 100 50 10000 10000'],122,0.9878345498783455,0%

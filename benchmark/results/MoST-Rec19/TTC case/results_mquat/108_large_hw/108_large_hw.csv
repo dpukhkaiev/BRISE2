@@ -1,0 +1,2 @@
+when,id,tlc,isc,isd,csc,csd,dep,bi,res,req,cpu,seed,comp,impl,gen,initObj,name,Gen,Solved,Obj,Valid,TimeOut
+2019-08-08-19-59-35-394,0,1,0,0,2,0,2,20,5.0,20,1,0,3,60,40,1.016740466E7,mh-naive,10,899247,3575593.369999999,true,false

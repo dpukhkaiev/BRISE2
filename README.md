@@ -1,9 +1,9 @@
 # BRISE 2.2.0
 ##### Benchmark Reduction via Adaptive Instance Selection
 Software Product Line for Parameter Tuning\
-Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
-different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy consumption minimization` 
-(optimization goal).  
+
+Most-Rec'19 Use case Parameter tuning of Simulated annealing algorithm to solve quality-based software selection and hardware mapping problem.
+Results can be found in `benchmark/results/` directory.
 
 ## Getting started
 #### Requirements
@@ -30,13 +30,13 @@ predicting and validating best configuration.
 #### Testing installation
 - Get into **main-node**:
     - `$ docker exec -it main-node /bin/bash`
-    - Run BRISE by `python3.7 main.py` inside container. In the end you will see final report for Energy Experiment. (Searching for best CPU Frequency and number of Threads.)
+    - Run BRISE by `python3.7 main.py ./Resources/SA/SAExperiment.json` inside container. In the end you will see final report for Simulated Annealing Experiment.
 
 ## Using BRISE 
 To apply this BRISE for your system, you need to:
 1. Install BRISE.
-2. Describe Experiment for finding the Configuration for your system in `*.json` [Experiment Description file](./main-node/Resources/EnergyExperiment.json "Example of task description for energy consumption").
-3. Describe search space of all possible parameters in `*.json` [Experiment data file](./main-node/Resources/EnergyExperimentData.json "Example for energy consumption - possible CPU frequencies and number of thread").
+2. Describe Experiment for finding the Configuration for your system in `*.json` [Experiment Description file](./main-node/Resources/SA/SAExperiment.json).
+3. Describe search space of all possible parameters in `*.json` [Experiment data file](./main-node/Resources/SA/SAExperimentData.json).
 *These files should be inside main-node container (put it in main-node folder).*
 4. Adapt BRISE system to your particular optimization goal (if needed).
 Mostly it should be done in validation of predicted configurations by BRISE model (model validation).
@@ -65,4 +65,3 @@ If require to make own front-end build:
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
->>>>>>> /tmp/meld-tmp-Remotevpqarmh6

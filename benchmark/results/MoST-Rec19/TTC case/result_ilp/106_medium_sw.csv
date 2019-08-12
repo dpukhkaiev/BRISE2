@@ -1,0 +1,2 @@
+when,id,tlc,isc,isd,csc,csd,dep,bi,res,req,cpu,seed,comp,impl,gen,initObj,name,Gen,Solved,Obj,Valid,TimeOut
+2019-05-17-14-22-44-149,0,1,0,0,2,0,5,5,1.5,10,1,0,31,155,68,4.622189092999999E7,ilp-gurobi,27300,4711,2.048432294999999E7,true,false
