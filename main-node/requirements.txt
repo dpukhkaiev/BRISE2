@@ -1,0 +1,16 @@
+setuptools
+scikit-learn[alldeps]
+sobol_seq
+requests
+PyYAML
+Flask
+flask-cors
+flask-socketio
+python-socketio==4.2.1
+eventlet
+statsmodels
+jsonschema
+websocket-client
+socketIO-client
+scipy
+pytest

@@ -1,0 +1,96 @@
+@import '~variables.scss';
+
+/* Table */
+table {
+  width: 100%;
+}
+
+/* Structure */
+
+.mat-form-field {
+  font-size: 14px;
+  width: 100%;
+}
+
+tr.example-detail-row {
+  background-color: rgba($divider-color, .4);
+}
+
+.box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: flex-start;    
+  .result {
+    width: 100%;
+    min-width: 250px;
+  }
+  .length {
+    color: $secondary-text-color;
+  }
+  th.mat-header-cell {
+    vertical-align: middle;
+  }
+}
+
+
+
+/* Selected item */
+.selected {
+    font-weight: 700;
+    border-left: 2px solid $accent-color;
+    background: rgba($divider-color, .2);
+}
+.selected .mat-list-icon {
+  color: $primary-text-color;
+}
+mat-tab-body mat-grid-tile {
+  height: 100%;
+}
+
+/* Icons */
+.mat-list-icon {
+  color: darken($divider-color, 15% )
+}
+.mat-icon {
+  color: darken($divider-color, 15% );
+  margin-right: 5px;
+}
+.mat-icon + span {
+  color: darken($divider-color, 15% );
+  font-size: .95em;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+/* Focus */
+.focus {
+  position: sticky;
+  top: 20px;
+  .focus-clear {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}
+// /////////// Detail -->>
+
+tr.example-detail-row {
+  height: 0;
+}
+
+tr.example-element-row:not(.example-expanded-row):hover {
+  background: rgba($divider-color, .4);
+  border-left: 2px solid $accent-color;
+}
+
+.example-element-row td {
+  border-bottom-width: 0;
+}
+
+.example-element-detail {
+  overflow: hidden;
+  display: flex;
+}
+

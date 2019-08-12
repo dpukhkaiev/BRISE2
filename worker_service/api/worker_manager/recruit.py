@@ -2,12 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import time
-from random import randint
-
-# LOGIN
-import logging
-logging.getLogger('socketio').setLevel(logging.DEBUG)
-logging.getLogger('engineio').setLevel(logging.DEBUG)
+from random import shuffle
 
 
 class Recruit():
@@ -118,21 +113,25 @@ class Recruit():
             self.result[payload['id']] = payload
 
         # success flag
-        self.send = False  
-
+        self.send = False
+        shuffle(self.workers)
+        tmp_worker_iterator = self.workers.__iter__()
         while self.focus_task and not self.send:
-            eventlet.sleep(1)
             if len(self.workers):
-                k = randint(0, 9)%len(self.workers)
-                print(" Task send to", self.workers[k])
-                self.socket.emit('assign', payload, namespace='/task', room=self.workers[k])
+                try:
+                    chosen = tmp_worker_iterator.__next__()
+                    print(" Task send to", chosen)
+                    self.socket.emit('assign', payload, namespace='/worker_management', room=chosen)
+                except StopIteration:
+                    shuffle(self.workers)
+                    tmp_worker_iterator = self.workers.__iter__()
+                    continue
+            eventlet.sleep(1)
 
     def task_confirm(self, obj):
         if obj['status'] == 'run':
             self.result[obj['task id']]['meta_data']['accept'] = time.time()
             self.result[obj['task id']]['meta_data']['appointment'] = obj['node']
-
-            self.socket.emit('in progress', obj, room='/front-end', namespace='/front-end')
             self.send = True
             self.focus_task = None
         else:

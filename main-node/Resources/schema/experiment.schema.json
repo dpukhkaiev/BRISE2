@@ -1,0 +1,272 @@
+{
+    "$id": "http://brise.com/experiment.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "General": {
+            "type": "object",
+            "properties": {
+                "isMinimizationExperiment": {
+                    "type": "boolean"
+                },
+                "ConfigurationsPerIteration": {
+                    "description": "The number of configurations that will be measured simultaneously.",
+                    "type": "integer",
+                    "minimum": 1
+                }
+            },
+            "required": [
+                "isMinimizationExperiment"
+            ]
+        },
+        "DomainDescription": {
+            "type": "object",
+            "properties": {
+                "FeatureNames": {
+                    "type": "array",
+                    "items": [{
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "DataFile": {
+                    "type": "string"
+                },
+                "AllConfigurations": {
+                    "type": "array"
+                },
+                "DefaultConfiguration": {
+                    "anyOf": [
+                        {
+                            "type": "array",
+                            "description": "Default configuration for multidimensional parameters",
+                            "minItems": 3,
+                            "items": [{
+                                "type": ["number", "string", "boolean"]
+                            }]
+                        },
+                        {
+                            "type": "array",
+                            "description": "Default configuration with numbers for the energy consumption",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": [{
+                                "type": "number"
+                            }]
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "FeatureNames",
+                "DataFile",
+                "AllConfigurations",
+                "DefaultConfiguration"
+            ]
+        },
+        "SelectionAlgorithm": {
+            "anyOf": [{
+                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/SobolSequence"
+            }]
+        },
+        "TaskConfiguration": {
+            "type": "object",
+            "properties": {
+                "TaskName": {
+                    "type": "string"
+                },
+                "Scenario": {
+                    "type": "object"
+                },
+                "TaskParameters": {
+                    "type": "array",
+                    "items": [{
+                            "type": "string"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "ResultStructure": {
+                    "type": "array",
+                    "items": [{
+                        "type": "string"
+                    }]
+                },
+                "ResultDataTypes": {
+                    "type": "array",
+                    "items": [{
+                        "type": "string"
+                    }]
+                },
+                "ResultPriorities": {
+                    "type": "array",
+                    "items": [{
+                        "type": "integer",
+                        "minimum": 0
+                    }]
+                },
+                "MaxTimeToRunTask": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                }
+            },
+            "required": [
+                "TaskName",
+                "Scenario",
+                "TaskParameters",
+                "ResultStructure",
+                "ResultDataTypes"
+            ]
+        },
+        "Repeater": {
+            "description": "Parameters related to Configuration evaluation accuracy.",
+            "anyOf": [
+                {
+                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/Default"
+                },
+                {
+                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/Student"
+                }
+            ]
+        },
+        "ModelConfiguration": {
+            "description": "Configuration related to the prediction model creation process.",
+            "anyOf": [
+                {
+                    "$ref": "./model/schema/model.schema.json#/definitions/BayesianOptimization"
+                },
+                {
+                    "$ref": "./model/schema/model.schema.json#/definitions/Regression"
+                }
+            ]
+        },
+        "StopCondition": {
+            "description": "Conditions for stopping an experiment.",
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+                "oneOf" : [
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["Default"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxConfigs": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "MaxConfigs"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["ImprovementBased"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxConfigsWithoutImprovement": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "MaxConfigsWithoutImprovement"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["Guaranteed"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{  },
+                            "additionalProperties": false
+                          }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["Adaptive"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "SearchSpacePercentage": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 100,
+                                    "exclusiveMinimum": true
+                                }
+                            },
+                            "required": [
+                                "SearchSpacePercentage"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                    }
+                ]
+            }
+        }
+    },
+    "required": [
+        "General",
+        "DomainDescription",
+        "SelectionAlgorithm",
+        "TaskConfiguration",
+        "Repeater",
+        "ModelConfiguration",
+        "StopCondition"
+    ]
+}
