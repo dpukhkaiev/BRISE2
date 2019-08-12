@@ -1,4 +1,5 @@
+benchmark/results/serialized/*
 Results
-test*py
-csv
 file_divider_paralel.sh
+#tests cache
+.pytest_cache

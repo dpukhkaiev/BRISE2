@@ -1,0 +1,5 @@
+.git/
+dist/
+docker-compose.yml
+front-end
+worker_service

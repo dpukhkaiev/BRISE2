@@ -1,0 +1,27 @@
+@import '~variables.scss';
+
+.chart-solution {
+    display: flex;
+    margin-left: 20px;
+    align-items: center;
+    padding: 15px 20px;
+}
+
+.chart-solution {
+    display: flex;
+    margin-left: 20px;
+    align-items: center;
+    padding: 15px 20px;
+    border-left: 3px solid $secondary-text-color;
+    & > mat-icon {
+        color: $secondary-text-color;
+    }
+    & span {
+        margin: 0 10px;
+        color: $primary-text-color;
+    }  
+    h3 {
+        color: $accent-color;
+        margin: 0 4px;
+    }      
+}

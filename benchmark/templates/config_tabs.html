@@ -1,0 +1,346 @@
+
+<main>
+    <div data-tab-component>
+        <ul class="tab-list red-text text-darken-2">
+            {% for exp in experiments %}
+            <li class="tab-item"><a class="tab-link" href="#{{exp.name[-6:]}}">{{exp.name}}</a></li>
+            {% endfor %}
+        </ul>
+        {% for exp in experiments %}
+        <section id="#{{exp.name[-6:]}}" class="tab-panel">
+            <pre class="language-json">
+                <code class="language-json">{{exp.config}}</code>
+            </pre>
+        </section>
+        {% endfor %}
+    </div>
+</main>
+
+<!-- ------------------------------------------------ -->
+<!-- ------------------------------------------ STYLE -->
+<style>
+main {
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.tab-item a {
+    color: gray;
+    font-size: 16px;
+}
+
+pre.language-json {
+    height: 600px;
+}
+
+[role="tablist"] {
+  padding: 0;
+  margin: 0;
+}
+
+[role="presentation"] {
+  display: block;
+}
+
+[role="presentation"][data-tab-active] {
+  color: #ee6e73;
+  border-bottom: 2px solid #ee6e73;
+  -webkit-transition: all 100ms cubic-bezier(0.42, 0, 1, 1);
+  transition: all 100ms cubic-bezier(0.42, 0, 1, 1);
+}
+
+[role="tab"] {
+  display: block;
+  padding: 1rem 2rem;
+  position: relative;
+  text-decoration: none;
+  -webkit-transition: all 100ms cubic-bezier(0.42, 0, 1, 1);
+  transition: all 100ms cubic-bezier(0.42, 0, 1, 1);
+}
+
+[role="tab"]:focus {
+    outline: 0;
+    color: #ee6e73;
+}
+
+[role="tabpanel"] {
+  padding: 1rem;
+}
+
+[role="tabpanel"] h2 {
+  margin-top: 0;
+}
+
+[role="tabpanel"][aria-hidden="true"] {
+  display: none;
+}
+
+[role="tabpanel"]:focus {
+  outline: 0;
+  box-shadow: inset 0 0 0 2px lightgrey;
+}
+
+@media screen and (min-width: 800px) {
+  [role="presentation"] {
+    display: inline-block;
+  }
+
+  [role="presentation"][data-tab-active] [role="tab"]:after {
+    content: '';
+    color: #ee6e73;
+    display: inline-block;
+    margin: auto;
+    position: absolute;
+    bottom: -9px;
+    left: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+  }
+}
+
+</style>
+
+<!-- -------------------------------------------------------->
+<!-- ----------------------------------------- TABS SCRIPT -->
+<script>
+    const a11yTabs = (function tabsComponentIIFE(global, document) {
+        'use strict';
+
+
+        // Format JSON configuration
+        var jList = document.getElementsByTagName("code"), className = "language-json";
+        Array.prototype.forEach.call(jList, e => {
+            let temp = JSON.parse(e.textContent.replace(/'/g, '"'))
+            e.textContent = JSON.stringify(temp, null, 2);
+        });
+
+        const tabInstances = new WeakMap();
+
+        /**
+         * Instantiates the component
+         * @constructor
+         * @param {DOM Node} element
+         */
+        const TabComponent = function TabComponent(element, options) {
+            if (!element || !element.nodeType) {
+                throw new Error(
+                    'The DOM element was not found when creating the tab component'
+                );
+            }
+            const defaults = {
+                tabList: '.tab-list',
+                tabItem: '.tab-item',
+                tabLink: '.tab-link',
+                tabPanel: '.tab-panel'
+            };
+            this.options = Object.assign(defaults, options);
+
+            this.element = element;
+            this.tabList = element.querySelector(this.options.tabList);
+            this.tabItems = [].slice.call(
+                this.tabList.querySelectorAll(this.options.tabItem)
+            );
+            this.tabLinks = [].slice.call(
+                this.tabList.querySelectorAll(this.options.tabLink)
+            );
+            this.tabPanels = [].slice.call(
+                element.querySelectorAll(this.options.tabPanel)
+            );
+
+            this.currentIndex = 0;
+
+            this.tabList.setAttribute('role', 'tablist');
+
+            this.tabItems.forEach((item, index) => {
+                item.setAttribute('role', 'presentation');
+
+                if (index === 0) {
+                    item.setAttribute('data-tab-active', '');
+                }
+            });
+
+            this.tabLinks.forEach((item, index) => {
+                item.setAttribute('role', 'tab');
+                item.setAttribute('id', 'tab' + index);
+
+                if (index > 0) {
+                    item.setAttribute('tabindex', '-1');
+                } else {
+                    item.setAttribute('aria-selected', 'true');
+                }
+            });
+
+            this.tabPanels.forEach((item, index) => {
+                item.setAttribute('role', 'tabpanel');
+                item.setAttribute('aria-labelledby', 'tab' + index);
+                item.setAttribute('tabindex', '-1');
+
+                if (index > 0) {
+                    item.setAttribute('hidden', '');
+                }
+            });
+
+            this.eventCallback = handleEvents.bind(this);
+            this.tabList.addEventListener('click', this.eventCallback, false);
+            this.tabList.addEventListener('keydown', this.eventCallback, false);
+
+            tabInstances.set(this.element, this);
+        };
+
+        TabComponent.prototype = {
+            /**
+             * Event handler for all tab interactions
+             * @param {number} index - Index of the tab being activiated
+             * @param {string} direction -
+             */
+            handleTabInteraction: function handleTabInteraction(index, direction) {
+                const currentIndex = this.currentIndex;
+                let newIndex = index;
+
+                // The click event does not pass in a direction. This is for keyboard support
+                if (direction) {
+                    if (direction === 37) {
+                        newIndex = index - 1;
+                    } else {
+                        newIndex = index + 1;
+                    }
+                }
+
+                // Supports continuous tabbing when reaching beginning or end of tab list
+                if (newIndex < 0) {
+                    newIndex = this.tabLinks.length - 1;
+                } else if (newIndex === this.tabLinks.length) {
+                    newIndex = 0;
+                }
+
+                // update tabs
+                this.tabLinks[currentIndex].setAttribute('tabindex', '-1');
+                this.tabLinks[currentIndex].removeAttribute('aria-selected');
+                this.tabItems[currentIndex].removeAttribute('data-tab-active');
+
+                this.tabLinks[newIndex].setAttribute('aria-selected', 'true');
+                this.tabItems[newIndex].setAttribute('data-tab-active', '');
+                this.tabLinks[newIndex].removeAttribute('tabindex');
+                this.tabLinks[newIndex].focus();
+
+                // update tab panels
+                this.tabPanels[currentIndex].setAttribute('hidden', '');
+                this.tabPanels[newIndex].removeAttribute('hidden');
+
+                this.currentIndex = newIndex;
+
+                return this;
+            },
+
+            /**
+             * Set tab panel focus
+             * @param {number} index - Tab panel index to receive focus
+             */
+            handleTabpanelFocus: function handleTabPanelFocus(index) {
+                this.tabPanels[index].focus();
+
+                return this;
+            }
+        };
+
+        /**
+         * Creates or returns existing component
+         * @param {string} selector
+         */
+        function createTabComponent(selector, options) {
+            const element = document.querySelector(selector);
+            return tabInstances.get(element) || new TabComponent(element, options);
+        }
+
+        /**
+         * Destroys an existing component
+         * @param {DOM Node} element
+         */
+        function destroyTabComponent(element) {
+            if (!element || !element.nodeType) {
+                throw new Error(
+                    'The DOM element was not found when deleting the tab component'
+                );
+            }
+
+            let component = tabInstances.get(element);
+            component.tabList.removeAttribute('role', 'tablist');
+
+            component.tabItems.forEach((item, index) => {
+                item.removeAttribute('role', 'presentation');
+
+                if (index === 0) {
+                    item.removeAttribute('data-tab-active');
+                }
+            });
+
+            component.tabLinks.forEach((item, index) => {
+                item.removeAttribute('role', 'tab');
+                item.removeAttribute('id', 'tab' + index);
+
+                if (index > 0) {
+                    item.removeAttribute('tabindex', '-1');
+                } else {
+                    item.removeAttribute('aria-selected', 'true');
+                }
+            });
+
+            component.tabPanels.forEach((item, index) => {
+                item.removeAttribute('role', 'tabpanel');
+                item.removeAttribute('aria-labelledby', 'tab' + index);
+                item.removeAttribute('tabindex', '-1');
+
+                if (index > 0) {
+                    item.removeAttribute('hidden');
+                }
+            });
+
+            component.tabList.removeEventListener('click', component.eventCallback);
+            component.tabList.removeEventListener('keydown', component.eventCallback);
+            tabInstances.delete(component.element);
+        }
+
+        /**
+         * Handles all event listener callbacks
+         * @param {event} event
+         */
+        function handleEvents(event) {
+            if (event.type === 'click') {
+                event.preventDefault();
+                TabComponent.prototype.handleTabInteraction.call(
+                    this,
+                    this.tabLinks.indexOf(event.target)
+                );
+            }
+
+            if (event.type === 'keydown') {
+                const index = this.tabLinks.indexOf(event.target);
+
+                // Left and right arrows
+                if (event.which === 37 || event.which === 39) {
+                    event.preventDefault();
+                    TabComponent.prototype.handleTabInteraction.call(
+                        this,
+                        index,
+                        event.which
+                    );
+                }
+
+                // Down arrow
+                if (event.which === 40) {
+                    event.preventDefault();
+                    TabComponent.prototype.handleTabpanelFocus.call(this, index);
+                }
+            }
+        }
+
+        return {
+            create: createTabComponent,
+            destroy: destroyTabComponent
+        };
+    })(window, document);
+
+    const tabComponent = a11yTabs.create('[data-tab-component]')
+</script>

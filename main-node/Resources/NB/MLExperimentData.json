@@ -1,0 +1,10 @@
+{
+  "laplace_correction": [true],
+  "estimation_mode": ["full"],
+  "bandwidth_selection": ["heuristic", "fix"],
+  "bandwidth": [0.001, 0.5, 1, 5, 50, 100, 1000],
+  "minimum_bandwidth": [0.001, 0.5, 5, 50, 100, 1000],
+  "number_of_kernels": [1, 4, 50, 100, 1000],
+  "use_application_grid": [true, false],
+  "application_grid_size": [10, 200, 1000, 10000]
+}

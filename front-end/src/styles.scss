@@ -1,0 +1,18 @@
+
+// @import '~@angular/material/prebuilt-themes/deeppurple-amber.css';
+@import "~@angular/material/prebuilt-themes/indigo-pink.css"; 
+
+mat-card {
+    margin: 5px;
+}
+
+body {
+    margin: 0;
+}
+
+app-root {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    min-height: 100vh;
+}

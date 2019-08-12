@@ -1,64 +1,79 @@
 __doc__ = """
-Module to read config and tasks for execute
-"""
-import json
+    Module to load configurations and experiment descriptions."""
+import logging
+from sys import argv
+
 from tools.file_system_io import load_json_file, create_folder_if_not_exists
+from tools.json_validator import is_json_file_valid
+from tools.front_API import API
 
 
-def read_global_config(global_config_path):
+def load_global_config(global_config_path: str = './GlobalConfig.json'):
     """
     Method reads configuration for BRISE from GlobalConfig.json configuration file.
     :param global_config_path: sting path to file.
     :return: dict with configuration for BRISE
     """
-    try:
-        config = load_json_file(global_config_path)
-        return config
+    logger = logging.getLogger(__name__)
 
-    except IOError as e:
-        print('No config file found!')
-        print(e)
-        exit(3)
-    except ValueError as e:
-        print('Invalid config file!')
-        print(e)
-        exit(3)
+    # Check if main.py running with a specified global configuration file path
+    if len(argv) > 2:
+        global_config_path = argv[2]
+
+    config = load_json_file(global_config_path)
+    create_folder_if_not_exists(config['results_storage'])
+    logger.info("Global BRISE configuration loaded from file '%s'" % global_config_path)
+    return config
 
 
-def load_task(path_to_file="./Resources/task.json"):
+def load_experiment_description(exp_desc_file_path: str = './Resources/EnergyExperiment.json'):
     """
-    Method reads task configuration from task.json file.
-    :param path_to_file: sting path to task file.
-    :return: dict with task parameters and task data.
+    Method reads the Experiment Description from specified file and performs it validation according to specified
+        schema.
+    :param exp_desc_file_path: String. Relative path to Experiment Description file from root of main node folder.
+    :return: Dictionary. Loaded Experiment Description.
     """
-    try:
-        task = load_json_file(path_to_file)
-        data = load_json_file(task["DomainDescription"]["DataFile"])
-        taskDataPoints = []
-        for dimension in task["DomainDescription"]["FeatureNames"]:
-            taskDataPoints.append(data[dimension])
-        task["DomainDescription"]["AllConfigurations"] = taskDataPoints
-    except IOError as e:
-        print("Error with reading task.json file: %s" % e)
-        exit(1)
-    except json.JSONDecodeError as e:
-        print("Error with decoding task: %s" % e)
-        exit(1)
-    return task
+    # Check if main.py running with a specified experiment description file path
+    if len(argv) > 1:
+        exp_desc_file_path = argv[1]
 
-def initialize_config(argv):
+    # Load Experiment description from json file.
+    experiment_description = load_json_file(exp_desc_file_path)
+
+    # Add Parameters data to experiment description
+    data = load_json_file(experiment_description["DomainDescription"]["DataFile"])
+    experiment_data_configurations = []
+    for dimension in experiment_description["DomainDescription"]["FeatureNames"]:
+        experiment_data_configurations.append(data[dimension])
+    experiment_description["DomainDescription"]["AllConfigurations"] = experiment_data_configurations
+
+    # Validate Experiment description file.
+    logging.getLogger(__name__).info("The Experiment Description was loaded from the file '%s'." % exp_desc_file_path)
+
+    return experiment_description
+
+
+def validate_experiment_description(experiment_description: dict,
+                                    schema_file_path: str = './Resources/schema/experiment.schema.json'):
     """
-    Load global config and task config.
-    :return: (dict globalConfiguration, dict taskConfiguration)
+    Performs validation and raises error if provided Experiment Description does not pass the validation
+        according to the schema
+    :param experiment_description: Dict. Experiment Description.
+    :param schema_file_path:
+    :return:
     """
-    taskPath = argv[1] if len(argv) > 1 else './Resources/task.json'
-    global_config_path = argv[2] if len(argv) > 2 else './GlobalConfig.json'
-    print("Global BRISE configuration file: |%s|, task description file: |%s|" % (global_config_path, taskPath))
-    globalConfig = read_global_config(global_config_path)
+    logger = logging.getLogger(__name__)
 
-    #   Loading task config and creating config points distribution according to Sobol.
-    # {"task_name": String, "params": Dict, "taskDataPoints": List of points }
-    task = load_task(taskPath)
-    create_folder_if_not_exists(globalConfig['results_storage'])
+    if is_json_file_valid(experiment_description=experiment_description, schema_path=schema_file_path):
+        logger.info("Provided Experiment Description is valid.")
+    else:
+        msg = "Provided Experiment Description have not passed the validation using schema in file %s. " \
+              "Experiment description: \n%s" % (schema_file_path, experiment_description)
+        logger.error(msg)
+        API().send('log', 'error', message=msg)
+        raise ValueError(msg)
 
-    return globalConfig, task
+
+if __name__ == "__main__":
+    logging.warn("Loaded Global config:\n%s" % load_global_config())
+    logging.warn("Loaded Experiment description:\n%s" % load_experiment_description())
