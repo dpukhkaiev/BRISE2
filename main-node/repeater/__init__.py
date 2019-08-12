@@ -1,1 +1,1 @@
-__all__ = ["default_repeater", "student_repeater"]
+__all__ = ["repeater", "default", "student_deviation"]

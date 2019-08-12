@@ -1,0 +1,69 @@
+@import '~variables.scss';
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    // background-color: $divider-color;
+    .brise {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .description {
+        color: $accent-color;
+        font-size: .8em;
+        margin-top: -10px;
+    }
+    svg {
+        margin-left: 5px;
+    }
+    .haec {
+        align-self: center;
+        margin-left: auto;
+        margin-right: 25px;
+        img {
+            height: 40px; 
+            -webkit-filter: grayscale(100%);
+            filter: grayscale(100%);
+            -webkit-transition: .3s ease-in-out;
+            transition: .3s ease-in-out;
+        }
+        &:hover img {
+            -webkit-filter: grayscale(0);
+            filter: grayscale(0);
+        }
+    }
+}
+#logo {
+    fill: $primary-color-dark;
+    transition: fill 0.5s ease;
+    &:hover{
+        fill: $accent-color; 
+    }
+}
+
+.wrapper {
+    padding: 0 calc((100% - #{$break-large})/2);
+}
+.content {
+    flex: 1;
+}
+
+h1 {
+    color: $primary-color;
+    margin-bottom: 0;
+    .version {
+        color: $secondary-text-color;
+        font-size: .6em;
+    }
+}
+
+.footer {
+    // background-color: $divider-color;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    margin-top: 50px;
+
+}

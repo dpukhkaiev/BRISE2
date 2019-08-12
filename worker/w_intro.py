@@ -1,52 +1,33 @@
 import os
 import threading # ?
 import logging
+import socketio
 from concurrent.futures import ThreadPoolExecutor
 
-from socketIO_client import SocketIO, BaseNamespace # GitHub - https://github.com/invisibleroads/socketIO-client
-from worker import work, random_1, random_2, energy_consumption # available workers methods
+from tools.reflective_worker_method_import import generate_menu
 
-logging.getLogger('socketIO-client').setLevel(logging.DEBUG)
+logging.getLogger('socketIO-client').setLevel(logging.INFO)
 logging.basicConfig()
 
 executor = ThreadPoolExecutor(1) # DOCS https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
 
-# promisse for worker execution. Has the last executed stream
+# promise for worker execution. Has the last executed stream
 prm = None
 task_id = None
 task_iterator = 0
 
-# Object with available executable methods
-menu = {
-    'random_1': random_1,
-    'random_2': random_2,
-    'energy_consumption': energy_consumption,
-    'work': work
-}
+# Generate object with available executable methods
+menu = generate_menu()
 
-# -----------------------------------------------
-# Namespace
-# -----------------------------------------------
-
-class StatusNamespace(BaseNamespace):
-    def on_pong_status_response(self, *args):
-        print(':: status pong', args)
-
-class TaskNamespace(BaseNamespace):
-    def on_pong_task_response(self, *args):
-        print(':: task pong', args)
-# -----------------------------------------------
 # Connect to worker service
-socketIO = SocketIO('w_service', 80, BaseNamespace)
- 
-status = socketIO.define(StatusNamespace, '/status')
-task = socketIO.define(TaskNamespace, '/task')
+socketIO = socketio.Client()
+
 
 # -----------------------------------------------
 # Basic functionality
-
+@socketIO.on('ping')
 def ping_obj(*argv):
-    ''' Ping response'''
+    """ Ping response """
     return {
         'message': 'pong!',
         'node': os.environ['workername'],
@@ -54,8 +35,13 @@ def ping_obj(*argv):
         'task id': task_id or 'null'
     }
 
+@socketIO.on('reg_response', namespace='/worker_management')
+def reg_response(sid, data):
+    print('Server confirmed registration')
+
+@socketIO.on('assign', namespace='/worker_management')
 def run_task(*argv):
-    ''' Run new task '''
+    """ Run new task """
     response_object = {
         'status': 'fail',
         'message': 'null'
@@ -65,6 +51,7 @@ def run_task(*argv):
     global task_iterator
 
     # separate new task
+    new_task = None
     if argv:
         new_task = argv[0]
 
@@ -85,8 +72,8 @@ def run_task(*argv):
 
             # thread
             task_iterator=+1
-            prm = executor.submit(method, new_task['run']['param'])
-            prm.add_done_callback(lambda ftr: task.emit('result', task_result(ftr.result())))
+            prm = executor.submit(method, new_task['run']['param'],new_task['scenario'])
+            prm.add_done_callback(lambda ftr: socketIO.emit('result', task_result(ftr.result()), namespace='/worker_management'))
 
             response_object = {
                 'status': 'run',
@@ -95,10 +82,11 @@ def run_task(*argv):
                 'task id': new_task['id']
             }
 
-    task.emit('assign', response_object)
+    socketIO.emit('assign', response_object, namespace='/worker_management')
 
+@socketIO.on('status', namespace='/worker_management')
 def worker_status():
-    ''' Worker status. Check thread '''
+    """ Worker status. Check thread """
     if prm:            
         done = prm.done()
         response_object = {
@@ -113,8 +101,9 @@ def worker_status():
         }
         return response_object
 
+@socketIO.on('terminate', namespace='/worker_management')
 def term_task(req_id):
-    ''' Terminate task '''
+    """ Terminate task """
     global task_id
     response_object = {
         'status': 'wrong id',
@@ -126,28 +115,22 @@ def term_task(req_id):
     else:
         return response_object
 
+@socketIO.on('result', namespace='/worker_management')
 def task_result(data):
-    ''' Get results '''
+    """ Get results
+            The same structure will be send to main-node
+    """
     return {
-        'worker status': 'online',
-        'node': os.environ['workername'],
-        'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else 'null',
-        'return': str(data),
+        'worker': os.environ['workername'],
+        'result': prm.result(0) if prm and hasattr(prm, 'result') and prm.done() else str(data),
         'task id': task_id or 'null'
     }
 
+@socketIO.on('connect')
+def on_connect():
+    print('connected to server')
+    print('Sending registration data')
+    socketIO.emit('register_worker', namespace='/worker_management', callback=print)
 
-# ------------------------------------------
-# Listen events
-
-status.on('ping', ping_obj)
-
-task.on('assign', run_task)
-task.on('status', worker_status)
-task.on('terminate', term_task)
-task.on('result', task_result)
-
-# Registration. Hello!
-socketIO.emit('ping', {'worker': os.getenv('workername')})
-
+socketIO.connect('http://w_service:49153', namespaces=['/worker_management'])
 socketIO.wait()

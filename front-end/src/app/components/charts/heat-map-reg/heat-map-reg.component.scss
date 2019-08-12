@@ -1,0 +1,15 @@
+@import '~variables.scss';
+h3 {
+    color: $primary-text-color;
+}
+
+.select-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-top: 12px;
+    .mat-form-field {
+        max-width: 120px;
+    }
+}

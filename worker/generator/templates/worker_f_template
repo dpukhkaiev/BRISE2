@@ -1,0 +1,27 @@
+def {{task_name}}(task_parameters: dict, scenario: dict):
+    try:
+        {%- for param in in_parameters %}
+        {{ param }} = str(param['{{param}}'])
+        {%- endfor %}
+        {% for scen in in_scenario %}
+        {{ scen }} = str(scenario['{{scen}}'])
+        {%- endfor %}
+
+        #
+        # main code here
+        #
+
+        result = #somehow get result
+        return {
+             {%- for param in out_parameters %}
+             {%- if loop.index  < out_parameters|length%}
+             '{{param}}': result["{{param}}"],
+             {%- else %}
+             '{{param}}': result["{{param}}"]
+             {%- endif %}
+             {%- endfor %}
+        }
+    except Exception as error:
+        logging.getLogger(__name__).error("An error occurred during performing '{{task_name}}' Task with parameters %s: %s" % (param, e))
+        
+        
