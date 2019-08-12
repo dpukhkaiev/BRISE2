@@ -1,193 +1,88 @@
 __doc__ = """
-    Describes logic of selection algorithm based on Sobol sequences in Sobol space."""
+Describes logic of selection algorithm based on Sobol sequences in Sobol space."""
 
 import sobol_seq
-import logging
-
+import numpy
 from selection.selection_algorithm_abs import SelectionAlgorithm
 from scipy.spatial.distance import euclidean
 from itertools import product
 
-
 class SobolSequence(SelectionAlgorithm):
-    def __init__(self, experiment):
+
+    def __init__(self, selection_algorithm_config, search_space):
         """
         Creates SobolSequence instance that stores information about number of generated points
-        :param experiment: the instance of Experiment class
+        :param selection_algorithm_config: Dict with configuration of selection algorithm.
+        :param search_space: list of dimensions that describes a
+
         """
 
-        self.search_space = experiment.description["DomainDescription"]["AllConfigurations"]
-        self.dimensionality = len(self.search_space)
-        self.numOfGeneratedPoints = 0  # Counter of retrieved points from Sobol sequence.
-        self.returned_points = []  # Storing previously returned points.
+        self.dimensionality = len(search_space)
+        self.search_space = search_space
+        self.numOfGeneratedPoints = 0
+        self.returned_points = []   # Storing previously returned points
         self.hypercube_coordinates = []
-        self.logger = logging.getLogger(__name__)
 
-        # Need to use floating numbers of indexes for searching distances between target point
-        # and other points in hypercube
-        for dimension in self.search_space:
+        # Need to use floating numbers of indexes for searching distances between target point and other points in hypercube
+        for dimension in search_space:
             dim_indexes = [float(x) for x in range(len(dimension))]
             self.hypercube_coordinates.append(dim_indexes)
 
         # Building hypercube
         self.hypercube = list(product(*self.hypercube_coordinates))
 
-    def __generate_sobol_vector(self):
-        """
-            Generates a next sobol vector in the current search space.
-            :return: sobol vector as numpy array.
-        """
-
-        # https://github.com/naught101/sobol_seq#usage
-        vector, _ = sobol_seq.i4_sobol(self.dimensionality, self.numOfGeneratedPoints + 1)
-        self.numOfGeneratedPoints += 1
-
-        return vector
-
-    def __impose_point_to_search_space(self, point):
+    def __generate_sobol_seq(self, number_of_data_points=1, skip=0):
         """
             Generates sobol sequence of uniformly distributed data points in N dimensional space.
             :param number_of_data_points: int - number of points that needed to be generated in this iteration
-            :param skip: int - number of points to skip from the beginning of sequence,
-                               because sobol_seq.i4_sobol_generate stateless.
+            :param skip: int - number of points to skip from the beginning of sequence, because sobol_seq.i4_sobol_generate stateless.
             :return: sobol sequence as numpy array.
-            Takes point with coordinates of exact configuration from search space and retrieves real configuration.
-        :param point: list.
-        :return: list. Configuration from search space.
         """
 
-        imposed_point = []
+        sequence = sobol_seq.i4_sobol_generate(self.dimensionality, skip + number_of_data_points)[skip:]
+        self.numOfGeneratedPoints += number_of_data_points
+        return sequence
 
-        for dimension_index, dimension_value in enumerate(point):
-            imposed_point.append(self.search_space[int(dimension_index)][int(dimension_value)])
-
-        return imposed_point
-
-    def get_next_configuration(self):
+    def get_next_point(self):
         """
-            Will return next data point from initiated Sobol sequence imposed to the search space.
-        :return: list - point in current search space.
+        Will return next data point from initiated Sobol sequence imposed to the search space.
+        :return:
         """
+        # Used to cut out previously generated points - by this counter sobol sequence object knows number of previously
+        # returned points and skips them.
+        skip = self.numOfGeneratedPoints
+
         # Getting next point from sobol sequence.
-        point = self.__generate_sobol_vector()
+        point = self.__generate_sobol_seq(skip=skip)[0]
 
         # Imposed this point to hypercube dimension sizes.
-        point = [len(self.hypercube_coordinates[dimension_index]) * dimension_value for dimension_index, dimension_value
-                 in enumerate(point)]
+        point = [len(self.hypercube_coordinates[dimension_index]) * dimension_value for dimension_index, dimension_value in enumerate(point)]
 
         # Calculate dictionary (keys - distance, values - point) with distances to self.numOfGeneratedPoints
         # nearest points in search space from this point.
         #
-        # self.numOfGeneratedPoints + 1(and current point), because in the worst case we will
+        # self.numOfGeneratedPoints, because in the worst case we will
         # skip(because they was previously returned) this number of points
 
         distances_dict = {}
         for hypercube_point in self.hypercube:
-            if len(distances_dict) < self.numOfGeneratedPoints + 1:
+            if len(distances_dict) < self.numOfGeneratedPoints:
                 distances_dict[euclidean(point, hypercube_point)] = hypercube_point
-            elif len(distances_dict) == self.numOfGeneratedPoints + 1:
+            elif len(distances_dict) == self.numOfGeneratedPoints:
                 distances = list(distances_dict.keys())
                 distances.sort()
                 del(distances_dict[distances.pop()])
                 distances_dict[euclidean(point, hypercube_point)] = hypercube_point
 
-        # Picking existing configuration point from hypercube by the smallest distance to generated by Sobol point,
-        # if it was not previously picked.
-        unique_point = None
+        # Picking existing configuration point from hypercube by the smallest distance if it was not previously picked.
         distances = list(distances_dict.keys())
         distances.sort()
         for current_distance in distances:
-            candidate = self.__impose_point_to_search_space(distances_dict[current_distance])
-            if candidate not in self.returned_points:
-                unique_point = candidate
-                self.returned_points.append(candidate)
+            if distances_dict[current_distance] not in self.returned_points:
+                point = distances_dict[current_distance]
+                self.returned_points.append(point)
                 break
-        if not unique_point:
-            #   In this point Sobol unable to generate unique configuration as all
-            # configurations have been returned at least once.
-            unique_point = self.__impose_point_to_search_space(point)
-            self.logger.warn("Retrieving not unique configuration point from the Sobol selection algorithm!")
-        self.logger.debug("Retrieving new configuration from the Sobol sequence: %s" % str(unique_point))
-        return unique_point
 
-    def __disable_point(self, point):
-        """
-            This method should be used to let Sobol sequence know,
-            that some points of search space have been already picked by prediction model.
-        :param point: list. Point from search space.
-        :return: None
-        """
-        if point not in self.returned_points:
-            self.returned_points.append(point)
-            return True
-        else:
-            self.logger.warn("WARNING! Trying to disable point that have been already retrieved(or disabled).")
-            return False
-
-    def disable_configurations(self, configurations):
-        """
-            This method should be used to forbid points of the Search Space that 
-            have been already picked as a Model prediction.
-        :param configurations: list of configurations. Configurations from search space.
-        :return: None
-        """
-        for p in configurations:
-            self.__disable_point(p.get_parameters())
-
-
-if __name__ == "__main__":
-    """
-    Add these lines to the beginning of the script to be able to run it stand-alone. (fixes imports):
-
-from os import chdir
-from os.path import abspath
-from sys import path
-chdir('..')
-path.append(abspath('.'))
-    """
-    from time import time
-    from random import choice
-
-
-    def test_for_duplicates(generated_configs):
-        # helper function
-        for config in generated_configs:
-            if generated_configs.count(config) > 1:
-                print("Repeated(%s times) configuration(%s) found!" % (generated_configs.count(config), config))
-                return True
-        return False
-
-
-    test_space = [[x for x in range(8)],
-                  [x / 10 for x in range(8)],
-                  [x * 10 for x in range(8)]]  # 3D search space with 512 points in it.
-
-    print("Testing the basic functionality for retrieving an unique points.")
-    started = time()
-    sobol = SobolSequence(None, test_space)
-    generated_configs = [sobol.get_next_configuration() for _ in range(len(list(product(*test_space))))]
-    assert test_for_duplicates(generated_configs) is False, 'Got duplicates in normal search space.'
-    print("Time to generate all(%s) points in these search space: %s " % (len(generated_configs), time() - started))
-
-    print("Testing basic functionality for retrieving more points that the search space contains. Duplicates appears.")
-    sobol = SobolSequence(None, test_space)
-    generated_configs = [sobol.get_next_configuration() for _ in range(len(list(product(*test_space))) + 1)]
-    assert test_for_duplicates(generated_configs) is True, 'Unique configs with exceeding search space, investigate.'
-
-    print("Testing disabling the same point multiple times and further proper work of the Sobol.")
-    sobol = SobolSequence(None, test_space)
-    configuration = choice(list(product(*test_space)))
-    assert sobol.__disable_point(configuration) is True, "Unable to disable configuration!"
-    assert sobol.__disable_point(configuration) is False, "Able to disable same configuration twice!"
-    generated_configs = [sobol.get_next_configuration() for _ in range(len(list(product(*test_space))) - 1)]
-    assert test_for_duplicates(generated_configs) is False, "Got duplicates in search space with disabled configurations."
-
-    print("Testing the multiple points disabling and further proper work of the Sobol.")
-    sobol = SobolSequence(None, test_space)
-    for point in list(product(*test_space))[0: int(len(list(product(*test_space)))/3)]:
-        sobol.__disable_point(point)
-    generated_configs = [sobol.get_next_configuration() for _ in range(int(len(list(product(*test_space)))/3))]
-    assert test_for_duplicates(generated_configs) is False, \
-        "Got duplicates with multiple (%s) disabled points!" % len(sobol.returned_points)
-
-    print("\nUnit test pass.")
+        # Assign value to this point from search space.
+        result_to_return = [self.search_space[int(dimension_index)][int(dimension_value)] for dimension_index, dimension_value in enumerate(point)]
+        return result_to_return

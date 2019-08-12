@@ -1,76 +1,78 @@
 # Launch & Build a bunch containers with workers and one service for them.
-version: "3.7"
+version: "2"
 services: 
-  main_node:
-    build: ./main-node/
-    command: python3.7 api-supreme.py
-    tty: true
-    container_name: main-node
-    networks:
-     - brise_network
-    ports:
-      - "49152:49152"
-    depends_on:
-      - "w_service"
-    environment:
-      - EXP_DUMP_NAME=undefined
-
-  w_service:
-    build: ./worker_service/
-    command: python3 intro.py
-    stdin_open: true
-    tty: true
-    container_name: w_service
-    networks:
-      brise_network:
-        aliases:
-          - w_service
-    ports:
-      - "49153:49153"
-    environment:
-      - FLASK_APP=worker_service/__init__.py
-      - FLASK_DEBUG=1
-
-  front-end:
-    build: ./front-end/
-    container_name: front-end
-    tty: true
-    networks:
-     - brise_network
-    ports:
-      - "80:80"
-
   w_alpha:
+#    build: ./rapid_miner_worker/
     build: ./worker/
     container_name: w_alpha
     environment:
       - workername=alpha
     networks:
-      - brise_network
-    depends_on:
-      - "w_service"
-
+      - worker_net
+    ports:
+      - "1831:8080"  # if direct access is required
+    # volumes:
+    #   - "./rapid_miner_worker:/usr/src/app"
   w_beta:
+#    build: ./rapid_miner_worker/
     build: ./worker/
     container_name: w_beta
     environment:
       - workername=beta
     networks:
-      - brise_network
-    depends_on:
-      - "w_service"
-
+      - worker_net
+    ports:
+      - "1832:8080" # if direct access is required
+    # volumes:
+    #   - "./worker:/usr/src/app"
   w_gamma:
-    build: ./worker/
-    container_name: w_gamma
-    environment:
-      - workername=gamma
+     build: ./worker/
+     container_name: w_gamma
+     environment:
+       - workername=gamma
+     networks:
+       - worker_net
+     ports:
+       - "1833:8080" # if direct access is required
+  #   volumes:
+  #     - "./rapid_miner_worker:/usr/src/app"
+  w_service:
+    build: ./worker_service/
+    command: python3 intro.py
+    # command: sh
+    stdin_open: true
+    tty: true
+    container_name: w_service
     networks:
-      - brise_network
+      worker_net:
+        aliases:
+          - w_service
+    ports:
+      - "80:80"
+    volumes:
+      - "./worker_service:/usr/src/app"
+    # depends_on:
+    #     - "w_alpha"
+    #     - "w_beta"
+    environment:
+      - FLASK_APP=worker_service/__init__.py
+      - FLASK_DEBUG=1
+
+  main_node:
+    build: ./main-node/
+    command: /usr/sbin/sshd -D
+    tty: true
+    container_name: main-node
+    networks:
+     - worker_net
+    ports:
+      - "2222:2222"
+      - "9000:9000"
     depends_on:
       - "w_service"
+#    volumes:
+#      - "./main-node/Results:/root/Results"
 
 networks:
-  brise_network:
+  worker_net:
     driver: bridge
-    name: brise_network

@@ -7,13 +7,13 @@ class Task():
      The basic working unit that executed by the workers
     '''
 
-    def __init__(self, method, params, scenario="null", owner="null", appointment="null", receive="null", accept="null", result="null"):
+    def __init__(self, method, params, conf="null", owner="null", appointment="null", receive="null", accept="null", result="null"):
         self.id = uuid.uuid4().hex
         self.run = {
            'method': method,
            'param': params
         }
-        self.scenario = scenario
+        self.conf = conf
         self.meta = {
             'owner': owner,
             'appointment': appointment,
@@ -26,26 +26,35 @@ class Task():
         return {
             'id': self.id,
             'run': self.run,
-            'scenario': self.scenario,
+            'config': self.conf,
             'meta_data': self.meta
         }
 
 
-def task_parser(tasks):
-    """
-    Method parses data from `tasks` parameter into Task objects and adds tasks to `task_list`.
-    :param tasks: list of dictionaries that represent tasks for workers.
-    :return: list with ids and list of tasks.
-    """
+def t_parser(payload): 
     # Parse json data in to Task objects
     task_list = list()
     id_list = list()    
-    for task in tasks:
-        par = task['params']
-        new = Task(method=task['task_name'],params=par,scenario=task['scenario'],receive=time.time())
+    for method in payload:
+        par = method['params']
+        par['ws_file'] = method['worker_config']['ws_file']
+        new = Task(method=method['task_name'],params=par,conf=method['worker_config'],receive=time.time())        
         task_list.append(new)
         id_list.append(new.id)
     return id_list, task_list
+
+def t_parser_2(payload): 
+    # Parse json data in to Task objects. Special for the Jeka regresion
+    task_list = list()
+    id_list = list()
+    for values in payload["param_values"]:
+        p_unit = dict(zip(payload["params_names"], values))
+        p_unit.update(dict(payload["worker_config"]))
+        new = Task(method=payload['task_name'],params=p_unit,conf=payload['worker_config'],receive=time.time())        
+        task_list.append(new)
+        id_list.append(new.id)
+    return id_list, task_list
+
 
 
 class Stack():

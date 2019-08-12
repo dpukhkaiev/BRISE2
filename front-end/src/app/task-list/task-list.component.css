@@ -1,0 +1,40 @@
+.box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: flex-start
+}
+
+.stack, .result {
+  flex-grow: 2;
+  min-width: 250px;
+}
+
+/* Selected item */
+.selected {
+    font-weight: 700;
+    border-left: 2px solid rgba(0, 0, 0, 0.9);
+    background: #00000014;
+}
+.selected .mat-list-icon {
+  color: rgba(0, 0, 0, 0.9);
+}
+mat-tab-body mat-grid-tile {
+  height: 100%;
+}
+
+
+/* Icons */
+.mat-list-icon {
+  color: rgba(0, 0, 0, 0.54);
+}
+.mat-icon {
+  color: rgba(0, 0, 0, 0.54);
+}
+.mat-icon + span {
+  color: rgba(0, 0, 0, 0.54);
+  font-size: .95em;
+  vertical-align: middle;
+  margin-right: 5px;
+}

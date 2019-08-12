@@ -1,9 +1,0 @@
-{
-  "subComponentUnassignedFactor": [1, 2, 3, 5, 10, 100, 1000, 10000],
-  "softwareComponentUnassignedFactor": [1, 2, 3, 5, 10, 100, 1000, 10000],
-  "hardScoreStartingTemperaturePercentage" : [1, 2, 3, 5, 10, 20, 30, 50, 75, 100],
-  "softScoreStartingTemperaturePercentage" : [1, 2, 3, 5, 10, 20, 30, 50, 75, 100],
-  "acceptedCountLimit" : [1, 2, 5, 10, 20, 30, 40, 50],
-  "millisecondsSpentLimit" : [10000],
-  "unimprovedMillisecondsSpentLimit" : [10000]
-}

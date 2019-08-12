@@ -1,59 +1,52 @@
-import os
-
-from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
-import socketio
+from flask import Flask, jsonify, request
+from flask_socketio import SocketIO, send, emit, join_room, leave_room
+from multiprocessing import Process
 import time
-
-# USER
-from logger.default_logger import BRISELogConfigurator
 import logging
 
-logger = BRISELogConfigurator().get_logger(__name__)
-
-from tools.front_API import API
+# USER
 from main import run as main_run
-# from tools.main_mock import run as main_run
 
 import eventlet
 eventlet.monkey_patch()
 
-socketio_logger = logging.getLogger("SocketIO")
-engineio_logger = logging.getLogger("EngineIO")
-socketio_logger.setLevel(logging.WARNING)
-engineio_logger.setLevel(logging.WARNING)
-
-socketIO = socketio.Server(ping_timeout=300, logger=socketio_logger, engineio_logger=engineio_logger)
 # instance of Flask app
-app = Flask(__name__, static_url_path='', template_folder="static")
-CORS(app)
-app.wsgi_app = socketio.WSGIApp(socketIO, app.wsgi_app)
-
+app = Flask(__name__)
 # WebSocket
-app.config['SECRET_KEY'] = 'galamaga'
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, logger=True, engineio_logger=True)
+logging.getLogger('socketio').setLevel(logging.DEBUG)
 
-# Initialize the API singleton
-API(api_object=socketIO)
+# hide HTTP request logs
+# import logging
+# log = logging.getLogger('werkzeug')
 
 MAIN_PROCESS = None
 data_header = {
     'version': '1.0'
 }
+# sesion id of clients
+clients = []
 
 # add clients in room
 front_clients = []
 
+@app.route('/')
+def index():
+    return jsonify({
+        'index main': 'Hello, %USER_NAME%. You\'re looking well today.', 
+        'header': data_header,
+        'clients': clients,
+        'socket': str(socketio)
+    }),200
 
 # ---   START
-@app.route('/main_start',  methods=['GET', 'POST'])
+@app.route('/main_start')
 def main_process_start():
     """
-    Verifies that Main-node is not running.
+    Verifies that Main-node is not running. 
     If free - creates new process with socketio instance and starts it.
     It ensures that for each run of main.py you will use only one socketio.
-
-    HTTP GET: Start BRISE without providing Experiment Description - BRISE will use the default one.
-    HTTP POST: Start BRISE with provided Experiment Description as a `JSON` payload attached to request.
 
     If main process is already running - just return its status. (To terminate process - use relevant method).
     :return: main_process_status()
@@ -61,12 +54,7 @@ def main_process_start():
     global MAIN_PROCESS, socketio
 
     if not MAIN_PROCESS:
-        if request.method == "POST":
-            MAIN_PROCESS = eventlet.spawn(main_run, experiment_description=request.json)
-        else:
-            MAIN_PROCESS = eventlet.spawn(main_run)
-            logger.info(request.method)
-        time.sleep(0.1)
+        MAIN_PROCESS = eventlet.spawn(main_run, socketio)
 
     return main_process_status()
 
@@ -79,67 +67,65 @@ def main_process_status():
     :return: JSONIFY OBJECT
     """
     result = {}
-    result['MAIN_PROCESS'] = {"main process": bool(MAIN_PROCESS),
-                              "status": "running" if MAIN_PROCESS else 'none'}
+    result['MAIN_PROCESS'] = {"Main process": bool(MAIN_PROCESS),
+                                #  "Exit code": MAIN_PROCESS.exitcode if not MAIN_PROCESS.is_alive() else None,
+                                 "Status": "Running" if MAIN_PROCESS else 'none'}
     # Probably, we will have more processes at the BG.
     return jsonify(result)
 
 # # ---   STOP
-@app.route('/main_stop')
-def main_process_stop():
-    """
-    Verifies if main process running and if it is - terminates it using process.join() method with timeout = 5 seconds.
-    After it returns status of this process (should be terminated).
-    :return: main_process_status()
-    """
-    global MAIN_PROCESS
+# @app.route('/main_stop')
+# def main_process_stop():
+#     """
+#     Verifies if main process running and if it is - terminates it using process.join() method with timeout = 5 seconds.
+#     After it returns status of this process (should be terminated).
+#     :return: main_process_status()
+#     """
+#     global MAIN_PROCESS
 
-    if MAIN_PROCESS:
-        MAIN_PROCESS.cancel()
-        eventlet.kill(MAIN_PROCESS)
-        MAIN_PROCESS = None
-        time.sleep(0.5)
+#     if MAIN_PROCESS.is_alive():
+#         MAIN_PROCESS.cancel()
+#         time.sleep(0.5)
 
-    return main_process_status()
+#     return main_process_status()
 
-@app.route('/download_dump/<file_format>')
-def download_dump(file_format):
-    dump_name = os.environ.get('EXP_DUMP_NAME')
-    try:
-        if(dump_name == 'undefined'):
-            return jsonify(message='missing experiment file', href='#')
-        else:
-            filename = "{name}.{format}".format(
-                name=dump_name, format=file_format)
-            return send_from_directory('/root/Results/serialized/', filename, as_attachment=True)
-    except Exception as error:
-        logger.error('Download dump file of the experiment: %s' % error)
-        return str(error)
-
-# ---------------------------- Events ------------
-@socketIO.on('ping')
-def ping_pong(sid, json):
-    logger.info(' Ping from: ' + str(sid))
+# ---------------------------- Events ------------ 
+@socketio.on('ping')
+def ping_pong(json):
+    print(' Ping from: ' + str(request.sid))
     return 'main node: pong!'
 
 # --------------
+# managing array with curent clients
+@socketio.on('connect') 
+def connected():
+    clients.append(request.sid)
+    return "main: OK"
+
+@socketio.on('disconnect')
+def disconnect():
+    clients.remove(request.sid)
 
 # managing room with curent Front-end clients
-@socketIO.on('join', namespace='/front-end')
-def on_join(sid, data):
+@socketio.on('join', namespace='/front-end')
+def on_join(data):
     room = data['room']
-    logger.info("Main connection. Room", data = data)
-    socketIO.enter_room(sid, room)
-    front_clients.append(sid)
+    print("Main connection. Room", data)
+    join_room(room)
+    front_clients.append(request.sid)
 
-@socketIO.on('leave', namespace='/front-end')
-def on_leave(sid, data):
+@socketio.on('leave', namespace='/front-end')
+def on_leave(data):
     room = data['room']
-    socketIO.leave_room(sid, room)
-    front_clients.remove(sid)
+    leave_room(room)
+    front_clients.remove(request.sid)
 
+@socketio.on('disconnect', namespace='/front-end')
+def front_disconnect():
+    if request.sid in front_clients:
+        front_clients.remove(request.sid)
 # ------------------------------------------------
 
 
 if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('0.0.0.0', 49152)), app)
+    socketio.run(app, host='0.0.0.0', debug=True, port=9000)

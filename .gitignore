@@ -15,9 +15,6 @@ dist/
 jsconfig.json
 .vscode/
 
-#tests cache
-.pytest_cache
-
 # Typings file.
 typings/
 
@@ -33,5 +30,6 @@ yarn-error.log*
 **/.DS_Store
 .DS_Store
 
+rapid_miner_worker/swc-data/**
+
 *.spec.ts
-front-end/text.txt

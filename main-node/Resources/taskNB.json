@@ -1,0 +1,18 @@
+{
+  "task_name"  : "taskNB", 
+  "params": {
+    "ExperimentNumber"  : 1,
+    "ModelTestSize"  : 0.9,
+    "NumberOfInitialExperiments" : 10,
+    "step": 2,
+    "SelectionType"     : "SobolSequence",
+    "StopCondition"     : "regression",
+    "DecisionFunction"  : "student_deviation",
+    "DataFile"        : "./taskNBData.json",
+    "FileToRead"          : "",
+    "FeatureNames"  : ["laplace correction", "estimation mode", "bandwidth selection", "bandwidth", "minimum bandwidth", "number of kernels", "use application grid", "application grid size"],
+    "ResultStructure"  : ["laplace correction", "estimation mode", "bandwidth selection", "bandwidth", "minimum bandwidth", "number of kernels", "use application grid", "application grid size", "accuracy"],
+    "ResultDataTypes"  : ["float", "int", "float"],
+    "ResultFeatLabels" : ["feature", "feature", "feature", "feature", "feature", "feature", "feature", "feature", "label"]
+  }
+}

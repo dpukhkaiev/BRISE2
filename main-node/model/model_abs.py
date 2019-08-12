@@ -1,10 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List
-
-from core_entities.configuration import Configuration
-
-
 class Model(ABC):
+
     @abstractmethod
     def build_model(self): pass
 
@@ -12,9 +8,10 @@ class Model(ABC):
     def validate_model(self): pass
 
     @abstractmethod
-    def predict_next_configurations(self, amount):
-        return Configuration
-    
+    def predict_solution(self): pass
+
     @abstractmethod
-    def update_data(self, configurations: List[Configuration]):
-        return self
+    def validate_solution(self): pass
+
+    @abstractmethod
+    def get_result(self): pass

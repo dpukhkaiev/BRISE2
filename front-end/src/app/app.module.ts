@@ -2,49 +2,59 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { HttpModule } from '@angular/http';
 
-// Modules
-import { CoreModule } from './core/core.module';
-import { SharedModule } from './shared/shared.module';
 
-// Intro
 import { AppComponent } from './app.component';
-/* Charts */ 
-import { HeatMapComponent } from './components/charts/heat-map/heat-map.component';
-import { HeatMapRegComponent } from './components/charts/heat-map-reg/heat-map-reg.component';
+import { TaskListComponent } from './task-list/task-list.component';
 
-import { TaskListComponent } from './components/task-list/task-list.component';
-import { TaskListBoComponent } from './components/task-list-bo/task-list-bo.component';
-import { InfoBoardComponent } from './components/info-board/info-board.component';
-import { ImpResComponent } from './components/charts/imp-res/imp-res.component';
-import { FooterComponent } from './components/footer/footer.component';
-import { MultiDimComponent } from './components/charts/multi-dim/multi-dim.component';
-import { LaunchControlBarComponent } from './components/launch-control-bar/launch-control-bar.component';
-import { DownloadPopUp } from './components/download-pop-up/download-pop-up.component';
+// ------------------ USER --------------------
+// Animation
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+// Material
+import { MatButtonModule, 
+  MatCheckboxModule, 
+  MatCardModule, 
+  MatListModule, 
+  MatIconModule, 
+  MatTabsModule, 
+  MatTooltipModule,
+  MatGridListModule} from '@angular/material';
+
+/* Shared Service */
+import { WorkerService } from './services/worker.service';
+import { SocketService } from './services/socket.service';
+import { MainSocketService } from './services/main-socket.service';
+
+/* Charts */ 
+import { HeatMapComponent } from './charts/heat-map/heat-map.component';
+import { RegChartComponent } from './charts/reg-chart/reg-chart.component';
+import { Ch1Component } from './charts/ch-1/ch-1.component';
+import { HeatMap2Component } from './charts/heat-map-2/heat-map-2.component';
 
 
 @NgModule({ 
   declarations: [
     AppComponent,
     TaskListComponent,
-    TaskListBoComponent,
     HeatMapComponent,
-    HeatMapRegComponent,
-    InfoBoardComponent,
-    ImpResComponent,
-    FooterComponent,
-    MultiDimComponent,
-    LaunchControlBarComponent,
-    DownloadPopUp
+    RegChartComponent,
+    Ch1Component,
+    HeatMap2Component
   ],
   imports: [
-    BrowserModule, HttpModule,
-    CoreModule,
-    SharedModule
+    BrowserModule, HttpModule, 
+    BrowserAnimationsModule, 
+    MatButtonModule, 
+    MatCheckboxModule, 
+    MatCardModule, 
+    MatListModule, 
+    MatIconModule,
+    MatTabsModule,
+    MatTooltipModule,
+    MatGridListModule
   ],
-  entryComponents: [
-    DownloadPopUp
-  ],
-  providers: [],
+  providers: [{ provide: WorkerService, useClass: WorkerService },
+    { provide: SocketService, useClass: SocketService },
+    { provide: MainSocketService, useClass: MainSocketService }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -10,7 +10,10 @@ COPY . /usr/src/app
 RUN apk add --no-cache curl build-base && \
  pip install --upgrade pip && \
  pip install Flask && \
- pip install python-socketio && \
+ pip install flask-cors && \
+ pip install flask-socketio && \
  pip install eventlet
  
-EXPOSE 49153
+EXPOSE 80
+CMD [ "python", "-u", "./intro.py" ]
+# CMD [ "sh" ]

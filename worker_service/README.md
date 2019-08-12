@@ -17,7 +17,7 @@ Software requirements:
 ___
 ### API examples
 > Tasks are added to the stack for executing on the workers
-**POST**  http://0.0.0.0:49153/task/add
+**POST**  http://0.0.0.0:80/task/add
 ##### Variant 1 
 ```json
 [{
@@ -26,7 +26,7 @@ ___
         "threads": "1",
         "frequency": "2901.0"
     },
-    "Scenario": {
+    "worker_config": {
         "ws_file": "Radix-1000mio_avg.csv"
     }
 },
@@ -36,7 +36,7 @@ ___
         "threads": "4",
         "frequency": "1900.0"
     },
-    "Scenario": {
+    "worker_config": {
         "ws_file": "Radix-1000mio_avg.csv"
     }
 
@@ -46,7 +46,7 @@ ___
 ##### Variant 2 
 ```json
 {
-  "Scenario": {
+  "worker_config": {
     "ws_file": "Radix-1000mio_avg.csv"
   },
   "params_names": ["frequency", "threads"],
@@ -77,7 +77,7 @@ ___
 ___
 
 > Get the current stack of tasks for execution on workers
-**GET**  http://0.0.0.0:49153/stack
+**GET**  http://0.0.0.0:80/stack
 ```json 
 {
    "data":[
@@ -126,7 +126,7 @@ ___
 }
 ```
 ____
-**PUT** http://0.0.0.0:49153/result/format
+**PUT** http://0.0.0.0:80/result/format
 ###### Get result from special tasks with required fields
 ```json
  {
@@ -142,10 +142,10 @@ ____
 ```
 ____
 > Information about clients, current stack, task results, workers
-**GET**  http://0.0.0.0:49153/
+**GET**  http://0.0.0.0:80/
 ___
 > Return the current results of the task
-**GET**  http://0.0.0.0:49153/result/<id>
+**GET**  http://0.0.0.0:80/result/<id>
 
 
 

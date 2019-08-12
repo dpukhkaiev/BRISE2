@@ -1,25 +1,21 @@
-import logging
+from model.regression_sweet_spot import RegressionSweetSpot
 
 
-def get_model(experiment, log_file_name):
+def get_model(model_creation_config, log_file_name, features, labels):
     """
     Instantiates need prediction model.
-    :param experiment: the instance of Experiment class
+    :param model_creation_config: "ModelCreation" dict of parameters from task description file.
     :param log_file_name: String, file where to store results of model creation.
+    :param features: list of all currently discovered features.
+    :param labels: list of all currently discovered labels.
     :return: Instantiated object of prediction model.
     """
-    logger = logging.getLogger(__name__)
-    if experiment.description["ModelConfiguration"]["ModelType"] == "regression":
-        from model.regression_sweet_spot import RegressionSweetSpot
-        logger.info("Regression Sweet Spot prediction model selected.")
+
+    if model_creation_config["ModelType"] == "regression":
         return RegressionSweetSpot(log_file_name=log_file_name,
-                                   experiment=experiment)
-    elif experiment.description["ModelConfiguration"]["ModelType"] == "BO":
-        from model.bayesian_optimization import BayesianOptimization
-        logger.info("Bayesian Optimization prediction model selected.")
-        return BayesianOptimization(experiment)
+                                   test_size=model_creation_config["ModelTestSize"],
+                                   features=features,
+                                   labels=labels)
     else:
-        logger.error("Configuration error - model type not supported: %s"
-                     % experiment.description["ModelConfiguration"]["ModelType"])
-        raise KeyError("Configuration error - model type not supported: %s"
-                       % experiment.description["ModelConfiguration"]["ModelType"])
+        print("ERROR: Configuration Error - model type not supported.")
+        raise KeyError

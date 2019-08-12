@@ -1,0 +1,28 @@
+{
+      "DomainDescription":{
+        "FeatureNames"      : ["frequency", "threads"],
+        "DataFile"          : "./Resources/taskData.json",
+        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
+        "DefaultConfiguration": [2900.0, 32]
+
+      },
+      "SelectionAlgorithm":{
+        "SelectionType"     : "SobolSequence",
+        "NumberOfInitialExperiments"   : 10,
+        "Step"              : 1
+      },
+      "ExperimentsConfiguration":{
+        "TaskName"          : "energy_consumption",
+        "FileToRead"        : "Radix-500mio.csv",
+        "ResultStructure"   : ["frequency", "threads", "energy"],
+        "ResultDataTypes"  : ["float", "int", "float"],
+        "RepeaterDecisionFunction"  : "student_deviation",
+        "MaxRepeatsOfExperiment": 10
+      },
+      "ModelCreation":{
+        "ModelTestSize"     : 0.9,
+        "MinimumAccuracy"   : 0.85,
+        "ModelType"         : "regression",
+        "FeaturesLabelsStructure"  : ["feature", "feature", "label"]
+      }
+}
