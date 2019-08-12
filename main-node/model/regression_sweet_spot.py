@@ -91,8 +91,6 @@ class RegressionSweetSpot(Model):
         if not self.model:
             return False
 
-        self.test_model_all_data(self.experiment.search_space.copy())
-
         # Check if the model is adequate - write it.
         predicted_configuration = self.predict_next_configurations(1)
         predicted_labels = predicted_configuration[0].predicted_result
@@ -183,35 +181,6 @@ class RegressionSweetSpot(Model):
         :return:
         """
         return reduce(lambda x, y: x+y, list(range(1, num + 1)))
-
-    def test_model_all_data(self, search_space):
-        """
-
-        :param search_space: list of dimensions for this experiment
-                             shape - list of lists, e.g. ``[[1, 2, 4, 8, 16, 32], [1200.0, 1300.0, 2700.0, 2900.0]]``
-                                     if there is such search space in "taskData.json" :
-                                         {
-                                             "threads": [1, 2, 4, 8, 16, 32],
-                                             "frequency": [1200.0, 1300.0, 2700.0, 2900.0]
-                                         }
-        """
-        from tools.features_tools import split_features_and_labels
-        from tools.splitter import Splitter
-        all_data = []
-
-        file_path = "./csv/" + self.experiment.description["TaskConfiguration"]["Scenario"]["ws_file"]
-        spl = Splitter(file_path)
-        for config in self.all_configurations:
-            if config.get_parameters() in search_space:
-                search_space.remove(config.get_parameters())
-        for point in search_space:
-            spl.search(str(point[0]), str(point[1]))
-            all_data += [[float(x['FR']), int(x['TR']), float(x['EN'])] for x in spl.new_data]
-        features, labels = split_features_and_labels(all_data, ['feature', 'feature', 'label'])
-        # from sklearn.model_selection import train_test_split
-        score = self.model.score(features, labels)
-
-        self.logger.info("FULL MODEL SCORE: %s. Measured with %s points" % (str(score), str(len(features))))
 
     def update_data(self, configurations):
         """

@@ -28,7 +28,6 @@ def run(experiment_description=None):
             logger = logging.getLogger(__name__)
         logger.info("Starting BRISE")
         sub.send('log', 'info', message="Starting BRISE")
-        # TODO: Store global_config im Experiment?
         global_config = load_global_config()
 
         if not experiment_description:
@@ -46,8 +45,6 @@ def run(experiment_description=None):
         selector = get_selector(experiment=experiment)
 
         # Instantiate client for Worker Service, establish connection.
-        # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
-        # (ExperimentDescription.json)
 
         worker_service_client = WSClient(experiment.description["TaskConfiguration"], global_config["WorkerService"]["Address"],
                                          logfile='%s%s_WSClient.csv' % (global_config['results_storage'],
@@ -57,7 +54,6 @@ def run(experiment_description=None):
         repeater = Repeater(worker_service_client, experiment)
 
         temp_msg = "Measuring the default Configuration."
-        # TODO: Logging messages to the API could be sent from the logger.
         logger.info(temp_msg)
         sub.send('log', 'info', message=temp_msg)
 
@@ -81,7 +77,6 @@ def run(experiment_description=None):
         logger.info("Results got. Building model..")
         sub.send('log', 'info', message="Results got. Building model..")
 
-        # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
         model = get_model(experiment=experiment,
                           log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
                                                               experiment.get_name(),

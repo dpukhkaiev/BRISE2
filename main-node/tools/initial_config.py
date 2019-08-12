@@ -43,7 +43,6 @@ def load_experiment_description(exp_desc_file_path: str = './Resources/EnergyExp
     # Add Parameters data to experiment description
     data = load_json_file(experiment_description["DomainDescription"]["DataFile"])
     experiment_data_configurations = []
-    # TODO the dimensions validation in the task data file
     for dimension in experiment_description["DomainDescription"]["FeatureNames"]:
         experiment_data_configurations.append(data[dimension])
     experiment_description["DomainDescription"]["AllConfigurations"] = experiment_data_configurations

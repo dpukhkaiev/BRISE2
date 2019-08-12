@@ -40,8 +40,6 @@ class Experiment:
         self.name = "exp_{task_name}_{experiment_hash}".format(
             task_name=self.description["TaskConfiguration"]["TaskName"],
             experiment_hash=self.id)
-        # TODO MultiOpt: Currently we store only one solution configuration here,
-        #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
 
         self.__generate_search_space()

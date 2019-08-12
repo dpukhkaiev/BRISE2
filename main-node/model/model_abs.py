@@ -13,7 +13,6 @@ class Model(ABC):
 
     @abstractmethod
     def predict_next_configurations(self, amount):
-        # TODO: Make it `template method` or 'strategy'.
         return Configuration
     
     @abstractmethod

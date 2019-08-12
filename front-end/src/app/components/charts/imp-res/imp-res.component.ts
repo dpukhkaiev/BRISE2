@@ -13,7 +13,7 @@ interface PointExp {
   results: Array<any>;
   time: any;
   'measured points': number;
-} 
+}
 
 @Component({
   selector: 'imp-res',
@@ -24,7 +24,7 @@ export class ImpResComponent implements OnInit {
   // The experiments results
   bestRes = new Set<PointExp>()
   allRes = new Set<PointExp>()
-  // Best point 
+  // Best point
   solution: Solution
 
   experimentDescription: ExperimentDescription
@@ -59,7 +59,7 @@ export class ImpResComponent implements OnInit {
             'measured points': configuration['measured points']
           }
           this.allRes.add(temp)
-          this.bestRes.add(temp) // There is no check if this solution is the best decision 
+          this.bestRes.add(temp) // There is no check if this solution is the best decision
         })
         this.render() // Render chart when all points got
       });
@@ -76,9 +76,9 @@ export class ImpResComponent implements OnInit {
             'measured points': this.allRes.size + 1
           }
           this.allRes.add(temp)
-          this.bestRes.add(temp) // There is no check if this solution is the best decision 
+          this.bestRes.add(temp) // There is no check if this solution is the best decision
         })
-        this.render() // Render chart when all points got         
+        this.render() // Render chart when all points got
     });
 
     this.ioMain.onEvent(MainEvent.NEW)
@@ -101,7 +101,6 @@ export class ImpResComponent implements OnInit {
 
           // Check the best available point
           this.bestRes && this.bestRes.forEach(function (resItem) {
-            // TODO: Max or min from task
             if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
               temp.results = resItem.results
               temp.configurations = resItem.configurations
@@ -130,7 +129,7 @@ export class ImpResComponent implements OnInit {
     const xBest = Array.from(this.bestRes).map(i => i["measured points"]);
     // Results
     const yBest = Array.from(this.bestRes).map(i => i["results"][0]);
-    
+
     var allResultSet = { // Data for all results
       x: Array.from(this.allRes).map(i => i["measured points"]),
       y: Array.from(this.allRes).map(i => i["results"][0]),
@@ -145,7 +144,7 @@ export class ImpResComponent implements OnInit {
       },
       name: 'results'
     }
-    var bestPointSet = { // Data for the best available results 
+    var bestPointSet = { // Data for the best available results
       x: xBest,
       y: yBest,
       type: 'scatter',

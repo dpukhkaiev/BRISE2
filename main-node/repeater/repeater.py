@@ -96,9 +96,6 @@ class Repeater:
             for configuration in configurations:
                 needed_tasks_count = self.evaluation_by_type(configuration, experiment)
                 current_measurement[str(configuration.get_parameters())]['needed_tasks_count'] = needed_tasks_count
-                if needed_tasks_count  == 0:
-                    temp_msg = ("Configuration measured: %s" % configuration)
-                    self.logger.info(temp_msg)
-                    API().send('log', 'info', message=temp_msg)
+                if needed_tasks_count == 0:
                     current_measurement[str(configuration.get_parameters())]['Finished'] = True
                     current_measurement[str(configuration.get_parameters())]['Results'] = configuration.get_average_result()
