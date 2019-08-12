@@ -1,6 +1,6 @@
 # BRISE 2.2.0
 ##### Benchmark Reduction via Adaptive Instance Selection
-Software Product Line for Parameter Tuning\
+Software Product Line for Parameter Tuning
 
 Most-Rec'19 Use case Parameter tuning of Simulated annealing algorithm to solve quality-based software selection and hardware mapping problem.
 Results can be found in `benchmark/results/` directory.
