@@ -6,7 +6,7 @@ PyYAML
 Flask
 flask-cors
 flask-socketio
-python-socketio
+python-socketio==4.2.1
 eventlet
 statsmodels
 jsonschema

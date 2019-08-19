@@ -16,9 +16,13 @@ class WSClient_Stub(WSClient):
         # needs to store task_id
         self.task_iterator = 0
         self._number_of_workers = 1
+        self.__csv_folder = "../worker/csv_data/"
 
     def connect(self):
-        self.logger.info("The Stub of Worker Service Client is connected")
+        self.logger.info("Using the Stub for the Worker Service Client.")
+
+    def disconnect(self):
+        pass
 
     ####################################################################################################################
     # Supporting methods.
@@ -29,7 +33,7 @@ class WSClient_Stub(WSClient):
         for task_parameter in tasks_parameters:
             task_description = dict()
             task_description["task_name"] = self._task_name
-            task_description["worker_config"] = self._worker_config
+            task_description["Scenario"] = self._scenario
             task_description["params"] = {}
             for index, parameter in enumerate(self._task_parameters):
                 task_description["params"][parameter] = str(task_parameter[index])
@@ -37,13 +41,13 @@ class WSClient_Stub(WSClient):
 
         for task in tasks_to_send:
             params_to_send = task['params']
-            params_to_send['ws_file'] = task['worker_config']['ws_file']
+            params_to_send['ws_file'] = task['Scenario']['ws_file']
 
             result = dict()
-            if task["task_name"] is "energy_consumption":
+            if task["task_name"] == "energy_consumption":
                 result = self.__energy_consumption(params_to_send)
 
-            elif task["task_name"] is "taskNB":
+            elif task["task_name"] == "taskNB":
                 result = self.__taskNB(params_to_send)
 
             #  TODO - data is needed
@@ -71,7 +75,7 @@ class WSClient_Stub(WSClient):
 
     def __energy_consumption(self, param):
         data = []
-        path_to_file = "csv/" + param['ws_file']
+        path_to_file = self.__csv_folder + param['ws_file']
         try:
             with open(path_to_file, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
@@ -93,7 +97,7 @@ class WSClient_Stub(WSClient):
 
     def __taskNB(self, param):
         data = []
-        path_to_file = "csv/" + param['ws_file']
+        path_to_file = self.__csv_folder + param['ws_file']
         try:
             with open(path_to_file, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
@@ -180,7 +184,8 @@ class WSClient_Stub(WSClient):
                      "PREC_AT_99_REC":   shape - specified in task_configuration["ResultDataTypes"]
                      "taskid":           shape - int
         """
-        self._perform_cleanup()
+        self.cur_tasks_ids = []
+        self.current_results = []
         self._send_task(tasks)
         if len(tasks) == len(self.current_results):
             self.logger.info("All tasks (%s) were finished." % len(tasks))
@@ -192,11 +197,11 @@ class WSClient_Stub(WSClient):
         return self.current_results
 
 
-# A small unit test. Worker service should already run on port 80 and has a resolving domain name "w_service".
+# A small unit test.
 if __name__ == "__main__":
     config = {
         "TaskName"          : "taskNB",
-        "WorkerConfiguration": {
+        "Scenario": {
             "ws_file": "taskNB1.csv"
         },
         "TaskParameters"  : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
@@ -206,7 +211,7 @@ if __name__ == "__main__":
     }
     task_data = [[True, 'full', 'fix', 0.5, 1000, 1000, True, 10000],
                  [True, 'full', 'heuristic', 50, 5, 50, False, 200],
-                 [True, 'full', 'fix', 0.5, 5, 100, True, 1000]]
+                 [True, 'full', 'fix', 0.5, 5, 100, True, 10000]]
     client = WSClient_Stub(config, 'Stub', 'Stub_WSClient_results.csv')
     results = client.work(task_data)
     logger = logging.getLogger(__name__)

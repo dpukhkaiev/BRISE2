@@ -17,13 +17,6 @@ class WSClient():
         :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
         self.logger = logging.getLogger(__name__)
-        # Creating the SocketIO object and connecting to main node namespace - "/main_node"
-        self.logger.info("INFO: Connecting to the Worker Service at '%s' ..." % wsclient_addr)
-        # Configuring logging for SocketIO client
-        [logging.getLogger('socketIO-client').addHandler(handler) for handler in logging.getLogger().handlers]
-        self.socketIO = socketIO_client.SocketIO(wsclient_addr)
-        self.socketIO.define(socketIO_client.LoggingSocketIONamespace, "/main_node")
-
         self.servername = wsclient_addr
         # Properties that holds general task configuration (shared between task runs).
         self._exp_config = task_configuration
@@ -41,11 +34,8 @@ class WSClient():
         self.cur_tasks_ids = []
         self.current_results = []
 
-        # Defining events that will be processed by the Worker Service Client.
-        self.socketIO.on("ping_response", self.__ping_response, path="/main_node")
-        self.socketIO.on("task_accepted", self.__task_accepted, path="/main_node")
-        self.socketIO.on("wrong_task_structure", self.__wrong_task_structure, path="/main_node")
-        self.socketIO.on("task_results", self.__task_results, path="/main_node")
+        # Creating the SocketIO object and connecting to main node namespace - "/main_node"
+        self.socketIO = None    # Will be replaced with transport instance.
         self.connect()
 
     def __del__(self):
@@ -70,6 +60,18 @@ class WSClient():
     def connect(self):
         # Verifying connection by sending "ping" event to Worker Service into main node namespace.
         # Waiting for response, if response is OK - proceed.
+        self.logger.info("INFO: Connecting to the Worker Service at '%s' ..." % self.servername)
+        # Configuring logging for SocketIO client
+        [logging.getLogger('socketIO-client').addHandler(handler) for handler in logging.getLogger().handlers]
+        self.socketIO = socketIO_client.SocketIO(self.servername)
+        self.socketIO.define(socketIO_client.LoggingSocketIONamespace, "/main_node")
+
+        # Defining events that will be processed by the Worker Service Client.
+        self.socketIO.on("ping_response", self.__ping_response, path="/main_node")
+        self.socketIO.on("task_accepted", self.__task_accepted, path="/main_node")
+        self.socketIO.on("wrong_task_structure", self.__wrong_task_structure, path="/main_node")
+        self.socketIO.on("task_results", self.__task_results, path="/main_node")
+
         self.socketIO.connect('/main_node')
         self.logger.debug("Sending 'ping' event to the Worker Service...")
         self.__ping_ws()
@@ -235,11 +237,11 @@ if __name__ == "__main__":
     }
     task_data = [[2900.0, 32], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16], [1800.0, 16],
                  [1800.0, 16], [1800.0, 16]]
-    from random import randint
-    from time import sleep
+    import random as rd
+    logging.basicConfig(level=logging.INFO)
 
     client = WSClient(config, wsclient, 'TEST_WSClient_results.csv')
-    for x in range(30):
-        tasks = task_data[:randint(0, len(task_data))]
+    for x in range(5):
+        tasks = [rd.choice(task_data) for _ in range(rd.randint(0, len(task_data)))]
         result1 = client.work(tasks)
-        sleep(4)
+        assert len(tasks) == len(result1), "Not all results were obtained: Tasks: {0} -> Results: {1}".format(tasks, result1)

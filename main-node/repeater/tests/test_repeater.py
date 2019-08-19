@@ -3,79 +3,12 @@ from repeater.repeater import Repeater
 from WorkerServiceClient.tests.WS_stub import WSClient_Stub
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
+from tools.initial_config import load_experiment_description
 
-DESCRIPTION_NB = {
-    "TaskConfiguration":{
-        "TaskName"          : "taskNB",
-        "WorkerConfiguration":{
-            "ws_file": "taskNB1.csv"
-        },
-        "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-        "ResultStructure"   : ["PREC_AT_99_REC"],
-        "ResultDataTypes"  : ["float"],
-        "MaxTimeToRunTask": 10
-    },
-    "Repeater":{
-        "Type": "student_deviation",
-        "Parameters": {
-            "MaxTasksPerConfiguration": 10,
-            "MinTasksPerConfiguration": 2,
-            "BaseAcceptableErrors": [5],
-            "ConfidenceLevels": [0.95],
-            "DevicesScaleAccuracies": [0],
-            "DevicesAccuracyClasses": [0],
-            "ModelAwareness": {
-                "isEnabled": True,
-                "MaxAcceptableErrors": [50],
-                "RatiosMax": [10]
-            }
-        }
-    }
-}
 
-DESCRIPTION_ENERGY = {
-    "TaskConfiguration":{
-        "TaskName"          : "energy_consumption",
-        "WorkerConfiguration":{
-            "ws_file": "Radix-500mio_avg.csv"
-        },
-        "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["energy"],
-        "ResultDataTypes"  : ["float"],
-        "MaxTimeToRunTask": 10
-    },
-    "Repeater":{
-        "Type": "student_deviation",
-        "Parameters": {
-            "MaxTasksPerConfiguration": 10,
-            "MinTasksPerConfiguration": 2,
-            "BaseAcceptableErrors": [5],
-            "ConfidenceLevels": [0.95],
-            "DevicesScaleAccuracies": [0],
-            "DevicesAccuracyClasses": [0],
-            "ModelAwareness": {
-                "isEnabled": True,
-                "MaxAcceptableErrors": [50],
-                "RatiosMax": [10]
-            }
-        }
-    }
-}
-# class MyRepeater(Repeater):
-#     def decision_function(self, history, point, iterations=10, **configuration):
-#         all_experiments = history.get(point)
-#         if len(all_experiments) < iterations:
-#             return False
-#
-#
-# def test_default_repeater():
-#     def_repeater = MyRepeater(WS, EXPERIMENTS)
-#     assert def_repeater.WSClient == WS
-#     assert isinstance(def_repeater.history, History)
-#     assert def_repeater.current_measurement == {}
-#     assert def_repeater.current_measurement_finished is False
-#     assert def_repeater.performed_measurements == 0
-#     assert def_repeater.max_repeats_of_experiment == EXPERIMENTS["MaxTasksPerConfiguration"]
+DESCRIPTION_NB = load_experiment_description(exp_desc_file_path="Resources/NB/MLExperiment.json")
+DESCRIPTION_ENERGY = load_experiment_description(exp_desc_file_path="Resources/EnergyExperiment.json")
+DESCRIPTION_ENERGY["TaskConfiguration"]["Scenario"]["ws_file"] = "Radix-500mio_avg.csv"
 
 
 def measure_task(task_parameters, description):
@@ -113,4 +46,3 @@ def test_measure_task_NB():
 
     assert result_exp[0] == approx(result_configurations[0].get_average_result()[0])
     assert result_exp[1] == approx(result_configurations[1].get_average_result()[0])
-
