@@ -1,8 +1,8 @@
 import logging
 
-from stop_condition.stop_condition_decorator import StopConditionDecorator
+from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
 
-class AdaptiveType(StopConditionDecorator):
+class AdaptiveType(StopConditionDecoratorPosterior):
 
     def __init__(self, stop_condition, stop_condition_parameters):
         super().__init__(stop_condition)

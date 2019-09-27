@@ -1,8 +1,9 @@
 import logging
 
-from stop_condition.stop_condition_decorator import StopConditionDecorator
 
-class DefaultType(StopConditionDecorator):
+from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
+
+class DefaultType(StopConditionDecoratorPosterior):
 
     def __init__(self, stop_condition, stop_condition_parameters):
         super().__init__(stop_condition)

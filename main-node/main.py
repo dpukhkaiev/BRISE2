@@ -42,6 +42,9 @@ def run(experiment_description=None):
         sub.send('experiment', 'description', global_config=global_config, experiment_description=experiment.description)
         logger.debug("Experiment description and global configuration sent to the API.")
 
+        # sc group initialization which parameters could be defined without statistic data usage
+        prior_stop_condition = get_stop_condition(experiment, True)
+
         # Creating instance of selector algorithm, according to specified in experiment description type.
         selector = get_selector(experiment=experiment)
 
@@ -93,10 +96,10 @@ def run(experiment_description=None):
         # 3. If model is valid - prediction and evaluation of current solution Configuration, else - go to 5.
         # 4. Evaluation of Stop Condition, afterwards - terminating or going to 5.
         # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
-
-        stop_condition = get_stop_condition(experiment)
-
+        
+        # sc group initialization which parameters couldn't be defined without statistic data usage
         finish = False
+        posterior_stop_condition = get_stop_condition(experiment, False)
         cur_stats_message = "-- New Configuration(s) was(were) measured. Currently were evaluated %s of %s Configurations. " \
                             "%s of them out of the Selection Algorithm. Building Target System model.\n"
 
@@ -105,7 +108,7 @@ def run(experiment_description=None):
             number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration() \
                         if experiment.get_number_of_configurations_per_iteration() \
                             else repeater.worker_service_client.get_number_of_workers()
-            stop_condition.update_number_of_configurations_in_iteration(number_of_configurations_in_iteration)
+            posterior_stop_condition.update_number_of_configurations_in_iteration(number_of_configurations_in_iteration)
 
             if model_built and model.validate_model():
                 predicted_configurations = model.predict_next_configurations(number_of_configurations_in_iteration)
@@ -123,16 +126,20 @@ def run(experiment_description=None):
                 repeater.measure_configurations(configs_from_selector, experiment=experiment)
                 experiment.add_configurations(configs_from_selector)
 
-            finish = stop_condition.validate_conditions()
-            if finish:
-                optimal_configuration = experiment.get_final_report_and_result(repeater)
-                return optimal_configuration
-            else:
+            finish = posterior_stop_condition.validate_conditions()
+            if not finish:
+                try:
+                    finish = prior_stop_condition.is_finish()
+                except Exception as e:
+                    logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
+            if not finish:
                 temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space),
                                                 str(selector.numOfGeneratedPoints))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
                 continue
+        optimal_configuration = experiment.get_final_report_and_result(repeater)
+        return optimal_configuration
 
     except Exception as e:
         logger = logging.getLogger(__name__)

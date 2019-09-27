@@ -150,7 +150,7 @@
             "description": "Conditions for stopping an experiment.",
             "type": "array",
             "minItems": 0,
-            "maxItems": 4,
+            "maxItems": 5,
             "uniqueItems": true,
             "items": {
                 "oneOf" : [
@@ -246,6 +246,38 @@
                             },
                             "required": [
                                 "SearchSpacePercentage"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["TimeBased"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxRunTime": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "TimeUnit": {
+                                    "type": "string",
+                                    "enum": ["seconds","minutes","hours","days"]
+                                }
+                            },
+                            "required": [
+                                "MaxRunTime",
+                                "TimeUnit"
                             ],
                             "additionalProperties": false
                         }

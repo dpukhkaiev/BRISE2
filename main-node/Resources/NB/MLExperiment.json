@@ -49,6 +49,13 @@
     {
       "Type": "Guaranteed",
       "Parameters": {      }
+    },
+    {
+      "Type": "TimeBased",
+      "Parameters": {
+        "MaxRunTime": 1,
+        "TimeUnit": "hours"
+      }
     }
   ]
 }

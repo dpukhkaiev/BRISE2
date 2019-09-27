@@ -64,6 +64,13 @@
       "Parameters": {
         "SearchSpacePercentage": 15
       }
+    },
+    {
+      "Type": "TimeBased",
+      "Parameters": {
+        "MaxRunTime": 10,
+        "TimeUnit": "minutes"
+      }
     }
   ]
 }
