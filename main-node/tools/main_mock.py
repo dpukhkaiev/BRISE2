@@ -48,7 +48,7 @@ def run(io=None):
     # 8. Reporting the results.
     # ------------------------------------------------------
     repetitions = 0
-    tresholds = {'good': (4, 8),
+    thresholds = {'good': (4, 8),
                  'mid': (3, 4),
                  'bad': (2, 3)}
     create_folder_if_not_exists('./Results/')
@@ -80,9 +80,9 @@ def run(io=None):
               "\n(because there is no data)...")
         for feature, label in zip(mock_data["Features1"], mock_data["Labels1"]):
             logger.info("Sending new task to IO.")
-            if label < [406.12]: bounds = tresholds['good']
-            elif label < [1083.67]: bounds = tresholds['mid']
-            else: bounds = tresholds['bad']
+            if label < [406.12]: bounds = thresholds['good']
+            elif label < [1083.67]: bounds = thresholds['mid']
+            else: bounds = thresholds['bad']
             repits = random.randint(*bounds) 
             repetitions += repits
             wsc.work([feature for x in range(repits)])
@@ -104,9 +104,9 @@ def run(io=None):
         add_labels = [result for result in mock_data["Final label set"] if result not in mock_data["Labels1"]]
         for feature, label in zip(add_features, add_labels):
             logger.info("Sending new task to IO.")
-            if label < [406.12]: bounds = tresholds['good']
-            elif label < [1083.67]: bounds = tresholds['mid']
-            else: bounds = tresholds['bad']
+            if label < [406.12]: bounds = thresholds['good']
+            elif label < [1083.67]: bounds = thresholds['mid']
+            else: bounds = thresholds['bad']
             repits = random.randint(*bounds)
             repetitions += repits
             wsc.work([feature for x in range(repits)])
@@ -121,7 +121,7 @@ def run(io=None):
         time.sleep(sleep_between_messages)
         io.emit('info', {'message': "Verifying solution that model gave.."})
         time.sleep(sleep_between_messages)
-        repits = random.randint(*tresholds['good'])
+        repits = random.randint(*thresholds['good'])
         [wsc._send_task([mock_data["Solution"][1]]) for x in range(repits)]
         repetitions += repits
         io.emit('task result', {'configuration': mock_data["Solution"][1], "result": mock_data["Solution"][0][0]})

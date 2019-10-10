@@ -21,11 +21,50 @@
     "TaskParameters"   : ["frequency", "threads"],
     "ResultStructure"   : ["energy"],
     "ResultDataTypes"  : ["float"],
+    "ExpectedValuesRange": [[0, 150000]],
     "MaxTimeToRunTask": 10
   },
+  "OutliersDetection":[
+    {
+      "Type": "Dixon",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 30
+      }
+    },
+    {
+      "Type": "Chauvenet",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    },
+    {
+      "Type": "MAD",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    },
+    {
+      "Type": "Grubbs",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    },
+    {
+      "Type": "Quartiles",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    }
+  ],
   "Repeater":{
     "Type": "student_deviation",
     "Parameters": {
+      "MaxFailedTasksPerConfiguration": 5,
       "MaxTasksPerConfiguration": 10,
       "MinTasksPerConfiguration": 2,
       "BaseAcceptableErrors": [5],
@@ -70,6 +109,12 @@
       "Parameters": {
         "MaxRunTime": 10,
         "TimeUnit": "minutes"
+      }
+    },
+    {
+      "Type": "BadConfigurationBased",
+      "Parameters": {
+        "MaxBadConfigurations": 10
       }
     }
   ]

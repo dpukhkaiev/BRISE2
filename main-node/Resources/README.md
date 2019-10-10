@@ -31,6 +31,28 @@ Possible values of configurations for your system should be provided in separate
     - `ResultDataTypes` - `List of strings`. Should be a proper names of Python data types, used for casting data that arrives from Worker nodes (as strings).
     - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
 
+- `OutliersDetection` - the results of each Configuration run (Tasks) could differ significantly from other observations (Tasks) and those bias Configuration measurement results.
+    This module could find these Tasks and exclude them from the Configuration results.
+    *Note that appearance of new Tasks could change the decision made before.*
+
+    The parameters for OutliersDetection module appear as a list of dictionaries, each of them contains two required key-value pairs:
+    - `Type` - `string` - the name of Outlier Detection criterion (a.k.a. test or detector). Variants: `Dixon`, `Chauvenet`, `MAD`, `Grubbs`, `Quartiles`.
+    - `Parameters` - `dictionary` - a set of key-value parameters used by specified in `Type` criterion.
+
+    Current implementation of OutlierDetection module supports 5 detectors to distinguish whether the Task is Outlier or not.
+    - `Dixon` - Dixon test calculates distance between suspicious value and closest one to it, then received value is divided on distance between min and max value in sample and checks this value in coefficient table.
+    - `Chauvenet` - The idea behind Chauvenet's criterion is to find a probability band, centered on the mean of a normal distribution, that should reasonably contain all n samples of a data set.
+    - `MAD` - It is the median of the set comprising the absolute values of the differences between the median and each data point.
+    - `Grubbs` - The test finds if a minimum value or a maximum value is an outlier.
+    - `Quartiles` - This test splits data into quartiles, then finds interquartile distance. All values, that goes beyond (Q1-3*IQR : Q3+3*IQR) are outliers.
+
+    Each of described above criteria could be enabled by including it to the Experiment Description with two required parameters:
+    - `MinActiveNumberOfTasks` - `int` - a minimum number of Tasks in Configuration to enable criterion.
+    - `MaxActiveNumberOfTasks` - `int` - a maximum number of Tasks in Configuration while the criterion still works. In case of exceeding this boundary, the criterion will be disabled. The string value `"Inf"` is supported.
+
+    This was done while each test is suitable for different amount and structure of available data.
+    In case of enabling several criteria, the Task will be marked as *Outlier* if at least half of tests mark the Task as *Outlier*.
+
 - `RepeaterConfiguration` - Results of each Configuration evaluation could not be precise/deterministic. The intent of Repeater is to reduce the variance between the evaluation of each Configuration by running it several times (Tasks).
     - `Type` - `string` - a type of repeater represents a strategy to check the accuracy of the Configuration measurement. Variants: `default`, `student_deviation`
         - `default` - evaluates Configuration *MaxTasksPerConfiguration* times. Required parameters:
@@ -65,69 +87,19 @@ Possible values of configurations for your system should be provided in separate
             `MaxConfigsWithoutImprovement` - `Int` - Terminate after this amount of Configurations were tested and no better found. (but still, better than default was found).
         - `adaptive` - `String`- Stop if no improvement got for current solution after some percentage of overall Configuration search space evaluation.
             - `SearchSpacePercentageWithoutImprovement` - `Int` - % of the Configuration search space evaluated without improvement.
+        - `TimeBased` - `String` - Launches user-defined timer. The BRISE will stop when time is over.
+        Required parameters:
+            - `MaxRunTime` - `Int` - Time value for timer.
+            - `TimeUnit` - `String` - Time unit for timer (seconds, minutes etc).
+        - `BadConfigurationBased` - `String` - The BRISE will stop in case of reaching threshold of failed Configurations number.
+        Required parameters:
+            - `MaxBadConfigurations` - `Int` - Threshold of failed Configurations. Failed configuration should not contain any correct measurings.
 
-#### Example of configuration file:
-```json
-{
-      "General":{
-        "isMinimizationExperiment"  : true
-      },
-      "DomainDescription":{
-        "FeatureNames"      : ["frequency", "threads"],
-        "DataFile"          : "./Resources/EnergyExperimentData.json",
-        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-        "DefaultConfiguration": [2900.0, 32]
-      },
-      "SelectionAlgorithm":{
-        "SelectionType"     : "SobolSequence",
-        "NumberOfInitialConfigurations": 10
-      },
-      "TaskConfiguration":{
-        "TaskName"          : "energy_consumption",
-        "Scenario":{
-          "ws_file": "Radix-500mio.csv"
-        },
-        "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["energy"],
-        "ResultDataTypes"  : ["float"],
-        "MaxTimeToRunTask": 10
-      },
-      "Repeater":{
-        "Type": "student_deviation",
-        "Parameters": {
-          "MaxTasksPerConfiguration": 10,
-          "MinTasksPerConfiguration": 2,
-          "BaseAcceptableErrors": [10],
-          "ConfidenceLevels": [0.95],
-          "DevicesScaleAccuracies": [0],
-          "DevicesAccuracyClasses": [0],
-          "ModelAwareness": {
-            "isEnabled": true,
-            "MaxAcceptableErrors": [70],
-            "RatiosMax": [10]
-          }
-        }
-      },
-      "ModelConfiguration":{
-        "ModelType"         : "BO"
-      },
-      "StopCondition": {
-        "adaptive": {
-          "SearchSpacePercentageWithoutImprovement": 10
-        }
-      }
-}
-```
+#### We provide validation of the Experiment Description file using JSON-Schema.
+* The project JSON-Schema could be found [here](./schema/experiment.schema.json).
+* An example of valid Experiment Description file could be found [here](./EnergyExperiment.json).
+* The related Domain Description Data file could be found [here](./EnergyExperimentData.json).
 
-#### Example of Experiment data file:
-```json
-{
-    "threads": [1, 2, 4, 8, 16, 32],
-    "frequency": [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
-      2900.0, 2901.0]
-}
-```
-
-#### Validate the configuration file:
-* For validation JSON documents use [json-schema](https://json-schema.org/)
-* Useful examples. [Understanding-json-schema] (https://json-schema.org/understanding-json-schema/index.html)
+##### Links to investigate JSON-Schema:
+* For validation JSON documents use [json-schema.org](https://json-schema.org/)
+* Useful examples are in [understanding-json-schema](https://json-schema.org/understanding-json-schema/index.html) section.

@@ -43,6 +43,7 @@ class Experiment:
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
+        self.bad_configurations_number = 0
 
         self.__generate_search_space()
 
@@ -92,7 +93,8 @@ class Experiment:
         :param configurations: List of Configuration instances.
         """
         for configuration in configurations:
-            self._put(configuration)
+            if configuration.is_enabled:
+                self._put(configuration)
 
     def _put(self, configuration_instance: Configuration):
         """
@@ -337,3 +339,13 @@ class Experiment:
 
     def get_selection_algorithm_parameters(self):
         return self.description["SelectionAlgorithm"]
+
+    def get_outlier_detectors_parameters(self):
+        return self.description["OutliersDetection"]
+
+    def increment_bad_configuration_number(self):
+        self.bad_configurations_number = self.bad_configurations_number + 1
+        return self
+    
+    def get_bad_configuration_number(self):
+        return self.bad_configurations_number

@@ -129,7 +129,7 @@ def run(experiment_description=None):
             finish = posterior_stop_condition.validate_conditions()
             if not finish:
                 try:
-                    finish = prior_stop_condition.is_finish()
+                    finish = prior_stop_condition.validate_conditions()
                 except Exception as e:
                     logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
             if not finish:

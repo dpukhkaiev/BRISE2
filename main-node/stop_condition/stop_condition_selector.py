@@ -46,4 +46,8 @@ def get_stop_condition(experiment, is_prior):
                 stop_condition = TimeBasedType(stop_condition, sc["Parameters"])
                 logger.debug("Assigned time-based Stop Condition.")
                 continue
+            if sc["Type"] == "BadConfigurationBased":
+                from stop_condition.bad_configuration_based import BadConfigurationBasedType
+                stop_condition = BadConfigurationBasedType(stop_condition, sc["Parameters"])
+                logger.debug("Assigned bad-configuration-based Stop Condition")
     return stop_condition

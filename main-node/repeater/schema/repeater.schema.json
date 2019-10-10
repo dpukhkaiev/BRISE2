@@ -18,6 +18,11 @@
                     "type": "object",
                     "description": "Configuration used in Default Repeater.",
                     "properties":{
+                        "MaxFailedTasksPerConfiguration": {
+                            "description": "Maximum number of failed tasks per each Configuration.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
                         "MaxTasksPerConfiguration": {
                             "description": "Minimum times to evaluate (run) each Configuration.",
                             "type": "integer",
@@ -25,6 +30,7 @@
                         }
                     },
                     "required": [
+                        "MaxFailedTasksPerConfiguration",
                         "MaxTasksPerConfiguration"
                     ],
                     "additionalProperties": false
@@ -49,6 +55,11 @@
                     "type": "object",
                     "description": "Configuration used in Student Repeater.",
                     "properties":{
+                        "MaxFailedTasksPerConfiguration": {
+                            "description": "Maximum number of failed tasks per each Configuration.",
+                            "type": "integer",
+                            "minimum": 1
+                        },
                         "MinTasksPerConfiguration": {
                             "description": "Minimum times to evaluate (run) each Configuration.",
                             "type": "integer",
@@ -150,6 +161,7 @@
                         }
                     },
                     "required": [
+                        "MaxFailedTasksPerConfiguration",
                         "MinTasksPerConfiguration",
                         "MaxTasksPerConfiguration",
                         "BaseAcceptableErrors",

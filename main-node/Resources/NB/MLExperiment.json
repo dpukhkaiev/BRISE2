@@ -22,14 +22,53 @@
     "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
     "ResultStructure"   : ["PREC_AT_99_REC"],
     "ResultDataTypes"  : ["float"],
+    "ExpectedValuesRange": [[0, 150000]],
     "MaxTimeToRunTask": 10
   },
+  "OutliersDetection":[
+    {
+      "Type": "Dixon",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 30
+      }
+    },
+    {
+      "Type": "Chauvenet",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    },
+    {
+      "Type": "MAD",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    },
+    {
+      "Type": "Grubbs",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    },
+    {
+      "Type": "Quartiles",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    }
+  ],
   "Repeater":{
-        "Type": "default",
-        "Parameters": {
-          "MaxTasksPerConfiguration": 1
-        }
-      },
+    "Type": "default",
+    "Parameters": {
+      "MaxTasksPerConfiguration": 1,
+      "MaxFailedTasksPerConfiguration": 1
+    }
+  },
   "ModelConfiguration":{
     "ModelType"         : "BO"
   },
@@ -55,6 +94,12 @@
       "Parameters": {
         "MaxRunTime": 1,
         "TimeUnit": "hours"
+      }
+    },
+    {
+      "Type": "BadConfigurationBased",
+      "Parameters": {
+        "MaxBadConfigurations": 10
       }
     }
   ]

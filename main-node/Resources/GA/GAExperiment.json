@@ -46,9 +46,47 @@
   "ModelConfiguration":{
     "ModelType"         : "BO"
   },
+  "OutliersDetection":[
+    {
+      "Type": "Dixon",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 30
+      }
+    },
+    {
+      "Type": "Chauvenet",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    },
+    {
+      "Type": "MAD",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    },
+    {
+      "Type": "Grubbs",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    },
+    {
+      "Type": "Quartiles",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 0,
+        "MaxActiveNumberOfTasks": "Inf"
+      }
+    }
+  ],
   "Repeater":{
     "Type": "student_deviation",
     "Parameters": {
+      "MaxFailedTasksPerConfiguration": 5,
       "MaxTasksPerConfiguration": 2,
       "MinTasksPerConfiguration": 2,
       "BaseAcceptableErrors": [5],
@@ -90,6 +128,12 @@
           "Parameters": {
             "MaxRunTime": 1,
             "TimeUnit": "hours"
+          }
+        },
+        {
+          "Type": "BadConfigurationBased",
+          "Parameters": {
+            "MaxBadConfigurations": 10
           }
         }
       ]

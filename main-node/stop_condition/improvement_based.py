@@ -1,16 +1,13 @@
-import logging
-
 from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
 
 
 class ImprovementBasedType(StopConditionDecoratorPosterior):
 
     def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition)
+        super().__init__(stop_condition, __name__)
         self.max_configs_without_improvement = stop_condition_parameters["MaxConfigsWithoutImprovement"]
         self.number_of_configurations_in_iteration = 0
         self.configurations_without_improvement = 0
-        self.logger = logging.getLogger(__name__)
 
     def is_finish(self):
         if self.get_configurations_without_improvement() >= self.max_configs_without_improvement:

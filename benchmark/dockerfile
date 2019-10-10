@@ -45,7 +45,7 @@ COPY ./main-node/logger /home/benchmark_user/logger/
 
 # Copying information for benchmark
 COPY ./benchmark/ /home/benchmark_user/
-COPY ./main-node/Resources/EnergyExperiment* /home/benchmark_user/Resources/
+COPY ./main-node/Resources/ /home/benchmark_user/Resources/
 ## Remove not needed scenarios
 COPY ./worker/csv_data/*.csv /home/benchmark_user/csv/
 RUN rm /home/benchmark_user/csv/*avg.csv

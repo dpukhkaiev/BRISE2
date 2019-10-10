@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 
+from tools.front_API import API
 
 class Configuration:
 
@@ -53,6 +54,9 @@ class Configuration:
         self.predicted_result = []
         # Meta information
         self._standard_deviation = []
+        self.is_enabled = True
+        self.number_of_failed_tasks = 0
+        self._task_amount = 0
 
     def __getstate__(self):
         space = self.__dict__.copy()
@@ -68,17 +72,14 @@ class Configuration:
         if self.__is_valid_configuration(parameters):
             self.predicted_result = [float(x) for x in predicted_result]
 
-    def add_tasks(self, parameters, task):
+    def add_tasks(self, task):
         """
         Add new measurements of concrete parameters
-        :param parameters: List with parameters. Used for validation
         :param task: List of task results
         """
-
-        if self.__is_valid_configuration(parameters) and self.__is_valid_task(task):
-            task_id = task["task id"]
-            self._tasks[str(task_id)] = task
-            self.__assemble_tasks_results()
+        task_id = task["task id"]
+        self._tasks[str(task_id)] = task
+        self.__assemble_tasks_results()
 
     def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
         if self.__is_valid_configuration(parameters):
@@ -96,14 +97,16 @@ class Configuration:
     def get_average_result(self):
         return self._average_result.copy()
 
-    def get_required_results_from_all_tasks(self):
+    def get_required_results_with_marks_from_all_tasks(self):
         from_all_tasks = []
+        marks = []
         for task in self._tasks.values():
             from_one_task = []
             for domain in self.__class__.TaskConfiguration["ResultStructure"]:
                 from_one_task.append(task['result'][domain])
             from_all_tasks.append(from_one_task)
-        return from_all_tasks
+            marks.append(task['ResultValidityCheckMark'])
+        return from_all_tasks, marks
 
     def get_standard_deviation(self):
         return self._standard_deviation.copy()
@@ -168,30 +171,6 @@ class Configuration:
         """
         return compared_configuration.__lt__(self)
 
-    @classmethod
-    def __is_valid_task(cls, task):
-        """
-        Validate type of fields in configuration task
-        :param task: list of task results
-        :return: bool
-        """
-
-        try:
-            assert isinstance(task, dict), "Task is not a dictionary object."
-            assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
-            assert task['worker'], "Worker is not specified: %s" % task
-            # assuming, we have a 'TaskConfiguration' field of Experiment description stored in Configuration (could be as static field)
-            assert set(cls.TaskConfiguration['ResultStructure']) <= set(task['result'].keys()), \
-                "All required result fields are not obtained. Expected: %s. Got: %s." % (
-                cls.TaskConfiguration["ResultStructure"], task['result'].keys())
-            for dim_name, dim_data_type in zip(cls.TaskConfiguration["ResultStructure"], cls.TaskConfiguration["ResultDataTypes"]):
-                assert type(task['result'][dim_name]).__name__ == dim_data_type, \
-                "Result types are not match Experiment Description: %s. Expected: %s." % (str([str(type(x)) for x in task['result']]), cls.TaskConfiguration["ResultDataTypes"])
-            return True
-        except AssertionError as error:
-            logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
-            return False
-
     def __is_valid_configuration(self, parameters):
         """
          Is parameters equal to instance parameters
@@ -210,18 +189,78 @@ class Configuration:
         Updates the results of the Configuration measurement by aggregating the results from all available Tasks.
         The Average Results of the Configuration and the Standard Deviation between Tasks are calculated.
         """
-        results_tuples = self.get_required_results_from_all_tasks()
+        # list of a result list from all tasks
+        results_tuples, marks = self.get_required_results_with_marks_from_all_tasks()
+        task_index_size = len(results_tuples) - 1
+        # delete marked bad/outliers values before average is calculated
+        for task_index in range(task_index_size, -1, -1):
+            if marks[task_index] == 'Bad value' or \
+                    marks[task_index] == 'Outlier' or \
+                    marks[task_index] == 'Out of bounds':
+                del(results_tuples[task_index])
         # calculating the average over all result items
         self._average_result = np.mean(results_tuples, axis=0).tolist()
         self._standard_deviation = np.std(results_tuples, axis=0).tolist()
+        self._task_amount = len(results_tuples)
 
     def __repr__(self):
         """
         String representation of Configuration object.
         """
-        return "Configuration(Params={params}, Tasks={num_of_tasks}, Avg.result={avg_res}, STD={std})".format(
-            params=str(self.get_parameters()),
-            num_of_tasks=len(self._tasks),
-            avg_res=str(self.get_average_result()),
-            std=str(self.get_standard_deviation()))
+        return "Configuration(Params={params}, Tasks={num_of_tasks}, Outliers={num_of_outliers}, " \
+               "Avg.result={avg_res}, STD={std})".format(
+                params=str(self.get_parameters()),
+                num_of_tasks=len(self._tasks),
+                num_of_outliers=len(self._tasks) - self._task_amount,
+                avg_res=str(self.get_average_result()),
+                std=str(self.get_standard_deviation()))
+    
+    def disable_configuration(self):
+        """
+        Disable configuration. This configuration won't be used in experiment.
+        """
+        if self.is_enabled:
+            self.is_enabled = False
+            temp_msg = ("Configuration %s was disabled due to lack of correct results" % self.get_parameters())
+            self.logger.warning(temp_msg)
+            API().send('log', 'info', message=temp_msg)
+
+    def increase_failed_tasks_number(self):
+        """
+        Increase counter of failed measures.
+        """
+        self.number_of_failed_tasks = self.number_of_failed_tasks + 1
+    
+    def is_valid_task(self, task):
+        """
+        Check error_check function output and return appropriate flag
+        :param task: one task dictionary item
+        :return: boolean, should we include task to configuration or not
+        """
+
+        result_check_vector = []
+        result_bounds_check_vector = []
+        for index, parameter in enumerate(self.TaskConfiguration['ResultStructure']):
+            result_check_vector.append(0)
+            result_bounds_check_vector.append(0)
+        for index, parameter in enumerate(self.TaskConfiguration['ResultStructure']):
+            if task["ResultValidityCheckMark"] == "Bad value":
+                result_check_vector[index] = result_check_vector[index] + 1
+            elif task["ResultValidityCheckMark"] == "Out of bounds":
+                result_bounds_check_vector[index] = result_bounds_check_vector[index] + 1
+        for index in range(0,len(result_check_vector)):
+            if result_check_vector[index] == len(task["result"]) - 1 or result_bounds_check_vector[index] == len(task["result"]) - 1:
+                return False
+        try:
+            assert isinstance(task, dict), "Task is not a dictionary object."
+            assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
+            assert task['worker'], "Worker is not specified: %s" % task
+            # assuming, we have a 'TaskConfiguration' field of Experiment description stored in Configuration (could be as static field)
+            assert set(self.TaskConfiguration['ResultStructure']) <= set(task['result'].keys()), \
+                "All required result fields are not obtained. Expected: %s. Got: %s." % (
+                self.TaskConfiguration["ResultStructure"], task['result'].keys())
+            return True
+        except AssertionError as error:
+            logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
+            return False
 

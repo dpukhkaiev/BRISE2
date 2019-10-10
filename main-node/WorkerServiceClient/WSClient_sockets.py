@@ -4,7 +4,7 @@ from time import time
 from os.path import isfile
 import csv
 import logging
-
+from WorkerServiceClient.task_errors_check import error_check
 
 class WSClient():
 
@@ -24,6 +24,7 @@ class WSClient():
         self._task_parameters = task_configuration["TaskParameters"]
         self._result_structure = task_configuration["ResultStructure"]
         self._result_data_types = task_configuration["ResultDataTypes"]
+        self._expected_values_range = task_configuration["ExpectedValuesRange"]
         self._scenario = task_configuration["Scenario"]
         self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
         self._log_file_path = logfile
@@ -138,13 +139,11 @@ class WSClient():
     def _report_according_to_required_structure(self):
         results_to_report = []
         for one_task_result in self.current_results:
+            one_task_result["ResultValidityCheckMark"] = 'OK'
             current_task = []
             for index, parameter in enumerate(self._result_structure):
-                if self._result_data_types[index] == 'str':
-                    current_task.append(one_task_result["result"][parameter])
-                    continue
-                current_task.append(eval("{datatype}({value})".format(datatype=self._result_data_types[index],
-                                                                      value=one_task_result["result"][parameter])))
+                one_task_result = error_check(one_task_result, parameter, self._expected_values_range[index], self._result_data_types[index])
+                current_task.append(one_task_result["result"][parameter])          
             results_to_report.append(current_task)
         return results_to_report
 
@@ -203,10 +202,10 @@ class WSClient():
             if len(self.current_results) < len(self.cur_tasks_ids):
                 raise TimeoutError("Not all Task have been finished in time.")
             else:
-                self.logger.info(
-                    "All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)))
-                self.logger.info("Results: %s" % str(self._report_according_to_required_structure()))
-                return self.current_results
+                self.logger.info("All tasks (%s) finished after %s seconds. " % (len(task), round(time() - waiting_started)))
+                resultFiltered = self._report_according_to_required_structure()
+                self.logger.info("Results: %s" % str(resultFiltered))
+            return self.current_results
         except Exception as e:
             self.logger.error("Unable finish Tasks. Reporting what had got: %s" %
                               str(self._report_according_to_required_structure()), exc_info=e)

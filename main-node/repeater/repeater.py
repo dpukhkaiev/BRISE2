@@ -4,7 +4,7 @@ from tools.front_API import API
 from tools.reflective_class_import import reflective_class_import
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
-
+from outliers.outliers_detector_selector import get_outlier_detectors
 
 class Repeater:
     def __init__(self, worker_service_client, experiment):
@@ -12,9 +12,9 @@ class Repeater:
         self.worker_service_client = worker_service_client
         self.performed_measurements = 0
         self.repeater_parameters = experiment.description["Repeater"]["Parameters"]
-
+        self.outlier_detectors = get_outlier_detectors(experiment.get_outlier_detectors_parameters())
         self.logger = logging.getLogger(__name__)
-
+        self._result_structure = experiment.description["TaskConfiguration"]["ResultStructure"]
         self._type = None
         self.set_type("Default")  # Default Configuration will be measured precisely with Default Repeater Type.
 
@@ -80,21 +80,29 @@ class Repeater:
 
             if not tasks_to_send:
                 return configurations
-
             # Send this configurations to Worker service
             results = self.worker_service_client.work(tasks_to_send)
-
+            results_WO_outliers = self.outlier_detectors.find_outliers_for_taskset(results, 
+                    self._result_structure, configurations, tasks_to_send)
             # Sending data to API and adding Tasks to Configuration
-            for parameters, result in zip(tasks_to_send, results):
+            for parameters, task in zip(tasks_to_send, results_WO_outliers):
                 for config in configurations:
                     if config.get_parameters() == parameters:
-                        config.add_tasks(parameters, result)
-
-                API().send('new', 'task', configurations=[parameters], results=[result])
-            
+                        if config.is_valid_task(task):
+                            config.add_tasks(task)
+                        else:
+                            config.increase_failed_tasks_number()
+                API().send('new', 'task', configurations=[parameters], results=[task])
             # Evaluating each Configuration in configurations list
             for configuration in configurations:
-                needed_tasks_count = self.evaluation_by_type(configuration, experiment)
+                if configuration.number_of_failed_tasks <= self.repeater_parameters['MaxFailedTasksPerConfiguration']:
+                    needed_tasks_count = self.evaluation_by_type(configuration, experiment)
+                else:
+                    needed_tasks_count = 0
+                    if len(configuration.get_tasks()) == 0:
+                        current_measurement[str(configuration.get_parameters())]['Finished'] = True
+                        experiment.increment_bad_configuration_number()
+                        configuration.disable_configuration()
                 current_measurement[str(configuration.get_parameters())]['needed_tasks_count'] = needed_tasks_count
                 if needed_tasks_count == 0:
                     current_measurement[str(configuration.get_parameters())]['Finished'] = True

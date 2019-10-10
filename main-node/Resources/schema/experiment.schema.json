@@ -103,6 +103,15 @@
                         "type": "string"
                     }]
                 },
+                "ExpectedValuesRange": {
+                    "type": "array",
+                    "items": [{
+                        "type": "array",
+                        "items":[{
+                            "type":"number"
+                        }]
+                    }]
+                },
                 "ResultPriorities": {
                     "type": "array",
                     "items": [{
@@ -123,6 +132,9 @@
                 "ResultStructure",
                 "ResultDataTypes"
             ]
+        },
+        "OutliersDetection":{
+            "$ref": "./outliers/schema/outlier_detector.schema.json#/definitions/OutliersDetection"
         },
         "Repeater": {
             "description": "Parameters related to Configuration evaluation accuracy.",
@@ -150,7 +162,6 @@
             "description": "Conditions for stopping an experiment.",
             "type": "array",
             "minItems": 0,
-            "maxItems": 5,
             "uniqueItems": true,
             "items": {
                 "oneOf" : [
@@ -287,6 +298,33 @@
                         "Parameters"
                     ],
                     "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["BadConfigurationBased"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxBadConfigurations": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "MaxBadConfigurations"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
                     }
                 ]
             }
@@ -297,6 +335,7 @@
         "DomainDescription",
         "SelectionAlgorithm",
         "TaskConfiguration",
+        "OutliersDetection",
         "Repeater",
         "ModelConfiguration",
         "StopCondition"

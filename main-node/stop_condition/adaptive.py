@@ -1,12 +1,9 @@
-import logging
-
 from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
 
 class AdaptiveType(StopConditionDecoratorPosterior):
 
     def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition)
-        self.logger = logging.getLogger(__name__)
+        super().__init__(stop_condition, __name__)
         self.max_configs = \
             round(stop_condition_parameters["SearchSpacePercentage"] / 100 * self.get_experiment().get_search_space_size())
     

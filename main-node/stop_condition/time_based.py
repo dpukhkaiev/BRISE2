@@ -1,4 +1,3 @@
-import logging
 import time
 import datetime
 
@@ -12,10 +11,9 @@ class TimeBasedType(StopConditionDecoratorPrior):
         Simple timer. Triggering of that timer will stop BRISE computations during next SC validation.
     """
     def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition)
+        super().__init__(stop_condition, __name__)
         self.interval = convert_to_seconds(stop_condition_parameters["TimeUnit"], stop_condition_parameters["MaxRunTime"])
 
-        self.logger = logging.getLogger(__name__)
         self.initial_timestamp = datetime.datetime.now()
         temp_msg = "Timeout is set. !!!WARNING!!! BRISE will not stop at timeout moment due to workflow."
         self.logger.info(temp_msg)
