@@ -60,7 +60,7 @@
                     <mat-chip *ngFor="let p of task.config | keyvalue; let i = index; let first = first"
                       [selectable]="false">
                       <mat-icon>tune</mat-icon>
-                      <span> {{experimentDescription.DomainDescription.FeatureNames[i] | titlecase}}:</span>
+                      <span> {{experimentDescription.DomainDescription.ParameterNames[i] | titlecase}}:</span>
                       <span> {{p.value}}</span>
                     </mat-chip>
                   </mat-chip-list>

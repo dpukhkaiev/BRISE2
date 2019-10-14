@@ -22,7 +22,7 @@
         "DomainDescription": {
             "type": "object",
             "properties": {
-                "FeatureNames": {
+                "ParameterNames": {
                     "type": "array",
                     "items": [{
                             "type": "string"
@@ -43,7 +43,7 @@
                         {
                             "type": "array",
                             "description": "Default configuration for multidimensional parameters",
-                            "minItems": 3,
+                            "minItems": 0,
                             "items": [{
                                 "type": ["number", "string", "boolean"]
                             }]
@@ -51,17 +51,20 @@
                         {
                             "type": "array",
                             "description": "Default configuration with numbers for the energy consumption",
-                            "minItems": 2,
+                            "minItems": 0,
                             "maxItems": 2,
                             "items": [{
                                 "type": "number"
                             }]
                         }
                     ]
+                },
+                "DefaultConfigurationHandler": {
+                    "type": "string"
                 }
             },
             "required": [
-                "FeatureNames",
+                "ParameterNames",
                 "DataFile",
                 "AllConfigurations",
                 "DefaultConfiguration"
@@ -130,7 +133,8 @@
                 "Scenario",
                 "TaskParameters",
                 "ResultStructure",
-                "ResultDataTypes"
+                "ResultDataTypes",
+                "ExpectedValuesRange"
             ]
         },
         "OutliersDetection":{

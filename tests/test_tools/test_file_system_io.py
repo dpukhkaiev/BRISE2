@@ -5,7 +5,7 @@ import pytest
 
 DATA_FOR_JSON_FILE = {
     "DomainDescription": {
-        "FeatureNames": ["frequency", "threads"],
+        "ParameterNames": ["frequency", "threads"],
         "DataFile": "./Resources/GA/GAExperimentData.json",
         "AllConfigurations": "# Will be loaded from DataFile and overwritten",
         "DefaultConfiguration": [2900.0, 32]

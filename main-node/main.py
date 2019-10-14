@@ -16,6 +16,7 @@ from logger.default_logger import BRISELogConfigurator
 from stop_condition.stop_condition_selector import get_stop_condition
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
+from default_config_handler.default_config_handler_selector import get_default_config_handler
 
 
 def run(experiment_description=None):
@@ -62,9 +63,9 @@ def run(experiment_description=None):
         temp_msg = "Measuring the default Configuration."
         # TODO: Logging messages to the API could be sent from the logger.
         logger.info(temp_msg)
-        sub.send('log', 'info', message=temp_msg)
-
-        default_configuration = Configuration(experiment.description["DomainDescription"]["DefaultConfiguration"])
+        sub.send('log', 'info', message=temp_msg)      
+        default_config_handler = get_default_config_handler(experiment)
+        default_configuration = default_config_handler.get_default_config()
         repeater.measure_configurations([default_configuration], experiment=experiment)
         experiment.put_default_configuration(default_configuration)
 

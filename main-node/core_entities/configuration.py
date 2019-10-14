@@ -45,6 +45,7 @@ class Configuration:
         if all(isinstance(value, (int, float, str)) for value in parameters):
             self.__parameters = parameters
         else:
+            self.__parameters = None
             self.logger.error("Parameters %s are not int, float or str type" % parameters)
             raise TypeError("Wrong parameter types for initialization new Configuration. Supported numeric or string.")
 
@@ -237,20 +238,8 @@ class Configuration:
         :param task: one task dictionary item
         :return: boolean, should we include task to configuration or not
         """
-
-        result_check_vector = []
-        result_bounds_check_vector = []
-        for index, parameter in enumerate(self.TaskConfiguration['ResultStructure']):
-            result_check_vector.append(0)
-            result_bounds_check_vector.append(0)
-        for index, parameter in enumerate(self.TaskConfiguration['ResultStructure']):
-            if task["ResultValidityCheckMark"] == "Bad value":
-                result_check_vector[index] = result_check_vector[index] + 1
-            elif task["ResultValidityCheckMark"] == "Out of bounds":
-                result_bounds_check_vector[index] = result_bounds_check_vector[index] + 1
-        for index in range(0,len(result_check_vector)):
-            if result_check_vector[index] == len(task["result"]) - 1 or result_bounds_check_vector[index] == len(task["result"]) - 1:
-                return False
+        if task["ResultValidityCheckMark"] == "Bad value" or task["ResultValidityCheckMark"] == "Out of bounds":
+            return False
         try:
             assert isinstance(task, dict), "Task is not a dictionary object."
             assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])

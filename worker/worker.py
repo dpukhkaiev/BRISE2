@@ -3,9 +3,12 @@ import sys
 import subprocess
 import logging
 from random import randint, choice
+import time
+import csv
+
+from rm_script import insert_config_to_RM_process, run_RM
 
 from csv_data.splitter import Splitter
-
 
 def energy_consumption(task_parameters: dict, scenario: dict):
     try:
@@ -20,7 +23,7 @@ def energy_consumption(task_parameters: dict, scenario: dict):
         logging.getLogger(__name__).error("An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (task_parameters, error))
 
 
-def taskNB(task_parameters: dict, scenario: dict):
+def naiveBayes_mock(task_parameters: dict, scenario: dict):
     try:
         data = Splitter("csv_data/"+scenario['ws_file'])
         data.searchNB(str(task_parameters['laplace_correction']), str(task_parameters['estimation_mode']),
@@ -28,12 +31,113 @@ def taskNB(task_parameters: dict, scenario: dict):
                       str(task_parameters['minimum_bandwidth']), str(task_parameters['number_of_kernels']),
                       str(task_parameters['use_application_grid']), str(task_parameters['application_grid_size']))
         result = choice(data.new_data)
+        
         return {
             'PREC_AT_99_REC': float(result["PREC_AT_99_REC"])
         }
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'taskNB' Task with parameters %s: %s" % (task_parameters, error))
+        logging.getLogger(__name__).error("An error occurred during performing 'taskNB' (NaiveBayes mock) Task with parameters %s: %s" % (task_parameters, error))
+    return {
+        'PREC_AT_99_REC':'NaN'
+    }
 
+
+def naiveBayes(task_parameters: dict, scenario: dict):    
+    """Initialization function to run NaiveBayes algorithm inside RapidMiner
+
+    :param task_parameters:dict: current measured configuration of NaiveBayes in a {key:value} format
+    :param scenario:dict: parameters of scenario that is being processed
+
+    :rtype:float: average value of precision and recall
+    """
+    logger = logging.getLogger(__name__)
+    # initialize all required pathes
+    try:
+        algorithm = 'NAIVE_BAYES'
+        RMrepository = '//ServerRepository/NaiveBayes/'
+        path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/NaiveBayes/MA_EXR_1_EX_1_NB_INV.rmp'
+        path2result = './csv_data/NB_performance.csv'
+        path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
+
+        RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
+    except Exception as error:
+        logger.error("An error occurred during performing NaiveBayes Task with parameters %s: %s" % (task_parameters, error))
+    return run_RM(path2RM, RMrepository, RMprocess, path2result)
+
+def randomForest(task_parameters: dict, scenario: dict):
+    """Initialization function to run RandomForest algorithm inside RapidMiner
+
+    :param task_parameters:dict: current measured configuration of RandomForest in a {key:value} format
+    :param scenario:dict: parameters of scenario that is being processed
+
+    :rtype:float: average value of precision and recall
+    """
+    logger = logging.getLogger(__name__)
+    # initialize all required pathes
+    try:
+        # use RapidMiner Automodel to define default config, if it is specified:
+        automodel_default = True if "defined_by_automodel" in task_parameters.values() else False
+        if automodel_default == True:
+            algorithm = 'AUTO_MODEL'
+            RMrepository = '//ServerRepository/Automodel/'
+            path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/Automodel/Autommod.rmp'
+        else:
+            algorithm = 'RANDOM_FOREST'
+            RMrepository = '//ServerRepository/RandomForest/'
+            path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/RandomForest/MA_EXR_1_EX_2_RF_INV.rmp'
+        path2result = './csv_data/RF_performance.csv'
+        path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
+
+        RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
+    except Exception as error:
+        logger.error("An error occurred during performing RandomForest Task with parameters %s: %s" % (task_parameters, error))
+    return run_RM(path2RM, RMrepository, RMprocess, path2result)
+
+def neuralNet(task_parameters: dict, scenario: dict):
+    """Initialization function to run NeuralNet algorithm inside RapidMiner
+
+    :param task_parameters:dict: current measured configuration of NeuralNet in a {key:value} format
+    :param scenario:dict: parameters of scenario that is being processed
+
+    :rtype:float: average value of precision and recall
+    """
+    logger = logging.getLogger(__name__)
+    # initialize all required pathes
+    try:
+        algorithm = 'NEURAL_NET'
+        RMrepository = '//ServerRepository/NeuralNetwork/'
+        path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/NeuralNetwork/MA_EXR_1_EX_3_NN_INV.rmp'
+        path2result = './csv_data/NN_performance.csv'
+        path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
+       
+        RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
+    except Exception as error:
+        logger.error("An error occurred during performing NeuralNet Task with parameters %s: %s" % (task_parameters, error))
+    return run_RM(path2RM, RMrepository, RMprocess, path2result)
+
+
+
+def SVM(task_parameters: dict, scenario: dict):
+    """Initialization function to run Support Vector Machine (SVM) algorithm inside RapidMiner
+
+    :param task_parameters:dict: current measured configuration of Support Vector Machine (SVM) in a {key:value} format
+    :param scenario:dict: parameters of scenario that is being processed
+
+    :rtype:float: average value of precision and recall
+    """
+    logger = logging.getLogger(__name__)
+    # initialize all required pathes
+    try:
+        algorithm = 'SUPPORT_VECTOR_MACHINE'
+        RMrepository = '//ServerRepository/SVM/'
+        path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/SVM/MA_EXR_1_EX_4_SVM_INV.rmp'
+        path2result = './csv_data/SVM_performance.csv'
+        path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
+
+        RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
+    except Exception as error:
+        logger.error("An error occurred during performing SVM Task with parameters %s: %s" % (task_parameters, error))
+    return run_RM(path2RM, RMrepository, RMprocess, path2result)
 
 def genetic(task_parameters: dict, scenario: dict):
     logger = logging.getLogger(__name__)
@@ -97,7 +201,8 @@ def genetic(task_parameters: dict, scenario: dict):
             logger.error("java command: %s doesnt create result file" % command)
             raise Exception("java command: %s doesnt create result file" % command)
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'genetic' Task with parameters %s: %s" % (task_parameters, error))
+        logger.error("An error occurred during performing 'genetic' Task with parameters %s: %s" % (task_parameters, error))
+
 
 def simulatedAnnealing(param, scenario):
     logger = logging.getLogger(__name__)

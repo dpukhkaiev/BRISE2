@@ -6,18 +6,18 @@ Process of finding (near)optimal configuration of target system should be descri
 All other configurations are nested to these as key-value entities.
 
 Possible values of configurations for your system should be provided in separate json file.
-
-**All specified here configurations are required.**
+<details>
+<summary> Description of required experiment configurations </summary>
 
 - `General` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
     - `isMinimizationExperiment` - `bool`. Minimization or maximization experiment
     - `ConfigurationsPerIteration` - `int`. The number of configurations that will be measured simultaneously. **optional**
 
 - `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
-    - `FeatureNames` - `list of strings`. The names of configurations.
+    - `ParameterNames` - `list of strings`. The names of configurations.
     - `DataFile` - `string`. Path to json file with all possible values of all configurations. 
     - `AllConfigurations` - here will be loaded configurations from the `DataFile`.
-    - `DefaultConfiguration` - `list of values`. **an order must match the `FeatureNames`**. User`s assumption about a default configuration that system uses.
+    - `DefaultConfiguration` - `list of values`. **an order must match the `ParameterNames`**. User`s assumption about a default configuration that system uses.
 
 - `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
     - `SelectionType` - `string`. An exploration algorithm specification. Currently only `SobolSequence` available.
@@ -94,12 +94,81 @@ Possible values of configurations for your system should be provided in separate
         - `BadConfigurationBased` - `String` - The BRISE will stop in case of reaching threshold of failed Configurations number.
         Required parameters:
             - `MaxBadConfigurations` - `Int` - Threshold of failed Configurations. Failed configuration should not contain any correct measurings.
+</details>
 
 #### We provide validation of the Experiment Description file using JSON-Schema.
 * The project JSON-Schema could be found [here](./schema/experiment.schema.json).
 * An example of valid Experiment Description file could be found [here](./EnergyExperiment.json).
 * The related Domain Description Data file could be found [here](./EnergyExperimentData.json).
 
-##### Links to investigate JSON-Schema:
-* For validation JSON documents use [json-schema.org](https://json-schema.org/)
-* Useful examples are in [understanding-json-schema](https://json-schema.org/understanding-json-schema/index.html) section.
+<details>
+<summary> Example of Experiment configuration file </summary>
+
+```json
+{
+      "General":{
+        "isMinimizationExperiment"  : true
+      },
+      "DomainDescription":{
+        "ParameterNames"      : ["frequency", "threads"],
+        "DataFile"          : "./Resources/EnergyExperimentData.json",
+        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
+        "DefaultConfiguration": [2900.0, 32]
+      },
+      "SelectionAlgorithm":{
+        "SelectionType"     : "SobolSequence",
+        "NumberOfInitialConfigurations": 10
+      },
+      "TaskConfiguration":{
+        "TaskName"          : "energy_consumption",
+        "Scenario":{
+          "ws_file": "Radix-500mio.csv"
+        },
+        "TaskParameters"   : ["frequency", "threads"],
+        "ResultStructure"   : ["energy"],
+        "ResultDataTypes"  : ["float"],
+        "MaxTimeToRunTask": 10
+      },
+      "Repeater":{
+        "Type": "student_deviation",
+        "Parameters": {
+          "MaxTasksPerConfiguration": 10,
+          "MinTasksPerConfiguration": 2,
+          "BaseAcceptableErrors": [10],
+          "ConfidenceLevels": [0.95],
+          "DevicesScaleAccuracies": [0],
+          "DevicesAccuracyClasses": [0],
+          "ModelAwareness": {
+            "isEnabled": true,
+            "MaxAcceptableErrors": [70],
+            "RatiosMax": [10]
+          }
+        }
+      },
+      "ModelConfiguration":{
+        "ModelType"         : "BO"
+      },
+      "StopCondition": {
+        "adaptive": {
+          "SearchSpacePercentageWithoutImprovement": 10
+        }
+      }
+}
+```
+</details>
+
+<details>
+<summary> Example of Experiment data file </summary>
+
+```json
+{
+    "threads": [1, 2, 4, 8, 16, 32],
+    "frequency": [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
+      2900.0, 2901.0]
+}
+```
+</details>
+
+#### Validate the configuration file:
+* For validation JSON documents use [json-schema](https://json-schema.org/)
+* Useful examples. [Understanding-json-schema] (https://json-schema.org/understanding-json-schema/index.html)

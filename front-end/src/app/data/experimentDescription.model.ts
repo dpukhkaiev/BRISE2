@@ -9,7 +9,7 @@ interface DomainDescription {
     AllConfigurations: Array<any>
     DataFile: String
     DefaultConfiguration: Array<any>
-    FeatureNames: Array<String>
+    ParameterNames: Array<String>
 }
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number

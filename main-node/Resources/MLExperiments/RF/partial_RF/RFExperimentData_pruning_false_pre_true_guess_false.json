@@ -1,0 +1,19 @@
+{
+  "number_of_trees" : [50, 140, 200, 350, 500],
+  "criterion" : ["accuracy", "gain_ratio"],
+  "maximal_depth" : [7,10],
+  "apply_pruning" : [false],
+  "confidence" : [0.25],
+  "apply_prepruning" : [true],
+  "minimal_gain" : [0.1],
+  "minimal_leaf_size" : [500],
+  "minimal_size_for_split" : [4],
+  "number_of_prepruning_alternatives" : [3],
+  "random_splits" : [false],
+  "guess_subset_ratio" : [false],
+  "subset_ratio" : [0.3, 0.5, 0.8],
+  "voting_strategy" : ["confidence_vote"],
+  "use_local_random_seed" : [false],
+  "local_random_seed" : [1992],
+  "enable_parallel_execution" : [true]
+}

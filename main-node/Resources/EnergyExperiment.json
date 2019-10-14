@@ -4,7 +4,7 @@
     "ConfigurationsPerIteration" : 3
   },
   "DomainDescription":{
-    "FeatureNames"      : ["frequency", "threads"],
+    "ParameterNames"      : ["frequency", "threads"],
     "DataFile"          : "./Resources/EnergyExperimentData.json",
     "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
     "DefaultConfiguration": [2900.0, 32]

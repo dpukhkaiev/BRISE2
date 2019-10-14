@@ -22,6 +22,7 @@ def error_check(tasks, parameter, expected_values_range, expected_data_type):
         except Exception as e:
             # indexes of other values are fixed in delete array
             tasks['ResultValidityCheckMark'] = "Bad value"
+            return tasks
         # this part find indexes of values with uncorresponded user-defined pattern
         # define lower and upper limits of expected results (described in json)
         # if limit is not defined, it is automatically sets as infinity

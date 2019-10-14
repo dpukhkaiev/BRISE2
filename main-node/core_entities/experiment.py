@@ -117,7 +117,7 @@ class Experiment:
 
     def get_configuration_by_parameters(self, parameters):
         """
-        Returns the instance of Configuration class, which contains the concrete configuration, if configuration the exists
+        Returns the instance of Configuration class, which contains the concrete configuration, if configuration exists
 
         :param parameters: list. Concrete experiment configuration
                shape - list, e.g. [2900.0, 32]

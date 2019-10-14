@@ -1,29 +1,28 @@
 {
   "General": {
     "isMinimizationExperiment"  : false,
-    "ConfigurationsPerIteration" : 1
+    "ConfigurationsPerIteration" : 3
   },
   "DomainDescription":{
-    "FeatureNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-    "DataFile"          : "./Resources/NB/MLExperimentData.json",
+    "ParameterNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
+    "DataFile"          : "./Resources/MLExperiments/NB/partial_NB/NBExperimentData_full_heuristic_false.json",
     "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-    "DefaultConfiguration": [true, "full", "heuristic", 0.5, 0.5, 4, true, 200]
-
+    "DefaultConfiguration": [true,"full","heuristic",0.1,0,0,false,0]
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations"   : 10
+    "NumberOfInitialConfigurations": 10
   },
   "TaskConfiguration":{
-    "TaskName"          : "taskNB",
+    "TaskName"          : "naiveBayes",
     "Scenario":{
-      "ws_file": "taskNB1.csv"
+      "ws_file": ""
     },
     "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-    "ResultStructure"   : ["PREC_AT_99_REC"],
+    "ResultStructure"   : ["prec_rec"],
     "ResultDataTypes"  : ["float"],
-    "ExpectedValuesRange": [[0, 150000]],
-    "MaxTimeToRunTask": 10
+    "ExpectedValuesRange": [[0, 1]],
+    "MaxTimeToRunTask": 600
   },
   "OutliersDetection":[
     {
@@ -36,37 +35,47 @@
     {
       "Type": "Chauvenet",
       "Parameters": {
-        "MinActiveNumberOfTasks": 0,
-        "MaxActiveNumberOfTasks": "Inf"
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
       }
     },
     {
       "Type": "MAD",
       "Parameters": {
-        "MinActiveNumberOfTasks": 0,
-        "MaxActiveNumberOfTasks": "Inf"
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
       }
     },
     {
       "Type": "Grubbs",
       "Parameters": {
-        "MinActiveNumberOfTasks": 0,
-        "MaxActiveNumberOfTasks": "Inf"
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
       }
     },
     {
       "Type": "Quartiles",
       "Parameters": {
-        "MinActiveNumberOfTasks": 0,
-        "MaxActiveNumberOfTasks": "Inf"
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
       }
     }
   ],
   "Repeater":{
-    "Type": "default",
+    "Type": "student_deviation",
     "Parameters": {
-      "MaxTasksPerConfiguration": 1,
-      "MaxFailedTasksPerConfiguration": 1
+      "MaxFailedTasksPerConfiguration": 5,
+      "MaxTasksPerConfiguration": 10,
+      "MinTasksPerConfiguration": 2,
+      "BaseAcceptableErrors": [5],
+      "ConfidenceLevels": [0.95],
+      "DevicesScaleAccuracies": [0],
+      "DevicesAccuracyClasses": [0],
+      "ModelAwareness": {
+        "isEnabled": true,
+        "MaxAcceptableErrors": [50],
+        "RatiosMax": [10]
+      }
     }
   },
   "ModelConfiguration":{
@@ -90,16 +99,9 @@
       "Parameters": {      }
     },
     {
-      "Type": "TimeBased",
+      "Type": "Adaptive",
       "Parameters": {
-        "MaxRunTime": 1,
-        "TimeUnit": "hours"
-      }
-    },
-    {
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
+        "SearchSpacePercentage": 15
       }
     }
   ]

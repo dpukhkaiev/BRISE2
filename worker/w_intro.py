@@ -3,6 +3,7 @@ import threading # ?
 import logging
 import socketio
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 from tools.reflective_worker_method_import import generate_menu
 
@@ -37,7 +38,7 @@ def ping_obj(*argv):
 
 @socketIO.on('reg_response', namespace='/worker_management')
 def reg_response(sid, data):
-    print('Server confirmed registration')
+    logging.getLogger(__name__).info("Server confirmed registration")
 
 @socketIO.on('assign', namespace='/worker_management')
 def run_task(*argv):
@@ -128,8 +129,7 @@ def task_result(data):
 
 @socketIO.on('connect')
 def on_connect():
-    print('connected to server')
-    print('Sending registration data')
+    logging.getLogger(__name__).info("Connected to server. Sending registration data...")
     socketIO.emit('register_worker', namespace='/worker_management', callback=print)
 
 socketIO.connect('http://w_service:49153', namespaces=['/worker_management'])

@@ -1,0 +1,12 @@
+{
+  "layer": [2, 3, 4],
+  "training_cycles": [200, 500, 10000],
+  "learning_rate": [0.01, 0.1, 0.2, 0.5, 1.0],
+  "momentum": [0.2, 0.5, 0.8, 0.9],
+  "decay": [true, false],
+  "shuffle": [true, false],
+  "normalize":[true, false],
+  "error_epsilon": [1.0E-4],
+  "use_local_random_seed": [true, false],
+  "local_random_seed" : [1992]
+}
