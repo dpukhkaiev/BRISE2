@@ -143,7 +143,7 @@ class WSClient():
             current_task = []
             for index, parameter in enumerate(self._result_structure):
                 one_task_result = error_check(one_task_result, parameter, self._expected_values_range[index], self._result_data_types[index])
-                current_task.append(one_task_result["result"][parameter])          
+                current_task.append(one_task_result["result"][parameter])
             results_to_report.append(current_task)
         return results_to_report
 

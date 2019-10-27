@@ -6,7 +6,7 @@ from core_entities.configuration import Configuration
 from tools.initial_config import load_experiment_description
 
 
-DESCRIPTION_NB = load_experiment_description(exp_desc_file_path="Resources/NB/MLExperiment.json")
+DESCRIPTION_NB = load_experiment_description(exp_desc_file_path="Resources/MLExperiments/NB/NBExperiment.json")
 DESCRIPTION_ENERGY = load_experiment_description(exp_desc_file_path="Resources/EnergyExperiment.json")
 DESCRIPTION_ENERGY["TaskConfiguration"]["Scenario"]["ws_file"] = "Radix-500mio_avg.csv"
 

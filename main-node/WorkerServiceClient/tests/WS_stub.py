@@ -16,7 +16,7 @@ class WSClient_Stub(WSClient):
         # needs to store task_id
         self.task_iterator = 0
         self._number_of_workers = 1
-        self.__csv_folder = "../worker/csv_data/"
+        self.__csv_folder = "../worker/scenarios/"
 
     def connect(self):
         self.logger.info("Using the Stub for the Worker Service Client.")
@@ -47,7 +47,7 @@ class WSClient_Stub(WSClient):
             if task["task_name"] == "energy_consumption":
                 result = self.__energy_consumption(params_to_send)
 
-            elif task["task_name"] == "taskNB":
+            elif task["task_name"] == "naiveBayes_mock":
                 result = self.__taskNB(params_to_send)
 
             #  TODO - data is needed
@@ -75,7 +75,7 @@ class WSClient_Stub(WSClient):
 
     def __energy_consumption(self, param):
         data = []
-        path_to_file = self.__csv_folder + param['ws_file']
+        path_to_file = self.__csv_folder + "energy_consumption/" + param['ws_file']
         try:
             with open(path_to_file, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
@@ -97,7 +97,7 @@ class WSClient_Stub(WSClient):
 
     def __taskNB(self, param):
         data = []
-        path_to_file = self.__csv_folder + param['ws_file']
+        path_to_file = self.__csv_folder + "rapid_miner/" + param['ws_file']
         try:
             with open(path_to_file, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)

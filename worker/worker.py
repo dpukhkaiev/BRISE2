@@ -2,17 +2,15 @@ import os
 import sys
 import subprocess
 import logging
-from random import randint, choice
-import time
-import csv
+from random import choice
 
-from rm_script import insert_config_to_RM_process, run_RM
+from worker_tools.rm_script import insert_config_to_RM_process, run_RM
+from worker_tools.splitter import Splitter
 
-from csv_data.splitter import Splitter
 
 def energy_consumption(task_parameters: dict, scenario: dict):
     try:
-        data = Splitter("csv_data/"+scenario['ws_file'])
+        data = Splitter("scenarios/energy_consumption/" + scenario['ws_file'])
         data.search(str(task_parameters['frequency']), str(task_parameters['threads']))
         result = choice(data.new_data)
         return {
@@ -25,7 +23,7 @@ def energy_consumption(task_parameters: dict, scenario: dict):
 
 def naiveBayes_mock(task_parameters: dict, scenario: dict):
     try:
-        data = Splitter("csv_data/"+scenario['ws_file'])
+        data = Splitter("scenarios/rapid_miner/" + scenario['ws_file'])
         data.searchNB(str(task_parameters['laplace_correction']), str(task_parameters['estimation_mode']),
                       str(task_parameters['bandwidth_selection']), str(task_parameters['bandwidth']),
                       str(task_parameters['minimum_bandwidth']), str(task_parameters['number_of_kernels']),
@@ -56,7 +54,7 @@ def naiveBayes(task_parameters: dict, scenario: dict):
         algorithm = 'NAIVE_BAYES'
         RMrepository = '//ServerRepository/NaiveBayes/'
         path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/NaiveBayes/MA_EXR_1_EX_1_NB_INV.rmp'
-        path2result = './csv_data/NB_performance.csv'
+        path2result = './scenarios/rapid_miner/NB_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
 
         RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
@@ -85,7 +83,7 @@ def randomForest(task_parameters: dict, scenario: dict):
             algorithm = 'RANDOM_FOREST'
             RMrepository = '//ServerRepository/RandomForest/'
             path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/RandomForest/MA_EXR_1_EX_2_RF_INV.rmp'
-        path2result = './csv_data/RF_performance.csv'
+        path2result = './scenarios/rapid_miner/RF_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
 
         RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
@@ -107,7 +105,7 @@ def neuralNet(task_parameters: dict, scenario: dict):
         algorithm = 'NEURAL_NET'
         RMrepository = '//ServerRepository/NeuralNetwork/'
         path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/NeuralNetwork/MA_EXR_1_EX_3_NN_INV.rmp'
-        path2result = './csv_data/NN_performance.csv'
+        path2result = './scenarios/rapid_miner/NN_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
        
         RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)
@@ -131,7 +129,7 @@ def SVM(task_parameters: dict, scenario: dict):
         algorithm = 'SUPPORT_VECTOR_MACHINE'
         RMrepository = '//ServerRepository/SVM/'
         path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/SVM/MA_EXR_1_EX_4_SVM_INV.rmp'
-        path2result = './csv_data/SVM_performance.csv'
+        path2result = './scenarios/rapid_miner/SVM_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
 
         RMprocess = insert_config_to_RM_process(algorithm, task_parameters, path2process)

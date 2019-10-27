@@ -47,8 +47,8 @@ COPY ./main-node/logger /home/benchmark_user/logger/
 COPY ./benchmark/ /home/benchmark_user/
 COPY ./main-node/Resources/ /home/benchmark_user/Resources/
 ## Remove not needed scenarios
-COPY ./worker/csv_data/*.csv /home/benchmark_user/csv/
-RUN rm /home/benchmark_user/csv/*avg.csv
+COPY ./worker/scenarios/energy_consumption/*.csv /home/benchmark_user/scenarios/energy_consumption/
+RUN rm /home/benchmark_user/scenarios/energy_consumption/*avg.csv
 
 WORKDIR /home/benchmark_user
 RUN chown --recursive benchmark_user:benchmark_user .

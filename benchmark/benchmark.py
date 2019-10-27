@@ -239,10 +239,7 @@ class BRISEBenchmark:
                                                  "DevicesAccuracyClasses": [0],
                                                  "ConfidenceLevels": [0.95]}}}
 
-        for ws_file in os.listdir('csv'):
-            # Skip ML scenarios, only the Energy consumption scenarios are needed.
-            if ws_file in ["taskNB1.csv", "NB_final_result.csv"]:
-                continue
+        for ws_file in os.listdir('scenarios/energy_consumption'):
             experiment_description = self.base_experiment_description
             experiment_description['TaskConfiguration']['Scenario']['ws_file'] = ws_file
             self.logger.info("Benchmarking next Scenario file(ws_file): %s" % ws_file)

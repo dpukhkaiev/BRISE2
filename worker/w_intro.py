@@ -5,7 +5,7 @@ import socketio
 from concurrent.futures import ThreadPoolExecutor
 import logging
 
-from tools.reflective_worker_method_import import generate_menu
+from worker_tools.reflective_worker_method_import import generate_menu
 
 logging.getLogger('socketIO-client').setLevel(logging.INFO)
 logging.basicConfig()
