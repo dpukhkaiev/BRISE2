@@ -8,6 +8,7 @@ filterwarnings("ignore")  # disable warnings for demonstration.
 
 G_LOG_FILE_NAME = "file"
 G_MODEL_REGRESSION_CONFIG = {
+    "SamplingSize": 64,
     "ModelTestSize": 0.9,
     "MinimumAccuracy": 0.85,
     "ModelType": "regression"

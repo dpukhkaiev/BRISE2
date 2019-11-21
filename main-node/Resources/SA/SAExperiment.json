@@ -3,13 +3,10 @@
     "isMinimizationExperiment"  : false
   },
   "DomainDescription":{
-    "ParameterNames"      : ["subComponentUnassignedFactor", "softwareComponentUnassignedFactor" ,
+    "HyperparameterNames"      : ["subComponentUnassignedFactor", "softwareComponentUnassignedFactor" ,
      "hardScoreStartingTemperaturePercentage", "softScoreStartingTemperaturePercentage",
       "acceptedCountLimit", "millisecondsSpentLimit", "unimprovedMillisecondsSpentLimit"],
-    "DataFile"          : "./Resources/SA/SAExperimentData.json",
-    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-    "DefaultConfiguration": [1, 5, 100, 100, 50, 10000, 10000]
-
+    "DataFile"          : "./Resources/SA/SAExperimentData.json"
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
@@ -36,7 +33,7 @@
       "acceptedCountLimit", "millisecondsSpentLimit", "unimprovedMillisecondsSpentLimit"],
     "ResultStructure"   : ["hardScoreImprovement", "softScoreImprovement"],
     "ResultDataTypes"  : ["float", "float"],
-    "ExpectedValuesRange": [[0, 1],[0, 1]],
+    "ExpectedValuesRange": [[0, 1],["-inf","inf"]],
     "ResultPriorities" : [1, 0]
   },
   "OutliersDetection":[
@@ -94,6 +91,7 @@
     }
   },
   "ModelConfiguration":{
+    "SamplingSize"      : 64,
     "ModelType"         : "BO"
   },
   "StopCondition":[

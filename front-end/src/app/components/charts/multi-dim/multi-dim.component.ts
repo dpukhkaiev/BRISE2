@@ -18,6 +18,7 @@ export class MultiDimComponent implements OnInit {
 
   // Experiment configurations
   experimentDescription: ExperimentDescription
+  searchspace: object
   resultParamsRange: any // Map. results parameters with possible ranges
 
   // Best point
@@ -70,8 +71,9 @@ export class MultiDimComponent implements OnInit {
       .subscribe((obj: any) => {
         this.resetRes()
         this.experimentDescription = obj['description']['experiment description']
+        this.searchspace = obj['description']['searchspace_description']
         let resultParams = this.experimentDescription['TaskConfiguration']['TaskParameters']
-        let rangeValues = this.experimentDescription["DomainDescription"]["AllConfigurations"]
+        let rangeValues = this.searchspace["boundaries"]
 
         this.resultParamsRange = this.zip(resultParams, rangeValues)
         this.resultParamsRange.set('result', undefined) // range for results is undefined

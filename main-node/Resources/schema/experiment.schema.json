@@ -22,7 +22,7 @@
         "DomainDescription": {
             "type": "object",
             "properties": {
-                "ParameterNames": {
+                "HyperparameterNames": {
                     "type": "array",
                     "items": [{
                             "type": "string"
@@ -35,44 +35,21 @@
                 "DataFile": {
                     "type": "string"
                 },
-                "AllConfigurations": {
-                    "type": "array"
-                },
-                "DefaultConfiguration": {
-                    "anyOf": [
-                        {
-                            "type": "array",
-                            "description": "Default configuration for multidimensional parameters",
-                            "minItems": 0,
-                            "items": [{
-                                "type": ["number", "string", "boolean"]
-                            }]
-                        },
-                        {
-                            "type": "array",
-                            "description": "Default configuration with numbers for the energy consumption",
-                            "minItems": 0,
-                            "maxItems": 2,
-                            "items": [{
-                                "type": "number"
-                            }]
-                        }
-                    ]
-                },
                 "DefaultConfigurationHandler": {
                     "type": "string"
                 }
             },
             "required": [
-                "ParameterNames",
-                "DataFile",
-                "AllConfigurations",
-                "DefaultConfiguration"
+                "HyperparameterNames",
+                "DataFile"
             ]
         },
         "SelectionAlgorithm": {
             "anyOf": [{
                 "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/SobolSequence"
+            },
+            {
+                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/ConfigSpaceSelector"
             }]
         },
         "TaskConfiguration": {

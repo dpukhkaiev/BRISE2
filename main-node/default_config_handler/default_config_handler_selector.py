@@ -1,16 +1,19 @@
 import logging
-        
-def get_default_config_handler(experiment):    
+from core_entities.experiment import Experiment
+
+
+def get_default_config_handler(experiment: Experiment):
     """ This method returns an instance of default configuration handler for current experiment
     
     :rtype:DefaultConfigurationHandler
     """
     logger = logging.getLogger(__name__)
     handler_name = experiment.description["DomainDescription"]["DefaultConfigurationHandler"] \
-        if  "DefaultConfigurationHandler" in experiment.description["DomainDescription"] else None
+        if "DefaultConfigurationHandler" in experiment.description["DomainDescription"] else None
 
-    if len(experiment.description["DomainDescription"]["DefaultConfiguration"]) == \
-        len(experiment.description["DomainDescription"]["ParameterNames"]):
+    if experiment.search_space.get_default_configuration() and \
+            len(experiment.search_space.get_default_configuration().get_parameters()) == \
+            len(experiment.search_space.get_hyperparameter_names()):
         from default_config_handler.default_config_handler import DefaultConfigurationHandler
         config_handler = DefaultConfigurationHandler(experiment)
     elif handler_name == "Automodel":
@@ -22,8 +25,8 @@ def get_default_config_handler(experiment):
         else:
             from default_config_handler.random_default_config_handler import RandomDefaultConfigurationHandler
             config_handler = RandomDefaultConfigurationHandler(experiment)
-            logger.warning("It seems that Automodel is not supported for your experiment -"\
-                    " random default configuration will be picked instead!")
+            logger.warning("It seems that Automodel is not supported for your experiment -"
+                           " random default configuration will be picked instead!")
     else:
         from default_config_handler.random_default_config_handler import RandomDefaultConfigurationHandler
         config_handler = RandomDefaultConfigurationHandler(experiment)

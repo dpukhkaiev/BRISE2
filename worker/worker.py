@@ -6,6 +6,7 @@ from random import choice
 
 from worker_tools.rm_script import insert_config_to_RM_process, run_RM
 from worker_tools.splitter import Splitter
+from worker_tools.mock_values_corrector import correct_values
 
 
 def energy_consumption(task_parameters: dict, scenario: dict):
@@ -24,10 +25,14 @@ def energy_consumption(task_parameters: dict, scenario: dict):
 def naiveBayes_mock(task_parameters: dict, scenario: dict):
     try:
         data = Splitter("scenarios/rapid_miner/" + scenario['ws_file'])
+        # Only for demo! 
+        # To enable mock data to be used, real values of continuous parameters must be discretized
+        corrected_bandwidth, corrected_min_bandwidth, corrected_num_kernels, corrected_app_grid_size = \
+            correct_values(task_parameters['bandwidth'], task_parameters['minimum_bandwidth'], task_parameters['number_of_kernels'], task_parameters['application_grid_size'])
         data.searchNB(str(task_parameters['laplace_correction']), str(task_parameters['estimation_mode']),
-                      str(task_parameters['bandwidth_selection']), str(task_parameters['bandwidth']),
-                      str(task_parameters['minimum_bandwidth']), str(task_parameters['number_of_kernels']),
-                      str(task_parameters['use_application_grid']), str(task_parameters['application_grid_size']))
+                      str(task_parameters['bandwidth_selection']), str(corrected_bandwidth),
+                      str(corrected_min_bandwidth), str(corrected_num_kernels),
+                      str(task_parameters['use_application_grid']), str(corrected_app_grid_size))
         result = choice(data.new_data)
         
         return {
@@ -200,7 +205,9 @@ def genetic(task_parameters: dict, scenario: dict):
             raise Exception("java command: %s doesnt create result file" % command)
     except Exception as error:
         logger.error("An error occurred during performing 'genetic' Task with parameters %s: %s" % (task_parameters, error))
-
+    return {
+        'Validity':'NaN'
+    }
 
 def simulatedAnnealing(param, scenario):
     logger = logging.getLogger(__name__)
@@ -264,3 +271,7 @@ def simulatedAnnealing(param, scenario):
             raise Exception("java command: %s didn't create result file" % command)
     except Exception as e:
         logger.error("ERROR IN WORKER during performing SA with parameters: %s" % param)
+    return {
+        'hardScoreImprovement': 'NaN',
+        'softScoreImprovement': 'NaN'
+    }

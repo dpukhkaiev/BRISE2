@@ -4,25 +4,25 @@ import pickle
 import json
 import csv
 import os
-import itertools
-
 import logging
+import numpy as np
+
 from typing import List
 from copy import deepcopy
 
 from tools.front_API import API
 from tools.file_system_io import create_folder_if_not_exists
 from core_entities.configuration import Configuration
+from core_entities.search_space import SearchSpace
 
 
 class Experiment:
 
-    def __init__(self, description: dict):
+    def __init__(self, description: dict, search_space: SearchSpace):
         """
         Initialization of Experiment class
         Following fields are declared:
-
-        self.all_configurations - list of configuration instances
+        self.measured_configurations - list of configuration instances
                                   shape - list, e.g. ``[config_instance_1, config_instance_2, ... ]``
         self.description - description of the current experiment, it is taken from .json file
                            shape - dict with subdicts
@@ -30,12 +30,11 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
-        self.default_configuration = []
-        self.all_configurations = []
+        self.measured_configurations = []
         self._description = description
-        self.search_space = []
+        self.search_space = search_space
         self.end_time = self.start_time = datetime.datetime.now()
-        # A unique ID that is used to differentiate an Experiments by descriptions.
+        # A unique ID that is used to differentiate Experiments by descriptions.
         self.id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
         self.name = "exp_{task_name}_{experiment_hash}".format(
             task_name=self.description["TaskConfiguration"]["TaskName"],
@@ -44,8 +43,6 @@ class Experiment:
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
         self.bad_configurations_number = 0
-
-        self.__generate_search_space()
 
     def _get_description(self):
         return deepcopy(self._description)
@@ -77,14 +74,14 @@ class Experiment:
 
     def put_default_configuration(self, default_configuration: Configuration):
         if self._is_valid_configuration_instance(default_configuration):
-            if not self.default_configuration:
-                self.default_configuration = default_configuration
+            if not self.search_space.get_default_configuration():
+                self.search_space.set_default_configuration(default_configuration)
+            if default_configuration not in self.measured_configurations:
                 self.api.send("default", "configuration",
                               configurations=[default_configuration.get_parameters()],
                               results=[default_configuration.get_average_result()])
-                if default_configuration not in self.all_configurations:
-                    self.all_configurations.append(default_configuration)
-                    self._calculate_current_best_configurations()
+                self.measured_configurations.append(default_configuration)
+                self._calculate_current_best_configurations()
             else:
                 raise ValueError("The default Configuration was registered already.")
 
@@ -102,11 +99,11 @@ class Experiment:
         :param configuration_instance: Configuration class instance.
         """
         if self._is_valid_configuration_instance(configuration_instance):
-            if self.all_configurations is []:
+            if self.measured_configurations is []:
                 self._add_configuration_to_experiment(configuration_instance)
             else:
                 is_exists = False
-                for value in self.all_configurations:
+                for value in self.measured_configurations:
                     if value.get_parameters() == configuration_instance.get_parameters():
                         is_exists = True
                 if not is_exists:
@@ -114,19 +111,6 @@ class Experiment:
                 else:
                     self.logger.warning("Attempt of adding Configuration that is already in Experiment: %s" %
                                         configuration_instance)
-
-    def get_configuration_by_parameters(self, parameters):
-        """
-        Returns the instance of Configuration class, which contains the concrete configuration, if configuration exists
-
-        :param parameters: list. Concrete experiment configuration
-               shape - list, e.g. [2900.0, 32]
-        :return: instance of Configuration class
-        """
-        for configuration_instance in self.all_configurations:
-            if configuration_instance.get_parameters() == parameters:
-                return configuration_instance
-        return None
 
     def get_final_report_and_result(self, repeater):
         #   In case, if the model predicted the final point, that has less value, than the default, but there is
@@ -136,15 +120,15 @@ class Experiment:
         self.logger.info("\n\nFinal report:")
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
-        for configuration in self.all_configurations:
+        for configuration in self.measured_configurations:
             self.logger.info(configuration)
-        self.logger.info("Number of measured Configurations: %s" % len(self.all_configurations))
+        self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
         self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
         self.logger.info("Best found Configuration: %s" % self.get_current_solution())
         self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
 
         all_features = []
-        for configuration in self.all_configurations:
+        for configuration in self.measured_configurations:
             all_features.append(configuration.get_parameters())
         self.api.send('final', 'configuration',
                       configurations=[self.get_current_solution().get_parameters()],
@@ -172,9 +156,9 @@ class Experiment:
         current_status = {
             "Running time": str(self.get_running_time()) if serializable else self.get_running_time(),
             "Best found Configuration": self.get_current_solution().__getstate__() if serializable else self.get_current_solution(),
-            "Default configuration": self.default_configuration.__getstate__() if serializable else self.default_configuration,
+            "Default configuration": self.search_space.get_default_configuration().__getstate__() if serializable else self.search_space.get_default_configuration(),
             "Experiment description": self.description,
-            "Evaluated Configurations": [conf.__getstate__() if serializable else conf for conf in self.all_configurations]
+            "Evaluated Configurations": [conf.__getstate__() if serializable else conf for conf in self.measured_configurations]
         }
         return current_status
 
@@ -195,8 +179,8 @@ class Experiment:
 
     def _calculate_current_best_configurations(self):
 
-        best_configuration = [self.all_configurations[0]]
-        for configuration in self.all_configurations:
+        best_configuration = [self.measured_configurations[0]]
+        for configuration in self.measured_configurations:
             if configuration.is_better_configuration(self.is_minimization(),
                                                      best_configuration[0]):
                 best_configuration = [configuration]
@@ -209,7 +193,14 @@ class Experiment:
         :param configuration: Configuration object.
         :return: None
         """
-        self.all_configurations.append(configuration)
+        self.measured_configurations.append(configuration)
+        
+        # for Demo, please, uncomment next lines: 
+        # stub_parameters = self.search_space.discard_Nones(configuration.get_parameters())
+        # self.api.send("new", "configuration",
+        #               configurations=[stub_parameters],
+        #               results=[configuration.get_average_result()])
+        
         self.api.send("new", "configuration",
                       configurations=[configuration.get_parameters()],
                       results=[configuration.get_average_result()])
@@ -224,9 +215,6 @@ class Experiment:
         else:
             return 0
 
-    def __generate_search_space(self):
-        self.search_space = [list(configuration) for configuration in
-                             itertools.product(*self.description["DomainDescription"]["AllConfigurations"])]
 
     def dump(self, folder_path: str = 'Results/serialized/'):
         """ save instance of experiment class
@@ -273,21 +261,23 @@ class Experiment:
         Args:
             final (bool, optional): Is the Experiment finished?. Defaults to False.
         """
-
-        search_space = 1
-        for dim in self.description['DomainDescription']['AllConfigurations']:
-            search_space *= len(dim)
+        search_space_coverage = ""
+        if self.search_space.get_search_space_size() == float('inf'):
+            search_space_coverage = "unknown (infinite search space)"
+        else:
+            search_space_coverage = str(round((len(self.measured_configurations) / self.search_space.get_search_space_size()) * 100)) + '%'
+            
 
         data = dict({
             'model': self.description['ModelConfiguration']['ModelType'],
             'default configuration': [' '.join(
-                str(v) for v in self.default_configuration.get_parameters())],
+                str(v) for v in self.search_space.get_default_configuration().get_parameters())],
             'solution configuration': [' '.join(
                 str(v) for v in self.get_current_solution().get_parameters())],
-            'default result': self.default_configuration.get_average_result()[0],
+            'default result': self.search_space.get_default_configuration().get_average_result()[0],
             'solution result': self.get_current_solution().get_average_result()[0],
-            'number of measured configurations': len(self.all_configurations),
-            'search space coverage': str(round((len(self.all_configurations) / search_space) * 100)) + '%',
+            'number of measured configurations': len(self.measured_configurations),
+            'search space coverage': search_space_coverage,
             'number of repetitions': len(self.get_all_repetition_tasks()),
             'execution time': (self.get_running_time()).seconds,
             'repeater': self.description['Repeater']['Type']
@@ -322,17 +312,14 @@ class Experiment:
 
         all_tasks = []
         result_key = self.description['TaskConfiguration']['ResultStructure'][0]
-        for configuration in self.all_configurations:
+        for configuration in self.measured_configurations:
             for task in configuration.get_tasks().values():
                 if 'result' in task:
                     all_tasks.append(task['result'][result_key])
         return all_tasks
 
     def get_number_of_measured_configurations(self):
-        return len(self.all_configurations)
-
-    def get_search_space_size(self):
-        return len(self.search_space)
+        return len(self.measured_configurations)
 
     def get_stop_condition_parameters(self):
         return self.description["StopCondition"]
@@ -340,6 +327,18 @@ class Experiment:
     def get_selection_algorithm_parameters(self):
         return self.description["SelectionAlgorithm"]
 
+    def get_current_sub_search_space(self):
+        """
+            This method is needed to represent current subsearchspace
+            (i.e. configurations, that were already added to experiment) 
+            in form of lists of all used values for each parameter 
+        :return: current subsearchspace
+        """
+        params = [config.get_parameters() for config in self.measured_configurations]
+        subsearchspace = np.array(params).T.tolist()
+        result = [list(set(dimension)) for dimension in subsearchspace]
+        return result
+        
     def get_outlier_detectors_parameters(self):
         return self.description["OutliersDetection"]
 

@@ -1,19 +1,194 @@
 {
-  "number_of_trees" : [50, 140, 200, 500],
-  "criterion" : ["accuracy", "gain_ratio"],
-  "maximal_depth" : [7,10,15],
-  "apply_pruning" : [true],
-  "confidence" : [0.1, 0.25, 0.5],
-  "apply_prepruning" : [false],
-  "minimal_gain" : [0.1],
-  "minimal_leaf_size" : [500],
-  "minimal_size_for_split" : [4],
-  "number_of_prepruning_alternatives" : [3],
-  "random_splits" : [false],
-  "guess_subset_ratio" : [true],
-  "subset_ratio" : [0.3],
-  "voting_strategy" : ["confidence_vote"],
-  "use_local_random_seed" : [false],
-  "local_random_seed" : [1992],
-  "enable_parallel_execution" : [true]
+  "hyperparameters": [
+    {
+      "name": "number_of_trees",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 2,
+      "upper": 500,
+      "default": 500
+    },
+    {
+      "name": "criterion",
+      "type": "categorical",
+      "choices": [
+        "gain_ratio",
+        "accuracy",
+        "information_gain"
+      ],
+      "default": "accuracy"
+    },
+    {
+      "name": "maximal_depth",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 100,
+      "default": 10
+    },
+    {
+      "name": "apply_pruning",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    {
+      "name": "confidence",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.0,
+      "upper": 1.0,
+      "default": 0.25
+    },
+    {
+      "name": "apply_prepruning",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    {
+      "name": "minimal_gain",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 10,
+      "default": 0.1
+    },
+    {
+      "name": "minimal_leaf_size",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 500,
+      "default": 500
+    },
+    {
+      "name": "minimal_size_for_split",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 10,
+      "default": 4
+    },
+    {
+      "name": "number_of_prepruning_alternatives",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 4,
+      "default": 3
+    },
+    {
+      "name": "random_splits",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    {
+      "name": "guess_subset_ratio",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    {
+      "name": "subset_ratio",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.0,
+      "upper": 1.0,
+      "default": 0.3
+    },
+    {
+      "name": "voting_strategy",
+      "type": "categorical",
+      "choices": [
+        "confidence_vote",
+        "majority_vote"
+      ],
+      "default": "confidence_vote"
+    },
+    {
+      "name": "use_local_random_seed",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    {
+      "name": "local_random_seed",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1992,
+      "upper": 1993,
+      "default": 1992
+    },
+    {
+      "name": "enable_parallel_execution",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    }
+  ],
+  "conditions": [
+    {
+      "child": "minimal_gain",
+      "parent": "apply_prepruning",
+      "type": "EQ",
+      "value": "true"
+    },
+    {
+      "child": "minimal_leaf_size",
+      "parent": "apply_prepruning",
+      "type": "EQ",
+      "value": "true"
+    },
+    {
+      "child": "minimal_size_for_split",
+      "parent": "apply_prepruning",
+      "type": "EQ",
+      "value": "true"
+    },
+    {
+      "child": "number_of_prepruning_alternatives",
+      "parent": "apply_prepruning",
+      "type": "EQ",
+      "value": "true"
+    },
+    {
+      "child": "confidence",
+      "parent": "apply_pruning",
+      "type": "EQ",
+      "value": "true"
+    },
+    {
+      "child": "subset_ratio",
+      "parent": "guess_subset_ratio",
+      "type": "EQ",
+      "value": "false"
+    },
+    {
+      "child": "local_random_seed",
+      "parent": "use_local_random_seed",
+      "type": "EQ",
+      "value": "true"
+    }
+  ],
+  "forbiddens": []
 }

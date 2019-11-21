@@ -1,8 +1,9 @@
 from core_entities.configuration import Configuration
+from core_entities.experiment import Experiment
 from default_config_handler.abstract_default_config_handler import AbstractDefaultConfigurationHandler
 
 class AutomodelDefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
-    def __init__(self, experiment):
+    def __init__(self, experiment: Experiment):
         self.experiment = experiment
 
     def get_default_config(self):    
@@ -13,7 +14,8 @@ class AutomodelDefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
         :rtype:Configuration
         """
         config = []
-        for __ in self.experiment.description["DomainDescription"]["ParameterNames"]:
+        hyperparameter_names = self.experiment.search_space.get_hyperparameter_names()
+        for __ in hyperparameter_names:
             config.append("defined_by_automodel")
         default_config = Configuration(parameters=config)
         return default_config

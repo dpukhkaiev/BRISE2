@@ -1,12 +1,97 @@
 {
-  "layer": [2, 3, 4],
-  "training_cycles": [200, 500, 10000],
-  "learning_rate": [0.01, 0.1, 0.2, 0.5, 1.0],
-  "momentum": [0.2, 0.5, 0.8, 0.9],
-  "decay": [true, false],
-  "shuffle": [true, false],
-  "normalize":[true, false],
-  "error_epsilon": [1.0E-4],
-  "use_local_random_seed": [true, false],
-  "local_random_seed" : [1992]
+  "hyperparameters": [
+    {
+      "name": "layer",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 2,
+      "upper": 8,
+      "default": 2
+    },
+    {
+      "name": "training_cycles",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 200,
+      "upper": 1000,
+      "default": 200
+    },
+    {
+      "name": "learning_rate",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.01,
+      "upper": 1,
+      "default": 0.01
+    },
+    {
+      "name": "momentum",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.0,
+      "upper": 1.0,
+      "default": 0.9
+    },
+    {
+      "name": "decay",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    {
+      "name": "shuffle",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    {
+      "name": "normalize",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    {
+      "name": "error_epsilon",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 1.0E-6,
+      "upper": 1.0E-4,
+      "default": 1.0E-4
+    },
+    {
+      "name": "use_local_random_seed",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    {
+      "name": "local_random_seed",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1992,
+      "upper": 1994,
+      "default": 1992
+    }
+  ],
+  "conditions": [
+    {
+      "child": "local_random_seed",
+      "parent": "use_local_random_seed",
+      "type": "EQ",
+      "value": "true"
+    }
+  ],
+  "forbiddens": []
 }

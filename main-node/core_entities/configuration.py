@@ -3,12 +3,13 @@ import numpy as np
 
 from tools.front_API import API
 
+
 class Configuration:
 
     TaskConfiguration = {}
     @classmethod
-    def set_task_config(cls, tasrConfig):
-        cls.TaskConfiguration = tasrConfig
+    def set_task_config(cls, taskConfig):
+        cls.TaskConfiguration = taskConfig
 
     def __init__(self, parameters):
         """
@@ -18,8 +19,8 @@ class Configuration:
 
         During initializing following fields are declared:
 
-        self.__parameters:              shape - list, e.g. ``[2900.0, 32]``
-        self.__parameters_in_indexes:   shape - list, e.g. ``[1, 8]``
+        self._parameters:              shape - list, e.g. ``[2900.0, 32]``
+        self._parameters_in_indexes:   shape - list, e.g. ``[1, 8]``
         self._tasks:                    shape - dict, e.g.
                                                ``{
                                                     id_task_1: {
@@ -41,15 +42,8 @@ class Configuration:
         self._predicted_result:          shape - list, e.g. ``[0.0098776]``
         """
         self.logger = logging.getLogger(__name__)
-
-        if all(isinstance(value, (int, float, str)) for value in parameters):
-            self.__parameters = parameters
-        else:
-            self.__parameters = None
-            self.logger.error("Parameters %s are not int, float or str type" % parameters)
-            raise TypeError("Wrong parameter types for initialization new Configuration. Supported numeric or string.")
-
-        self.__parameters_in_indexes = []
+        self._parameters = parameters
+        self._parameters_in_indexes = []
         self._tasks = {}
         self._average_result = []
         self.predicted_result = []
@@ -84,13 +78,13 @@ class Configuration:
 
     def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
         if self.__is_valid_configuration(parameters):
-            self.__parameters_in_indexes = parameters_in_indexes
+            self._parameters_in_indexes = parameters_in_indexes
 
     def get_parameters(self):
-        return self.__parameters.copy()
+        return self._parameters.copy()
 
     def get_parameters_in_indexes(self):
-        return self.__parameters_in_indexes.copy()
+        return self._parameters_in_indexes.copy()
 
     def get_tasks(self):
         return self._tasks.copy()

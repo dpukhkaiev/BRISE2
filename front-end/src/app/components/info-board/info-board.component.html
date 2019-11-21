@@ -59,9 +59,9 @@
           <mat-icon matListIcon>sentiment_satisfied_alt</mat-icon>
           <span class="desc">Saved efforts: </span> <span>
             {{
-              (1 - solution['performed_measurements'] / ( experimentDescription['DomainDescription']['AllConfigurations'][0].length
-              * experimentDescription['DomainDescription']['AllConfigurations'][1].length
-              * experimentDescription['TaskConfiguration']['MaxTasksPerConfiguration'])) * 100 |number:'2.0-2'
+              (1 - solution['performed_measurements'] / ((experimentDescription['ModelConfiguration']['SamplingSize']
+              + experimentDescription['SelectionAlgorithm']['NumberOfInitialConfigurations'] + 1) 
+              * experimentDescription['Repeater']['Parameters']['MaxTasksPerConfiguration'])) * 100 |number:'2.0-2'
             }}%
         </span>
         </mat-list-item>

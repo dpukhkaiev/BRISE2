@@ -37,8 +37,12 @@ def get_stop_condition(experiment, is_prior):
                 continue
             if sc["Type"] == "Adaptive":
                 from stop_condition.adaptive import AdaptiveType
-                stop_condition = AdaptiveType(stop_condition, sc["Parameters"])
-                logger.debug("Assigned adaptive Stop Condition.")
+                try:	                
+                    stop_condition = AdaptiveType(stop_condition, sc["Parameters"])
+                    logger.debug("Assigned adaptive Stop Condition.")
+                    continue
+                except Exception:
+                    logger.warning("Adaptive Stop Condition will not be used, search space has infinite size!")
                 continue
         else:
             if sc["Type"] == "TimeBased":

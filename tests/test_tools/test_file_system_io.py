@@ -5,11 +5,8 @@ import pytest
 
 DATA_FOR_JSON_FILE = {
     "DomainDescription": {
-        "ParameterNames": ["frequency", "threads"],
-        "DataFile": "./Resources/GA/GAExperimentData.json",
-        "AllConfigurations": "# Will be loaded from DataFile and overwritten",
-        "DefaultConfiguration": [2900.0, 32]
-
+        "HyperparameterNames": ["frequency", "threads"],
+        "DataFile": "./Resources/GA/GAExperimentData.json"
     },
     "SelectionAlgorithm": {
         "SelectionType": "SobolSequence",
@@ -25,6 +22,7 @@ DATA_FOR_JSON_FILE = {
         "MaxTasksPerConfiguration": 4
     },
     "ModelCreation": {
+        "SamplingSize": 64,
         "ModelTestSize": 0.9,
         "MinimumAccuracy": 0.85,
         "ModelType": "regression"

@@ -11,10 +11,10 @@ def repeat_vs_avg(exp):
         Dictionary: Plotly dictionary
     """
     #-- Extract
-    x_param = [str(conf.get_parameters()) for conf in exp.all_configurations]
-    y_repeat = [ len(conf.get_tasks()) for conf in exp.all_configurations]
-    y_avg_res = [conf.get_average_result()[0] for conf in exp.all_configurations]
-    y_deviation = [conf.get_standard_deviation()[0] for conf in exp.all_configurations]
+    x_param = [str(conf.get_parameters()) for conf in exp.measured_configurations]
+    y_repeat = [ len(conf.get_tasks()) for conf in exp.measured_configurations]
+    y_avg_res = [conf.get_average_result()[0] for conf in exp.measured_configurations]
+    y_deviation = [conf.get_standard_deviation()[0] for conf in exp.measured_configurations]
 
     #-- Aggregate
     trace_repeat = go.Bar(

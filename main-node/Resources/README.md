@@ -2,10 +2,10 @@
 ###### This folder contains examples of *json* configuration files.
 
 ### The configuration files entities explanation
-Process of finding (near)optimal configuration of target system should be described in 4 general topics (top-level-keys in json file) of the configuration file.
+Process of finding (near)optimal configuration of target system should be described in 7 general topics (top-level-keys in json file) of the configuration file.
 All other configurations are nested to these as key-value entities.
 
-Possible values of configurations for your system should be provided in separate json file.
+Possible values of configurations for your system should be provided in separate json file (which is further called "data file").
 <details>
 <summary> Description of required experiment configurations </summary>
 
@@ -14,10 +14,9 @@ Possible values of configurations for your system should be provided in separate
     - `ConfigurationsPerIteration` - `int`. The number of configurations that will be measured simultaneously. **optional**
 
 - `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
-    - `ParameterNames` - `list of strings`. The names of configurations.
-    - `DataFile` - `string`. Path to json file with all possible values of all configurations. 
-    - `AllConfigurations` - here will be loaded configurations from the `DataFile`.
-    - `DefaultConfiguration` - `list of values`. **an order must match the `ParameterNames`**. User`s assumption about a default configuration that system uses.
+    - `HyperparameterNames` - `list of strings`. The names of configurations.
+    - `DataFile` - `string`. Path to json file with all possible values of all configurations.
+    - `DefaultConfigurationHandler`. Optional parameter. If default configuration is not specified or specified incorrectly, random configuration can be picked inhstead or other specific handler can be used
 
 - `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
     - `SelectionType` - `string`. An exploration algorithm specification. Currently only `SobolSequence` available.
@@ -29,6 +28,7 @@ Possible values of configurations for your system should be provided in separate
     - `TaskParamenters` - `List of strings`. Configurations that the Worker nodes will use to run target system.
     - `ResultStructure` - `List of strings`. Configurations that the Worker nodes will report back to Main node. `TaskParameters` should be included. 
     - `ResultDataTypes` - `List of strings`. Should be a proper names of Python data types, used for casting data that arrives from Worker nodes (as strings).
+    - `ExpectedValuesRange` - `List`. The range of expected tasks' results for the current experiment
     - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
 
 - `OutliersDetection` - the results of each Configuration run (Tasks) could differ significantly from other observations (Tasks) and those bias Configuration measurement results.
@@ -75,18 +75,20 @@ Possible values of configurations for your system should be provided in separate
     - `minimalTestingSize` - `float`. A minimum possible fraction that specifies an amount of data for testing the created prediction model.
     - `maximalTestingSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
     - `MinimumAccuracy` - `float`. A minimum accuracy that model should provide before making any predictions/testing.
+    - `SamplingSize` - `int`. A number of configurations that should be sampled from a continuous search space in order to give model enough information for prediction.
     - `ModelType` - `string`. Type of heuristic prediction model. *Variants:* 
         - `regression` - Polynomial regression model.
         - `BO` - Bayesian Optimization model (using the Tree Parzen Estimator or TPE).
 
 - `StopCondition` - when to stop BRISE.
     - `Stop Condition Name` - `String` Strategy used for BRISE termination. *Variants (with parameters)*
-        - `default` - `String`(key, value - parameters for Stop Condition (as a nested dictionary)) - The BRISE will stop in case of founding Configuration better, than Default configuration.
+        - `Default` - `String`(key, value - parameters for Stop Condition (as a nested dictionary)) - The BRISE will stop in case of founding Configuration better, than Default configuration.
             `MaxConfigsWithoutImprovement` - `Int` - ? (need to refine this description).
-        - `improvement_based` - `String` - The BRISE could (but don't have to) stop in case of founding Configuration better, than Default configuration.
+        - `ImprovementBased` - `String` - The BRISE could (but don't have to) stop in case of founding Configuration better, than Default configuration.
             `MaxConfigsWithoutImprovement` - `Int` - Terminate after this amount of Configurations were tested and no better found. (but still, better than default was found).
-        - `adaptive` - `String`- Stop if no improvement got for current solution after some percentage of overall Configuration search space evaluation.
+        - `Adaptive` - `String`- Stop if no improvement got for current solution after some percentage of overall Configuration search space evaluation.
             - `SearchSpacePercentageWithoutImprovement` - `Int` - % of the Configuration search space evaluated without improvement.
+        - `Guaranteed` - `String` - The BRISE is stopped if such configuration is found, that is better than default one
         - `TimeBased` - `String` - Launches user-defined timer. The BRISE will stop when time is over.
         Required parameters:
             - `MaxRunTime` - `Int` - Time value for timer.
@@ -106,54 +108,95 @@ Possible values of configurations for your system should be provided in separate
 
 ```json
 {
-      "General":{
-        "isMinimizationExperiment"  : true
-      },
-      "DomainDescription":{
-        "ParameterNames"      : ["frequency", "threads"],
-        "DataFile"          : "./Resources/EnergyExperimentData.json",
-        "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-        "DefaultConfiguration": [2900.0, 32]
-      },
-      "SelectionAlgorithm":{
-        "SelectionType"     : "SobolSequence",
-        "NumberOfInitialConfigurations": 10
-      },
-      "TaskConfiguration":{
-        "TaskName"          : "energy_consumption",
-        "Scenario":{
-          "ws_file": "Radix-500mio.csv"
-        },
-        "TaskParameters"   : ["frequency", "threads"],
-        "ResultStructure"   : ["energy"],
-        "ResultDataTypes"  : ["float"],
-        "MaxTimeToRunTask": 10
-      },
-      "Repeater":{
-        "Type": "student_deviation",
-        "Parameters": {
-          "MaxTasksPerConfiguration": 10,
-          "MinTasksPerConfiguration": 2,
-          "BaseAcceptableErrors": [10],
-          "ConfidenceLevels": [0.95],
-          "DevicesScaleAccuracies": [0],
-          "DevicesAccuracyClasses": [0],
-          "ModelAwareness": {
-            "isEnabled": true,
-            "MaxAcceptableErrors": [70],
-            "RatiosMax": [10]
-          }
-        }
-      },
-      "ModelConfiguration":{
-        "ModelType"         : "BO"
-      },
-      "StopCondition": {
-        "adaptive": {
-          "SearchSpacePercentageWithoutImprovement": 10
-        }
+  "General":{
+    "isMinimizationExperiment"  : true,
+    "ConfigurationsPerIteration" : 3
+  },
+  "DomainDescription":{
+    "HyperparameterNames"      : ["frequency", "threads"],
+    "DataFile"          : "./Resources/EnergyExperimentData.json"
+  },
+  "SelectionAlgorithm":{
+    "SelectionType"     : "SobolSequence",
+    "NumberOfInitialConfigurations": 10
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "energy_consumption",
+    "Scenario":{
+      "ws_file": "Radix-500mio.csv"
+    },
+    "TaskParameters"   : ["frequency", "threads"],
+    "ResultStructure"   : ["energy"],
+    "ResultDataTypes"  : ["float"],
+    "ExpectedValuesRange": [[0, 150000]],
+    "MaxTimeToRunTask": 10
+  },
+  "OutliersDetection":[
+    {
+      "Type": "Dixon",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 30
       }
+    },
+    {
+      "Type": "Chauvenet",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    }
+  ],
+  "Repeater":{
+    "Type": "student_deviation",
+    "Parameters": {
+      "MaxFailedTasksPerConfiguration": 5,
+      "MaxTasksPerConfiguration": 10,
+      "MinTasksPerConfiguration": 2,
+      "BaseAcceptableErrors": [5],
+      "ConfidenceLevels": [0.95],
+      "DevicesScaleAccuracies": [0],
+      "DevicesAccuracyClasses": [0],
+      "ModelAwareness": {
+        "isEnabled": true,
+        "MaxAcceptableErrors": [50],
+        "RatiosMax": [10]
+      }
+    }
+  },
+  "ModelConfiguration":{
+    "SamplingSize": 96,
+    "ModelType"         : "BO"
+  },
+  "StopCondition":[
+    {
+      "Type": "Default",
+      "Parameters": {
+        "MaxConfigs": 15
+      }
+    },
+    {
+      "Type": "ImprovementBased",
+      "Parameters": {
+        "MaxConfigsWithoutImprovement": 5
+      }
+    },
+    {
+      "Type": "TimeBased",
+      "Parameters": {
+        "MaxRunTime": 10,
+        "TimeUnit": "minutes"
+      }
+    },
+    {
+      "Type": "BadConfigurationBased",
+      "Parameters": {
+        "MaxBadConfigurations": 10
+      }
+    }
+  ]
 }
+
 ```
 </details>
 
@@ -162,10 +205,95 @@ Possible values of configurations for your system should be provided in separate
 
 ```json
 {
-    "threads": [1, 2, 4, 8, 16, 32],
-    "frequency": [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
-      2900.0, 2901.0]
+  "hyperparameters": [
+    {
+      "name": "threads",
+      "type": "categorical",
+      "choices": [1, 2, 4, 8, 16, 32],
+      "default": 32
+    },
+    {
+      "name": "frequency",
+      "type": "categorical",
+      "choices": [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
+        2900.0, 2901.0],
+      "default": 2900.0
+    }
+  ],
+  "conditions": [],
+  "forbiddens": []
 }
+```
+
+</details>
+
+<details>
+<summary> Artificial example of Experiment data file (demonstration of all features) </summary>
+
+```json
+{
+  "hyperparameters": [
+    {
+      "name": "number_of_trees",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 2,
+      "upper": 500,
+      "default": 500
+    },
+    {
+      "name": "subset_ratio",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.0,
+      "upper": 1.0,
+      "default": 0.3
+    },
+    {
+      "name": "use_local_random_seed",
+      "type": "categorical",
+      "choices": [
+        "true",
+        "false"
+      ],
+      "default": "false"
+    },
+    {
+      "name": "local_random_seed",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1992,
+      "upper": 1998,
+      "default": 1992
+    }
+  ],
+  "conditions": [
+    {
+      "child": "local_random_seed",
+      "parent": "use_local_random_seed",
+      "type": "EQ",
+      "value": "true"
+    }
+  ],
+  "forbiddens": [
+    {
+      "name": "number_of_trees",
+      "type": "AND",
+      "clauses": [
+        {
+          "name": "number_of_trees",
+          "type": "EQUALS",
+          "value": 2
+        },
+        {
+          "name": "subset_ratio",
+          "type": "IN",
+          "values": [0.1, 0.2]
+        }
+      ]
+    }
+  ]
+}	
 ```
 </details>
 

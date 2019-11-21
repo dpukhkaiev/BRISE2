@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import socketio
 import time
+import pickle
 
 # USER
 from logger.default_logger import BRISELogConfigurator
@@ -53,7 +54,7 @@ def main_process_start():
     It ensures that for each run of main.py you will use only one socketio.
 
     HTTP GET: Start BRISE without providing Experiment Description - BRISE will use the default one.
-    HTTP POST: Start BRISE with provided Experiment Description as a `JSON` payload attached to request.
+    HTTP POST: Start BRISE with provided Experiment Description and search space as a `JSON` payload and data attached to request.
 
     If main process is already running - just return its status. (To terminate process - use relevant method).
     :return: main_process_status()
@@ -62,7 +63,7 @@ def main_process_start():
 
     if not MAIN_PROCESS:
         if request.method == "POST":
-            MAIN_PROCESS = eventlet.spawn(main_run, experiment_description=request.json)
+            MAIN_PROCESS = eventlet.spawn(main_run, experiment_setup=pickle.loads(request.data))
         else:
             MAIN_PROCESS = eventlet.spawn(main_run)
             logger.info(request.method)

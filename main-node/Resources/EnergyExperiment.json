@@ -4,10 +4,8 @@
     "ConfigurationsPerIteration" : 3
   },
   "DomainDescription":{
-    "ParameterNames"      : ["frequency", "threads"],
-    "DataFile"          : "./Resources/EnergyExperimentData.json",
-    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-    "DefaultConfiguration": [2900.0, 32]
+    "HyperparameterNames"      : ["frequency", "threads"],
+    "DataFile"          : "./Resources/EnergyExperimentData.json"
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
@@ -79,6 +77,7 @@
     }
   },
   "ModelConfiguration":{
+    "SamplingSize": 96,
     "ModelType"         : "BO"
   },
   "StopCondition":[

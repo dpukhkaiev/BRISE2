@@ -49,7 +49,7 @@ class StopConditionPosterior(StopCondition):
 
     def is_finish(self):
         number_of_measured_configurations = self.experiment.get_number_of_measured_configurations()
-        if number_of_measured_configurations == self.experiment.get_search_space_size():
+        if number_of_measured_configurations == self.experiment.search_space.get_search_space_size():
             self.logger.info("BRISE has measured the entire Search Space. Reporting the best found Configuration.")
             return True
         elif number_of_measured_configurations >= self.max_configs:

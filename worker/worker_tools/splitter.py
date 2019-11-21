@@ -55,12 +55,12 @@ class Splitter:
         del self.new_data[:]
         if self.data:
             for i in self.data:
-                if self.__str_to_bool(i['laplace_correction']) == self.__str_to_bool(LC) and \
+                if self.__str_to_bool(str(i['laplace_correction'])) == self.__str_to_bool(LC) and \
                         i['estimation_mode'] == EM and i['bandwidth_selection'] == BwS and \
-                        float(i['bandwidth']) == float(Bw) and \
-                        float(i['minimum_bandwidth']) == float(MBw) and \
+                        i['bandwidth'] == Bw and \
+                        i['minimum_bandwidth'] == MBw and \
                         i['number_of_kernels'] == NoK and \
-                        self.__str_to_bool(i['use_application_grid']) == self.__str_to_bool(UAG) and \
+                        self.__str_to_bool(str(i['use_application_grid'])) == self.__str_to_bool(UAG) and \
                         i['application_grid_size'] == AGS:
                     self.new_data.append(i)
         if self.new_data == []: 

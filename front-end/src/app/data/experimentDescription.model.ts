@@ -6,10 +6,8 @@ export interface ExperimentDescription {
 }
 
 interface DomainDescription {
-    AllConfigurations: Array<any>
     DataFile: String
-    DefaultConfiguration: Array<any>
-    ParameterNames: Array<String>
+    HyperparameterNames: Array<String>
 }
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number

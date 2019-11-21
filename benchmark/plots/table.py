@@ -33,18 +33,14 @@ def table(experiments):
         temp = template.copy()
 
         # extract information from the experiment
-        search_space = 1
-        for dim in exp.description['DomainDescription']['AllConfigurations']:
-            search_space *= len(dim)
-
         temp['model'] = exp.description['ModelConfiguration']['ModelType']
-        temp['default result'] = round(exp.default_configuration.get_average_result()[0], 2)
-        temp['default configuration'] = [' '.join(str(v) for v in exp.default_configuration.get_parameters())]
+        temp['default result'] = round(exp.search_space.get_default_configuration().get_average_result()[0], 2)
+        temp['default configuration'] = [' '.join(str(v) for v in exp.search_space.get_default_configuration().get_parameters())]
         temp['solution result'] = round(exp.get_current_solution().get_average_result()[0], 2)
         temp['solution configuration'] = ' '.join(str(v) for v in exp.get_current_solution().get_parameters())
         temp['result improvement'] = str(round(get_relative_improvement(exp), 1)) + '%'
-        temp['number of measured configurations'] = len(exp.all_configurations)
-        temp['search space coverage'] = str(round((len(exp.all_configurations)/search_space)*100)) + '%',
+        temp['number of measured configurations'] = len(exp.measured_configurations)
+        temp['search space coverage'] = str(round((len(exp.measured_configurations)/exp.description["ModelConfiguration"]["SamplingSize"])*100)) + '%',
         temp['number of repetitions'] = len(exp.get_all_repetition_tasks())
         temp['execution time'] = str((exp.end_time - exp.start_time).seconds) + ' s'
         temp['repeater'] = exp.description['Repeater']['Type']
@@ -88,7 +84,7 @@ def get_relative_improvement(experiment: Experiment) -> float:
     Returns:
         [Float] -- Round number in percent. If Default Configuration is 0 - returns 'inf'
     """
-    default_avg_result = experiment.default_configuration.get_average_result()[0]
+    default_avg_result = experiment.search_space.get_default_configuration().get_average_result()[0]
     solution_avg_result = experiment.get_current_solution().get_average_result()[0]
     if default_avg_result == 0:
         return float('inf')

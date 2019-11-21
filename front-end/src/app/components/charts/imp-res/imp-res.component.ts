@@ -191,7 +191,7 @@ export class ImpResComponent implements OnInit {
         }
       },
       yaxis: {
-        title: "Energy",
+        title: this.experimentDescription["TaskConfiguration"]["ResultStructure"][0],
         showgrid: false,
         zeroline: false,
         showline: true,

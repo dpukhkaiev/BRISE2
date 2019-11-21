@@ -9,7 +9,7 @@ filterwarnings("ignore")    # disable warnings for demonstration.
 from WorkerServiceClient.WSClient_sockets import WSClient
 from model.model_selection import get_model
 from repeater.repeater import Repeater
-from tools.initial_config import load_global_config, load_experiment_description, validate_experiment_description
+from tools.initial_config import load_global_config, load_experiment_setup, validate_experiment_description
 from tools.front_API import API
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
@@ -19,7 +19,7 @@ from core_entities.configuration import Configuration
 from default_config_handler.default_config_handler_selector import get_default_config_handler
 
 
-def run(experiment_description=None):
+def run(experiment_setup: dict = None):
     try:
         sub = API() # subscribers
 
@@ -32,15 +32,26 @@ def run(experiment_description=None):
         # TODO: Store global_config im Experiment?
         global_config = load_global_config()
 
-        if not experiment_description:
-            logger.warning("Experiment Description was not provided by the API, using the default one.")
-            experiment_description = load_experiment_description()
+        if not experiment_setup:
+            default_ed_file = './Resources/EnergyExperiment.json'
+            log_msg = "The Experiment Setup was not provided. The default one will be executed: %s" % default_ed_file
+            logger.warning(log_msg)
+            sub.send('log', 'warning', message=log_msg)
+            experiment_description, search_space = load_experiment_setup(default_ed_file)
+        else:
+            experiment_description = experiment_setup["experiment_description"]
+            search_space = experiment_setup["search_space"]
+
         validate_experiment_description(experiment_description)
 
-        experiment = Experiment(experiment_description)
+        experiment = Experiment(experiment_description, search_space)
         Configuration.set_task_config(experiment.description["TaskConfiguration"])
 
-        sub.send('experiment', 'description', global_config=global_config, experiment_description=experiment.description)
+        sub.send('experiment', 'description',
+                 global_config=global_config,
+                 experiment_description=experiment.description,
+                 searchspace_description=experiment.search_space.generate_searchspace_description()
+                 )
         logger.debug("Experiment description and global configuration sent to the API.")
 
         # sc group initialization which parameters could be defined without statistic data usage
@@ -68,22 +79,15 @@ def run(experiment_description=None):
         default_configuration = default_config_handler.get_default_config()
         repeater.measure_configurations([default_configuration], experiment=experiment)
         experiment.put_default_configuration(default_configuration)
-
+        
         selector.disable_configurations([default_configuration])
 
-        temp_msg = "Running initial configurations, while there is no sense in trying to create the model without a data..."
-        logger.info(temp_msg)
-        sub.send('log', 'info', message=temp_msg)
-
-        initial_configurations = [Configuration(selector.get_next_configuration()) for _ in
+        initial_configurations = [selector.get_next_configuration() for _ in
                                   range(experiment.description["SelectionAlgorithm"]["NumberOfInitialConfigurations"])]
 
         repeater.set_type(experiment.description["Repeater"]["Type"])
         repeater.measure_configurations(initial_configurations, experiment=experiment)
         experiment.add_configurations(initial_configurations)
-
-        logger.info("Results got. Building model..")
-        sub.send('log', 'info', message="Results got. Building model..")
 
         # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
         model = get_model(experiment=experiment,
@@ -91,7 +95,7 @@ def run(experiment_description=None):
                                                               experiment.get_name(),
                                                               experiment.description["ModelConfiguration"]["ModelType"]))
 
-        # The main effort does here.
+        # The main effort is done here.
         # 1. Building model.
         # 2. If model built - validation of model.
         # 3. If model is valid - prediction and evaluation of current solution Configuration, else - go to 5.
@@ -105,7 +109,7 @@ def run(experiment_description=None):
                             "%s of them out of the Selection Algorithm. Building Target System model.\n"
 
         while not finish:
-            model_built = model.update_data(experiment.all_configurations).build_model()
+            model_built = model.update_data(experiment.measured_configurations).build_model()
             number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration() \
                         if experiment.get_number_of_configurations_per_iteration() \
                             else repeater.worker_service_client.get_number_of_workers()
@@ -121,7 +125,7 @@ def run(experiment_description=None):
                 experiment.add_configurations(predicted_configurations)
                 selector.disable_configurations(predicted_configurations)
             else:
-                configs_from_selector = [Configuration(selector.get_next_configuration()) for _ in
+                configs_from_selector = [selector.get_next_configuration() for _ in
                                          range(number_of_configurations_in_iteration)]
 
                 repeater.measure_configurations(configs_from_selector, experiment=experiment)
@@ -134,7 +138,7 @@ def run(experiment_description=None):
                 except Exception as e:
                     logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
             if not finish:
-                temp_msg = cur_stats_message % (len(model.all_configurations), len(experiment.search_space),
+                temp_msg = cur_stats_message % (len(model.measured_configurations), experiment.search_space.get_search_space_size(),
                                                 str(selector.numOfGeneratedPoints))
                 logger.info(temp_msg)
                 sub.send('log', 'info', message=temp_msg)
@@ -156,4 +160,4 @@ def run(experiment_description=None):
 
 
 if __name__ == "__main__":
-    run()
+    run()  

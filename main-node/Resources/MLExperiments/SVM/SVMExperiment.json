@@ -4,11 +4,8 @@
     "ConfigurationsPerIteration" : 1
   },
   "DomainDescription":{
-    "ParameterNames"      : ["kernel_type", "kernel_gamma", "kernel_sigma1", "kernel_sigma2", "kernel_sigma3", "kernel_shift", "kernel_degree", "kernel_a", "kernel_b", "kernel_cache", "C", "convergence_epsilon", "max_iterations", "scale", "calculate_weights", "return_optimization_performance", "L_pos", "L_neg", "epsilon", "epsilon_plus", "epsilon_minus", "balance_cost", "quadratic_loss_pos", "quadratic_loss_neg", "estimate_performance"],
-    "DataFile"          : "./Resources/MLExperiments/SVM/SVMExperimentData.json",
-    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-    "DefaultConfiguration": ["dot", 1.0, 1.0, 0.0, 2.0, 1.0, 2.0, 1.0, 0.0, 200, 0.0, 0.001, 100000, true, true, true, 1.0, 1.0, 0.0, 0.0, 0.0, false, false, false, false]
-
+    "HyperparameterNames"      : ["kernel_type", "kernel_gamma", "kernel_sigma1", "kernel_sigma2", "kernel_sigma3", "kernel_shift", "kernel_degree", "kernel_a", "kernel_b", "kernel_cache", "C", "convergence_epsilon", "max_iterations", "scale", "calculate_weights", "return_optimization_performance", "L_pos", "L_neg", "epsilon", "epsilon_plus", "epsilon_minus", "balance_cost", "quadratic_loss_pos", "quadratic_loss_neg", "estimate_performance"],
+    "DataFile"          : "./Resources/MLExperiments/SVM/SVMExperimentData.json"
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
@@ -80,6 +77,7 @@
     }
   },
   "ModelConfiguration":{
+    "SamplingSize"      : 64,
     "ModelType"         : "BO"
   },
   "StopCondition":[

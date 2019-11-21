@@ -35,14 +35,16 @@ import statsmodels.api as sm
 import scipy.stats as sps
 
 from core_entities.configuration import Configuration
+from core_entities.experiment import Experiment
+from core_entities.search_space import HyperparameterType, SearchSpace
 from tools.front_API import API
 from model.model_abs import Model
 
 
 class BayesianOptimization(Model):
 
-    def __init__(self, experiment, min_points_in_model=None, top_n_percent=30, num_samples=96,
-                 random_fraction=1/3, bandwidth_factor=3, min_bandwidth=1e-3, **kwargs):
+    def __init__(self, experiment: Experiment, min_points_in_model: int = None, top_n_percent: int=30,
+                 random_fraction: float = 1/3, bandwidth_factor: int = 3, min_bandwidth: float = 1e-3, **kwargs):
 
         self.model = None
         self.top_n_percent = top_n_percent
@@ -57,56 +59,43 @@ class BayesianOptimization(Model):
             self.logger = logging.getLogger(__name__)
         self.sub = API()
 
+        hyperparameter_names = self.experiment.search_space.get_hyperparameter_names()
         if min_points_in_model is None:
-            self.min_points_in_model = len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1
-        elif min_points_in_model < len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1:
-            self.logger.warning('Invalid min_points_in_model value. Setting it to %i' % (
-                len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1))
-            self.min_points_in_model = len(self.experiment.description["DomainDescription"]["AllConfigurations"])+1
+            self.min_points_in_model = len(hyperparameter_names) + 1
+        elif min_points_in_model < len(hyperparameter_names) + 1:
+            self.logger.warning(f'Invalid min_points_in_model value. Setting it to {len(hyperparameter_names) + 1}')
+            self.min_points_in_model = len(hyperparameter_names) + 1
 
-        self.num_samples = num_samples
+        self.sampling_size = self.experiment.description["ModelConfiguration"]["SamplingSize"]
         self.random_fraction = random_fraction
-
-        hps = self.experiment.description["DomainDescription"]["AllConfigurations"]
 
         self.kde_vartypes = ""
         self.vartypes = []
 
-        for h in hps:
-            # TODO : hook for future continuous configuration ranges
-            # if hasattr(h, 'choices'):
-            # Ordered, cause our data is ordered, possible variants:
-            #             - c : continuous
-            #             - u : unordered (discrete)
-            #             - o : ordered (discrete)
-            # else:
-            #     self.kde_vartypes += 'c'
-            #     self.vartypes += [0]
-            self.kde_vartypes += 'u'
-            self.vartypes += [len(h)]
+        # define types of hyperparameters and, if categorical - the amount of choices it have
+        for hyperparameter_name in hyperparameter_names:
+            hyperparameter_type = self.experiment.search_space.get_hyperparameter_type(hyperparameter_name)
+            if hyperparameter_type in (HyperparameterType.NUMERICAL_INTEGER, HyperparameterType.NUMERICAL_FLOAT):
+                # TODO: need to investigate numerical integer, probably, it will be better to thread it as ordinal
+                # - c : continuous hyperparameter
+                self.kde_vartypes += 'c'
+                self.vartypes += [0]
+            else:
+                # categorical hyperparameter
+                self.vartypes.append(len(self.experiment.search_space.get_hyperparameter_categories(hyperparameter_name)))
+                if hyperparameter_type == HyperparameterType.CATEGORICAL_NOMINAL:
+                    # - u : unordered discrete hyperparameter
+                    self.kde_vartypes += 'u'
+                elif hyperparameter_type == HyperparameterType.CATEGORICAL_ORDINAL:
+                    self.kde_vartypes += 'o'
+                else:
+                    self.logger.warning(f"Unknown type of Hyperparameter: {hyperparameter_type}")
 
         self.vartypes = np.array(self.vartypes, dtype=int)
 
-        # store precomputed probs for the categorical parameters
-        self.cat_probs = []
-
         # Data holding fields.
-        self.all_configurations = []
+        self.measured_configurations = []
         self.good_config_rankings = dict()
-
-    def _config_to_idx(self, configuration):
-        """
-        Helper function to convert real configuration to its indexes in the search space.
-        :param configuration: List. Target system configurations.
-        :return: List. Indexes (integers).
-        """
-        configuration_in_indexes = []
-
-        for hyperparam_index, value in enumerate(configuration):
-            param_index = self.experiment.description["DomainDescription"]["AllConfigurations"][hyperparam_index].index(value)
-            configuration_in_indexes.insert(hyperparam_index, param_index)
-
-        return configuration_in_indexes
 
     def build_model(self, update_model=True):
         """
@@ -123,9 +112,9 @@ class BayesianOptimization(Model):
             return False
 
         # b) if not enough points are available
-        if len(self.all_configurations) <= self.min_points_in_model-1:
+        if len(self.measured_configurations) <= self.min_points_in_model-1:
             self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"
-                              %(len(self.all_configurations), self.min_points_in_model+1))
+                              %(len(self.measured_configurations), self.min_points_in_model+1))
             return False
 
         # c) during warnm starting when we feed previous results in and only update once
@@ -146,7 +135,8 @@ class BayesianOptimization(Model):
 
         all_features = []
         all_labels = []
-        for config in self.all_configurations:
+        # TODO: Feature encoding
+        for config in self.measured_configurations:
             all_features.append(config.get_parameters_in_indexes())
             all_labels.append(config.get_average_result()[top_priority_index])
 
@@ -194,14 +184,11 @@ class BayesianOptimization(Model):
             'bad': bad_kde
         }
 
-        # update probs for the categorical parameters for later sampling
         self.logger.debug('done building a new model based on %i/%i split. Best current result:%f.'
                           %(n_good, n_bad, np.min(train_labels)))
         return True
 
     def validate_model(self):
-        #TODO how validate
-        # Check if model was built.
         if not self.model:
             return False
         return True
@@ -213,7 +200,6 @@ class BayesianOptimization(Model):
         :return Configuration instance
         """
         predicted_configuration = None
-        info_dict = {}
         if self.isMinimizationExperiment:
             predicted_result = np.inf
         else:
@@ -231,7 +217,7 @@ class BayesianOptimization(Model):
                 kde_good = self.model['good']
                 kde_bad = self.model['bad']
 
-                for i in range(self.num_samples):
+                for i in range(self.sampling_size):
                     idx = np.random.randint(0, len(kde_good.data))
                     datum = kde_good.data[idx]
                     vector = []
@@ -255,7 +241,6 @@ class BayesianOptimization(Model):
                     val = minimize_me(vector)
 
                     if not np.isfinite(val):
-                        # TODO: Need to evaluate usage of this debug information and enable back.
                         # self.logger.warning('predicted configuration vector: %s has EI value %s' % (vector, val))
                         # self.logger.warning("data in the KDEs:\n%s\n%s" %(kde_good.data, kde_bad.data))
                         # self.logger.warning("bandwidth of the KDEs:\n%s\n%s" %(kde_good.bw, kde_bad.bw))
@@ -274,9 +259,8 @@ class BayesianOptimization(Model):
                         predicted_result_vector = vector
 
                 if predicted_result_vector is None:
-                    self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.num_samples)
+                    self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.sampling_size)
                     # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
-                    info_dict['model_based_pick'] = False
                 else:
                     # self.logger.debug('best_vector: {}, {}, {}, {}'.format(
                     #     predicted_result_vector,
@@ -284,43 +268,59 @@ class BayesianOptimization(Model):
                     #     l(predicted_result_vector),
                     #     g(predicted_result_vector)))
 
-                    predicted_configuration = []
-                    for index, dimension in enumerate(self.experiment.description["DomainDescription"]["AllConfigurations"]):
-                        predicted_configuration.append(dimension[predicted_result_vector[index]])
+                    # new configuration is sampled from the vector, provided by model 
+                    predicted_configuration = self.experiment.search_space.create_configuration(vector=np.asarray(predicted_result_vector))
 
+                    # model may predict a configuation that includes forbidden combinations of values
+                    # (if experiment description contains some "forbiddens"). No configuration will be sampled in this case:
+                    if predicted_configuration is None:
+                        raise ValueError("Predicted configuration is forbidden. It will not be added to the experiment")
+                    else:                
+                        # check conditions for predicted configuration and disable some parameters if needed
+                        # TODO: extract condition checking into separate method and do it in more elegant way
+                        parameters = predicted_configuration.get_parameters()
+                        values = {}
+                        for idx, param in enumerate(self.experiment.search_space.get_hyperparameter_names()):
+                            values[param] = parameters[idx]
+                        for param in self.experiment.search_space.get_hyperparameter_names():
+                            conditions = self.experiment.search_space.get_conditions_for_hyperparameter(param)
+                            for condition in conditions:
+                                if values[condition] not in conditions[condition]:
+                                    values[param] = None
+                        for idx, param in enumerate(self.experiment.search_space.get_hyperparameter_names()):
+                            parameters[idx] = values[param]
+                        predicted_configuration = Configuration(parameters)
             except:
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
-                                    "Using random configuration" % (self.num_samples, traceback.format_exc()))
+                                    "Using random configuration" % (self.sampling_size, traceback.format_exc()))
                 # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
-                info_dict['model_based_pick'] = False
 
-        # self.logger.debug('done sampling a new configuration.')
-        for configuration in self.all_configurations:
-            if configuration.get_parameters() == predicted_configuration:
-                configuration.add_predicted_result(parameters=predicted_configuration,
+        for configuration in self.measured_configurations:
+            if configuration.get_parameters() == predicted_configuration.get_parameters():
+                configuration.add_predicted_result(parameters=predicted_configuration.get_parameters(),
                                                    predicted_result=[predicted_result])
                 return configuration
-        predicted_configuration_class = Configuration(predicted_configuration)
-        predicted_configuration_class.add_predicted_result(parameters=predicted_configuration,
-                                                           predicted_result=[predicted_result])
-        return predicted_configuration_class
+        predicted_configuration.add_predicted_result(parameters=predicted_configuration.get_parameters(), predicted_result=[predicted_result])
+
+        return predicted_configuration
 
     def predict_next_configurations(self, amount):
-            """
-            Predict 'amount' Configurations that are the best (basing on a current model of the Target System).
-            :param amount: int number of Configurations which will be returned.
-            :return: list of Configurations that are needed to be measured.
-            """
+        """
+        Predict 'amount' Configurations that are the best (basing on a current model of the Target System).
+        :param amount: int number of Configurations which will be returned.
+        :return: list of Configurations that are needed to be measured.
+        """
+        
+        configurations_parameters = []
+        configurations = []
+        while len(configurations) != amount:
+            conf = self.__predict_next_configuration()
 
-            configurations_parameters = []
-            configurations = []
-            while len(configurations) != amount:
-                conf = self.__predict_next_configuration()
-                # BO model is stochastic and could return the same Configuration several times, but we need unique ones.
-                if conf.get_parameters() not in configurations_parameters:
-                    configurations_parameters.append(conf.get_parameters())
-                    configurations.append(conf)
-            return configurations
+            # BO model is stochastic and could return the same Configuration several times, but we need unique ones.
+            if conf.get_parameters() not in configurations_parameters:
+                configurations_parameters.append(conf.get_parameters())
+                configurations.append(conf)
+        return configurations
 
     def update_data(self, configurations):
         """
@@ -328,9 +328,10 @@ class BayesianOptimization(Model):
 
         :param configurations: List of Configuration's instances
         """
-        self.all_configurations = configurations
-        for config in self.all_configurations:
-            config.add_parameters_in_indexes(config.get_parameters(), self._config_to_idx(config.get_parameters()))
+        self.measured_configurations = configurations
+        for config in self.measured_configurations:
+            config.add_parameters_in_indexes(config.get_parameters(), \
+                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.get_parameters(), self.experiment.get_current_sub_search_space()))
         return self
     
     def impute_conditional_data(self, array):

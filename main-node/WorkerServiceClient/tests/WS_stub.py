@@ -105,8 +105,8 @@ class WSClient_Stub(WSClient):
                     if self.__str_to_bool(row['laplace_correction']) == self.__str_to_bool(str(param['laplace_correction'])) and \
                             row['estimation_mode'] == str(param['estimation_mode']) and \
                             row['bandwidth_selection'] == str(param['bandwidth_selection']) and \
-                            float(row['bandwidth']) == float(str(param['bandwidth'])) and \
-                            float(row['minimum_bandwidth']) == float(str(param['minimum_bandwidth'])) and \
+                            row['bandwidth'] == str(param['bandwidth']) and \
+                            row['minimum_bandwidth'] == str(param['minimum_bandwidth']) and \
                             row['number_of_kernels'] == str(param['number_of_kernels']) and \
                             self.__str_to_bool(row['use_application_grid']) == self.__str_to_bool(str(param['use_application_grid'])) and \
                             row['application_grid_size'] == str(param['application_grid_size']):

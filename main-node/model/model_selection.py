@@ -1,7 +1,10 @@
 import logging
 
+from core_entities.experiment import Experiment
+from model.model_abs import Model
 
-def get_model(experiment, log_file_name):
+
+def get_model(experiment: Experiment, log_file_name: str) -> Model:
     """
     Instantiates need prediction model.
     :param experiment: the instance of Experiment class
@@ -18,8 +21,6 @@ def get_model(experiment, log_file_name):
         from model.bayesian_optimization import BayesianOptimization
         logger.info("Bayesian Optimization prediction model selected.")
         return BayesianOptimization(experiment)
+
     else:
-        logger.error("Configuration error - model type not supported: %s"
-                     % experiment.description["ModelConfiguration"]["ModelType"])
-        raise KeyError("Configuration error - model type not supported: %s"
-                       % experiment.description["ModelConfiguration"]["ModelType"])
+        raise KeyError(f'Model {experiment.description["ModelConfiguration"]["ModelType"]} is not supported!')

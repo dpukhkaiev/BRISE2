@@ -15,6 +15,6 @@ class RandomDefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
         :rtype:Configuration
         """ 
         selector = get_selector(experiment = self.experiment)
-        default_config = Configuration(selector.get_next_configuration())
+        default_config = selector.get_next_configuration()
         self.logger.warning("Random Configuration is picked as a default one: %s" % default_config.get_parameters())
         return default_config

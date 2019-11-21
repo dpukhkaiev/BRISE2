@@ -4,10 +4,8 @@
     "ConfigurationsPerIteration" : 1
   },
   "DomainDescription":{
-    "ParameterNames"      : ["layer","training_cycles","learning_rate","momentum","decay","shuffle","normalize","error_epsilon","use_local_random_seed","local_random_seed" ],
-    "DataFile"          : "./Resources/MLExperiments/NN/NNExperimentData.json",
-    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-    "DefaultConfiguration": [2, 200, 0.01, 0.9, false, true, true, 1.0E-4, false, 1992]
+    "HyperparameterNames"      : ["layer","training_cycles","learning_rate","momentum","decay","shuffle","normalize","error_epsilon","use_local_random_seed","local_random_seed" ],
+    "DataFile"          : "./Resources/MLExperiments/NN/NNExperimentData.json"
   },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence",
@@ -79,6 +77,7 @@
     }
   },
   "ModelConfiguration":{
+    "SamplingSize"      : 64,
     "ModelType"         : "BO"
   },
   "StopCondition":[

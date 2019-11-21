@@ -11,4 +11,4 @@ class DefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
         
         :rtype:Configuration
         """
-        return Configuration(self.experiment.description["DomainDescription"]["DefaultConfiguration"])
+        return self.experiment.search_space.get_default_configuration()

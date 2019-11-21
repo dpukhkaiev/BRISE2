@@ -4,10 +4,8 @@
     "ConfigurationsPerIteration" : 3
   },
   "DomainDescription":{
-    "ParameterNames"      : ["number_of_trees", "criterion", "maximal_depth", "apply_pruning", "confidence", "apply_prepruning", "minimal_gain", "minimal_leaf_size", "minimal_size_for_split", "number_of_prepruning_alternatives", "random_splits", "guess_subset_ratio", "subset_ratio", "voting_strategy", "use_local_random_seed", "local_random_seed", "enable_parallel_execution"],
+    "HyperparameterNames"      : ["number_of_trees", "criterion", "maximal_depth", "apply_pruning", "confidence", "apply_prepruning", "minimal_gain", "minimal_leaf_size", "minimal_size_for_split", "number_of_prepruning_alternatives", "random_splits", "guess_subset_ratio", "subset_ratio", "voting_strategy", "use_local_random_seed", "local_random_seed", "enable_parallel_execution"],
     "DataFile"          : "./Resources/MLExperiments/RF/RFExperimentData.json",
-    "AllConfigurations"    : "# Will be loaded from DataFile and overwritten",
-    "DefaultConfiguration": [],
     "DefaultConfigurationHandler": "Automodel"
   },
   "SelectionAlgorithm":{
@@ -80,6 +78,7 @@
     }
   },
   "ModelConfiguration":{
+    "SamplingSize"      : 64,
     "ModelType"         : "BO"
   },
   "StopCondition":[

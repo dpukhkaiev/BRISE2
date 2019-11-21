@@ -9,12 +9,17 @@
             "description": "Global optimization of black-box functions that doesn't require derivatives.",
             "type": "object",
             "properties": {
+                "SamplingSize": {
+                    "type": "integer",
+                    "minimum": 1
+                },
                 "ModelType": {
                     "type": "string",
                     "enum": ["BO"]
                 }
             },
             "required": [
+                "SamplingSize",
                 "ModelType"
             ],
             "additionalProperties": false
@@ -23,6 +28,10 @@
             "title": "Regression sweet spot",
             "type": "object",
             "properties": {
+                "SamplingSize": {
+                    "type": "integer",
+                    "minimum": 1
+                },
                 "minimalTestingSize": {
                     "type": "number",
                     "minimum": 0,
@@ -50,6 +59,7 @@
                 }
             },
             "required": [
+                "SamplingSize",
                 "minimalTestingSize",
                 "maximalTestingSize",
                 "MinimumAccuracy",

@@ -4,6 +4,7 @@ import pytest
 
 
 MODEL_CREATION_CONFIG = {
+        "SamplingSize": 64,
         "ModelTestSize": 0.9,
         "MinimumAccuracy": 0.85,
         "ModelType": "regression"
