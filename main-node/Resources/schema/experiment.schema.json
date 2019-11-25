@@ -8,11 +8,6 @@
             "properties": {
                 "isMinimizationExperiment": {
                     "type": "boolean"
-                },
-                "ConfigurationsPerIteration": {
-                    "description": "The number of configurations that will be measured simultaneously.",
-                    "type": "integer",
-                    "minimum": 1
                 }
             },
             "required": [

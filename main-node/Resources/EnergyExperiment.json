@@ -1,15 +1,13 @@
 {
   "General":{
-    "isMinimizationExperiment"  : true,
-    "ConfigurationsPerIteration" : 3
+    "isMinimizationExperiment": true
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["frequency", "threads"],
     "DataFile"          : "./Resources/EnergyExperimentData.json"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations": 10
+    "SelectionType": "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "energy_consumption",

@@ -1,7 +1,6 @@
 {
   "General": {
-    "isMinimizationExperiment"  : false,
-    "ConfigurationsPerIteration" : 3
+    "isMinimizationExperiment": false
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["number_of_trees", "criterion", "maximal_depth", "apply_pruning", "confidence", "apply_prepruning", "minimal_gain", "minimal_leaf_size", "minimal_size_for_split", "number_of_prepruning_alternatives", "random_splits", "guess_subset_ratio", "subset_ratio", "voting_strategy", "use_local_random_seed", "local_random_seed", "enable_parallel_execution"],
@@ -9,8 +8,7 @@
     "DefaultConfigurationHandler": "Automodel"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations": 3
+    "SelectionType": "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "randomForest",

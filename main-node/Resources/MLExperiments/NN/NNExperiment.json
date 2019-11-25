@@ -1,15 +1,13 @@
 {
   "General": {
-    "isMinimizationExperiment"  : false,
-    "ConfigurationsPerIteration" : 1
+    "isMinimizationExperiment": false
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["layer","training_cycles","learning_rate","momentum","decay","shuffle","normalize","error_epsilon","use_local_random_seed","local_random_seed" ],
     "DataFile"          : "./Resources/MLExperiments/NN/NNExperimentData.json"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations"   : 5
+    "SelectionType": "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "neuralNet",

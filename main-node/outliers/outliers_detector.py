@@ -71,7 +71,7 @@ class OutlierDetector:
                 outbound_value_tasks.append(task['result'])
             elif task['ResultValidityCheckMark'] == 'Outlier':
                 outlier_value_tasks.append(task['result'])
-        output_message = "Configuration %s has" % config.get_parameters()
+        output_message = "Configuration %s has" % config.parameters
         if len(bad_value_tasks) + len(outbound_value_tasks) + len(outlier_value_tasks) == 0:
             output_message = output_message + " no tasks with bad/outbound resulting values or outliers."
         if len(bad_value_tasks) > 0:
@@ -95,7 +95,7 @@ class OutlierDetector:
         for config in configurations:
             configuration_inputs = []
             for parameters, result in zip(tasks_to_send, inputs):
-                if config.get_parameters() == parameters:
+                if config.parameters == parameters:
                     configuration_inputs.append(result)
             new_configuration_size = len(configuration_inputs)
             if new_configuration_size > 0:

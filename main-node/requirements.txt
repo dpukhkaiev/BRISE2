@@ -15,3 +15,4 @@ socketIO-client
 scipy
 pytest
 ConfigSpace[alldeps]
+pika

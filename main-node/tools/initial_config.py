@@ -37,7 +37,6 @@ def load_experiment_setup(exp_desc_file_path: str):
     # Check if main.py running with a specified experiment description file path
     if len(argv) > 1:
         exp_desc_file_path = argv[1]
-
     # Load Experiment description from json file.
     experiment_description = load_json_file(exp_desc_file_path)
 

@@ -46,7 +46,7 @@ class RegressionSweetSpot(Model):
             hyperparameter_names = self.experiment.search_space.get_hyperparameter_names()
             choices = []
             for name in hyperparameter_names:
-                choices.append(self.experiment.search_space.get_hyperparameter_choices(name))
+                choices.append(self.experiment.search_space.get_hyperparameter_categories(name))
             self.search_space = list(itertools.product(*choices))
 
     def build_model(self, degree=6, tries=20):
@@ -66,7 +66,10 @@ class RegressionSweetSpot(Model):
             current_test_size = self.maximal_test_size
             while current_test_size > self.minimal_test_size:
                 for x in range(tries):
-                    feature_train, feature_test, target_train, target_test = self.resplit_data(current_test_size)
+                    try:
+                        feature_train, feature_test, target_train, target_test = self.resplit_data(current_test_size)
+                    except ValueError:
+                        return False
                     model = Pipeline(
                         [('poly', PolynomialFeatures(degree=degree, interaction_only=False)), ('reg', Ridge())]
                     )
@@ -125,7 +128,8 @@ class RegressionSweetSpot(Model):
             return True
         else:
             self.logger.info("Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
-            self.sub.send('log', 'info', message="Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
+            self.sub.send('log', 'info',
+                          message="Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
     def predict_next_configurations(self, amount):
@@ -140,16 +144,16 @@ class RegressionSweetSpot(Model):
         # for defined finite search space predict results based on full searchspace
         if len(self.search_space) != 0:
             for index, predicted_result in sorted(enumerate(self.model.predict(self.search_space)), key=lambda c :c[1]):
-                conf = Configuration(self.search_space[index])
+                conf = Configuration(list(self.search_space[index]), Configuration.Type.PREDICTED)
                 predicted_results.append((predicted_result, conf))
         # for infinite search space sample some new configurations and add existing ones to get some kind of finite search space for prediction
         else:
-            configs_list = [config.get_parameters() for config in self.measured_configurations]
+            configs_list = [config.parameters for config in self.measured_configurations]
             for _ in range(self.sampling_size):
-                configs_list.append(self.experiment.search_space.sample_configuration().get_parameters())
+                configs_list.append(self.experiment.search_space.sample_configuration().parameters)
 
             for index, predicted_result in sorted(enumerate(self.model.predict(configs_list)), key=lambda c: c[1]):
-                conf = Configuration(configs_list[index])
+                conf = Configuration(list(configs_list[index]), Configuration.Type.PREDICTED)
                 predicted_results.append((predicted_result, conf))
 
         # Only for DEMO 
@@ -160,19 +164,19 @@ class RegressionSweetSpot(Model):
         # 2. Update predicted results for already evaluated Configurations.
         for config in self.measured_configurations:
             for pred_tuple in predicted_results:
-                if(pred_tuple[1].get_parameters() == config.get_parameters()):
-                    config.add_predicted_result(pred_tuple[1].get_parameters(), pred_tuple[0])
+                if(pred_tuple[1].parameters == config.parameters):
+                    config.add_predicted_result(pred_tuple[1].parameters, pred_tuple[0])
 
         # 3. Pick up required amount of configs
         all_config = [conf for conf in self.measured_configurations]
         result = []
         for best in predicted_results[:amount]:
             if best[1] in all_config:
-                select = [conf for conf in self.measured_configurations if conf.get_parameters() == best[1].get_parameters()]
+                select = [conf for conf in self.measured_configurations if conf.parameters == best[1].parameters]
                 result.append(select[0])
             else:
                 new_conf = best[1]
-                new_conf.add_predicted_result(best[1].get_parameters(), best[0])
+                new_conf.add_predicted_result(best[1].parameters, best[0])
                 result.append(new_conf)
 
         # 4. return configs
@@ -187,7 +191,7 @@ class RegressionSweetSpot(Model):
         all_features = []
         all_labels = []
         for configuration in self.measured_configurations:
-            all_features.append(configuration.get_parameters())
+            all_features.append(configuration.parameters)
             all_labels.append(configuration.get_average_result())
 
         feature_train, feature_test, target_train, target_test = \
@@ -202,7 +206,7 @@ class RegressionSweetSpot(Model):
         :param num: int
         :return:
         """
-        return reduce(lambda x, y: x+y, list(range(1, num + 1)))
+        return reduce(lambda x, y: x + y, list(range(1, num + 1)))
 
     def update_data(self, configurations):
         """

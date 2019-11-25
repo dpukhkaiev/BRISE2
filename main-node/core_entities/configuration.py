@@ -1,21 +1,37 @@
 import logging
-import numpy as np
+from copy import deepcopy
 
+import numpy as np
+import json
+from enum import Enum
 from tools.front_API import API
 
 
 class Configuration:
+    class Type(int, Enum):
+        DEFAULT = 0
+        PREDICTED = 1
+        FROM_SELECTOR = 2
+        TEST = 3
+
+    class Status(int, Enum):
+        NEW = 0
+        EVALUATED = 1
+        REPEATED_MEASURING = 2
+        MEASURED = 3
+        BAD = 4
 
     TaskConfiguration = {}
+
     @classmethod
     def set_task_config(cls, taskConfig):
         cls.TaskConfiguration = taskConfig
 
-    def __init__(self, parameters):
+    def __init__(self, parameters: list, config_type: Type):
         """
         :param parameters: list with parameters
                shape - list, e.g. ``[1200, 32]``
-
+        :param config_type: an instance of Type enum
 
         During initializing following fields are declared:
 
@@ -40,6 +56,7 @@ class Configuration:
 
         self._average_result:            shape - list, e.g. ``[806.43]``
         self._predicted_result:          shape - list, e.g. ``[0.0098776]``
+        self.type:                      shape - Configuration.Type, e.g   ``DEFAULT``
         """
         self.logger = logging.getLogger(__name__)
         self._parameters = parameters
@@ -47,6 +64,8 @@ class Configuration:
         self._tasks = {}
         self._average_result = []
         self.predicted_result = []
+        self.type = config_type
+        self.status = Configuration.Status.NEW
         # Meta information
         self._standard_deviation = []
         self.is_enabled = True
@@ -55,12 +74,38 @@ class Configuration:
 
     def __getstate__(self):
         space = self.__dict__.copy()
+        space['status'] = int(space['status'])
+        space['type'] = int(space['type'])
         del space['logger']
-        return space
+        return deepcopy(space)
 
     def __setstate__(self, space):
         self.__dict__ = space
         self.logger = logging.getLogger(__name__)
+        self.status = Configuration.Status(space['status'])
+        self.type = Configuration.Type(space['type'])
+
+    def __eq__(self, other):
+        if not isinstance(other, Configuration):
+            return False
+        return self.parameters == other.parameters
+
+    def _set_parameters(self, parameters):
+        if not self._parameters:
+            self._parameters = tuple(parameters)
+        else:
+            self.logger.error("Unable to update Experiment Description: Read-only property.")
+            raise AttributeError("Unable to update Experiment Description: Read-only property.")
+
+    def _get_parameters(self):
+        return deepcopy(self._parameters)
+
+    def _del_parameters(self):
+        if self._parameters:
+            self.logger.error("Unable to delete Experiment Description: Read-only property.")
+            raise AttributeError("Unable to update Experiment Description: Read-only property.")
+
+    parameters = property(_get_parameters, _set_parameters, _del_parameters)
 
     def add_predicted_result(self, parameters: list, predicted_result: list):
 
@@ -79,9 +124,6 @@ class Configuration:
     def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
         if self.__is_valid_configuration(parameters):
             self._parameters_in_indexes = parameters_in_indexes
-
-    def get_parameters(self):
-        return self._parameters.copy()
 
     def get_parameters_in_indexes(self):
         return self._parameters_in_indexes.copy()
@@ -105,6 +147,37 @@ class Configuration:
 
     def get_standard_deviation(self):
         return self._standard_deviation.copy()
+
+    def to_json(self):
+        dictionary_dump = {"parameters": self._parameters,
+                           "parameters_in_indexes": self._parameters_in_indexes,
+                           "average_result": self._average_result,
+                           "tasks": self._tasks,
+                           "predicted_result": self.predicted_result,
+                           "standard_deviation": self._standard_deviation,
+                           "type": self.type,
+                           "status": self.status,
+                           "is_enabled": self.is_enabled,
+                           "number_of_failed_tasks": self.number_of_failed_tasks,
+                           "_task_amount": self._task_amount
+                           }
+        return json.dumps(dictionary_dump)
+
+    @staticmethod
+    def from_json(json_string):
+        dictionary_dump = json.loads(json_string)
+        conf = Configuration(dictionary_dump["parameters"], dictionary_dump["type"])
+        conf._parameters_in_indexes = dictionary_dump["parameters_in_indexes"]
+        conf._average_result = dictionary_dump["average_result"]
+        conf._tasks = dictionary_dump["tasks"]
+        conf.predicted_result = dictionary_dump["predicted_result"]
+        conf._standard_deviation = dictionary_dump["standard_deviation"]
+        conf.type = Configuration.Type(dictionary_dump["type"])
+        conf.status = Configuration.Status(dictionary_dump["status"])
+        conf.is_enabled = dictionary_dump["is_enabled"]
+        conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
+        conf._task_amount = dictionary_dump["_task_amount"]
+        return conf
 
     def is_better_configuration(self, is_minimization_experiment, current_best_solution):
         """
@@ -138,7 +211,8 @@ class Configuration:
         # compare all metrics
         dimension_wise_comparison = []
         for i in range(len(self.get_average_result())):
-            dimension_wise_comparison.append(self.get_average_result()[i] < compared_configuration.get_average_result()[i])
+            dimension_wise_comparison.append(
+                self.get_average_result()[i] < compared_configuration.get_average_result()[i])
 
         # get priorities or use the same values if unspecified
         priorities = self.__class__.TaskConfiguration["ResultPriorities"] \
@@ -172,11 +246,11 @@ class Configuration:
         :param parameters: list
         :return: bool
         """
-        if parameters == self.get_parameters():
+        if parameters == self.parameters:
             return True
         else:
             self.logger.error('New configuration %s does not match with current configuration %s'
-                              % (parameters, self.get_parameters()))
+                              % (parameters, self.parameters))
             return False
 
     def __assemble_tasks_results(self):
@@ -204,19 +278,19 @@ class Configuration:
         """
         return "Configuration(Params={params}, Tasks={num_of_tasks}, Outliers={num_of_outliers}, " \
                "Avg.result={avg_res}, STD={std})".format(
-                params=str(self.get_parameters()),
-                num_of_tasks=len(self._tasks),
-                num_of_outliers=len(self._tasks) - self._task_amount,
-                avg_res=str(self.get_average_result()),
-                std=str(self.get_standard_deviation()))
-    
+            params=str(self.parameters),
+            num_of_tasks=len(self._tasks),
+            num_of_outliers=len(self._tasks) - self._task_amount,
+            avg_res=str(self.get_average_result()),
+            std=str(self.get_standard_deviation()))
+
     def disable_configuration(self):
         """
         Disable configuration. This configuration won't be used in experiment.
         """
         if self.is_enabled:
             self.is_enabled = False
-            temp_msg = ("Configuration %s was disabled due to lack of correct results" % self.get_parameters())
+            temp_msg = ("Configuration %s was disabled due to lack of correct results" % self.parameters)
             self.logger.warning(temp_msg)
             API().send('log', 'info', message=temp_msg)
 
@@ -225,7 +299,7 @@ class Configuration:
         Increase counter of failed measures.
         """
         self.number_of_failed_tasks = self.number_of_failed_tasks + 1
-    
+
     def is_valid_task(self, task):
         """
         Check error_check function output and return appropriate flag
@@ -246,4 +320,3 @@ class Configuration:
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
             return False
-

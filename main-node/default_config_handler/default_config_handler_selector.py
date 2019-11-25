@@ -1,4 +1,5 @@
 import logging
+
 from core_entities.experiment import Experiment
 
 
@@ -12,7 +13,7 @@ def get_default_config_handler(experiment: Experiment):
         if "DefaultConfigurationHandler" in experiment.description["DomainDescription"] else None
 
     if experiment.search_space.get_default_configuration() and \
-            len(experiment.search_space.get_default_configuration().get_parameters()) == \
+            len(experiment.search_space.get_default_configuration().parameters) == \
             len(experiment.search_space.get_hyperparameter_names()):
         from default_config_handler.default_config_handler import DefaultConfigurationHandler
         config_handler = DefaultConfigurationHandler(experiment)

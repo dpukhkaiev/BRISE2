@@ -35,9 +35,9 @@ def table(experiments):
         # extract information from the experiment
         temp['model'] = exp.description['ModelConfiguration']['ModelType']
         temp['default result'] = round(exp.search_space.get_default_configuration().get_average_result()[0], 2)
-        temp['default configuration'] = [' '.join(str(v) for v in exp.search_space.get_default_configuration().get_parameters())]
+        temp['default configuration'] = [' '.join(str(v) for v in exp.search_space.get_default_configuration().parameters)]
         temp['solution result'] = round(exp.get_current_solution().get_average_result()[0], 2)
-        temp['solution configuration'] = ' '.join(str(v) for v in exp.get_current_solution().get_parameters())
+        temp['solution configuration'] = ' '.join(str(v) for v in exp.get_current_solution().parameters)
         temp['result improvement'] = str(round(get_relative_improvement(exp), 1)) + '%'
         temp['number of measured configurations'] = len(exp.measured_configurations)
         temp['search space coverage'] = str(round((len(exp.measured_configurations)/exp.description["ModelConfiguration"]["SamplingSize"])*100)) + '%',

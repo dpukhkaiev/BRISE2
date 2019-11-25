@@ -1,7 +1,6 @@
 {
   "General": {
-    "isMinimizationExperiment"  : true,
-    "ConfigurationsPerIteration" : 3
+    "isMinimizationExperiment": true
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["generations", "populationSize",
@@ -10,8 +9,7 @@
     "DataFile"          : "./Resources/GA/GAExperimentData.json"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations"   : 3
+    "SelectionType": "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "genetic",

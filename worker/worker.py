@@ -19,7 +19,9 @@ def energy_consumption(task_parameters: dict, scenario: dict):
             'time': float(result['TIM'])
         }
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (task_parameters, error))
+        logging.getLogger(__name__).error(
+            "An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (
+                task_parameters, error))
 
 
 def naiveBayes_mock(task_parameters: dict, scenario: dict):
@@ -34,7 +36,7 @@ def naiveBayes_mock(task_parameters: dict, scenario: dict):
                       str(corrected_min_bandwidth), str(corrected_num_kernels),
                       str(task_parameters['use_application_grid']), str(corrected_app_grid_size))
         result = choice(data.new_data)
-        
+
         return {
             'PREC_AT_99_REC': float(result["PREC_AT_99_REC"])
         }
@@ -45,7 +47,7 @@ def naiveBayes_mock(task_parameters: dict, scenario: dict):
     }
 
 
-def naiveBayes(task_parameters: dict, scenario: dict):    
+def naiveBayes(task_parameters: dict, scenario: dict):
     """Initialization function to run NaiveBayes algorithm inside RapidMiner
 
     :param task_parameters:dict: current measured configuration of NaiveBayes in a {key:value} format
@@ -173,17 +175,20 @@ def genetic(task_parameters: dict, scenario: dict):
         tournament = str(task_parameters['tournament'])
         ###
 
-        ws_file ="result_v{}_q{}_d{}_r{}.csv".\
+        ws_file = "result_v{}_q{}_d{}_r{}.csv". \
             format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio)
 
-        file_name = "results/scenarios/"+ws_file
+        file_name = "results/scenarios/" + ws_file
 
-        command = ("java -jar binaries/jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
-                          % (numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation, avgNumCompSubComponents,
-                             compSubComponentStdDerivation, componentDepth, numImplementations, excessComputeResourceRatio, numRequests,
-                             numCpus, seed, timeoutValue, timeoutUnit, ws_file, generations, populationSize,
-                             treeMutateOperatorP, treeMutateOperatorP1, treeMutateOperatorP2, treeMutateOperatorP3,
-                             Lambda, crossoverRate, mu, tournament))
+        command = (
+                "java -jar binaries/jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
+                % (numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
+                   avgNumCompSubComponents,
+                   compSubComponentStdDerivation, componentDepth, numImplementations, excessComputeResourceRatio,
+                   numRequests,
+                   numCpus, seed, timeoutValue, timeoutUnit, ws_file, generations, populationSize,
+                   treeMutateOperatorP, treeMutateOperatorP1, treeMutateOperatorP2, treeMutateOperatorP3,
+                   Lambda, crossoverRate, mu, tournament))
         try:
             retcode = subprocess.call(command, shell=True)
             if retcode < 0:
@@ -238,14 +243,15 @@ def simulatedAnnealing(param, scenario):
         # file_name = "result_v{}_q{}_d{}_r{}.csv".\
         #     format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio.replace('.', '_'))
         import os
-        command = ("java -jar binaries/jastadd-mquat-solver-mh-1.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
-                          % (subComponentUnassignedFactor, softwareComponentUnassignedFactor,
-                             hardScoreStartingTemperaturePercentage, softScoreStartingTemperaturePercentage,
-                             acceptedCountLimit, millisecondsSpentLimit, unimprovedMillisecondsSpentLimit,
+        command = (
+                "java -jar binaries/jastadd-mquat-solver-mh-1.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
+                % (subComponentUnassignedFactor, softwareComponentUnassignedFactor,
+                   hardScoreStartingTemperaturePercentage, softScoreStartingTemperaturePercentage,
+                   acceptedCountLimit, millisecondsSpentLimit, unimprovedMillisecondsSpentLimit,
 
-                             numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
-                             avgNumCompSubComponents, compSubComponentStdDerivation, componentDepth, numImplementations,
-                             excessComputeResourceRatio, numRequests, numCpus, seed))
+                   numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
+                   avgNumCompSubComponents, compSubComponentStdDerivation, componentDepth, numImplementations,
+                   excessComputeResourceRatio, numRequests, numCpus, seed))
 
         try:
             retcode = subprocess.call(command, shell=True)

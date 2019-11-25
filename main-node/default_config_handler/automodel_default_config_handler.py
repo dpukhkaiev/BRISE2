@@ -17,5 +17,5 @@ class AutomodelDefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
         hyperparameter_names = self.experiment.search_space.get_hyperparameter_names()
         for __ in hyperparameter_names:
             config.append("defined_by_automodel")
-        default_config = Configuration(parameters=config)
+        default_config = Configuration(parameters=config, config_type=Configuration.Type.DEFAULT)
         return default_config

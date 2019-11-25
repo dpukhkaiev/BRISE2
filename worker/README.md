@@ -6,12 +6,9 @@
 Software requirements:
 - Docker
 - Python 3.6
-- [python-socketio](https://python-socketio.readthedocs.io)
+- [RabbitMQ service](https://www.rabbitmq.com/)
 
 - [Service](../worker_service/README.md)
-
-![service <==> worker](../worker_service/service.png "dependencies between the workers and the service")
-
 
 #### Get started with a generator tool
 

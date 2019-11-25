@@ -268,17 +268,17 @@ class BayesianOptimization(Model):
                     #     l(predicted_result_vector),
                     #     g(predicted_result_vector)))
 
-                    # new configuration is sampled from the vector, provided by model 
+                    # new configuration is sampled from the vector, provided by model
                     predicted_configuration = self.experiment.search_space.create_configuration(vector=np.asarray(predicted_result_vector))
 
                     # model may predict a configuation that includes forbidden combinations of values
                     # (if experiment description contains some "forbiddens"). No configuration will be sampled in this case:
                     if predicted_configuration is None:
                         raise ValueError("Predicted configuration is forbidden. It will not be added to the experiment")
-                    else:                
+                    else:
                         # check conditions for predicted configuration and disable some parameters if needed
                         # TODO: extract condition checking into separate method and do it in more elegant way
-                        parameters = predicted_configuration.get_parameters()
+                        parameters = predicted_configuration.parameters
                         values = {}
                         for idx, param in enumerate(self.experiment.search_space.get_hyperparameter_names()):
                             values[param] = parameters[idx]
@@ -289,18 +289,18 @@ class BayesianOptimization(Model):
                                     values[param] = None
                         for idx, param in enumerate(self.experiment.search_space.get_hyperparameter_names()):
                             parameters[idx] = values[param]
-                        predicted_configuration = Configuration(parameters)
+                        predicted_configuration = Configuration(parameters, Configuration.Type.PREDICTED)
             except:
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
                                     "Using random configuration" % (self.sampling_size, traceback.format_exc()))
                 # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
 
         for configuration in self.measured_configurations:
-            if configuration.get_parameters() == predicted_configuration.get_parameters():
-                configuration.add_predicted_result(parameters=predicted_configuration.get_parameters(),
+            if configuration.parameters == predicted_configuration.parameters:
+                configuration.add_predicted_result(parameters=predicted_configuration.parameters,
                                                    predicted_result=[predicted_result])
                 return configuration
-        predicted_configuration.add_predicted_result(parameters=predicted_configuration.get_parameters(), predicted_result=[predicted_result])
+        predicted_configuration.add_predicted_result(parameters=predicted_configuration.parameters, predicted_result=[predicted_result])
 
         return predicted_configuration
 
@@ -310,15 +310,15 @@ class BayesianOptimization(Model):
         :param amount: int number of Configurations which will be returned.
         :return: list of Configurations that are needed to be measured.
         """
-        
+
         configurations_parameters = []
         configurations = []
         while len(configurations) != amount:
             conf = self.__predict_next_configuration()
 
             # BO model is stochastic and could return the same Configuration several times, but we need unique ones.
-            if conf.get_parameters() not in configurations_parameters:
-                configurations_parameters.append(conf.get_parameters())
+            if conf.parameters not in configurations_parameters:
+                configurations_parameters.append(conf.parameters)
                 configurations.append(conf)
         return configurations
 
@@ -330,8 +330,8 @@ class BayesianOptimization(Model):
         """
         self.measured_configurations = configurations
         for config in self.measured_configurations:
-            config.add_parameters_in_indexes(config.get_parameters(), \
-                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.get_parameters(), self.experiment.get_current_sub_search_space()))
+            config.add_parameters_in_indexes(config.parameters, \
+                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.parameters, self.experiment.get_current_sub_search_space()))
         return self
     
     def impute_conditional_data(self, array):

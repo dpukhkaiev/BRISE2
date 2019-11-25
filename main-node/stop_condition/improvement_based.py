@@ -6,7 +6,7 @@ class ImprovementBasedType(StopConditionDecoratorPosterior):
     def __init__(self, stop_condition, stop_condition_parameters):
         super().__init__(stop_condition, __name__)
         self.max_configs_without_improvement = stop_condition_parameters["MaxConfigsWithoutImprovement"]
-        self.number_of_configurations_in_iteration = 0
+        self.number_of_configurations_in_iteration = 1
         self.configurations_without_improvement = 0
 
     def is_finish(self):
@@ -35,7 +35,3 @@ class ImprovementBasedType(StopConditionDecoratorPosterior):
         self._compare_best_configurations(self.get_experiment().get_current_best_configurations())
         return super().validate_conditions()
 
-    def update_number_of_configurations_in_iteration(self, number_of_configurations_in_iteration):
-        self.number_of_configurations_in_iteration = number_of_configurations_in_iteration
-        super().update_number_of_configurations_in_iteration(number_of_configurations_in_iteration)
-    

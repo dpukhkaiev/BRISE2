@@ -15,9 +15,6 @@ class StopConditionDecoratorPosterior(StopConditionDecorator, StopConditionPoste
             return True
         return self.stop_condition.validate_conditions() and self.is_finish()
 
-    def update_number_of_configurations_in_iteration(self, number_of_configurations_in_iteration):
-        self.stop_condition.update_number_of_configurations_in_iteration(number_of_configurations_in_iteration)
-    
     def _compare_best_configurations(self, candidate_configurations):
         return self.stop_condition._compare_best_configurations(candidate_configurations)
 

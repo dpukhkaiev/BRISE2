@@ -27,6 +27,5 @@ interface ModelCreation {
 
 }
 interface SelectionAlgorithm {
-    NumberOfInitialConfigurations: Number
     SelectionType: String
 }

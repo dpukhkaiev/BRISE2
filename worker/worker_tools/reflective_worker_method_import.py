@@ -6,6 +6,7 @@ import difflib
 
 # TODO shared library from main-node.tools wish adaptation for worker
 
+
 def get_worker_methods(found_module):
     """
     Goes through `found_module` and find all methods(functions) in it.
@@ -18,7 +19,7 @@ def get_worker_methods(found_module):
 
     try:
         # Getting the functions
-        methods_in_module =  inspect.getmembers(found_module,
+        methods_in_module = inspect.getmembers(found_module,
                                                lambda member: inspect.isfunction(member))
         # methods_in_module is a list of tuples (function_name:str, function_obj:function)
     except Exception as error:
@@ -27,6 +28,7 @@ def get_worker_methods(found_module):
         raise Exception(msg)
 
     return methods_in_module
+
 
 def get_worker_module():
     """
@@ -52,7 +54,8 @@ def get_worker_module():
     while not selected_module_file_name:
         selected_module_file_name = difflib.get_close_matches(module_name, files, n=1, cutoff=cutoff)
         cutoff -= reduction_step
-    logger.debug("'%s' module was selected with cutoff=%f for name=%s." % (selected_module_file_name, cutoff, module_name))
+    logger.debug("'%s' module was selected with cutoff=%f for name=%s." %
+                 (selected_module_file_name, cutoff, module_name))
     module_path = selected_module_file_name[0][:-3]
     try:
         found_module = importlib.import_module(module_path)
@@ -62,17 +65,15 @@ def get_worker_module():
         raise ImportError(msg)
     return found_module, module_path
 
-def generate_menu():
+
+def get_worker_methods_as_dict():
     """
     Creates a dict with the name of the task and the corresponding method that performs this task.
 
     :return: dict with `task_name` as a key and function as value
     """
-    menu = {}
+    dict_worker_methods = {}
     worker_module, module_path = get_worker_module()
     for method in get_worker_methods(worker_module):
-        menu[method[0]] = method[1]
-    return menu
-
-
-
+        dict_worker_methods[method[0]] = method[1]
+    return dict_worker_methods

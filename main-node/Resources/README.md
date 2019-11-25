@@ -11,7 +11,6 @@ Possible values of configurations for your system should be provided in separate
 
 - `General` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
     - `isMinimizationExperiment` - `bool`. Minimization or maximization experiment
-    - `ConfigurationsPerIteration` - `int`. The number of configurations that will be measured simultaneously. **optional**
 
 - `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
     - `HyperparameterNames` - `list of strings`. The names of configurations.
@@ -20,7 +19,6 @@ Possible values of configurations for your system should be provided in separate
 
 - `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
     - `SelectionType` - `string`. An exploration algorithm specification. Currently only `SobolSequence` available.
-    - `NumberOfInitialConfigurations` - `int`. The number of configurations that will be tested before making any attempts to build prediction model.
 
 - `TaskConfiguration` - this section describes general configuration for Worker Service and your system during testing.
     - `TaskName` - `string`. The Worker nodes are able to run different experiments/tasks. This value identifies needed.
@@ -109,16 +107,14 @@ Possible values of configurations for your system should be provided in separate
 ```json
 {
   "General":{
-    "isMinimizationExperiment"  : true,
-    "ConfigurationsPerIteration" : 3
+    "isMinimizationExperiment"  : true
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["frequency", "threads"],
     "DataFile"          : "./Resources/EnergyExperimentData.json"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations": 10
+    "SelectionType"     : "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "energy_consumption",

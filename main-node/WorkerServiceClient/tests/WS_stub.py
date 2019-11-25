@@ -1,8 +1,9 @@
 import csv
 import logging
+import uuid
 from random import choice
 
-from WorkerServiceClient.WSClient_sockets import WSClient
+from WorkerServiceClient.WSClient_events import WSClient
 
 
 class WSClient_Stub(WSClient):
@@ -18,30 +19,55 @@ class WSClient_Stub(WSClient):
         self._number_of_workers = 1
         self.__csv_folder = "../worker/scenarios/"
 
-    def connect(self):
-        self.logger.info("Using the Stub for the Worker Service Client.")
-
-    def disconnect(self):
-        pass
-
     ####################################################################################################################
     # Supporting methods.
-    def _send_task(self, tasks_parameters):
-        self.logger.info("Sending task: %s" % tasks_parameters)
-        tasks_to_send = []
 
-        for task_parameter in tasks_parameters:
-            task_description = dict()
-            task_description["task_name"] = self._task_name
-            task_description["Scenario"] = self._scenario
-            task_description["params"] = {}
-            for index, parameter in enumerate(self._task_parameters):
-                task_description["params"][parameter] = str(task_parameter[index])
-            tasks_to_send.append(task_description)
+    def is_all_tasks_finish(self, id_measurement):
+        """
+        Checking are all tasks for specific configuration finish or not
+        :param id_measurement: id specific measurement
+        :return: True or False
+        """
+        if len(self.measurement[id_measurement]['task_results']) == len(self.measurement[id_measurement]['tasks_to_send']):
+            return True
+        else:
+            return False
+
+    def is_measurement_finish(self, id_measurement):
+        """
+        Checking is specific measurement finish or not
+        :param id_measurement: id specific measurement
+        :return: True or False
+        """
+        for configuration in self.measurement[id_measurement].keys():
+            if self.measurement[id_measurement][configuration]['status'] != "Finished":
+                return False
+        return True
+
+    def _send_measurement(self, id_measurement, measurement):
+
+        self.logger.info("Sending measurement: %s" % id_measurement)
+
+        tasks_to_send = []
+        self.measurement[id_measurement]['tasks_results'] = []
+        number_ready_task = len(measurement['tasks_results'])
+        for i, task_parameter in enumerate(measurement['tasks_to_send']):
+            if i >= number_ready_task:
+                self.logger.info("Sending task: %s" % task_parameter)
+                task_description = dict()
+                task_description["id_measurement"] = id_measurement
+                task_description["task_name"] = self._task_name
+                task_description["time_for_run"] = self._time_for_one_task_running
+                task_description["scenario"] = self._scenario
+                task_description["params"] = {}
+                for index, parameter in enumerate(self._task_parameters):
+                    task_description["params"][self._task_parameters[index]] = str(task_parameter[index])
+
+                tasks_to_send.append(task_description)
 
         for task in tasks_to_send:
             params_to_send = task['params']
-            params_to_send['ws_file'] = task['Scenario']['ws_file']
+            params_to_send['ws_file'] = task['scenario']['ws_file']
 
             result = dict()
             if task["task_name"] == "energy_consumption":
@@ -54,15 +80,20 @@ class WSClient_Stub(WSClient):
             # elif task["task_name"] is "GA":
             #     result = self._genetic(params_to_send)
 
-            full_result = {
-                'worker': 'stub',
-                'result': result,
-                'task id': self.task_iterator
-            }  # for 'energy' must be 'result': {'energy': 23.32}
+            task['result'] = result
+            # for 'energy' must be 'result': {'energy': 23.32}
             # for 'taskNB' must be 'result': {'PREC_AT_99_REC': 0.935}
-            self.cur_tasks_ids.append(self.task_iterator)
-            self.current_results.append(full_result)
-            self.task_iterator += 1
+
+            task['task id'] = str(uuid.uuid4())
+            task['worker'] = 'stub'
+            self.measurement[task['id_measurement']]['tasks_results'].append(task)
+
+            if self.is_all_tasks_finish(task['id_measurement']):
+                self.measurement[task['id_measurement']][task['configuration']]['status'] = "Finished"
+                if self.is_measurement_finish(task['id_measurement']):
+                    return 0
+        return -1
+
 
     @staticmethod
     def __str_to_bool(string):
@@ -155,46 +186,20 @@ class WSClient_Stub(WSClient):
 
     ####################################################################################################################
     # Outgoing interface for running task(s)
-    def work(self, tasks):
-        """
-        Prepares current tasks, calculates the results, reports all results back.
-
-        :param tasks: list of Configuration instances. The structure of each task's parameters should correspond
-                      specified structure in task_configuration["TaskParameters"].
-                                         shape - list, e.g. [Configuration1, Configuration2, ...]
-
-        :return: List of dictionaries with result of running all the tasks.
-                                         shape - list of dicts, e.g.
-                                                 ``[ {
-                                                        "worker": "stub",
-                                                        "result": {
-                                                            "PREC_AT_99_REC": 0.1817
-                                                        },
-                                                        "taskid": 0
-                                                     }
-                                                        "worker": "stub",
-                                                        "result": {
-                                                            "PREC_AT_99_REC": 0.7566
-                                                        },
-                                                        "taskid": 1
-                                                     }
-                                                   ]``
-                     "worker":           shape - string
-                     "result":           shape - dict with keys specified in task_configuration["ResultStructure"]
-                     "PREC_AT_99_REC":   shape - specified in task_configuration["ResultDataTypes"]
-                     "taskid":           shape - int
-        """
-        self.cur_tasks_ids = []
-        self.current_results = []
-        self._send_task(tasks)
-        if len(tasks) == len(self.current_results):
-            self.logger.info("All tasks (%s) were finished." % len(tasks))
-        else:
-            self.logger.error("Error: Number of tasks (%s) are not equal to the number of received results (%s)."
-                  % (len(tasks), len(self.current_results)))
-        self.logger.info("Results: %s" % str(self._report_according_to_required_structure()))
-        self._dump_results_to_csv()
-        return self.current_results
+    def work(self, j_conf, tasks):
+        measurement_id = str(uuid.uuid4())
+        self.measurement[measurement_id] = {}
+        self.measurement[measurement_id]["tasks_to_send"] = tasks
+        self.measurement[measurement_id]["tasks_results"] = []
+        self.measurement[measurement_id]["configuration"] = j_conf
+        try:
+           result_code = self._send_measurement(measurement_id, self.measurement[measurement_id])
+           if result_code != 0:
+               self.logger.error("Error: Not all tasks were finished")
+        except Exception as er:
+            self.logger.error("Error: {er}".format(er=er))
+        self.dump_results_to_csv()
+        return self.measurement
 
 
 # A small unit test.
@@ -209,11 +214,26 @@ if __name__ == "__main__":
         "ResultDataTypes" : ["float"],
         "MaxTimeToRunTask": 10
     }
-    task_data = [[True, 'full', 'fix', 0.5, 1000, 1000, True, 10000],
+    configurations = [[True, 'full', 'fix', 0.5, 1000, 1000, True, 10000],
                  [True, 'full', 'heuristic', 50, 5, 50, False, 200],
                  [True, 'full', 'fix', 0.5, 5, 100, True, 10000]]
-    client = WSClient_Stub(config, 'Stub', 'Stub_WSClient_results.csv')
-    results = client.work(task_data)
+    measurement = {}
+    is_measurement_need_to_send = True
+    # Creating holders for current measurements
+    for configuration in configurations:
+        # Evaluating each Configuration in configurations list
+        needed_tasks_count = 1
+        measurement[str(configuration)] = {'parameters': configuration,
+                                                            'needed_tasks_count': needed_tasks_count,
+                                                            'tasks_to_send': [], 'task_results': [], 'task_ids': [],
+                                                            'task_workers': [], 'type': type,
+                                                            'status': "InProgress"}
+    for point in measurement.keys():
+        for i in range(measurement[point]['needed_tasks_count']):
+            measurement[point]['tasks_to_send'].append(measurement[point]['parameters'])
+
+    client = WSClient_Stub(config, 'event_service', 49153, 'Stub_WSClient_results.csv')
+    results = client.work(measurement)
     logger = logging.getLogger(__name__)
     logger.info(results)
     logger.info("\n end")

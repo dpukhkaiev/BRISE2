@@ -49,7 +49,7 @@ class SearchSpace:
             parameters = []
             for parameter_name in self.__hyperparameter_names:
                 parameters.append(CS_default_configuration.get(parameter_name))
-            self.__default_configuration = Configuration(parameters)
+            self.__default_configuration = Configuration(parameters, Configuration.Type.DEFAULT)
         except Exception as e:
             self.logger.error("Unable to load default Configuration: %s" % e)
             self.__default_configuration = None
@@ -196,7 +196,7 @@ class SearchSpace:
         parameters = []
         for parameter_name in self.__hyperparameter_names:
             parameters.append(cs_configuration.get(parameter_name))
-        return Configuration(parameters)
+        return Configuration(parameters, Configuration.Type.FROM_SELECTOR)
 
     def sample_configuration(self) -> Configuration:
         """
@@ -205,7 +205,8 @@ class SearchSpace:
         :return: Configuration
         """
         configuration = self._config_space.sample_configuration()
-        return Configuration([configuration.get(param_name) for param_name in self.__hyperparameter_names])
+        return Configuration([configuration.get(param_name) for param_name in self.__hyperparameter_names],
+                             Configuration.Type.FROM_SELECTOR)
 
     def generate_searchspace_description(self):
         """
@@ -226,6 +227,7 @@ class SearchSpace:
             boundaries.append(np.array(boundary).T.tolist())
         search_space_description["names"] = names
         search_space_description["boundaries"] = boundaries
+        search_space_description["size"] = self.get_search_space_size()
         return search_space_description
 
     @staticmethod

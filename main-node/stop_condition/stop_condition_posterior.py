@@ -4,7 +4,7 @@ from stop_condition.stop_condition import StopCondition
 
 class StopConditionPosterior(StopCondition):
     """
-        Basic Stop Condition checks number of measured Configurations and if it >= ["NumberOfInitialConfigurations"] + 1 (1 - Default configuration)
+        Basic Stop Condition checks number of measured Configurations and if it > 0
         suggest to stop BRISE.
         Also, compare Configurations to save it as a `best_configurations` in an iteration.
         Basic Stop Condition is a core for all posterior Stop Conditions. Each new Stop Condition is a wrapper for the previous one.
@@ -13,8 +13,8 @@ class StopConditionPosterior(StopCondition):
         super().__init__(experiment)
         self.best_configurations = experiment.get_current_best_configurations()
         self.logger = logging.getLogger(__name__)
-        
-        self.max_configs = experiment.get_selection_algorithm_parameters()["NumberOfInitialConfigurations"] + 1
+
+        self.max_configs = 1
 
     def validate_conditions(self):
         """
@@ -31,7 +31,8 @@ class StopConditionPosterior(StopCondition):
         :param candidate_configurations: list of instances of Configuration class
         """
         if self._compare_best_configurations(candidate_configurations):
-            self.logger.info("Currently best found Configuration was updated %s -> %s" % (self.best_configurations[0], candidate_configurations[0]))
+            self.logger.info("Currently best found Configuration was updated %s -> %s" % (self.best_configurations[0],
+                                                                                          candidate_configurations[0]))
             self.best_configurations = candidate_configurations
         else:
             self.logger.info("None of measured Configurations are better than currently best found Configuration %s."
@@ -43,9 +44,8 @@ class StopConditionPosterior(StopCondition):
         :param candidate_configurations: list of instances of Configuration class
         :return: bool True if current best configuration is better than previous, otherwise False
         """
-        return candidate_configurations[0].is_better_configuration(self.get_experiment().is_minimization(), self.best_configurations[0])
-
-    def update_number_of_configurations_in_iteration(self, number_of_configurations_in_iteration): pass
+        return candidate_configurations[0].is_better_configuration(self.get_experiment().is_minimization(),
+                                                                   self.best_configurations[0])
 
     def is_finish(self):
         number_of_measured_configurations = self.experiment.get_number_of_measured_configurations()
@@ -53,14 +53,14 @@ class StopConditionPosterior(StopCondition):
             self.logger.info("BRISE has measured the entire Search Space. Reporting the best found Configuration.")
             return True
         elif number_of_measured_configurations >= self.max_configs:
-            self.logger.info("Basic Stop Condition suggested to stop BRISE. "
+            self.logger.debug("Basic Stop Condition suggested to stop BRISE. "
                              "Number of measured configurations - %s. "
-                             "Max configurations - %s"%(number_of_measured_configurations, self.max_configs))
+                             "Max configurations - %s" % (number_of_measured_configurations, self.max_configs))
             return True
         else:
-            self.logger.info("Basic Stop Condition suggested to continue running BRISE. "
+            self.logger.debug("Basic Stop Condition suggested to continue running BRISE. "
                              "Number of measured configurations - %s. "
-                             "Max configurations - %s"%(number_of_measured_configurations, self.max_configs))
+                             "Max configurations - %s" % (number_of_measured_configurations, self.max_configs))
             return False
     
     def get_best_configurations(self):

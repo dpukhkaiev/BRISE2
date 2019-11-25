@@ -25,12 +25,13 @@ export class InfoBoardComponent implements OnInit {
 
   // Information log
   news: Set<NewsPoint> = new Set()
-  
+
   solution: Solution
   default_configuration: any
 
   globalConfig: object
   experimentDescription: object
+  searchspace: object
 
   constructor(
     private ioMain: MainSocketService,
@@ -62,7 +63,7 @@ export class InfoBoardComponent implements OnInit {
           this.snackBar.open(temp['message'], '×', {
             duration: 3000
           });
-          // this.news.add(temp) 
+          // this.news.add(temp)
         }
       });
 
@@ -96,8 +97,9 @@ export class InfoBoardComponent implements OnInit {
       .subscribe((obj: any) => {
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
+        this.searchspace = obj['description']['searchspace_description']
         let temp = {
-          'time': Date.now(), 
+          'time': Date.now(),
           'message': 'The main configurations of the experiment are obtained. Let\'s go! '
         }
         this.snackBar.open(temp['message'], '×', {

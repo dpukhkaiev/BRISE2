@@ -1,15 +1,13 @@
 {
   "General": {
-    "isMinimizationExperiment"  : false,
-    "ConfigurationsPerIteration" : 1
+    "isMinimizationExperiment": false
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
     "DataFile"          : "./Resources/MLExperiments/NB/NBExperimentData.json"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations"   : 10
+    "SelectionType": "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "naiveBayes_mock",

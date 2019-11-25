@@ -7,9 +7,7 @@ In the current implementation, BRISE will stop if Basic Stop Condition and all w
 
 #### Basic Stop Condition
 
-This Stop Condition is satisfied, when the number of overall measured Configurations is greater than `SelectionAlgorithm["NumberOfInitialConfigurations"] + 1`.
-
-Why `+1` ? -> default config (1)
+This Stop Condition is satisfied, when the number of overall measured Configurations is greater than 0. Used as a base for Stop Condition Decorator.
 
 #### Default Stop Condition
 

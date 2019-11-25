@@ -18,7 +18,7 @@ def improvements(experiments):
         x = list(range(len(exp.measured_configurations)))
         trace = go.Scatter( # Relative solution to all experiments
             x=x, 
-            y=[con.get_average_result()[0] for con in exp.measured_configurations], 
+            y=[con.get_average_result()[0] for con in exp.measured_configurations],
             mode='lines+markers', 
             name = '{} results'.format(exp.get_name()), 
             marker=dict(color=exp.color, size=6),

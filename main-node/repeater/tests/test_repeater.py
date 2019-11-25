@@ -13,18 +13,35 @@ DESCRIPTION_NB["TaskConfiguration"]["Scenario"]["ws_file"] = "NB_final_result.cs
 
 
 def measure_task(task_parameters, description, search_space):
-    WSClient_exp = WSClient_Stub(description["TaskConfiguration"], 'Stub', 'TEST_WSClient_results.csv')
+    WSClient_exp = WSClient_Stub(description["TaskConfiguration"], 'event_service', 49153, 'TEST_WSClient_results.csv')
     experiment = Experiment(description, search_space)
     Configuration.set_task_config(experiment.description["TaskConfiguration"])
-    configuration1 = Configuration(task_parameters[0])
-    configuration2 = Configuration(task_parameters[1])
+    configuration1 = Configuration(task_parameters[0], Configuration.Type.TEST)
+    configuration2 = Configuration(task_parameters[1], Configuration.Type.TEST)
     repeater = Repeater(WSClient_exp, experiment)
+    try:
+        task = [configuration1, configuration2]
 
-    task = [configuration1, configuration2]
+        results_measurement = repeater.measure_configurations(task)
+        results_configurations = []
+        for key in results_measurement:
+            configuration = Configuration.from_json(results_measurement[key]["configuration"])
+            results_WO_outliers = repeater.outlier_detectors.find_outliers_for_taskset(
+                results_measurement[key]["tasks_results"],
+                repeater._result_structure,
+                [configuration],
+                results_measurement[key]["tasks_to_send"])
+            for parameters, task in zip(results_measurement[key]["tasks_to_send"], results_WO_outliers):
+                configuration.add_tasks(task)
+            results_configurations.append(configuration)
 
-    result_configurations = repeater.measure_configurations(task, experiment)
+        WSClient_exp.logger.info("Results: %s" % str(WSClient_exp._report_according_to_required_structure()))
+        WSClient_exp.dump_results_to_csv()
+        return results_configurations
+    finally:
+        repeater.stop()
+        WSClient_exp.stop()
 
-    return result_configurations
 
 
 # TODO - must be improve, test function to check WS_stub

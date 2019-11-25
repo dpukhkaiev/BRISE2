@@ -6,7 +6,7 @@ import time
 import random
 import logging
 
-from WorkerServiceClient.WSClient_sockets import WSClient
+from WorkerServiceClient.WSClient_events import WSClient
 from tools.file_system_io import create_folder_if_not_exists
 from logger.default_logger import BRISELogConfigurator
 

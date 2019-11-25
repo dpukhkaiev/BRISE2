@@ -10,7 +10,6 @@ DATA_FOR_JSON_FILE = {
     },
     "SelectionAlgorithm": {
         "SelectionType": "SobolSequence",
-        "NumberOfInitialConfigurations": 10,
         "Step": 1
     },
     "TaskConfiguration": {

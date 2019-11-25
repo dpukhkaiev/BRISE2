@@ -2,11 +2,13 @@ __doc__ = """
 Main module for running BRISE configuration balancing."""
 
 import logging
+import pika
+import threading
 
 from warnings import filterwarnings
 filterwarnings("ignore")    # disable warnings for demonstration.
 
-from WorkerServiceClient.WSClient_sockets import WSClient
+from WorkerServiceClient.WSClient_events import WSClient
 from model.model_selection import get_model
 from repeater.repeater import Repeater
 from tools.initial_config import load_global_config, load_experiment_setup, validate_experiment_description
@@ -17,26 +19,46 @@ from stop_condition.stop_condition_selector import get_stop_condition
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from default_config_handler.default_config_handler_selector import get_default_config_handler
+from default_config_handler.default_config_handler import DefaultConfigurationHandler
 
 
-def run(experiment_setup: dict = None):
-    try:
-        sub = API() # subscribers
+class MainThread(threading.Thread):
+    """
+    This class runs Main functionality in a separate thread,
+    connected to the `default_configuration_results_queue` and `configurations results queue` as a consumer.
+    """
 
+    def __init__(self, experiment_setup=None):
+        """
+        The function for initializing main thread
+        :param experiment_setup: fully initialized experiment, r.g from a POST request
+        """
+        super(MainThread, self).__init__()
+        self.global_config = load_global_config()
+        self._is_interrupted = False
+        self.conf_lock = threading.Lock()
+        # initialize connection to rabbitmq service
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=self.global_config["EventService"]["Address"],
+                port=self.global_config["EventService"]["Port"]))
+        self.consume_channel = self.connection.channel()
+
+        self.sub = API()  # subscribers
         if __name__ == "__main__":
-            logger = BRISELogConfigurator().get_logger(__name__)
+            self.logger = BRISELogConfigurator().get_logger(__name__)
         else:
-            logger = logging.getLogger(__name__)
-        logger.info("Starting BRISE")
-        sub.send('log', 'info', message="Starting BRISE")
-        # TODO: Store global_config im Experiment?
-        global_config = load_global_config()
+            self.logger = logging.getLogger(__name__)
+
+        self.logger.info("Starting BRISE")
+
+        self.sub.send('log', 'info', message="Starting BRISE")
 
         if not experiment_setup:
             default_ed_file = './Resources/EnergyExperiment.json'
             log_msg = "The Experiment Setup was not provided. The default one will be executed: %s" % default_ed_file
-            logger.warning(log_msg)
-            sub.send('log', 'warning', message=log_msg)
+            self.logger.warning(log_msg)
+            self.sub.send('log', 'warning', message=log_msg)
             experiment_description, search_space = load_experiment_setup(default_ed_file)
         else:
             experiment_description = experiment_setup["experiment_description"]
@@ -44,120 +66,181 @@ def run(experiment_setup: dict = None):
 
         validate_experiment_description(experiment_description)
 
-        experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["TaskConfiguration"])
+        self.experiment = Experiment(experiment_description, search_space)
+        Configuration.set_task_config(self.experiment.description["TaskConfiguration"])
 
-        sub.send('experiment', 'description',
-                 global_config=global_config,
-                 experiment_description=experiment.description,
-                 searchspace_description=experiment.search_space.generate_searchspace_description()
-                 )
-        logger.debug("Experiment description and global configuration sent to the API.")
+        self.sub.send('experiment', 'description',
+                      global_config=self.global_config,
+                      experiment_description=self.experiment.description,
+                      searchspace_description=self.experiment.search_space.generate_searchspace_description()
+                      )
+        self.logger.debug("Experiment description and global configuration sent to the API.")
 
         # sc group initialization which parameters could be defined without statistic data usage
-        prior_stop_condition = get_stop_condition(experiment, True)
+        self.prior_stop_condition = get_stop_condition(self.experiment, True)
 
         # Creating instance of selector algorithm, according to specified in experiment description type.
-        selector = get_selector(experiment=experiment)
+        self.selector = get_selector(experiment=self.experiment)
 
         # Instantiate client for Worker Service, establish connection.
         # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
-        # (ExperimentDescription.json)
+        # (task.json)
 
-        worker_service_client = WSClient(experiment.description["TaskConfiguration"], global_config["WorkerService"]["Address"],
-                                         logfile='%s%s_WSClient.csv' % (global_config['results_storage'],
-                                                                        experiment.get_name()))
+        self.worker_service_client = WSClient(self.experiment.description["TaskConfiguration"],
+                                              self.global_config["EventService"]["Address"],
+                                              self.global_config["EventService"]["Port"],
+                                              logfile='%s%s_WSClient.csv' % (self.global_config['results_storage'],
+                                                                             self.experiment.get_name()))
 
         # Creating runner for experiments that will repeat the configuration measurement to avoid fluctuations.
-        repeater = Repeater(worker_service_client, experiment)
+        self.repeater = Repeater(self.worker_service_client, self.experiment)
 
-        temp_msg = "Measuring the default Configuration."
-        # TODO: Logging messages to the API could be sent from the logger.
-        logger.info(temp_msg)
-        sub.send('log', 'info', message=temp_msg)      
-        default_config_handler = get_default_config_handler(experiment)
-        default_configuration = default_config_handler.get_default_config()
-        repeater.measure_configurations([default_configuration], experiment=experiment)
-        experiment.put_default_configuration(default_configuration)
-        
-        selector.disable_configurations([default_configuration])
+        self.default_config_handler = get_default_config_handler(self.experiment)
 
-        initial_configurations = [selector.get_next_configuration() for _ in
-                                  range(experiment.description["SelectionAlgorithm"]["NumberOfInitialConfigurations"])]
+    def run(self):
+        """
+        Point of entry to the main functionality, measuring default configuration,
+        and starting listening of queues with responses
+        """
+        temp_msg = "Measuring default Configuration."
+        self.logger.info(temp_msg)
+        self.sub.send('log', 'info', message=temp_msg)
+        self.consume_channel.basic_consume(queue='default_configuration_results_queue', auto_ack=True,
+                                           on_message_callback=self.get_default_configurations_results)
+        self.consume_channel.basic_consume(queue='configurations_results_queue', auto_ack=True,
+                                           on_message_callback=self.get_configurations_results)
+        default_configuration = self.default_config_handler.get_default_config()
 
-        repeater.set_type(experiment.description["Repeater"]["Type"])
-        repeater.measure_configurations(initial_configurations, experiment=experiment)
-        experiment.add_configurations(initial_configurations)
+        self.repeater.measure_configurations([default_configuration])
+        # listen all queues with responses until the _is_interrupted flag is False
+        try:
+            while self.consume_channel._consumer_infos:
+                self.consume_channel.connection.process_data_events(time_limit=1)  # 1 second
+                if self._is_interrupted:
+                    if self.connection.is_open:
+                        self.connection.close()
+                    break
+        finally:
+            if self.connection.is_open:
+                self.connection.close()
 
-        # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
-        model = get_model(experiment=experiment,
-                          log_file_name="%s%s%s_model.txt" % (global_config['results_storage'],
-                                                              experiment.get_name(),
-                                                              experiment.description["ModelConfiguration"]["ModelType"]))
+    def get_default_configurations_results(self, ch, method, properties, body):
+        """
+        Callback function for the result of default configuration
+        :param ch: pika.Channel
+        :param method:  pika.spec.Basic.GetOk
+        :param properties: pika.spec.BasicProperties
+        :param body: result of measuring default configuration in bytes format
+        """
 
-        # The main effort is done here.
-        # 1. Building model.
-        # 2. If model built - validation of model.
-        # 3. If model is valid - prediction and evaluation of current solution Configuration, else - go to 5.
-        # 4. Evaluation of Stop Condition, afterwards - terminating or going to 5.
-        # 5. Get new point from selection algorithm, measure it, check if termination needed and go to 1.
-        
-        # sc group initialization which parameters couldn't be defined without statistic data usage
-        finish = False
-        posterior_stop_condition = get_stop_condition(experiment, False)
-        cur_stats_message = "-- New Configuration(s) was(were) measured. Currently were evaluated %s of %s Configurations. " \
-                            "%s of them out of the Selection Algorithm. Building Target System model.\n"
+        default_configuration = Configuration.from_json(body.decode())
+        self.selector.disable_configurations([default_configuration])
+        if default_configuration.status == Configuration.Status.BAD:
+            if type(self.default_config_handler) == DefaultConfigurationHandler:
+                self.logger.error("The specified default configuration is broken.")
+                self.stop()
+                self.sub.send('log', 'info', message="The specified default configuration is broken.")
+                return
+            default_configuration = self.default_config_handler.get_default_config()
+            self.repeater.measure_configurations([default_configuration])
+        if self.experiment.is_configuration_evaluated(default_configuration):
+            self.experiment.put_default_configuration(default_configuration)
 
-        while not finish:
-            model_built = model.update_data(experiment.measured_configurations).build_model()
-            number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration() \
-                        if experiment.get_number_of_configurations_per_iteration() \
-                            else repeater.worker_service_client.get_number_of_workers()
-            posterior_stop_condition.update_number_of_configurations_in_iteration(number_of_configurations_in_iteration)
+            temp_msg = "Results of measuring default value: %s" % self.experiment.search_space.get_default_configuration().get_average_result()
+            self.logger.info(temp_msg)
+            self.sub.send('log', 'info', message=temp_msg)
 
-            if model_built and model.validate_model():
-                predicted_configurations = model.predict_next_configurations(number_of_configurations_in_iteration)
+            self.model = get_model(experiment=self.experiment,
+                                   log_file_name="%s%s%s_model.txt" % (self.global_config['results_storage'],
+                                                                       self.experiment.get_name(),
+                                                                       self.experiment.description[
+                                                                           "ModelConfiguration"][
+                                                                           "ModelType"]))
+            self.posterior_stop_condition = get_stop_condition(self.experiment, False)
+            self.repeater.set_type(self.experiment.description["Repeater"]["Type"])
+            # starting main work: building model and choosing configuration for measuring
+            self.send_new_configurations_to_measure()
+
+    def get_configurations_results(self, ch, method, properties, body):
+        """
+        Callback function for the result of any configuration except default
+        :param ch: pika.Channel
+        :param method:  pika.spec.Basic.GetOk
+        :param properties: pika.spec.BasicProperties
+        :param body: result of measuring any configuration except default in bytes format
+        :return:optimal configuration
+        """
+        with self.conf_lock:  # for be sure that any of configurations won't be added after finding the near-optimal configuration
+            configuration = Configuration.from_json(body.decode())
+            if not self._is_interrupted and self.experiment.is_configuration_evaluated(configuration):
+                self.experiment.try_add_configurations([configuration])
+                self.selector.disable_configurations([configuration])
+                finish = self.posterior_stop_condition.validate_conditions()
+                if not finish:
+                    try:
+                        finish = self.prior_stop_condition.validate_conditions()
+                    except Exception as e:
+                        self.logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
+                if finish:
+                    self.stop()  # stop all internal thread after getting the optimal configuration
+                    self.sub.send('log', 'info', message="Solution validation success!")
+                    optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
+                    return optimal_configuration
+                else:
+                    temp_msg = "-- New Configuration(s) was(were) measured. Currently were evaluated " \
+                               f"{len(self.model.measured_configurations)} of {self.experiment.search_space.get_search_space_size()}" \
+                               " Configurations. Building Target System model.\n"
+                    self.logger.info(temp_msg)
+                    self.sub.send('log', 'info', message=temp_msg)
+
+                    # repeat work() function until the near-optimal configuration will be found
+                    self.send_new_configurations_to_measure()
+
+    def send_new_configurations_to_measure(self):
+        """
+        The function for building model and choosing configuration for measuring
+        """
+        model_built = self.model.update_data(self.experiment.measured_configurations).build_model()
+        for n in range(self.worker_service_client.get_number_of_needed_configurations()):  # for dynamic parallelization
+            if model_built and self.model.validate_model():
+                i = 1
+                while True:
+                    predicted_configurations = self.model.predict_next_configurations(i)
+                    is_unique_configuration = False
+                    for conf in predicted_configurations:
+                        if conf.status == Configuration.Status.NEW:
+                            self.repeater.measure_configurations([conf])
+                            is_unique_configuration = True
+                            break
+                    if is_unique_configuration:
+                        break
+                    else:
+                        i += 1
                 temp_msg = "Predicted following Configuration->Quality pairs: %s" \
-                           % list((str(c.get_parameters()) + "->" + str(c.predicted_result) for c in predicted_configurations))
-                logger.info(temp_msg)
-                sub.send('log', 'info', message=temp_msg)
-                repeater.measure_configurations(predicted_configurations, experiment=experiment)
-                experiment.add_configurations(predicted_configurations)
-                selector.disable_configurations(predicted_configurations)
+                           % list((str(c) + "->" + str(c.predicted_result) for c in predicted_configurations))
+                self.logger.info(temp_msg)
+                self.sub.send('log', 'info', message=temp_msg)
             else:
-                configs_from_selector = [selector.get_next_configuration() for _ in
-                                         range(number_of_configurations_in_iteration)]
+                while True:
+                    configs_from_selector = self.selector.get_next_configuration()
+                    if self.experiment.get_any_configuration_by_parameters(configs_from_selector.parameters) is None:
+                        self.repeater.measure_configurations([configs_from_selector])
+                        break
 
-                repeater.measure_configurations(configs_from_selector, experiment=experiment)
-                experiment.add_configurations(configs_from_selector)
+    def stop(self):
+        """
+        The function for stop main thread
+        """
+        self._is_interrupted = True
+        self.worker_service_client.stop()
+        self.repeater.stop()
 
-            finish = posterior_stop_condition.validate_conditions()
-            if not finish:
-                try:
-                    finish = prior_stop_condition.validate_conditions()
-                except Exception as e:
-                    logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
-            if not finish:
-                temp_msg = cur_stats_message % (len(model.measured_configurations), experiment.search_space.get_search_space_size(),
-                                                str(selector.numOfGeneratedPoints))
-                logger.info(temp_msg)
-                sub.send('log', 'info', message=temp_msg)
-                continue
-        optimal_configuration = experiment.get_final_report_and_result(repeater)
-        return optimal_configuration
 
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error("BRISE was terminated by Exception: %s." % type(e), exc_info=e)
-        if 'experiment' in dir() and 'repeater' in dir():
-            logger.info("Reporting currently best found Configuration.")
-            try:
-                return experiment.get_final_report_and_result(repeater)
-            except Exception as e:
-                logger.error("Unable to retrieve currently best found Configuration.", exc_info=e)
-    finally:
-        worker_service_client.disconnect()
+def run(experiment_setup=None):
+    main = MainThread(experiment_setup)
+    main.start()
+    main.join()
 
 
 if __name__ == "__main__":
-    run()  
+    run()

@@ -1,15 +1,13 @@
 {
   "General": {
-    "isMinimizationExperiment"  : false,
-    "ConfigurationsPerIteration" : 1
+    "isMinimizationExperiment": false
   },
   "DomainDescription":{
     "HyperparameterNames"      : ["kernel_type", "kernel_gamma", "kernel_sigma1", "kernel_sigma2", "kernel_sigma3", "kernel_shift", "kernel_degree", "kernel_a", "kernel_b", "kernel_cache", "C", "convergence_epsilon", "max_iterations", "scale", "calculate_weights", "return_optimization_performance", "L_pos", "L_neg", "epsilon", "epsilon_plus", "epsilon_minus", "balance_cost", "quadratic_loss_pos", "quadratic_loss_neg", "estimate_performance"],
     "DataFile"          : "./Resources/MLExperiments/SVM/SVMExperimentData.json"
   },
   "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence",
-    "NumberOfInitialConfigurations"   : 3
+    "SelectionType": "SobolSequence"
   },
   "TaskConfiguration":{
     "TaskName"          : "SVM",
