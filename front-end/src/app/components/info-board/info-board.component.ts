@@ -98,6 +98,7 @@ export class InfoBoardComponent implements OnInit {
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
         this.searchspace = obj['description']['searchspace_description']
+        this.searchspace['size'] = parseFloat(this.searchspace['size'])
         let temp = {
           'time': Date.now(),
           'message': 'The main configurations of the experiment are obtained. Let\'s go! '

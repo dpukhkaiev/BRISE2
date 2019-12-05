@@ -229,11 +229,12 @@ class MainThread(threading.Thread):
 
     def stop(self):
         """
-        The function for stop main thread
+        The function for stop main thread externaly (e.g. from front-end)
         """
         self._is_interrupted = True
         self.worker_service_client.stop()
         self.repeater.stop()
+        self.experiment.get_final_report_and_result(self.repeater)
 
 
 def run(experiment_setup=None):

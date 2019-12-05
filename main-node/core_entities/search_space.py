@@ -227,7 +227,8 @@ class SearchSpace:
             boundaries.append(np.array(boundary).T.tolist())
         search_space_description["names"] = names
         search_space_description["boundaries"] = boundaries
-        search_space_description["size"] = self.get_search_space_size()
+        search_space_size = self.get_search_space_size()
+        search_space_description["size"] = "Infinity" if search_space_size == float("inf") else search_space_size
         return search_space_description
 
     @staticmethod
