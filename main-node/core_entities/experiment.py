@@ -8,7 +8,7 @@ import logging
 import numpy as np
 
 from threading import Lock
-from typing import List
+from typing import Union
 from copy import deepcopy
 
 from tools.front_API import API
@@ -41,8 +41,6 @@ class Experiment:
         self.name = "exp_{task_name}_{experiment_hash}".format(
             task_name=self.description["TaskConfiguration"]["TaskName"],
             experiment_hash=self.id)
-        # TODO MultiOpt: Currently we store only one solution configuration here,
-        #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
         self.bad_configurations_number = 0
 
@@ -95,17 +93,18 @@ class Experiment:
             else:
                 raise ValueError("The default Configuration was registered already.")
 
-    def try_add_configurations(self, configurations: List[Configuration]):
-        """Takes the List of Configuration objects and adds it to Experiment state.
-        :param configurations: List of Configuration instances.
-        :return bool flag, True if any configuration was added to any list, False if nothing was added
+    def try_add_configuration(self, configuration: Configuration):
+        """
+        Add a Configuration object to the Experiment, if the Configuration was now added previously.
+        :param configuration: Configuration instance.
+        :return bool flag, True if the Configuration was added to list of either measured or evaluated configurations,
+        False if not.
         """
         result = False
-        for configuration in configurations:
-            if configuration.is_enabled:
-                if self._try_put(
-                        configuration) == True:  # configuration could not be added to the Experiment if it is already added
-                    result = True
+        if configuration.is_enabled:
+            if self._try_put(configuration):
+                # configuration will not be added to the Experiment if it is already there
+                result = True
         return result
 
     def _try_put(self, configuration_instance: Configuration):
@@ -130,28 +129,13 @@ class Experiment:
                     else:
                         return False
             else:
-                raise ValueError("Cant add configuration with status %s to experiment" % configuration_instance.status)
+                raise ValueError(f"Can not add Configuration with status {configuration_instance.status} to Experiment.")
 
-    def get_configuration_by_parameters(self, parameters):
+    def get_any_configuration_by_parameters(self, parameters: tuple) -> Union[None, Configuration]:
         """
-        Returns the instance of Configuration class, which contains the concrete parameters; `None` if the configuration does not exist
-
-        :param parameters: list. Concrete experiment configuration
-               shape - list, e.g. [2900.0, 32]
-        :return: instance of Configuration class
-        """
-        for configuration_instance in self.measured_configurations:
-            if configuration_instance.parameters == parameters:
-                return configuration_instance
-        return None
-
-    def get_any_configuration_by_parameters(self, parameters):
-        """
-        Returns the instance of Configuration class, which contains concrete parameters and exists as measured or evaluated configuration; `None` otherwise.
-
-        :param parameters: list. Concrete experiment configuration
-               shape - list, e.g. [2900.0, 32]
-        :return: instance of Configuration class
+        Find and retrieve instance of Configuration that was previously added to Experiment by it's Parameters.
+        :param parameters: tuple. Parameters of desired Configuration.
+        :return: instance of Configuration class or`None` if the Configuration instance was not found.
         """
         for configuration_instance in self.measured_configurations:
             if configuration_instance.parameters == parameters:
@@ -163,16 +147,14 @@ class Experiment:
 
     def is_configuration_evaluated(self, configuration):
         """
-
-        Check is the configuration in the evaluated_configurations list or not. Useful for filtering outdated configurations
-        :param configuration: Configuration class instance.
-        :return: True of False
+        Check is the Configuration in the evaluated_configurations list or not.
+        Could be used to filter out outdated (not added to current Experiment) Configurations.
+        :param configuration: Configuration instance.
+        :return: True if Configuration instance was previously added to the Experiment as those of False
         """
         return configuration in self.evaluated_configurations
 
     def get_final_report_and_result(self, repeater):
-        #   In case, if the model predicted the final point, that has less value, than the default, but there is
-        # a point, that has less value, than the predicted point - report this point instead of predicted point.
         self.end_time = datetime.datetime.now()
 
         self.logger.info("\n\nFinal report:")
@@ -253,12 +235,6 @@ class Experiment:
         """
         self.measured_configurations.append(configuration)
 
-        # for Demo, please, uncomment next lines:
-        # stub_parameters = self.search_space.discard_Nones(configuration.parameters)
-        # self.api.send("new", "configuration",
-        #               configurations=[stub_parameters],
-        #               results=[configuration.get_average_result()])
-
         self.api.send("new", "configuration",
                       configurations=[configuration.parameters],
                       results=[configuration.get_average_result()])
@@ -283,7 +259,7 @@ class Experiment:
 
         create_folder_if_not_exists(folder_path)
         file_name = '{}.pkl'.format(self.name)
-        # write pickl
+        # write pickle
         with open(folder_path + file_name, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
             self.logger.info("Saved experiment instance. Path: %s" % (folder_path + file_name))
@@ -313,18 +289,18 @@ class Experiment:
 
         return self
 
-    def write_csv(self, path='Results/serialized/'):
+    def write_csv(self, path: str = 'Results/serialized/'):
         """save .csv file with main metrics of the experiment
 
         Args:
-            final (bool, optional): Is the Experiment finished?. Defaults to False.
+            path (str, optional): Path to folder, where to store the csv report.
         """
-        search_space_coverage = ""
         if self.search_space.get_search_space_size() == float('inf'):
             search_space_coverage = "unknown (infinite search space)"
         else:
-            search_space_coverage = str(round((len(self.measured_configurations) / self.search_space.get_search_space_size()) * 100)) + '%'
-
+            search_space_coverage = str(
+                round((len(self.measured_configurations) / self.search_space.get_search_space_size()) * 100)
+            ) + '%'
 
         data = dict({
             'model': self.description['ModelConfiguration']['ModelType'],

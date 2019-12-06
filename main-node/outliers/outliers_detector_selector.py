@@ -1,6 +1,9 @@
 import logging
 
-def get_outlier_detectors(parameters):
+from outliers.outliers_detector import OutlierDetector
+
+
+def get_outlier_detectors(parameters: dict) -> OutlierDetector:
     """
     :param parameters: the outliers block description from instance of Experiment class
     :return: Outlier detection object.

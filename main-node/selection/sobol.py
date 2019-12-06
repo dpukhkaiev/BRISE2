@@ -35,15 +35,12 @@ class SobolSequence(SelectionAlgorithm):
         :return: list - point in current search space.
         """
         while True:
-            # TODO: It is possible to encapsulate control of 'getting stuck while retrieving unique point from selector'
             # Getting next point from sobol sequence.
             point = self.__generate_sobol_vector()
 
             values = {}
-            # TODO: Access of search space object should be direct (need to solve it during Feature transformation)
             search_space = self.experiment.search_space
             for index, hyperparameter_name in enumerate(search_space.get_hyperparameter_names()):
-                # TODO: Feature transformation should be encapsulated. This code will be refactored.
                 value = None
                 hyperparameter_type = search_space.get_hyperparameter_type(hyperparameter_name)
                 if hyperparameter_type is HyperparameterType.NUMERICAL_INTEGER:

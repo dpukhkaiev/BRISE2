@@ -132,10 +132,10 @@ class RegressionSweetSpot(Model):
                           message="Predicted energy lower than 0: %s. Need more data.." % predicted_labels[0])
             return False
 
-    def predict_next_configurations(self, amount):
+    def predict_next_configurations(self, number):
         """
         Takes features, using previously created model makes regression to find labels and return label with the lowest value.
-        :param amount: int number of Configurations which will be returned
+        :param number: int number of Configurations which will be returned
         :return: list of Configurations that are needed to be measured.
         """
         # 1. get model's predictions
@@ -156,11 +156,6 @@ class RegressionSweetSpot(Model):
                 conf = Configuration(list(configs_list[index]), Configuration.Type.PREDICTED)
                 predicted_results.append((predicted_result, conf))
 
-        # Only for DEMO 
-        # self.sub.send('predictions', 'configurations',
-        #               configurations=[self.experiment.search_space[index] for (predicted_result, index) in predicted_results],
-        #               results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
-        
         # 2. Update predicted results for already evaluated Configurations.
         for config in self.measured_configurations:
             for pred_tuple in predicted_results:
@@ -170,7 +165,7 @@ class RegressionSweetSpot(Model):
         # 3. Pick up required amount of configs
         all_config = [conf for conf in self.measured_configurations]
         result = []
-        for best in predicted_results[:amount]:
+        for best in predicted_results[:number]:
             if best[1] in all_config:
                 select = [conf for conf in self.measured_configurations if conf.parameters == best[1].parameters]
                 result.append(select[0])

@@ -132,10 +132,6 @@ class SearchSpace:
         in the defined Search Space.
         If Continuous Hyperparameters do exist in Search Space definition,
         the Search Space size assumed to be infinite.
-
-        TODO: Hyperparameter conditions are not taken into account for the sake of simplicity,
-            since this logic does not affect crucial BRISE functionality,
-            Returned number of Configurations is an upper bound of number of all possible Configurations.
         :return: float, number of unique Configurations in Search Space.
         """
         if self.search_space_size is not None:
@@ -244,20 +240,3 @@ class SearchSpace:
             param_index = current_sub_search_space[hyperparam_index].index(value)
             parameters_in_indexes.insert(hyperparam_index, param_index)
         return parameters_in_indexes
-
-    # This method is only for DEMO!
-    # Avoid using it for standard runs, as it may hide conditional relations between hyperparameters!
-    def discard_Nones(self, hyperparameters):
-        '''
-        Replaces None values of parameters in configuration to default ones.
-        It should be used only before sending configurations to the frontend to avoid bad charts rendering.
-        :param hyperparameters: List. Configuration in form of its hyperparameters' values
-        :return: List. Stub hyperparameters' values
-        '''
-        stub_parameters = []
-        for idx, hyperparameter in enumerate(hyperparameters):
-            if hyperparameter == None:
-                stub_parameters.append(self.core_search_space.get_hyperparameter(self._hyperparameter_names[idx]).default_value)
-            else:
-                stub_parameters.append(hyperparameter)
-        return stub_parameters

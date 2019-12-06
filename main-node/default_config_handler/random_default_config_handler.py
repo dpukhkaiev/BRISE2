@@ -5,17 +5,13 @@ import logging
 
 
 class RandomDefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
-    def __init__(self, experiment):
-        self.experiment = experiment
-        self.logger = logging.getLogger(__name__)
 
     def get_default_config(self):
         """
-        This method picks random default configuration from selector
-
+        This method picks random default configuration using specified in Experiment Description Selection algorithm.
         :rtype:Configuration
         """
         selector = get_selector(experiment=self.experiment)
         default_config = selector.get_next_configuration()
-        self.logger.warning("Random Configuration is picked as a default one: %s" % default_config.parameters)
+        logging.getLogger(__name__).warning("Random Configuration is picked as a default one: %s" % default_config.parameters)
         return default_config

@@ -63,7 +63,6 @@ class ConsumerThread(threading.Thread):
             self.ws_client.measurement[task_result['id_measurement']]['tasks_results'].append(
                 task_result['task_result'])
             with self.connection.channel() as channel:
-                # TODO: parallelization: Worker Service should not wait for entire bunch of Tasks to finish.We should decouple one from another.
                 if self.is_all_tasks_finish(task_result['id_measurement']):
                     try:
                         self.ws_client.dump_results_to_csv()

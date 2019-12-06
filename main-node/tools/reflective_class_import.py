@@ -27,9 +27,6 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
     cutoff = 1
     files = os.listdir(folder_path)
     if not files:
-        # TODO: aspect weaving logging and debug info before every raise?
-        #  Or maybe raising some specific Exception (with behavior) and catching it in API to handle expected errors:
-        #  propagation to the front, dumping locals, saving stack (logger.error()and etc..
         msg = "Specified directory '%s' is empty." % folder_path
         logger.error(msg)
         raise NameError(msg)

@@ -76,7 +76,6 @@ class BayesianOptimization(Model):
         for hyperparameter_name in hyperparameter_names:
             hyperparameter_type = self.experiment.search_space.get_hyperparameter_type(hyperparameter_name)
             if hyperparameter_type in (HyperparameterType.NUMERICAL_INTEGER, HyperparameterType.NUMERICAL_FLOAT):
-                # TODO: need to investigate numerical integer, probably, it will be better to thread it as ordinal
                 # - c : continuous hyperparameter
                 self.kde_vartypes += 'c'
                 self.vartypes += [0]
@@ -107,7 +106,6 @@ class BayesianOptimization(Model):
 
         # a) With the certain probability at all (to continue with picking a random point).
         if np.random.rand() < self.random_fraction:
-            # TODO refactoring: Should be generalized?..
             self.logger.info("Skipping building the model in order to pick a random configuration point.")
             return False
 
@@ -118,13 +116,11 @@ class BayesianOptimization(Model):
             return False
 
         # c) during warnm starting when we feed previous results in and only update once
-        # TODO: The 'warm startup' feature not implemented yet.
         if not update_model:
             return False
 
         self.logger.info("INFO: Building the Bayesian optimization models..")
 
-        # TODO: works only for single objective optimization with multiple priorities. Doesn't work with classical MOO
         priorities = self.experiment.description["TaskConfiguration"]["ResultPriorities"] \
             if "ResultPriorities" in self.experiment.description["TaskConfiguration"] else [0] * \
                                         self.experiment.description["TaskConfiguration"]["ResultStructure"].__len__()
@@ -135,7 +131,6 @@ class BayesianOptimization(Model):
 
         all_features = []
         all_labels = []
-        # TODO: Feature encoding
         for config in self.measured_configurations:
             all_features.append(config.get_parameters_in_indexes())
             all_labels.append(config.get_average_result()[top_priority_index])
@@ -149,7 +144,6 @@ class BayesianOptimization(Model):
 
         # Refit KDE for the current budget
 
-        #TODO: argsort works not as intended for MOO
         if self.isMinimizationExperiment:
             idx = np.argsort(train_labels, axis=0)
         else:
@@ -241,12 +235,6 @@ class BayesianOptimization(Model):
                     val = minimize_me(vector)
 
                     if not np.isfinite(val):
-                        # self.logger.warning('predicted configuration vector: %s has EI value %s' % (vector, val))
-                        # self.logger.warning("data in the KDEs:\n%s\n%s" %(kde_good.data, kde_bad.data))
-                        # self.logger.warning("bandwidth of the KDEs:\n%s\n%s" %(kde_good.bw, kde_bad.bw))
-                        # self.logger.warning("l(x) = %s" % (l(vector)))
-                        # self.logger.warning("g(x) = %s" % (g(vector)))
-
                         # right now, this happens because a KDE does not contain all values for a categorical parameter
                         # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
                         # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
@@ -260,14 +248,7 @@ class BayesianOptimization(Model):
 
                 if predicted_result_vector is None:
                     self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.sampling_size)
-                    # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
                 else:
-                    # self.logger.debug('best_vector: {}, {}, {}, {}'.format(
-                    #     predicted_result_vector,
-                    #     predicted_result,
-                    #     l(predicted_result_vector),
-                    #     g(predicted_result_vector)))
-
                     # new configuration is sampled from the vector, provided by model
                     predicted_configuration = self.experiment.search_space.create_configuration(vector=np.asarray(predicted_result_vector))
 
@@ -277,7 +258,6 @@ class BayesianOptimization(Model):
                         raise ValueError("Predicted configuration is forbidden. It will not be added to the experiment")
                     else:
                         # check conditions for predicted configuration and disable some parameters if needed
-                        # TODO: extract condition checking into separate method and do it in more elegant way
                         parameters = predicted_configuration.parameters
                         values = {}
                         for idx, param in enumerate(self.experiment.search_space.get_hyperparameter_names()):
@@ -293,7 +273,6 @@ class BayesianOptimization(Model):
             except:
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
                                     "Using random configuration" % (self.sampling_size, traceback.format_exc()))
-                # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
 
         for configuration in self.measured_configurations:
             if configuration.parameters == predicted_configuration.parameters:
@@ -304,16 +283,16 @@ class BayesianOptimization(Model):
 
         return predicted_configuration
 
-    def predict_next_configurations(self, amount):
+    def predict_next_configurations(self, number):
         """
-        Predict 'amount' Configurations that are the best (basing on a current model of the Target System).
-        :param amount: int number of Configurations which will be returned.
+        Predict the best Configurations (based on a current model of the Target System) of a specified number.
+        :param number: int number of Configurations which will be returned.
         :return: list of Configurations that are needed to be measured.
         """
 
         configurations_parameters = []
         configurations = []
-        while len(configurations) != amount:
+        while len(configurations) != number:
             conf = self.__predict_next_configuration()
 
             # BO model is stochastic and could return the same Configuration several times, but we need unique ones.

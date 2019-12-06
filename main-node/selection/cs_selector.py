@@ -19,7 +19,6 @@ class ConfigSpaceSelector(SelectionAlgorithm):
         """    
         unique_point = None
         # try to generate points until a unique one will be retrieved
-        # TODO: add timeout - if only a small searchspace available and it's not possible to get unique point at all - break
         while True:
             candidate = self.search_space.sample_configuration()
             if candidate not in self.returned_points:

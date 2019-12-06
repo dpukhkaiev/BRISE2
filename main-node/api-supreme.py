@@ -5,7 +5,7 @@ from flask_cors import CORS
 import socketio
 import time
 import pickle
-
+from threading import Thread
 # USER
 from logger.default_logger import BRISELogConfigurator
 import logging
@@ -19,7 +19,6 @@ eventlet.debug.hub_prevent_multiple_readers(False)
 
 from tools.front_API import API
 from main import MainThread
-# from tools.main_mock import run as main_run
 
 import eventlet
 
@@ -42,8 +41,7 @@ app.config['SECRET_KEY'] = 'galamaga'
 # Initialize the API singleton
 API(api_object=socketIO)
 
-MAIN_THREAD: MainThread
-MAIN_THREAD_IS_ALIVE = False
+MAIN_THREAD: Thread = MainThread()
 data_header = {
     'version': '1.0'
 }
@@ -63,9 +61,9 @@ def main_process_start():
     If main process is already running - just return its status. (To terminate process - use relevant method).
     :return: main_process_status()
     """
-    global MAIN_THREAD, MAIN_THREAD_IS_ALIVE
+    global MAIN_THREAD
 
-    if not MAIN_THREAD_IS_ALIVE or not MAIN_THREAD.isAlive():  # The first state for initial run second for running after finishing
+    if MAIN_THREAD.get_state() == MainThread.State.IDLE:
         if request.method == "POST":
             MAIN_THREAD = MainThread(experiment_setup=pickle.loads(request.data))
             MAIN_THREAD.start()
@@ -86,17 +84,20 @@ def main_process_status():
     If more processes will be added - could be modified to display relevant info.
     :return: JSONIFY OBJECT
     """
+    global MAIN_THREAD
     result = {}
-    global MAIN_THREAD, MAIN_THREAD_IS_ALIVE
-    if MAIN_THREAD is not None:
-        MAIN_THREAD_IS_ALIVE = MAIN_THREAD.isAlive()
-        result['MAIN_PROCESS'] = {"main process": bool(MAIN_THREAD.isAlive()),
-                                  "status": "running" if MAIN_THREAD.isAlive() else 'none'}
-        # Probably, we will have more processes at the BG.
-    else:
-        MAIN_THREAD_IS_ALIVE = False
+    main_thread_state = MainThread.State.IDLE
+
+    while True:
+        main_thread_state = MAIN_THREAD.get_state()
+        if main_thread_state != MainThread.State.SHUTTING_DOWN:
+            break
+    if main_thread_state == MainThread.State.IDLE:
         result['MAIN_PROCESS'] = {"main process": bool(False),
                                   "status": 'none'}
+    elif main_thread_state == MainThread.State.RUNNING:
+        result['MAIN_PROCESS'] = {"main process": bool(True),
+                                  "status": 'running'}
     return jsonify(result)
 
 
@@ -108,11 +109,10 @@ def main_process_stop():
     After it returns status of this process (should be terminated).
     :return: main_process_status()
     """
-    global MAIN_THREAD, MAIN_THREAD_IS_ALIVE
+    global MAIN_THREAD
 
-    if MAIN_THREAD_IS_ALIVE:
+    if MAIN_THREAD.get_state() == MainThread.State.RUNNING:
         MAIN_THREAD.stop()
-        time.sleep(0.5)
 
     return main_process_status()
 
