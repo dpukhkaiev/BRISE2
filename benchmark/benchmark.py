@@ -12,11 +12,12 @@ from functools import wraps
 from copy import deepcopy
 from jinja2 import Environment, FileSystemLoader
 from plotly.offline import plot
+from core_entities.search_space import SearchSpace
 
 # Tools
 from shared_tools import restore, get_resource_as_string, MainAPIClient, chown_files_in_dir
 # from shared_tools import export_plot
-from tools.initial_config import load_experiment_description
+from tools.initial_config import load_experiment_setup
 from logger.default_logger import BRISELogConfigurator
 
 # Plots
@@ -103,8 +104,10 @@ class BRISEBenchmark:
         :param main_api_addr: str. URL of main node API. For example "http://main-node:49152"
         :param results_storage: str. Folder where to store benchmark results (dump files of experiments).
         """
-        os.sys.argv.pop()   # Because load_experiment_description will consider 'benchmark' as Experiment Description).
-        self._base_experiment_description = load_experiment_description("./Resources/SA/SAExperiment.json")
+        os.sys.argv.pop()   # Because load_experiment_setup will consider 'benchmark' as Experiment Description).
+        # Base experiment description and Search space should be loaded in each benchmark.
+        self._base_experiment_description = None
+        self._base_search_space = None
         self.results_storage = results_storage if results_storage[-1] == "/" else results_storage  + "/"
         self.main_api_client = MainAPIClient(main_api_addr, dump_storage=results_storage)
         self.logger = logging.getLogger(__name__)
@@ -123,10 +126,11 @@ class BRISEBenchmark:
         else:
             self.logger.error("Unable to update Experiment Description: Read-only property.")
 
-    def benchmarkable(benchmarking_function):
+    def __benchmarkable(benchmarking_function):
         """
             Decorator that enables a pre calculation of a number of experiments in implemented benchmark scenario
             without actually running them. It is not essential for benchmarking, but could be useful.
+            NOTE: This method should be used ONLY as a decorator for other BRISEBenchmark object methods!
         :return: original function, wrapped by wrapper.
         """
         @wraps(benchmarking_function)
@@ -143,11 +147,16 @@ class BRISEBenchmark:
             benchmarking_function(self, *args, *kwargs)
         return wrapper
 
-    def execute_experiment(self, experiment_description: dict, number_of_repetitions: int = 3, wait_for_results: int=30*60):
+    def execute_experiment(self, 
+                           experiment_description: dict, 
+                           search_space: SearchSpace = None, 
+                           number_of_repetitions: int = 3, 
+                           wait_for_results: int = 30*60):
         """
              Check how many dumps are available for particular Experiment Description.
 
          :param experiment_description: Dict. Experiment Description
+         :param search_space: SearchSpace. Initialized SearchSpace object.
          :param number_of_repetitions: int. number of times to execute the same Experiment.
          :param wait_for_results:
             If bool ``False`` - client will only send an Experiment Description and return response with
@@ -163,12 +172,14 @@ class BRISEBenchmark:
         experiment_id = hashlib.sha1(json.dumps(experiment_description, sort_keys=True).encode("utf-8")).hexdigest()
         dump_file_name = "exp_{0}_{1}".format(
             experiment_description['TaskConfiguration']['Scenario']["ws_file"], experiment_id)
+        search_space = search_space if search_space else self._base_search_space
+
         if self.is_calculating_number_of_experiments:
             self.experiments_to_be_performed.append(experiment_id)
         else:
             number_of_available_repetitions = sum(dump_file_name in file for file in os.listdir(self.results_storage))
             while number_of_available_repetitions < number_of_repetitions:
-                if self.main_api_client.perform_experiment(experiment_description, wait_for_results=wait_for_results):
+                if self.main_api_client.perform_experiment(experiment_description, search_space, wait_for_results=wait_for_results):
                     number_of_available_repetitions += 1
                     self.logger.info("Executed Experiment #{c} out of {m_c}. ID: {eid}. Repetition: {r}.".format(
                             c=self.counter,
@@ -198,8 +209,7 @@ class BRISEBenchmark:
         for file in redundant_experiment_files:
             shutil.move(file, location + os.path.basename(file))
 
-
-    @benchmarkable
+    @__benchmarkable
     def benchmark_repeater(self):
         """
             This is an EXAMPLE of the benchmark scenario.
@@ -222,8 +232,11 @@ class BRISEBenchmark:
         :return: int, number of Experiments that were executed and experiment dumps are stored.
                 Actually you could return whatever you want, here this number is returned only for reporting purposes.
         """
+        self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/EnergyExperiment.json")
+
         def_rep_skeleton = {"Repeater": {"Type": "default",
                                           "Parameters": {
+                                              "MaxFailedTasksPerConfiguration": 5,
                                               "MaxTasksPerConfiguration": 10}}}
         student_rep_skeleton = {"Repeater": {"Type": "student_deviation",
                                              "Parameters": {
@@ -232,6 +245,7 @@ class BRISEBenchmark:
                                                      "RatiosMax": [10],
                                                      "isEnabled": True
                                                  },
+                                                 "MaxFailedTasksPerConfiguration": 5,
                                                  "MaxTasksPerConfiguration": 10,
                                                  "MinTasksPerConfiguration": 2,
                                                  "DevicesScaleAccuracies": [0],
@@ -239,10 +253,7 @@ class BRISEBenchmark:
                                                  "DevicesAccuracyClasses": [0],
                                                  "ConfidenceLevels": [0.95]}}}
 
-        for ws_file in os.listdir('csv'):
-            # Skip ML scenarios, only the Energy consumption scenarios are needed.
-            if ws_file in ["taskNB1.csv", "NB_final_result.csv"]:
-                continue
+        for ws_file in os.listdir('scenarios/energy_consumption'):
             experiment_description = self.base_experiment_description
             experiment_description['TaskConfiguration']['Scenario']['ws_file'] = ws_file
             self.logger.info("Benchmarking next Scenario file(ws_file): %s" % ws_file)
@@ -281,6 +292,7 @@ class BRISEBenchmark:
         return self.counter
 
     def benchmark_SA(self):
+        self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/SA/SAExperiment.json")
 
         scenarios = {
           "trivial": { "variants": 1, "requests": 1, "depth": 1, "resources": 1.0 },
@@ -320,14 +332,14 @@ def run_benchmark():
     try:
         runner = BRISEBenchmark(main_api_address, results_storage)
         try:
-            # ---    Add User defined benchmark scenarios execution below  ---#
-            # --- Possible variants: benchmark_repeater, benchmark_SA ---#
+        # ---    Add User defined benchmark scenarios execution below  ---#
+        # --- Possible variants: benchmark_repeater, benchmark_SA ---#
             runner.benchmark_repeater()
 
-            # --- Helper method to remove outdated experiments from `./results` folder---#
-            # runner.move_redundant_experiments(location=runner.results_storage + "outdated/")
+        # --- Helper method to remove outdated experiments from `./results` folder---#
+        # runner.move_redundant_experiments(location=runner.results_storage + "outdated/")
 
-            # ---   Add User defined benchmark scenarios execution above   ---#
+        # ---   Add User defined benchmark scenarios execution above   ---#
         except Exception as err:
             logging.warning("The Benchmarking process interrupted by an exception: %s" % err)
             runner.main_api_client.stop_main()

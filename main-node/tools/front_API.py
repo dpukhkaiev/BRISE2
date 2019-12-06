@@ -170,5 +170,6 @@ class APIMessageBuilder:
 
         return {
             "global configuration": kwargs["global_config"],
-            "experiment description": kwargs["experiment_description"]
+            "experiment description": kwargs["experiment_description"],
+            "searchspace_description": kwargs["searchspace_description"]
         }

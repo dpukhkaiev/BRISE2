@@ -1,6 +1,7 @@
 {
-    "WorkerService": {
-      "Address" : "w_service:49153"
+    "EventService": {
+        "Address": "event_service",
+       "Port" : 49153
     },
 
     "Main node":{

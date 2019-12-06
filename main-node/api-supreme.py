@@ -4,18 +4,24 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import socketio
 import time
-
+import pickle
+from threading import Thread
 # USER
 from logger.default_logger import BRISELogConfigurator
 import logging
 
 logger = BRISELogConfigurator().get_logger(__name__)
 
+import eventlet.debug
+
+eventlet.monkey_patch()
+eventlet.debug.hub_prevent_multiple_readers(False)
+
 from tools.front_API import API
-from main import run as main_run
-# from tools.main_mock import run as main_run
+from main import MainThread
 
 import eventlet
+
 eventlet.monkey_patch()
 
 socketio_logger = logging.getLogger("SocketIO")
@@ -35,17 +41,14 @@ app.config['SECRET_KEY'] = 'galamaga'
 # Initialize the API singleton
 API(api_object=socketIO)
 
-MAIN_PROCESS = None
+MAIN_THREAD: Thread = MainThread()
 data_header = {
     'version': '1.0'
 }
 
-# add clients in room
-front_clients = []
-
 
 # ---   START
-@app.route('/main_start',  methods=['GET', 'POST'])
+@app.route('/main_start', methods=['GET', 'POST'])
 def main_process_start():
     """
     Verifies that Main-node is not running.
@@ -53,22 +56,25 @@ def main_process_start():
     It ensures that for each run of main.py you will use only one socketio.
 
     HTTP GET: Start BRISE without providing Experiment Description - BRISE will use the default one.
-    HTTP POST: Start BRISE with provided Experiment Description as a `JSON` payload attached to request.
+    HTTP POST: Start BRISE with provided Experiment Description and search space as a `JSON` payload and data attached to request.
 
     If main process is already running - just return its status. (To terminate process - use relevant method).
     :return: main_process_status()
     """
-    global MAIN_PROCESS, socketio
+    global MAIN_THREAD
 
-    if not MAIN_PROCESS:
+    if MAIN_THREAD.get_state() == MainThread.State.IDLE:
         if request.method == "POST":
-            MAIN_PROCESS = eventlet.spawn(main_run, experiment_description=request.json)
+            MAIN_THREAD = MainThread(experiment_setup=pickle.loads(request.data))
+            MAIN_THREAD.start()
         else:
-            MAIN_PROCESS = eventlet.spawn(main_run)
+            MAIN_THREAD = MainThread()
+            MAIN_THREAD.start()
             logger.info(request.method)
         time.sleep(0.1)
 
     return main_process_status()
+
 
 # ---   STATUS
 @app.route('/status')
@@ -78,11 +84,22 @@ def main_process_status():
     If more processes will be added - could be modified to display relevant info.
     :return: JSONIFY OBJECT
     """
+    global MAIN_THREAD
     result = {}
-    result['MAIN_PROCESS'] = {"main process": bool(MAIN_PROCESS),
-                              "status": "running" if MAIN_PROCESS else 'none'}
-    # Probably, we will have more processes at the BG.
+    main_thread_state = MainThread.State.IDLE
+
+    while True:
+        main_thread_state = MAIN_THREAD.get_state()
+        if main_thread_state != MainThread.State.SHUTTING_DOWN:
+            break
+    if main_thread_state == MainThread.State.IDLE:
+        result['MAIN_PROCESS'] = {"main process": bool(False),
+                                  "status": 'none'}
+    elif main_thread_state == MainThread.State.RUNNING:
+        result['MAIN_PROCESS'] = {"main process": bool(True),
+                                  "status": 'running'}
     return jsonify(result)
+
 
 # # ---   STOP
 @app.route('/main_stop')
@@ -92,21 +109,19 @@ def main_process_stop():
     After it returns status of this process (should be terminated).
     :return: main_process_status()
     """
-    global MAIN_PROCESS
+    global MAIN_THREAD
 
-    if MAIN_PROCESS:
-        MAIN_PROCESS.cancel()
-        eventlet.kill(MAIN_PROCESS)
-        MAIN_PROCESS = None
-        time.sleep(0.5)
+    if MAIN_THREAD.get_state() == MainThread.State.RUNNING:
+        MAIN_THREAD.stop()
 
     return main_process_status()
+
 
 @app.route('/download_dump/<file_format>')
 def download_dump(file_format):
     dump_name = os.environ.get('EXP_DUMP_NAME')
     try:
-        if(dump_name == 'undefined'):
+        if (dump_name == 'undefined'):
             return jsonify(message='missing experiment file', href='#')
         else:
             filename = "{name}.{format}".format(
@@ -115,30 +130,6 @@ def download_dump(file_format):
     except Exception as error:
         logger.error('Download dump file of the experiment: %s' % error)
         return str(error)
-
-# ---------------------------- Events ------------
-@socketIO.on('ping')
-def ping_pong(sid, json):
-    logger.info(' Ping from: ' + str(sid))
-    return 'main node: pong!'
-
-# --------------
-
-# managing room with curent Front-end clients
-@socketIO.on('join', namespace='/front-end')
-def on_join(sid, data):
-    room = data['room']
-    logger.info("Main connection. Room", data = data)
-    socketIO.enter_room(sid, room)
-    front_clients.append(sid)
-
-@socketIO.on('leave', namespace='/front-end')
-def on_leave(sid, data):
-    room = data['room']
-    socketIO.leave_room(sid, room)
-    front_clients.remove(sid)
-
-# ------------------------------------------------
 
 
 if __name__ == '__main__':

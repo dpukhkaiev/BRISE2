@@ -15,10 +15,10 @@ def improvements(experiments):
 
     #-- Aggregate
     for exp in experiments:
-        x = list(range(len(exp.all_configurations)))
+        x = list(range(len(exp.measured_configurations)))
         trace = go.Scatter( # Relative solution to all experiments
             x=x, 
-            y=[con.get_average_result()[0] for con in exp.all_configurations], 
+            y=[con.get_average_result()[0] for con in exp.measured_configurations],
             mode='lines+markers', 
             name = '{} results'.format(exp.get_name()), 
             marker=dict(color=exp.color, size=6),
@@ -28,7 +28,7 @@ def improvements(experiments):
             )
 
         imp = []
-        for i, con in enumerate(exp.all_configurations):
+        for i, con in enumerate(exp.measured_configurations):
             val = con.get_average_result()[0]
             prev = val if i==0 else imp[i-1]
             best = val if val < prev else prev # minimization

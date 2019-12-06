@@ -3,3 +3,6 @@ Results
 file_divider_paralel.sh
 #tests cache
 .pytest_cache
+outliers/__pycache__
+outliers/.cache
+outliers/tests/__pycache__

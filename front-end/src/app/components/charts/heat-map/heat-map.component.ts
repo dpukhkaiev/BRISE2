@@ -33,6 +33,7 @@ export class HeatMapComponent implements OnInit {
 
   globalConfig: object 
   experimentDescription: ExperimentDescription
+  searchspace: object
 
   // Best point 
   solution: Solution
@@ -84,9 +85,9 @@ export class HeatMapComponent implements OnInit {
     var z = []
     this.x && 
     this.y && 
-    this.y.forEach(y => { // y - threads
+    this.y.forEach(y => { // y - parameter2
       var row = [] 
-      this.x.forEach(x => { // x - frequency
+      this.x.forEach(x => { // x - parameter1
         let results = data.get(String([y, x])) // To get horizontal orientation - change to [x,y], vertical - [y,x]
         row.push(results && results[0]) // Get the first result from an array or mark it as undefined.
 
@@ -131,14 +132,14 @@ export class HeatMapComponent implements OnInit {
         autosize: true,
         showlegend: false,
         xaxis: {
-          title: "Threads",
+          title: this.searchspace['names'][1],
           type: 'category',
           autorange: true,
           range: [Math.min(...this.x), Math.max(...this.x)],
           showgrid: true
         },
         yaxis: {
-          title: "Frequency",
+          title: this.searchspace['names'][0],
           type: 'category',
           autorange: true,
           range: [Math.min(...this.y), Math.max(...this.y)],
@@ -170,8 +171,9 @@ export class HeatMapComponent implements OnInit {
         this.resetRes()
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
-        this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
+        this.searchspace = obj['description']['searchspace_description']
+        this.y = this.searchspace['boundaries'][0]
+        this.x = this.searchspace['boundaries'][1]
       });
 
     this.ioMain.onEvent(MainEvent.NEW) // New configuration results

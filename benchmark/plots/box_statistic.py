@@ -17,7 +17,7 @@ def box_statistic(experiments):
         #-- Extract
         all_res = exp.get_all_repetition_tasks()
         avg_res = [conf.get_average_result()[0]
-                   for conf in exp.all_configurations]
+                   for conf in exp.measured_configurations]
 
         #-- Aggregate
         trace = go.Box(

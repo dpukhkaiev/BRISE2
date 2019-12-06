@@ -26,14 +26,17 @@ export class LaunchControlBarComponent implements OnInit {
   isRuning: boolean = false
   // Flag for finish experiment
   isFinish: boolean = false
+  // Flag for first using
+  isUsed: boolean = false
 
   experimentDescription: ExperimentDescription
 
   constructor(
-    private mainREST: mainREST, 
+    private mainREST: mainREST,
     private ioMain: MainSocketService,
     private DownloadOption: MatBottomSheet
-  ) { }
+  ) {
+  }
 
   ngOnInit() {
     this.initMainEvents();
@@ -50,7 +53,8 @@ export class LaunchControlBarComponent implements OnInit {
       this.mainREST.startMain()
         .subscribe((res) => {
           console.log('Main start:', res)
-          this.isRuning = true
+            this.isRuning = true
+            this.isUsed = true
         }
         );
     }
@@ -68,7 +72,7 @@ export class LaunchControlBarComponent implements OnInit {
 
   // Socket
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.FINAL) 
+    this.ioMain.onEvent(MainEvent.FINAL)
     .subscribe((obj: any) => {
       this.isRuning = false
       this.isFinish = true
