@@ -6,12 +6,9 @@
 Software requirements:
 - Docker
 - Python 3.6
-- [python-socketio](https://python-socketio.readthedocs.io)
+- [RabbitMQ service](https://www.rabbitmq.com/)
 
 - [Service](../worker_service/README.md)
-
-![service <==> worker](../worker_service/service.png "dependencies between the workers and the service")
-
 
 #### Get started with a generator tool
 
@@ -44,7 +41,7 @@ To create your own `jar` file follow next steps:
 2. Download [adapted for BRISE MQUAT2 project](https://git-st.inf.tu-dresden.de/mquat/mquat2/tree/Genetic_Kosovnenko).
 3. Compile a `jar` file:
    ```ssh
-   gradle -b ./mquat2/jastadd-mquat-solver-genetic/build.gradle jar
+   ./gradlew -b ./mquat2/jastadd-mquat-solver-genetic/build.gradle jar
    ```
 4. Copy `jar` file from `mquat2/jastadd-mquat-solver-genetic/build/libs/` to `BRISEv2/worker/binaries/` folder.
 5. Check the name of `jar` file, it must be `jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar`.

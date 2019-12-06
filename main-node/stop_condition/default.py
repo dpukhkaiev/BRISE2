@@ -1,12 +1,9 @@
-import logging
+from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
 
-from stop_condition.stop_condition_decorator import StopConditionDecorator
-
-class DefaultType(StopConditionDecorator):
+class DefaultType(StopConditionDecoratorPosterior):
 
     def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition)
-        self.logger = logging.getLogger(__name__)
+        super().__init__(stop_condition, __name__)
         self.max_configs = stop_condition_parameters["MaxConfigs"]
 
     def is_finish(self):

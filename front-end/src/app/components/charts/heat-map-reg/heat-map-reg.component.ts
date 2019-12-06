@@ -37,6 +37,7 @@ export class HeatMapRegComponent implements OnInit {
 
   globalConfig: object
   experimentDescription: ExperimentDescription
+  searchspace: object
   // Rendering axises
   y: Array<number>
   x: Array<number>
@@ -154,8 +155,9 @@ export class HeatMapRegComponent implements OnInit {
         this.resetRes()
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
-        this.y = this.experimentDescription['DomainDescription']['AllConfigurations'][0] // frequency
-        this.x = this.experimentDescription['DomainDescription']['AllConfigurations'][1] // threads
+        this.searchspace = obj['description']['searchspace_description']
+        this.y = this.searchspace['boundaries'][0]
+        this.x = this.searchspace['boundaries'][1]
       });
 
     this.ioMain.onEvent(MainEvent.PREDICTIONS)

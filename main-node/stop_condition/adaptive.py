@@ -1,14 +1,14 @@
-import logging
+from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
 
-from stop_condition.stop_condition_decorator import StopConditionDecorator
-
-class AdaptiveType(StopConditionDecorator):
+class AdaptiveType(StopConditionDecoratorPosterior):
 
     def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition)
-        self.logger = logging.getLogger(__name__)
-        self.max_configs = \
-            round(stop_condition_parameters["SearchSpacePercentage"] / 100 * self.get_experiment().get_search_space_size())
+        super().__init__(stop_condition, __name__)
+        try:
+            self.max_configs = \
+                round(stop_condition_parameters["SearchSpacePercentage"] / 100 * float(self.get_experiment().search_space.get_search_space_size()))
+        except Exception:
+            self.logger.warning("Unable to create an instance of Adaptive stop-condition.")
     
     def is_finish(self):
         number_of_measured_configurations = self.get_experiment().get_number_of_measured_configurations()

@@ -1,5 +1,5 @@
 import plotly.graph_objs as go
-from plotly import tools
+from plotly.subplots import make_subplots
 
 def repeat_vs_avg(exp):
     """ Compare average results and measurements repeats for one experiment.
@@ -11,10 +11,10 @@ def repeat_vs_avg(exp):
         Dictionary: Plotly dictionary
     """
     #-- Extract
-    x_param = [str(conf.get_parameters()) for conf in exp.all_configurations]
-    y_repeat = [ len(conf.get_tasks()) for conf in exp.all_configurations]
-    y_avg_res = [conf.get_average_result()[0] for conf in exp.all_configurations]
-    y_deviation = [conf.get_standard_deviation()[0] for conf in exp.all_configurations]
+    x_param = [str(conf.parameters) for conf in exp.measured_configurations]
+    y_repeat = [ len(conf.get_tasks()) for conf in exp.measured_configurations]
+    y_avg_res = [conf.get_average_result()[0] for conf in exp.measured_configurations]
+    y_deviation = [conf.get_standard_deviation()[0] for conf in exp.measured_configurations]
 
     #-- Aggregate
     trace_repeat = go.Bar(
@@ -61,7 +61,7 @@ def repeat_vs_avg(exp):
 
     #-- Composite
     # Creating two subplots
-    fig = tools.make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=False, shared_yaxes=True)
+    fig = make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=False, shared_yaxes=True)
 
     fig.append_trace(trace_repeat, 1, 1)
     fig.append_trace(trace_avg, 1, 2)

@@ -6,10 +6,8 @@ export interface ExperimentDescription {
 }
 
 interface DomainDescription {
-    AllConfigurations: Array<any>
     DataFile: String
-    DefaultConfiguration: Array<any>
-    FeatureNames: Array<String>
+    HyperparameterNames: Array<String>
 }
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number
@@ -29,6 +27,5 @@ interface ModelCreation {
 
 }
 interface SelectionAlgorithm {
-    NumberOfInitialConfigurations: Number
     SelectionType: String
 }

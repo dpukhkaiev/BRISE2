@@ -1,12 +1,80 @@
 {
-  "generations": [25000, 50000, 100000, 150000, 200000],
-  "populationSize": [100, 500, 1000, 50000],
-  "treeMutateOperatorP": [1.0, 0.9, 0.5],
-  "treeMutateOperatorP1": [1.0, 0.7, 0.1],
-  "treeMutateOperatorP2": [1.0, 0.3, 0.1],
-  "treeMutateOperatorP3": [1.0, 0.4, 0.1],
-  "lambda": [25],
-  "crossoverRate": [0.95],
-  "mu": [25],  
-  "tournament": [0]
+  "hyperparameters": [
+    {
+      "name": "generations",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 25000,
+      "upper": 200000,
+      "default": 200000
+    },
+    {
+      "name": "populationSize",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 100,
+      "upper": 50000,
+      "default": 1000
+    },
+    {
+      "name": "treeMutateOperatorP",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.1,
+      "upper": 1.0,
+      "default": 0.9
+    },
+    {
+      "name": "treeMutateOperatorP1",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.1,
+      "upper": 1.0,
+      "default": 0.7
+    },
+    {
+      "name": "treeMutateOperatorP2",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.1,
+      "upper": 1.0,
+      "default": 0.3
+    },
+    {
+      "name": "treeMutateOperatorP3",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.1,
+      "upper": 1.0,
+      "default": 0.4
+    },
+    {
+      "name": "lambda",
+      "type": "categorical",
+      "choices": [25],
+      "default": 25
+    },
+    {
+      "name": "crossoverRate",
+      "type": "categorical",
+      "choices": [0.95],
+      "default": 0.95
+    },
+    {
+      "name": "mu",
+      "type": "categorical",
+      "choices": [25],
+      "default": 25
+    },
+    {
+      "name": "tournament",
+      "type": "categorical",
+      "choices": [0],
+      "default": 0
+    }
+  ],
+  "conditions": [],
+  "forbiddens": [],
+  "python_module_version": "0.4.10",
+  "json_format_version": 0.1
 }

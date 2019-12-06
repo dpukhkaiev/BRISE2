@@ -1,3 +1,4 @@
+setuptools
 numpy
 plotly
 Jinja2
@@ -7,3 +8,4 @@ PyYAML
 requests
 jsonschema
 websocket-client
+ConfigSpace

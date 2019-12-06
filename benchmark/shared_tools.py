@@ -17,6 +17,7 @@ import plotly.io as pio
 
 sys.path.append('/app')
 from core_entities import configuration, experiment
+from core_entities.search_space import SearchSpace
 
 # COLORS = [
     # '#1f77b4',  # muted blue
@@ -163,8 +164,8 @@ class MainAPIClient:
             self.logger.debug(url + "|->|" + response.text)
             return response.text
 
-    def _send_post_request(self, url: str, json_payload: dict):
-        response = requests.post(url=url, json=json_payload)
+    def _send_post_request(self, url: str, data: dict):
+        response = requests.post(url=url, data=data)
         if response.status_code != 200:
             raise Exception("%s RESPONSE FOR POST: %s, %s -> %s" %
                             response.status_code, response.request.path_url, response.request.body, response.text)
@@ -177,11 +178,12 @@ class MainAPIClient:
         self.isBusy = status_report['MAIN_PROCESS']['main process']
         return json.loads(self._send_get_request(self.main_api_address + '/status'))
 
-    def start_main(self, experiment_description: dict = None):
-        if experiment_description is None:
-            response = self._send_get_request(self.main_api_address + '/main_start')
-        else:
-            response = self._send_post_request(self.main_api_address + '/main_start', json_payload=experiment_description)
+    def start_main(self, experiment_description: dict, search_space: SearchSpace):
+        data = pickle.dumps(
+            {"experiment_description": experiment_description,
+             "search_space": search_space}
+        )
+        response = self._send_post_request(self.main_api_address + '/main_start', data=data)
         return json.loads(response)
 
     def stop_main(self):
@@ -229,11 +231,13 @@ class MainAPIClient:
             return is_available
 
     # --- General out-of-box methods ---
-    def perform_experiment(self, experiment_description: dict = None, wait_for_results: Union[bool, float] = 20 * 60):
+    def perform_experiment(self, experiment_description: dict = None, search_space: SearchSpace = None, wait_for_results: Union[bool, float] = 20 * 60):
         """
             Send the Experiment Description to the Main node and start the Experiment.
 
         :param experiment_description: Dict. Experiment Description that will be sent to the Main node.
+
+        :param search_space: SearchSpace object. Information about search space that will be sent to the Main node.
 
         :param wait_for_results: If ``False`` - client will only send an Experiment Description and return response with
                                 the Main node status.
@@ -253,7 +257,7 @@ class MainAPIClient:
             return False
 
         self.logger.info("Performing the Experiment: \n%s" % experiment_description)
-        self.start_main(experiment_description)
+        self.start_main(experiment_description, search_space)
         self.update_status()
         if type(wait_for_results) is bool and wait_for_results is False:
             if self.isBusy:

@@ -19,12 +19,12 @@ def load_json_file(path_to_file):
             jsonFile = json.loads(File.read())
             return jsonFile
     except IOError as error:
-        msg = "Unable to read a json file '%s'. Error information: %s" % (path_to_file, e)
+        msg = "Unable to read a json file '%s'. Error information: %s" % (path_to_file, error)
         logger.error(msg, exc_info=True)
         front_api.send('log', 'error', message=msg)
         raise error
     except json.JSONDecodeError as error:
-        msg = "Unable to decode a json file '%s'. Error information: %s" % (path_to_file, e)
+        msg = "Unable to decode a json file '%s'. Error information: %s" % (path_to_file, error)
         logger.error(msg, exc_info=True)
         front_api.send('log', 'error', message=msg)
         raise error

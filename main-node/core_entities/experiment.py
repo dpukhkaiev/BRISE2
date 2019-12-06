@@ -4,25 +4,26 @@ import pickle
 import json
 import csv
 import os
-import itertools
-
 import logging
-from typing import List
+import numpy as np
+
+from threading import Lock
+from typing import Union
 from copy import deepcopy
 
 from tools.front_API import API
 from tools.file_system_io import create_folder_if_not_exists
 from core_entities.configuration import Configuration
+from core_entities.search_space import SearchSpace
 
 
 class Experiment:
 
-    def __init__(self, description: dict):
+    def __init__(self, description: dict, search_space: SearchSpace):
         """
         Initialization of Experiment class
         Following fields are declared:
-
-        self.all_configurations - list of configuration instances
+        self.measured_configurations - list of configuration instances
                                   shape - list, e.g. ``[config_instance_1, config_instance_2, ... ]``
         self.description - description of the current experiment, it is taken from .json file
                            shape - dict with subdicts
@@ -30,19 +31,21 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
-        self.default_configuration = []
-        self.all_configurations = []
+        self.measured_configurations = []
+        self.evaluated_configurations = []  # repeater already evaluate this configuration
         self._description = description
-        self.search_space = []
+        self.search_space = search_space
         self.end_time = self.start_time = datetime.datetime.now()
-        # A unique ID that is used to differentiate an Experiments by descriptions.
+        # A unique ID that is used to differentiate Experiments by descriptions.
         self.id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
         self.name = "exp_{task_name}_{experiment_hash}".format(
             task_name=self.description["TaskConfiguration"]["TaskName"],
             experiment_hash=self.id)
         self.current_best_configurations = []
+        self.bad_configurations_number = 0
 
-        self.__generate_search_space()
+        self.measured_conf_lock = Lock()
+        self.evaluated_conf_lock = Lock()
 
     def _get_description(self):
         return deepcopy(self._description)
@@ -65,6 +68,8 @@ class Experiment:
         space = self.__dict__.copy()
         del space['api']
         del space['logger']
+        del space['measured_conf_lock']
+        del space['evaluated_conf_lock']
         return space
 
     def __setstate__(self, space):
@@ -72,78 +77,101 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
+        # for thread-safe adding value to relevant array; protection against duplicates configurations
+        self.measured_conf_lock = Lock()
+        self.evaluated_conf_lock = Lock()
+
     def put_default_configuration(self, default_configuration: Configuration):
         if self._is_valid_configuration_instance(default_configuration):
-            if not self.default_configuration:
-                self.default_configuration = default_configuration
+            if default_configuration not in self.measured_configurations:
+                self.search_space.set_default_configuration(default_configuration)
                 self.api.send("default", "configuration",
-                              configurations=[default_configuration.get_parameters()],
+                              configurations=[default_configuration.parameters],
                               results=[default_configuration.get_average_result()])
-                if default_configuration not in self.all_configurations:
-                    self.all_configurations.append(default_configuration)
-                    self._calculate_current_best_configurations()
+                self.measured_configurations.append(default_configuration)
+                self._calculate_current_best_configurations()
             else:
                 raise ValueError("The default Configuration was registered already.")
 
-    def add_configurations(self, configurations: List[Configuration]):
-        """Takes the List of Configuration objects and adds it to Experiment state.
-        :param configurations: List of Configuration instances.
+    def try_add_configuration(self, configuration: Configuration):
         """
-        for configuration in configurations:
-            self._put(configuration)
+        Add a Configuration object to the Experiment, if the Configuration was now added previously.
+        :param configuration: Configuration instance.
+        :return bool flag, True if the Configuration was added to list of either measured or evaluated configurations,
+        False if not.
+        """
+        result = False
+        if configuration.is_enabled:
+            if self._try_put(configuration):
+                # configuration will not be added to the Experiment if it is already there
+                result = True
+        return result
 
-    def _put(self, configuration_instance: Configuration):
+    def _try_put(self, configuration_instance: Configuration):
         """
         Takes instance of Configuration class and appends it to the list with all configuration instances.
         :param configuration_instance: Configuration class instance.
+        :return bool flag, is _put add configuration to any lists or not
         """
         if self._is_valid_configuration_instance(configuration_instance):
-            if self.all_configurations is []:
-                self._add_configuration_to_experiment(configuration_instance)
+            if configuration_instance.status == Configuration.Status.MEASURED:
+                with self.measured_conf_lock:
+                    if configuration_instance not in self.measured_configurations:
+                        self._add_measured_configuration_to_experiment(configuration_instance)
+                        return True
+                    else:
+                        return False
+            elif configuration_instance.status == Configuration.Status.EVALUATED:
+                with self.evaluated_conf_lock:
+                    if configuration_instance not in self.evaluated_configurations:
+                        self._add_evaluated_configuration_to_experiment(configuration_instance)
+                        return True
+                    else:
+                        return False
             else:
-                is_exists = False
-                for value in self.all_configurations:
-                    if value.get_parameters() == configuration_instance.get_parameters():
-                        is_exists = True
-                if not is_exists:
-                    self._add_configuration_to_experiment(configuration_instance)
-                else:
-                    self.logger.warning("Attempt of adding Configuration that is already in Experiment: %s" %
-                                        configuration_instance)
+                raise ValueError(f"Can not add Configuration with status {configuration_instance.status} to Experiment.")
 
-    def get_configuration_by_parameters(self, parameters):
+    def get_any_configuration_by_parameters(self, parameters: tuple) -> Union[None, Configuration]:
         """
-        Returns the instance of Configuration class, which contains the concrete configuration, if configuration the exists
-
-        :param parameters: list. Concrete experiment configuration
-               shape - list, e.g. [2900.0, 32]
-        :return: instance of Configuration class
+        Find and retrieve instance of Configuration that was previously added to Experiment by it's Parameters.
+        :param parameters: tuple. Parameters of desired Configuration.
+        :return: instance of Configuration class or`None` if the Configuration instance was not found.
         """
-        for configuration_instance in self.all_configurations:
-            if configuration_instance.get_parameters() == parameters:
+        for configuration_instance in self.measured_configurations:
+            if configuration_instance.parameters == parameters:
+                return configuration_instance
+        for configuration_instance in self.evaluated_configurations:
+            if configuration_instance.parameters == parameters:
                 return configuration_instance
         return None
 
+    def is_configuration_evaluated(self, configuration):
+        """
+        Check is the Configuration in the evaluated_configurations list or not.
+        Could be used to filter out outdated (not added to current Experiment) Configurations.
+        :param configuration: Configuration instance.
+        :return: True if Configuration instance was previously added to the Experiment as those of False
+        """
+        return configuration in self.evaluated_configurations
+
     def get_final_report_and_result(self, repeater):
-        #   In case, if the model predicted the final point, that has less value, than the default, but there is
-        # a point, that has less value, than the predicted point - report this point instead of predicted point.
         self.end_time = datetime.datetime.now()
 
         self.logger.info("\n\nFinal report:")
 
         self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
-        for configuration in self.all_configurations:
+        for configuration in self.measured_configurations:
             self.logger.info(configuration)
-        self.logger.info("Number of measured Configurations: %s" % len(self.all_configurations))
+        self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
         self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
         self.logger.info("Best found Configuration: %s" % self.get_current_solution())
         self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
 
         all_features = []
-        for configuration in self.all_configurations:
-            all_features.append(configuration.get_parameters())
+        for configuration in self.measured_configurations:
+            all_features.append(configuration.parameters)
         self.api.send('final', 'configuration',
-                      configurations=[self.get_current_solution().get_parameters()],
+                      configurations=[self.get_current_solution().parameters],
                       results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
                       measured_points=[all_features],
                       performed_measurements=[repeater.performed_measurements])
@@ -168,9 +196,9 @@ class Experiment:
         current_status = {
             "Running time": str(self.get_running_time()) if serializable else self.get_running_time(),
             "Best found Configuration": self.get_current_solution().__getstate__() if serializable else self.get_current_solution(),
-            "Default configuration": self.default_configuration.__getstate__() if serializable else self.default_configuration,
+            "Default configuration": self.search_space.get_default_configuration().__getstate__() if serializable else self.search_space.get_default_configuration(),
             "Experiment description": self.description,
-            "Evaluated Configurations": [conf.__getstate__() if serializable else conf for conf in self.all_configurations]
+            "Evaluated Configurations": [conf.__getstate__() if serializable else conf for conf in self.measured_configurations]
         }
         return current_status
 
@@ -191,38 +219,37 @@ class Experiment:
 
     def _calculate_current_best_configurations(self):
 
-        best_configuration = [self.all_configurations[0]]
-        for configuration in self.all_configurations:
+        best_configuration = [self.measured_configurations[0]]
+        for configuration in self.measured_configurations:
             if configuration.is_better_configuration(self.is_minimization(),
                                                      best_configuration[0]):
                 best_configuration = [configuration]
         self.current_best_configurations = best_configuration
 
-    def _add_configuration_to_experiment(self, configuration: Configuration) -> None:
+    def _add_measured_configuration_to_experiment(self, configuration: Configuration) -> None:
         """
         Save configuration after passing all checks.
         This method also sends an update to API (front-end).
         :param configuration: Configuration object.
         :return: None
         """
-        self.all_configurations.append(configuration)
+        self.measured_configurations.append(configuration)
+
         self.api.send("new", "configuration",
-                      configurations=[configuration.get_parameters()],
+                      configurations=[configuration.parameters],
                       results=[configuration.get_average_result()])
         self.logger.info("Adding to Experiment: %s" % configuration)
 
+    def _add_evaluated_configuration_to_experiment(self, configuration: Configuration) -> None:
+        """
+        Save configuration after passing all checks.
+        :param configuration: Configuration object.
+        :return: None
+        """
+        self.evaluated_configurations.append(configuration)
+
     def is_minimization(self):
         return self.description["General"]["isMinimizationExperiment"]
-
-    def get_number_of_configurations_per_iteration(self):
-        if "ConfigurationsPerIteration" in self.description["General"]:
-            return self.description["General"]["ConfigurationsPerIteration"]
-        else:
-            return 0
-
-    def __generate_search_space(self):
-        self.search_space = [list(configuration) for configuration in
-                             itertools.product(*self.description["DomainDescription"]["AllConfigurations"])]
 
     def dump(self, folder_path: str = 'Results/serialized/'):
         """ save instance of experiment class
@@ -232,8 +259,7 @@ class Experiment:
 
         create_folder_if_not_exists(folder_path)
         file_name = '{}.pkl'.format(self.name)
-
-        # write pickl
+        # write pickle
         with open(folder_path + file_name, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
             self.logger.info("Saved experiment instance. Path: %s" % (folder_path + file_name))
@@ -263,27 +289,29 @@ class Experiment:
 
         return self
 
-    def write_csv(self, path='Results/serialized/'):
+    def write_csv(self, path: str = 'Results/serialized/'):
         """save .csv file with main metrics of the experiment
 
         Args:
-            final (bool, optional): Is the Experiment finished?. Defaults to False.
+            path (str, optional): Path to folder, where to store the csv report.
         """
-
-        search_space = 1
-        for dim in self.description['DomainDescription']['AllConfigurations']:
-            search_space *= len(dim)
+        if self.search_space.get_search_space_size() == float('inf'):
+            search_space_coverage = "unknown (infinite search space)"
+        else:
+            search_space_coverage = str(
+                round((len(self.measured_configurations) / self.search_space.get_search_space_size()) * 100)
+            ) + '%'
 
         data = dict({
             'model': self.description['ModelConfiguration']['ModelType'],
             'default configuration': [' '.join(
-                str(v) for v in self.default_configuration.get_parameters())],
+                str(v) for v in self.search_space.get_default_configuration().parameters)],
             'solution configuration': [' '.join(
-                str(v) for v in self.get_current_solution().get_parameters())],
-            'default result': self.default_configuration.get_average_result()[0],
+                str(v) for v in self.get_current_solution().parameters)],
+            'default result': self.search_space.get_default_configuration().get_average_result()[0],
             'solution result': self.get_current_solution().get_average_result()[0],
-            'number of measured configurations': len(self.all_configurations),
-            'search space coverage': str(round((len(self.all_configurations) / search_space) * 100)) + '%',
+            'number of measured configurations': len(self.measured_configurations),
+            'search space coverage': search_space_coverage,
             'number of repetitions': len(self.get_all_repetition_tasks()),
             'execution time': (self.get_running_time()).seconds,
             'repeater': self.description['Repeater']['Type']
@@ -318,20 +346,39 @@ class Experiment:
 
         all_tasks = []
         result_key = self.description['TaskConfiguration']['ResultStructure'][0]
-        for configuration in self.all_configurations:
+        for configuration in self.measured_configurations:
             for task in configuration.get_tasks().values():
                 if 'result' in task:
                     all_tasks.append(task['result'][result_key])
         return all_tasks
 
     def get_number_of_measured_configurations(self):
-        return len(self.all_configurations)
-
-    def get_search_space_size(self):
-        return len(self.search_space)
+        return len(self.measured_configurations)
 
     def get_stop_condition_parameters(self):
         return self.description["StopCondition"]
 
     def get_selection_algorithm_parameters(self):
         return self.description["SelectionAlgorithm"]
+
+    def get_current_sub_search_space(self):
+        """
+            This method is needed to represent current subsearchspace
+            (i.e. configurations, that were already added to experiment)
+            in form of lists of all used values for each parameter
+        :return: current subsearchspace
+        """
+        params = [config.parameters for config in self.measured_configurations]
+        subsearchspace = np.array(params).T.tolist()
+        result = [list(set(dimension)) for dimension in subsearchspace]
+        return result
+
+    def get_outlier_detectors_parameters(self):
+        return self.description["OutliersDetection"]
+
+    def increment_bad_configuration_number(self):
+        self.bad_configurations_number = self.bad_configurations_number + 1
+        return self
+
+    def get_bad_configuration_number(self):
+        return self.bad_configurations_number

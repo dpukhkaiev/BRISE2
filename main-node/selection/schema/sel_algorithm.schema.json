@@ -13,16 +13,24 @@
                 "SelectionType": {
                     "type": "string",
                     "enum": ["SobolSequence"]
-                },
-                "NumberOfInitialConfigurations": {
-                    "description": "The number of configurations that will be tested before making any attempts to build prediction model.",
-                    "type": "integer",
-                    "minimum": 0
                 }
             },
             "required": [
-                "SelectionType",
-                "NumberOfInitialConfigurations"
+                "SelectionType"
+            ]
+        },
+        "ConfigSpaceSelector": {
+            "title": "ConfigSpaceSelector that takes random configuration from configuration space.",
+            "description": "A Dict with random configuration.",
+            "type": "object",
+            "properties": {
+                "SelectionType": {
+                    "type": "string",
+                    "enum": ["ConfigSpaceSelector"]
+                }
+            },
+            "required": [
+                "SelectionType"
             ]
         }
     }

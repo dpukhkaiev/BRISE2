@@ -18,17 +18,16 @@ def generate_worker_function(experiment_description_path):
         template = env.get_template('worker_f_template')
     except IOError as error:
         logger.error("Error with reading %s/templates/worker_f_template file: %s" % (os.path.dirname(__file__), error))
-        raise e
-    # TODO: Usage of shared functionality - load_json_file
+        raise error
     try:
         with open(experiment_description_path) as json_file:
             data = json.load(json_file)
     except IOError as error:
         logger.error("Error with reading %s file: %s" % (experiment_description_path, error))
-        raise e
+        raise error
     except json.JSONDecodeError as error:
         logger.error("Error with decoding %s json file: %s" % (experiment_description_path, error))
-        raise e
+        raise error
     in_parameters = data['TaskConfiguration']['TaskParameters']
     in_scenario = data['TaskConfiguration']['Scenario'].keys()
     out_parameters = data['TaskConfiguration']['ResultStructure']

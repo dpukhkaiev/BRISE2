@@ -1,4 +1,4 @@
-# BRISE 2.2.0
+# BRISE 2.3.0
 ##### Benchmark Reduction via Adaptive Instance Selection
 Software Product Line for Parameter Tuning\
 Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
@@ -26,6 +26,7 @@ predicting and validating best configuration.
 - [worker-service](./worker_service/README.md "Worker service Readme.") - for parallelization and orchestration of configuration evaluation between worker nodes.
 - `N` [workers](./worker/README.md) - for evaluation of your system with concrete parameters.
 - [front-end](./front-end/README.md) - for controlling and visualisation of the Experiment process.
+- [event-service](./event_service/README.md) - [RabbitMQ](https://www.rabbitmq.com/) server instance, for event management
 
 #### Testing installation
 - Get into **main-node**:

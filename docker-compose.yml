@@ -3,7 +3,6 @@ version: "3.7"
 services: 
   main_node:
     build: ./main-node/
-    command: python3.7 api-supreme.py
     tty: true
     container_name: main-node
     networks:
@@ -11,25 +10,38 @@ services:
     ports:
       - "49152:49152"
     depends_on:
-      - "w_service"
+      - "event_service"
+      - "worker_service"
     environment:
       - EXP_DUMP_NAME=undefined
+    restart: on-failure
 
-  w_service:
-    build: ./worker_service/
-    command: python3 intro.py
+  event_service:
+    build: ./event_service/
     stdin_open: true
     tty: true
-    container_name: w_service
+    container_name: event_service
     networks:
       brise_network:
         aliases:
-          - w_service
+          - event_service
     ports:
       - "49153:49153"
-    environment:
-      - FLASK_APP=worker_service/__init__.py
-      - FLASK_DEBUG=1
+      - "15672:15672"
+    restart: on-failure
+
+  worker_service:
+    build: ./worker_service/
+    stdin_open: true
+    tty: true
+    container_name: worker_service
+    networks:
+      brise_network:
+        aliases:
+          - worker_service
+    depends_on:
+      - "event_service"
+    restart: on-failure
 
   front-end:
     build: ./front-end/
@@ -39,36 +51,43 @@ services:
      - brise_network
     ports:
       - "80:80"
+    restart: on-failure
 
-  w_alpha:
+  worker_alpha:
     build: ./worker/
-    container_name: w_alpha
+    container_name: worker_alpha
     environment:
       - workername=alpha
     networks:
       - brise_network
     depends_on:
-      - "w_service"
+      - "event_service"
+      - "worker_service"
+    restart: on-failure
 
-  w_beta:
+  worker_beta:
     build: ./worker/
-    container_name: w_beta
+    container_name: worker_beta
     environment:
       - workername=beta
     networks:
       - brise_network
     depends_on:
-      - "w_service"
+      - "event_service"
+      - "worker_service"
+    restart: on-failure
 
-  w_gamma:
+  worker_gamma:
     build: ./worker/
-    container_name: w_gamma
+    container_name: worker_gamma
     environment:
       - workername=gamma
     networks:
       - brise_network
     depends_on:
-      - "w_service"
+      - "event_service"
+      - "worker_service"
+    restart: on-failure
 
 networks:
   brise_network:

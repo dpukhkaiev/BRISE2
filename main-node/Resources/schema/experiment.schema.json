@@ -8,11 +8,6 @@
             "properties": {
                 "isMinimizationExperiment": {
                     "type": "boolean"
-                },
-                "ConfigurationsPerIteration": {
-                    "description": "The number of configurations that will be measured simultaneously.",
-                    "type": "integer",
-                    "minimum": 1
                 }
             },
             "required": [
@@ -22,7 +17,7 @@
         "DomainDescription": {
             "type": "object",
             "properties": {
-                "FeatureNames": {
+                "HyperparameterNames": {
                     "type": "array",
                     "items": [{
                             "type": "string"
@@ -35,41 +30,21 @@
                 "DataFile": {
                     "type": "string"
                 },
-                "AllConfigurations": {
-                    "type": "array"
-                },
-                "DefaultConfiguration": {
-                    "anyOf": [
-                        {
-                            "type": "array",
-                            "description": "Default configuration for multidimensional parameters",
-                            "minItems": 3,
-                            "items": [{
-                                "type": ["number", "string", "boolean"]
-                            }]
-                        },
-                        {
-                            "type": "array",
-                            "description": "Default configuration with numbers for the energy consumption",
-                            "minItems": 2,
-                            "maxItems": 2,
-                            "items": [{
-                                "type": "number"
-                            }]
-                        }
-                    ]
+                "DefaultConfigurationHandler": {
+                    "type": "string"
                 }
             },
             "required": [
-                "FeatureNames",
-                "DataFile",
-                "AllConfigurations",
-                "DefaultConfiguration"
+                "HyperparameterNames",
+                "DataFile"
             ]
         },
         "SelectionAlgorithm": {
             "anyOf": [{
                 "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/SobolSequence"
+            },
+            {
+                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/ConfigSpaceSelector"
             }]
         },
         "TaskConfiguration": {
@@ -103,6 +78,15 @@
                         "type": "string"
                     }]
                 },
+                "ExpectedValuesRange": {
+                    "type": "array",
+                    "items": [{
+                        "type": "array",
+                        "items":[{
+                            "type":"number"
+                        }]
+                    }]
+                },
                 "ResultPriorities": {
                     "type": "array",
                     "items": [{
@@ -121,8 +105,12 @@
                 "Scenario",
                 "TaskParameters",
                 "ResultStructure",
-                "ResultDataTypes"
+                "ResultDataTypes",
+                "ExpectedValuesRange"
             ]
+        },
+        "OutliersDetection":{
+            "$ref": "./outliers/schema/outlier_detector.schema.json#/definitions/OutliersDetection"
         },
         "Repeater": {
             "description": "Parameters related to Configuration evaluation accuracy.",
@@ -150,7 +138,6 @@
             "description": "Conditions for stopping an experiment.",
             "type": "array",
             "minItems": 0,
-            "maxItems": 4,
             "uniqueItems": true,
             "items": {
                 "oneOf" : [
@@ -255,6 +242,65 @@
                         "Parameters"
                     ],
                     "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["TimeBased"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxRunTime": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "TimeUnit": {
+                                    "type": "string",
+                                    "enum": ["seconds","minutes","hours","days"]
+                                }
+                            },
+                            "required": [
+                                "MaxRunTime",
+                                "TimeUnit"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
+                    },
+                    {
+                    "type": "object",
+                    "properties": {
+                        "Type": {
+                            "type": "string",
+                            "enum": ["BadConfigurationBased"]
+                        },
+                        "Parameters":{
+                            "type": "object",
+                            "properties":{
+                                "MaxBadConfigurations": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "MaxBadConfigurations"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "Type",
+                        "Parameters"
+                    ],
+                    "additionalProperties": false
                     }
                 ]
             }
@@ -265,6 +311,7 @@
         "DomainDescription",
         "SelectionAlgorithm",
         "TaskConfiguration",
+        "OutliersDetection",
         "Repeater",
         "ModelConfiguration",
         "StopCondition"

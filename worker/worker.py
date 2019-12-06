@@ -2,14 +2,14 @@ import os
 import sys
 import subprocess
 import logging
-from random import randint, choice
+from random import choice
 
-from csv_data.splitter import Splitter
+from worker_tools.splitter import Splitter
 
 
 def energy_consumption(task_parameters: dict, scenario: dict):
     try:
-        data = Splitter("csv_data/"+scenario['ws_file'])
+        data = Splitter("scenarios/energy_consumption/" + scenario['ws_file'])
         data.search(str(task_parameters['frequency']), str(task_parameters['threads']))
         result = choice(data.new_data)
         return {
@@ -17,23 +17,9 @@ def energy_consumption(task_parameters: dict, scenario: dict):
             'time': float(result['TIM'])
         }
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (task_parameters, error))
-
-
-def taskNB(task_parameters: dict, scenario: dict):
-    try:
-        data = Splitter("csv_data/"+scenario['ws_file'])
-        data.searchNB(str(task_parameters['laplace_correction']), str(task_parameters['estimation_mode']),
-                      str(task_parameters['bandwidth_selection']), str(task_parameters['bandwidth']),
-                      str(task_parameters['minimum_bandwidth']), str(task_parameters['number_of_kernels']),
-                      str(task_parameters['use_application_grid']), str(task_parameters['application_grid_size']))
-        result = choice(data.new_data)
-        return {
-            'PREC_AT_99_REC': float(result["PREC_AT_99_REC"])
-        }
-    except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'taskNB' Task with parameters %s: %s" % (task_parameters, error))
-
+        logging.getLogger(__name__).error(
+            "An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (
+                task_parameters, error))
 
 def genetic(task_parameters: dict, scenario: dict):
     logger = logging.getLogger(__name__)
@@ -66,17 +52,20 @@ def genetic(task_parameters: dict, scenario: dict):
         tournament = str(task_parameters['tournament'])
         ###
 
-        ws_file ="result_v{}_q{}_d{}_r{}.csv".\
+        ws_file = "result_v{}_q{}_d{}_r{}.csv". \
             format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio)
 
-        file_name = "results/scenarios/"+ws_file
+        file_name = "results/scenarios/" + ws_file
 
-        command = ("java -jar binaries/jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
-                          % (numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation, avgNumCompSubComponents,
-                             compSubComponentStdDerivation, componentDepth, numImplementations, excessComputeResourceRatio, numRequests,
-                             numCpus, seed, timeoutValue, timeoutUnit, ws_file, generations, populationSize,
-                             treeMutateOperatorP, treeMutateOperatorP1, treeMutateOperatorP2, treeMutateOperatorP3,
-                             Lambda, crossoverRate, mu, tournament))
+        command = (
+                "java -jar binaries/jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
+                % (numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
+                   avgNumCompSubComponents,
+                   compSubComponentStdDerivation, componentDepth, numImplementations, excessComputeResourceRatio,
+                   numRequests,
+                   numCpus, seed, timeoutValue, timeoutUnit, ws_file, generations, populationSize,
+                   treeMutateOperatorP, treeMutateOperatorP1, treeMutateOperatorP2, treeMutateOperatorP3,
+                   Lambda, crossoverRate, mu, tournament))
         try:
             retcode = subprocess.call(command, shell=True)
             if retcode < 0:
@@ -97,7 +86,10 @@ def genetic(task_parameters: dict, scenario: dict):
             logger.error("java command: %s doesnt create result file" % command)
             raise Exception("java command: %s doesnt create result file" % command)
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'genetic' Task with parameters %s: %s" % (task_parameters, error))
+        logger.error("An error occurred during performing 'genetic' Task with parameters %s: %s" % (task_parameters, error))
+    return {
+        'Validity':'NaN'
+    }
 
 def simulatedAnnealing(param, scenario):
     logger = logging.getLogger(__name__)
@@ -128,14 +120,15 @@ def simulatedAnnealing(param, scenario):
         # file_name = "result_v{}_q{}_d{}_r{}.csv".\
         #     format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio.replace('.', '_'))
         import os
-        command = ("java -jar binaries/jastadd-mquat-solver-mh-1.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
-                          % (subComponentUnassignedFactor, softwareComponentUnassignedFactor,
-                             hardScoreStartingTemperaturePercentage, softScoreStartingTemperaturePercentage,
-                             acceptedCountLimit, millisecondsSpentLimit, unimprovedMillisecondsSpentLimit,
+        command = (
+                "java -jar binaries/jastadd-mquat-solver-mh-1.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
+                % (subComponentUnassignedFactor, softwareComponentUnassignedFactor,
+                   hardScoreStartingTemperaturePercentage, softScoreStartingTemperaturePercentage,
+                   acceptedCountLimit, millisecondsSpentLimit, unimprovedMillisecondsSpentLimit,
 
-                             numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
-                             avgNumCompSubComponents, compSubComponentStdDerivation, componentDepth, numImplementations,
-                             excessComputeResourceRatio, numRequests, numCpus, seed))
+                   numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
+                   avgNumCompSubComponents, compSubComponentStdDerivation, componentDepth, numImplementations,
+                   excessComputeResourceRatio, numRequests, numCpus, seed))
 
         try:
             retcode = subprocess.call(command, shell=True)
@@ -161,3 +154,7 @@ def simulatedAnnealing(param, scenario):
             raise Exception("java command: %s didn't create result file" % command)
     except Exception as e:
         logger.error("ERROR IN WORKER during performing SA with parameters: %s" % param)
+    return {
+        'hardScoreImprovement': 'NaN',
+        'softScoreImprovement': 'NaN'
+    }
