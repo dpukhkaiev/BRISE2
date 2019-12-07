@@ -75,3 +75,23 @@ genetic_NSGA2,5558,34620.200000000004,0,true,false
 ```
 
 [Link to MQUAT2 project](https://git-st.inf.tu-dresden.de/mquat/mquat2/tree/Genetic_Kosovnenko).
+
+##### Worker for Spark parameters tuning
+BRISE can be applied for tuning parameters of the Apache Spark. An example of such tuning is already pre-configured and adds the following components to BRISE:
+1. [SparkExperiment.json and SparkExperimentData.json](./main-node/Resources/spark/) - experiment and search space description files
+2. spark-service - container with HDP and Apache Spark installed. Toy [workload](./spark_worker/workload.py) is used for Spark  
+3. `spark()` [method](./worker/worker.py) - worker method, that measures Spark task with concrete parameters
+
+*time* to run Spark task is considered to be an objective function and [parameters of `spark-submit` command](https://spark.apache.org/docs/latest/configuration.html) are tunable parameters.
+
+When new configuration is emitted by the main node, it is sent to the worker that forms `spark-submit` command using specified parameters (see `spark()` method) and sends this command to the *spark-service* via SSH. For this purpose SSH server is installed on the *spark-service* and *worker* uses open-ssh client.
+
+The following steps are needed to successfully establish SSH connection between nodes: 
+1. add a [key pair](./worker/.ssh)* for N worker nodes 
+2. add workers' public key to the list of spark service's \emph{authorized_keys}
+3. add spark_service to the list of worker's \emph{known_hosts}
+4. disable StrictHostKeyChecking to allow automatic connection
+
+These steps are already performed within the provided Spark use case example.
+
+* *please, note, that static key pair is used for all involved workers. It is done for the sake of simplicity but should be carefully used from the security point of view!*
