@@ -53,6 +53,15 @@ services:
       - "80:80"
     restart: on-failure
 
+  spark_service:
+    build: ./spark_worker/
+    container_name: spark_service
+    networks:
+      - brise_network
+    depends_on:
+      - "worker_service"
+    restart: on-failure
+
   worker_alpha:
     build: ./worker/
     container_name: worker_alpha

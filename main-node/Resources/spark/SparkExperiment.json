@@ -1,0 +1,101 @@
+{
+  "General":{
+    "isMinimizationExperiment"  : true
+  },
+  "DomainDescription":{
+    "HyperparameterNames"      : ["master", "deploy_mode", "driver_memory", "num_executors", "executor_memory", "executor_cores", "spark.python.worker.reuse", "spark.reducer.maxSizeInFlight", "spark.shuffle.compress", "spark.shuffle.file.buffer", "spark.broadcast.compress", "spark.memory.fraction", "spark.memory.storageFraction", "spark.dynamicAllocation.enabled", "spark.shuffle.service.enabled"],
+    "DataFile"          : "./Resources/spark/SparkExperimentData.json"
+  },
+  "SelectionAlgorithm":{
+    "SelectionType"     : "SobolSequence"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "spark",
+    "Scenario":{
+      "ws_file": ""
+    },
+    "TaskParameters"   : ["master", "deploy_mode", "driver_memory", "num_executors", "executor_memory", "executor_cores", "spark.python.worker.reuse", "spark.reducer.maxSizeInFlight", "spark.shuffle.compress", "spark.shuffle.file.buffer", "spark.broadcast.compress", "spark.memory.fraction", "spark.memory.storageFraction", "spark.dynamicAllocation.enabled", "spark.shuffle.service.enabled"],
+    "ResultStructure"   : ["time"],
+    "ResultDataTypes"  : ["float"],
+    "ExpectedValuesRange": [[0, "inf"]]
+  },
+  "OutliersDetection":[
+    {
+      "Type": "Dixon",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 30
+      }
+    },
+    {
+      "Type": "Chauvenet",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    },
+    {
+      "Type": "MAD",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    },
+    {
+      "Type": "Grubbs",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    },
+    {
+      "Type": "Quartiles",
+      "Parameters": {
+        "MinActiveNumberOfTasks": 3,
+        "MaxActiveNumberOfTasks": 10000
+      }
+    }
+  ],
+  "Repeater":{
+    "Type": "default",
+    "Parameters": {
+      "MaxFailedTasksPerConfiguration": 5,
+      "MaxTasksPerConfiguration": 1
+    }
+  },
+  "ModelConfiguration":{
+    "SamplingSize": 96,
+    "ModelType"         : "BO"
+  },
+  "StopCondition":[
+    {
+      "Type": "Default",
+      "Parameters": {
+        "MaxConfigs": 100000
+      }
+    },
+    {
+      "Type": "ImprovementBased",
+      "Parameters": {
+        "MaxConfigsWithoutImprovement": 5
+      }
+    },
+    {
+      "Type": "Guaranteed",
+      "Parameters": {      }
+    },
+    {
+      "Type": "TimeBased",
+      "Parameters": {
+        "MaxRunTime": 10,
+        "TimeUnit": "minutes"
+      }
+    },
+    {
+      "Type": "BadConfigurationBased",
+      "Parameters": {
+        "MaxBadConfigurations": 10
+      }
+    }
+  ]
+}
