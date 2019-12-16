@@ -134,6 +134,21 @@
                 }
             ]
         },
+        "StopConfitionTriggerLogic": {
+            "type": "object",
+            "properties": {
+                "Posterior": {
+                    "type": "string"
+                },
+                "Prior": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "Posterior",
+                "Prior"
+            ]
+        },
         "StopCondition": {
             "description": "Conditions for stopping an experiment.",
             "type": "array",

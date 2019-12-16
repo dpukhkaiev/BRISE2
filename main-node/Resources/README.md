@@ -1,33 +1,17 @@
 ## BRISE configuration files
 ###### This folder contains examples of *json* configuration files.
 
-### The configuration files entities explanation
-Process of finding (near)optimal configuration of target system should be described in 7 general topics (top-level-keys in json file) of the configuration file.
+### The framework settings configuration file entities explanation
+Frameworks main modules should be described in 6 general topics (top-level-keys in json file) of the settings [file](./SettingsBRISE.json).
 All other configurations are nested to these as key-value entities.
-
-Possible values of configurations for your system should be provided in separate json file (which is further called "data file").
 <details>
 <summary> Description of required experiment configurations </summary>
 
 - `General` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
     - `isMinimizationExperiment` - `bool`. Minimization or maximization experiment
 
-- `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
-    - `HyperparameterNames` - `list of strings`. The names of configurations.
-    - `DataFile` - `string`. Path to json file with all possible values of all configurations.
-    - `DefaultConfigurationHandler`. Optional parameter. If default configuration is not specified or specified incorrectly, random configuration can be picked inhstead or other specific handler can be used
-
 - `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
     - `SelectionType` - `string`. An exploration algorithm specification. Currently only `SobolSequence` available.
-
-- `TaskConfiguration` - this section describes general configuration for Worker Service and your system during testing.
-    - `TaskName` - `string`. The Worker nodes are able to run different experiments/tasks. This value identifies needed.
-    - `Scenario` - `dict`. the experiments/tasks configuration that is static and is needed to be passed to Worker nodes each time.
-    - `TaskParamenters` - `List of strings`. Configurations that the Worker nodes will use to run target system.
-    - `ResultStructure` - `List of strings`. Configurations that the Worker nodes will report back to Main node. `TaskParameters` should be included. 
-    - `ResultDataTypes` - `List of strings`. Should be a proper names of Python data types, used for casting data that arrives from Worker nodes (as strings).
-    - `ExpectedValuesRange` - `List`. The range of expected tasks' results for the current experiment
-    - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
 
 - `OutliersDetection` - the results of each Configuration run (Tasks) could differ significantly from other observations (Tasks) and those bias Configuration measurement results.
     This module could find these Tasks and exclude them from the Configuration results.
@@ -96,36 +80,45 @@ Possible values of configurations for your system should be provided in separate
             - `MaxBadConfigurations` - `Int` - Threshold of failed Configurations. Failed configuration should not contain any correct measurings.
 </details>
 
+### The configuration files entities explanation
+Parameters related to the experiment inputs/outputs should be described in 2 general topics (top-level-keys in json file) of the configuration file.
+All other configurations are nested to these as key-value entities.
+
+Possible values of configurations for your system should be provided in separate json file (which is further called "data file").
+<details>
+<summary> Description of required experiment configurations </summary>
+
+- `DomainDescription` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
+    - `HyperparameterNames` - `list of strings`. The names of configurations.
+    - `DataFile` - `string`. Path to json file with all possible values of all configurations.
+    - `DefaultConfigurationHandler`. Optional parameter. If default configuration is not specified or specified incorrectly, random configuration can be picked inhstead or other specific handler can be used
+
+- `TaskConfiguration` - this section describes general configuration for Worker Service and your system during testing.
+    - `TaskName` - `string`. The Worker nodes are able to run different experiments/tasks. This value identifies needed.
+    - `Scenario` - `dict`. the experiments/tasks configuration that is static and is needed to be passed to Worker nodes each time.
+    - `TaskParamenters` - `List of strings`. Configurations that the Worker nodes will use to run target system.
+    - `ResultStructure` - `List of strings`. Configurations that the Worker nodes will report back to Main node. `TaskParameters` should be included. 
+    - `ResultDataTypes` - `List of strings`. Should be a proper names of Python data types, used for casting data that arrives from Worker nodes (as strings).
+    - `ExpectedValuesRange` - `List`. The range of expected tasks' results for the current experiment
+    - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding the task will be terminated.
+</details>
+
 #### We provide validation of the Experiment Description file using JSON-Schema.
 * The project JSON-Schema could be found [here](./schema/experiment.schema.json).
+* An example of valid framework settings file could be found [here](./SettingsBRISE.json).
 * An example of valid Experiment Description file could be found [here](./EnergyExperiment.json).
 * The related Domain Description Data file could be found [here](./EnergyExperimentData.json).
 
 <details>
-<summary> Example of Experiment configuration file </summary>
+<summary> Example of framework settings file </summary>
 
 ```json
 {
   "General":{
     "isMinimizationExperiment"  : true
   },
-  "DomainDescription":{
-    "HyperparameterNames"      : ["frequency", "threads"],
-    "DataFile"          : "./Resources/EnergyExperimentData.json"
-  },
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence"
-  },
-  "TaskConfiguration":{
-    "TaskName"          : "energy_consumption",
-    "Scenario":{
-      "ws_file": "Radix-500mio.csv"
-    },
-    "TaskParameters"   : ["frequency", "threads"],
-    "ResultStructure"   : ["energy"],
-    "ResultDataTypes"  : ["float"],
-    "ExpectedValuesRange": [[0, 150000]],
-    "MaxTimeToRunTask": 10
   },
   "OutliersDetection":[
     {
@@ -191,6 +184,31 @@ Possible values of configurations for your system should be provided in separate
       }
     }
   ]
+}
+
+```
+</details>
+
+<details>
+<summary> Example of Experiment configuration file </summary>
+
+```json
+{
+  "DomainDescription":{
+    "HyperparameterNames"      : ["frequency", "threads"],
+    "DataFile"          : "./Resources/EnergyExperimentData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "energy_consumption",
+    "Scenario":{
+      "ws_file": "Radix-500mio.csv"
+    },
+    "TaskParameters"   : ["frequency", "threads"],
+    "ResultStructure"   : ["energy"],
+    "ResultDataTypes"  : ["float"],
+    "ExpectedValuesRange": [[0, 150000]],
+    "MaxTimeToRunTask": 10
+  }
 }
 
 ```

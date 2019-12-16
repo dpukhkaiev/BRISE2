@@ -11,7 +11,7 @@ filterwarnings("ignore")    # disable warnings for demonstration.
 from WorkerServiceClient.WSClient_events import WSClient
 from model.model_selection import get_model
 from repeater.repeater import Repeater
-from tools.initial_config import load_global_config, load_experiment_setup, validate_experiment_description
+from tools.initial_config import load_experiment_setup, validate_experiment_description
 from tools.front_API import API
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
@@ -34,16 +34,6 @@ class MainThread(threading.Thread):
         :param experiment_setup: fully initialized experiment, r.g from a POST request
         """
         super(MainThread, self).__init__()
-        self.global_config = load_global_config()
-        self._is_interrupted = False
-        self.conf_lock = threading.Lock()
-        # initialize connection to rabbitmq service
-        self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=self.global_config["EventService"]["Address"],
-                port=self.global_config["EventService"]["Port"]))
-        self.consume_channel = self.connection.channel()
-
         self.sub = API()  # subscribers
         if __name__ == "__main__":
             self.logger = BRISELogConfigurator().get_logger(__name__)
@@ -65,12 +55,20 @@ class MainThread(threading.Thread):
             search_space = experiment_setup["search_space"]
 
         validate_experiment_description(experiment_description)
-
         self.experiment = Experiment(experiment_description, search_space)
+        self._is_interrupted = False
+        self.conf_lock = threading.Lock()
+        # initialize connection to rabbitmq service
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=self.experiment.description["General"]["EventService"]["Address"],
+                port=self.experiment.description["General"]["EventService"]["Port"]))
+        self.consume_channel = self.connection.channel()
+
         Configuration.set_task_config(self.experiment.description["TaskConfiguration"])
 
         self.sub.send('experiment', 'description',
-                      global_config=self.global_config,
+                      global_config=self.experiment.description["General"],
                       experiment_description=self.experiment.description,
                       searchspace_description=self.experiment.search_space.generate_searchspace_description()
                       )
@@ -87,9 +85,9 @@ class MainThread(threading.Thread):
         # (task.json)
 
         self.worker_service_client = WSClient(self.experiment.description["TaskConfiguration"],
-                                              self.global_config["EventService"]["Address"],
-                                              self.global_config["EventService"]["Port"],
-                                              logfile='%s%s_WSClient.csv' % (self.global_config['results_storage'],
+                                              self.experiment.description["General"]["EventService"]["Address"],
+                                              self.experiment.description["General"]["EventService"]["Port"],
+                                              logfile='%s%s_WSClient.csv' % (self.experiment.description["General"]['results_storage'],
                                                                              self.experiment.get_name()))
 
         # Creating runner for experiments that will repeat the configuration measurement to avoid fluctuations.
@@ -151,7 +149,7 @@ class MainThread(threading.Thread):
             self.sub.send('log', 'info', message=temp_msg)
 
             self.model = get_model(experiment=self.experiment,
-                                   log_file_name="%s%s%s_model.txt" % (self.global_config['results_storage'],
+                                   log_file_name="%s%s%s_model.txt" % (self.experiment.description["General"]['results_storage'],
                                                                        self.experiment.get_name(),
                                                                        self.experiment.description[
                                                                            "ModelConfiguration"][
