@@ -200,8 +200,8 @@ class MainThread(threading.Thread):
                 if finish:
                     self.stop()  # stop all internal thread after getting the optimal configuration
                     self.sub.send('log', 'info', message="Solution validation success!")
-                    optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
-                    return optimal_configuration
+                    #optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
+                    return
                 else:
                     temp_msg = "-- New Configuration was evaluated. Building Target System model."
                     self.logger.info(temp_msg)
