@@ -21,13 +21,19 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 RUN pip install -U python-socketio "python-engineio[client]" && \
     pip install -U pika
 
-# create worker user
-RUN useradd -ms /bin/bash w_user && echo "w_user:w_user" | chpasswd && adduser w_user sudo
-COPY . /home/w_user
+# ssh
+RUN mkdir -p /root/.ssh
+COPY ./.ssh/ /root/.ssh/
+RUN touch /root/.ssh/known_hosts && chown -v root /root/.ssh/known_hosts
+RUN chmod 700 /root/.ssh && \
+    chmod 600 /root/.ssh/id_rsa && \
+    chmod 644 /root/.ssh/id_rsa.pub && \
+    chmod 777 /root/.ssh/known_hosts
 
-RUN chown -R w_user:w_user /home/w_user
-USER w_user
-WORKDIR /home/w_user
+RUN mkdir -p /usr/src/app 
+WORKDIR /usr/src/app
+
+COPY . /usr/src/app
 
 EXPOSE 8080
 

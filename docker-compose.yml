@@ -43,14 +43,13 @@ services:
       - "event_service"
     restart: on-failure
 
-  front-end:
-    build: ./front-end/
-    container_name: front-end
-    tty: true
+  spark_service:
+    build: ./spark_worker/
+    container_name: spark_service
     networks:
-     - brise_network
-    ports:
-      - "80:80"
+      - brise_network
+    depends_on:
+      - "worker_service"
     restart: on-failure
 
   worker_alpha:

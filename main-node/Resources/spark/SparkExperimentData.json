@@ -1,0 +1,119 @@
+{
+  "hyperparameters": [
+    {
+      "name": "master",
+      "type": "categorical",
+      "choices": ["yarn"],
+      "default": "yarn"
+    },
+    {
+      "name": "deploy_mode",
+      "type": "categorical",
+      "choices": ["client"],
+      "default": "client"
+    },
+    {
+      "name": "driver_memory",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 8,
+      "default": 4
+    },
+    {
+      "name": "num_executors",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 5,
+      "default": 2
+    },
+    {
+      "name": "executor_memory",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 8,
+      "default": 2
+    },
+    {
+      "name": "executor_cores",
+      "type": "ordinal",
+      "sequence": [1, 2, 4, 8, 16, 32],
+      "default": 8
+    },
+    {
+      "name": "spark.python.worker.reuse",
+      "type": "categorical",
+      "choices": [true, false],
+      "default": true
+    },
+    {
+      "name": "spark.reducer.maxSizeInFlight",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 32,
+      "upper": 48,
+      "default": 48
+    },
+    {
+      "name": "spark.shuffle.compress",
+      "type": "categorical",
+      "choices": [true, false],
+      "default": true
+    },
+    {
+      "name": "spark.shuffle.file.buffer",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 32,
+      "upper": 64,
+      "default": 32
+    },
+    {
+      "name": "spark.broadcast.compress",
+      "type": "categorical",
+      "choices": [true, false],
+      "default": true
+    },
+    {
+      "name": "spark.memory.fraction",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.3,
+      "upper": 0.8,
+      "default": 0.6
+    },
+    {
+      "name": "spark.memory.storageFraction",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.3,
+      "upper": 0.8,
+      "default": 0.5
+    },
+    {
+      "name": "spark.shuffle.service.enabled",
+      "type": "categorical",
+      "choices": [true, false],
+      "default": false
+    },
+    {
+      "name": "spark.dynamicAllocation.enabled",
+      "type": "categorical",
+      "choices": [false],
+      "default": false
+    }
+  ],
+  "conditions": [
+    {
+      "child": "spark.dynamicAllocation.enabled",
+      "parent": "spark.shuffle.service.enabled",
+      "type": "EQ",
+      "value": true
+    }
+  ],
+  "forbiddens": [],
+  "python_module_version": "0.4.10",
+  "json_format_version": 0.1
+}
