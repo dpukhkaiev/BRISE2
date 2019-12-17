@@ -102,7 +102,7 @@ export class MultiDimComponent implements OnInit {
             let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
             point.set('result', configuration.results[0])
             // console.log('New:', point)
-            this.allPoints.add(point) 
+            this.allPoints.add(point)
             this.render()
           }
           else {
@@ -145,7 +145,7 @@ export class MultiDimComponent implements OnInit {
       let dim = this.factoryDimension(param, range) // make dimensional object through all results by one parameter
       data.push(dim) // add new dimension object for plotting
     })
-    return data 
+    return data
   }
   factoryDimension(parameter: String, valuesRange: Array<any> = null) {
     let dimValues = this.unpack(this.allPoints, parameter)

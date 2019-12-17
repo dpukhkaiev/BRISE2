@@ -1,5 +1,5 @@
 import plotly.graph_objs as go
-from plotly import tools
+from plotly.subplots import make_subplots
 
 def repeat_vs_avg(exp):
     """ Compare average results and measurements repeats for one experiment.
@@ -61,7 +61,7 @@ def repeat_vs_avg(exp):
 
     #-- Composite
     # Creating two subplots
-    fig = tools.make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=False, shared_yaxes=True)
+    fig = make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=False, shared_yaxes=True)
 
     fig.append_trace(trace_repeat, 1, 1)
     fig.append_trace(trace_avg, 1, 2)

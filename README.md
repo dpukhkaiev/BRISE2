@@ -1,7 +1,6 @@
-# BRISE 2.2.0
+# BRISE 2.3.0
 ##### Benchmark Reduction via Adaptive Instance Selection
-Software Product Line for Parameter Tuning
-
+Software Product Line for Parameter Tuning\
 Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
 different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy consumption minimization` 
 (optimization goal).  
@@ -13,7 +12,7 @@ Software requirements:
 - Python (v3.7+).
 
 Hardware requirements:
-- 5 GB HDD, 2 GB RAM, 2x 2.5 GHz CPU + Resources for running  `N` (number of workers, 3 by default) instances of your system.
+- 5 GB HDD, 2 GB RAM, 2x 2.5 GHz CPU + Resources for running  `N` (amount of workers, 3 by default) instances of your system.
 
 #### Installing and running basic installation
 To get working instance of BRISE:
@@ -27,6 +26,7 @@ predicting and validating best configuration.
 - [worker-service](./worker_service/README.md "Worker service Readme.") - for parallelization and orchestration of configuration evaluation between worker nodes.
 - `N` [workers](./worker/README.md) - for evaluation of your system with concrete parameters.
 - [front-end](./front-end/README.md) - for controlling and visualisation of the Experiment process.
+- [event-service](./event_service/README.md) - [RabbitMQ](https://www.rabbitmq.com/) server instance, for event management
 
 #### Testing installation
 - Get into **main-node**:

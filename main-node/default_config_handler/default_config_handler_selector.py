@@ -1,9 +1,10 @@
 import logging
 
 from core_entities.experiment import Experiment
+from default_config_handler.abstract_default_config_handler import AbstractDefaultConfigurationHandler
 
 
-def get_default_config_handler(experiment: Experiment):
+def get_default_config_handler(experiment: Experiment) -> AbstractDefaultConfigurationHandler:
     """ This method returns an instance of default configuration handler for current experiment
     
     :rtype:DefaultConfigurationHandler

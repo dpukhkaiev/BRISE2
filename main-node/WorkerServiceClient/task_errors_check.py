@@ -10,20 +10,20 @@ def error_check(tasks, parameter, expected_values_range, expected_data_type):
     :param expected_data_type: specify user-defined type of correct values.
     :return: list of results with marked bad values
     """
-    # In this realization we assume, that values should be numerical (int, float etc)
+    # In this implementation we assume, that values should be numerical (int, float etc)
     # with pattern, described in json experiment file
     if tasks['ResultValidityCheckMark'] == 'OK':
-        # this part find and deletes values with uncorresponded data-type
+        # this part finds and deletes values with an inappropriate data type
         try:
             # All numerical types could be converted to float
-            # Also string with corresponds pattern (numerical) could be converted
+            # Also string with a corresponding pattern (numerical) can be converted
             result_entity_class = getattr(builtins, expected_data_type)
             tasks['result'][parameter] = result_entity_class(tasks['result'][parameter])
         except Exception as e:
             # indexes of other values are fixed in delete array
             tasks['ResultValidityCheckMark'] = "Bad value"
             return tasks
-        # this part find indexes of values with uncorresponded user-defined pattern
+        # this part finds indexes of values ​​that do not match the user-defined pattern
         # define lower and upper limits of expected results (described in json)
         # if limit is not defined, it is automatically sets as infinity
         task_result_value = tasks['result'][parameter]

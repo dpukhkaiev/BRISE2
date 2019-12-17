@@ -30,14 +30,14 @@ class Quartiles(OutliersDetectionDecorator):
 			There is no statistical basis for the reason that Tukey uses 1.5
 			and 3 regarding the IQR to make inner and outer fences. 
 
-			In this realization only outer fences are used, because they are probable outlier (step 2 is skipped)
+			In this implementation only outer fences are used, because they are probable outlier (step 2 is skipped)
 			"""
 			# find limits of quartiles (step 1)
 			first_Q = np.percentile(inputs, 25)
 			third_Q = np.percentile(inputs, 75)
-			Inter_QD = third_Q-first_Q
+			Inter_QD = third_Q - first_Q
 
-			# In this realization only outer fences are used, because they are probable outlier (step 2 is skipped)
+			# In this implementation only outer fences are used, because they are probable outlier (step 2 is skipped)
 
 			# find outer limits (step 3)
 			Outer_LB = first_Q - Inter_QD * 3
@@ -55,4 +55,3 @@ class Quartiles(OutliersDetectionDecorator):
 			return unique, criterion_used_flag
 		else:
 			return [], criterion_used_flag
-

@@ -1,7 +1,5 @@
-import time
 import datetime
 
-from tools.time_units_convertor import convert_to_seconds
 from stop_condition.stop_condition_decorator_prior import StopConditionDecoratorPrior
 
 
@@ -12,7 +10,9 @@ class TimeBasedType(StopConditionDecoratorPrior):
     """
     def __init__(self, stop_condition, stop_condition_parameters):
         super().__init__(stop_condition, __name__)
-        self.interval = convert_to_seconds(stop_condition_parameters["TimeUnit"], stop_condition_parameters["MaxRunTime"])
+        self.interval = datetime.timedelta(**{
+            stop_condition_parameters["TimeUnit"]: stop_condition_parameters["MaxRunTime"]
+        }).total_seconds()
 
         self.initial_timestamp = datetime.datetime.now()
         temp_msg = "Timeout is set. !!!WARNING!!! BRISE will not stop at timeout moment due to workflow."

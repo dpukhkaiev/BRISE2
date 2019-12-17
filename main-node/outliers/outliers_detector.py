@@ -56,7 +56,7 @@ class OutlierDetector:
 
     def _report_according_to_required_structure(self, config, final_results, criterions_used_number):
         """
-        Formation of results for logging
+        Format the results for logging
         :param config: current configuration entity
         :param final_results: task dict with corresponding marks
         :param criterions_used_number: number of used OD criterias
@@ -71,15 +71,22 @@ class OutlierDetector:
                 outbound_value_tasks.append(task['result'])
             elif task['ResultValidityCheckMark'] == 'Outlier':
                 outlier_value_tasks.append(task['result'])
-        output_message = "Configuration %s has" % config.parameters
+
+        output_message = f"Configuration {config.parameters} has"
+
         if len(bad_value_tasks) + len(outbound_value_tasks) + len(outlier_value_tasks) == 0:
-            output_message = output_message + " no tasks with bad/outbound resulting values or outliers."
+            output_message += f" no tasks with bad/outbound resulting values or outliers."
+
         if len(bad_value_tasks) > 0:
-            output_message = output_message + " %s task(s) with bad values: (%s);" % (len(bad_value_tasks), bad_value_tasks)
+            output_message += f" {len(bad_value_tasks)} task(s) with bad values: ({bad_value_tasks});"
+
         if len(outbound_value_tasks) > 0:
-            output_message = output_message + " %s task(s) with outbound values: (%s);" % (len(outbound_value_tasks), outbound_value_tasks)
+            output_message += f" {len(outbound_value_tasks)} task(s) with outbound values: ({outbound_value_tasks});"
+
         if len(outlier_value_tasks) > 0:
-            output_message = output_message + " %s task(s) with outlier values: (%s), %s outlier detection criteria used;" % (len(outlier_value_tasks), outlier_value_tasks, criterions_used_number)
+            output_message += f" {len(outlier_value_tasks)} task(s) with outlier values: " \
+                              f"({outlier_value_tasks}), {criterions_used_number} outlier detection criteria used;"
+
         logging.getLogger(__name__).info(output_message)
 
     def find_outliers_for_taskset(self, inputs, result_structure, configurations, tasks_to_send):

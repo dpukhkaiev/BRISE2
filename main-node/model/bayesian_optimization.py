@@ -304,16 +304,16 @@ class BayesianOptimization(Model):
 
         return predicted_configuration
 
-    def predict_next_configurations(self, amount):
+    def predict_next_configurations(self, number):
         """
-        Predict 'amount' Configurations that are the best (basing on a current model of the Target System).
-        :param amount: int number of Configurations which will be returned.
+        Predict the best Configurations (based on a current model of the Target System) of a specified number.
+        :param number: int number of Configurations which will be returned.
         :return: list of Configurations that are needed to be measured.
         """
 
         configurations_parameters = []
         configurations = []
-        while len(configurations) != amount:
+        while len(configurations) != number:
             conf = self.__predict_next_configuration()
 
             # BO model is stochastic and could return the same Configuration several times, but we need unique ones.

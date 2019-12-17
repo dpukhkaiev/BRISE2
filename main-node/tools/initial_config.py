@@ -15,9 +15,6 @@ def load_experiment_setup(exp_desc_file_path: str):
     :param exp_desc_file_path: String. Relative path to Experiment Description file from root of main node folder.
     :return: loaded Experiment Description, loaded search space
     """
-    # Check if main.py running with a specified experiment description file path
-    if len(argv) > 1:
-        exp_desc_file_path = argv[1]
     # Load Experiment description from json file.
     task_description = load_json_file(exp_desc_file_path)
     framework_settings = load_json_file('./Resources/SettingsBRISE.json')

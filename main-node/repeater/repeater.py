@@ -24,10 +24,10 @@ class ConsumerThread(threading.Thread):
 
     def __init__(self, repeater):
         """
-        :param repeater: an instance of repeater object
+        :param repeater: an instance of Repeater object
         """
         super(ConsumerThread, self).__init__()
-        self.repeater = repeater
+        self.repeater: Repeater = repeater
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(repeater.worker_service_client.event_host,
                                                                             repeater.worker_service_client.event_port))
 
@@ -121,7 +121,7 @@ class Repeater:
                 number_of_measurements = self._type.evaluate(current_configuration=current_configuration,
                                                              experiment=self.experiment)
                 current_configuration.status = Configuration.Status.EVALUATED
-                if self.experiment.try_add_configurations([current_configuration]) or \
+                if self.experiment.try_add_configuration(current_configuration) or \
                         current_configuration.type == Configuration.Type.DEFAULT:  # for repeating default configuration
                     return number_of_measurements
                 else:

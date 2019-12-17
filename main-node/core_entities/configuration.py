@@ -1,9 +1,11 @@
+import json
 import logging
+from enum import Enum
 from copy import deepcopy
+from typing import Iterable
 
 import numpy as np
-import json
-from enum import Enum
+
 from tools.front_API import API
 
 
@@ -27,15 +29,17 @@ class Configuration:
     def set_task_config(cls, taskConfig):
         cls.TaskConfiguration = taskConfig
 
-    def __init__(self, parameters: list, config_type: Type):
+    def __init__(self, parameters: Iterable, config_type: Type):
         """
-        :param parameters: list with parameters
-               shape - list, e.g. ``[1200, 32]``
-        :param config_type: an instance of Type enum
+        :param parameters: Iterable object.
+            While iterating, should return parameter values in the same order as in HyperparameterNames of
+            Experiment Description. During initialization it will be converted into the tuple.
+            Example: list, e.g. ``[1200, 32]`` will be converted to (1200, 32),
+        :param config_type: Configuration Type (see inner class Type).
 
         During initializing following fields are declared:
 
-        self._parameters:              shape - list, e.g. ``[2900.0, 32]``
+        self.parameters:               shape - tuple, e.g. ``(2900.0, 32)``. One-time-set property.
         self._parameters_in_indexes:   shape - list, e.g. ``[1, 8]``
         self._tasks:                    shape - dict, e.g.
                                                ``{
@@ -290,9 +294,9 @@ class Configuration:
         """
         if self.is_enabled:
             self.is_enabled = False
-            temp_msg = ("Configuration %s was disabled due to lack of correct results" % self.parameters)
+            temp_msg = f"Configuration {self} was disabled. It will not be added to the Experiment."
             self.logger.warning(temp_msg)
-            API().send('log', 'info', message=temp_msg)
+            API().send('log', 'warning', message=temp_msg)
 
     def increase_failed_tasks_number(self):
         """
@@ -300,22 +304,21 @@ class Configuration:
         """
         self.number_of_failed_tasks = self.number_of_failed_tasks + 1
 
-    def is_valid_task(self, task):
+    def is_valid_task(self, task: dict):
         """
-        Check error_check function output and return appropriate flag
-        :param task: one task dictionary item
+        Check error_check function output and return an appropriate flag
+        :param task: dictionary object, that represents one Task
         :return: boolean, should we include task to configuration or not
         """
-        if task["ResultValidityCheckMark"] == "Bad value" or task["ResultValidityCheckMark"] == "Out of bounds":
-            return False
         try:
             assert isinstance(task, dict), "Task is not a dictionary object."
+            if task["ResultValidityCheckMark"] == "Bad value" or task["ResultValidityCheckMark"] == "Out of bounds":
+                return False
             assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
             assert task['worker'], "Worker is not specified: %s" % task
-            # assuming, we have a 'TaskConfiguration' field of Experiment description stored in Configuration (could be as static field)
             assert set(self.TaskConfiguration['ResultStructure']) <= set(task['result'].keys()), \
-                "All required result fields are not obtained. Expected: %s. Got: %s." % (
-                self.TaskConfiguration["ResultStructure"], task['result'].keys())
+                f"All required result fields are not obtained. " \
+                f"Expected: {self.TaskConfiguration['ResultStructure']}. Got: {task['result'].keys()}."
             return True
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))

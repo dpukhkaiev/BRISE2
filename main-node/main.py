@@ -4,9 +4,12 @@ Main module for running BRISE configuration balancing."""
 import logging
 import pika
 import threading
+from enum import Enum
+from sys import argv
 
 from warnings import filterwarnings
-filterwarnings("ignore")    # disable warnings for demonstration.
+
+filterwarnings("ignore")  # disable warnings for demonstration.
 
 from WorkerServiceClient.WSClient_events import WSClient
 from model.model_selection import get_model
@@ -28,44 +31,67 @@ class MainThread(threading.Thread):
     connected to the `default_configuration_results_queue` and `configurations results queue` as a consumer.
     """
 
+    class State(int, Enum):
+        RUNNING = 0
+        SHUTTING_DOWN = 1
+        IDLE = 2
+
     def __init__(self, experiment_setup=None):
         """
         The function for initializing main thread
         :param experiment_setup: fully initialized experiment, r.g from a POST request
         """
         super(MainThread, self).__init__()
+        self._is_interrupted = False
+        self.conf_lock = threading.Lock()
+        self._state = self.State.IDLE
+        self.experiment_setup = experiment_setup
+
+    def run(self):
+        """
+        Entry point to the main node functionality - measuring default Configuration.
+        When the default Configuration finishes it's evaluation, the first bunch of Configurations will be
+        sampled for evaluation (respectively, the queues for Configuration measurement results initializes).
+        """
         self.sub = API()  # subscribers
+
         if __name__ == "__main__":
             self.logger = BRISELogConfigurator().get_logger(__name__)
         else:
             self.logger = logging.getLogger(__name__)
 
+        self._state = self.State.RUNNING
         self.logger.info("Starting BRISE")
 
         self.sub.send('log', 'info', message="Starting BRISE")
 
-        if not experiment_setup:
-            default_ed_file = './Resources/EnergyExperiment.json'
-            log_msg = "The Experiment Setup was not provided. The default one will be executed: %s" % default_ed_file
-            self.logger.warning(log_msg)
-            self.sub.send('log', 'warning', message=log_msg)
-            experiment_description, search_space = load_experiment_setup(default_ed_file)
+        if not self.experiment_setup:
+            # Check if main.py running with a specified experiment description file path
+            if len(argv) > 1:
+                exp_desc_file_path = argv[1]
+            else:
+                exp_desc_file_path = './Resources/EnergyExperiment.json'
+                log_msg = f"The Experiment Setup was not provided and the path to an experiment file was not specified." \
+                          f" The default one will be executed: {exp_desc_file_path}"
+                self.logger.warning(log_msg)
+                self.sub.send('log', 'warning', message=log_msg)
+            experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
         else:
-            experiment_description = experiment_setup["experiment_description"]
-            search_space = experiment_setup["search_space"]
+            experiment_description = self.experiment_setup["experiment_description"]
+            search_space = self.experiment_setup["search_space"]
 
         validate_experiment_description(experiment_description)
+
+        # Initializing instance of Experiment - main data holder.
         self.experiment = Experiment(experiment_description, search_space)
-        self._is_interrupted = False
-        self.conf_lock = threading.Lock()
+        Configuration.set_task_config(self.experiment.description["TaskConfiguration"])
+
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 host=self.experiment.description["General"]["EventService"]["Address"],
                 port=self.experiment.description["General"]["EventService"]["Port"]))
         self.consume_channel = self.connection.channel()
-
-        Configuration.set_task_config(self.experiment.description["TaskConfiguration"])
 
         self.sub.send('experiment', 'description',
                       global_config=self.experiment.description["General"],
@@ -74,10 +100,10 @@ class MainThread(threading.Thread):
                       )
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
-        # sc group initialization which parameters could be defined without statistic data usage
+        # Initializing Prior group of Stop Conditions, according to Experiment Description specification.
         self.prior_stop_condition = get_stop_condition(self.experiment, True)
 
-        # Creating instance of selector algorithm, according to specified in experiment description type.
+        # Initializing Selector Algorithm, according to Experiment Description specification.
         self.selector = get_selector(experiment=self.experiment)
 
         # Instantiate client for Worker Service, establish connection.
@@ -90,16 +116,11 @@ class MainThread(threading.Thread):
                                               logfile='%s%s_WSClient.csv' % (self.experiment.description["General"]['results_storage'],
                                                                              self.experiment.get_name()))
 
-        # Creating runner for experiments that will repeat the configuration measurement to avoid fluctuations.
+        # Initialize Repeater - encapsulate Configuration evaluation process to avoid results fluctuations.
+        # (achieved by multiple Configuration evaluations on Workers - Tasks)
         self.repeater = Repeater(self.worker_service_client, self.experiment)
 
         self.default_config_handler = get_default_config_handler(self.experiment)
-
-    def run(self):
-        """
-        Point of entry to the main functionality, measuring default configuration,
-        and starting listening of queues with responses
-        """
         temp_msg = "Measuring default Configuration."
         self.logger.info(temp_msg)
         self.sub.send('log', 'info', message=temp_msg)
@@ -144,7 +165,7 @@ class MainThread(threading.Thread):
         if self.experiment.is_configuration_evaluated(default_configuration):
             self.experiment.put_default_configuration(default_configuration)
 
-            temp_msg = "Results of measuring default value: %s" % self.experiment.search_space.get_default_configuration().get_average_result()
+            temp_msg = f"Evaluated Default Configuration: {default_configuration}"
             self.logger.info(temp_msg)
             self.sub.send('log', 'info', message=temp_msg)
 
@@ -161,17 +182,17 @@ class MainThread(threading.Thread):
 
     def get_configurations_results(self, ch, method, properties, body):
         """
-        Callback function for the result of any configuration except default
+        Callback function for the result of all Configurations except Default
         :param ch: pika.Channel
         :param method:  pika.spec.Basic.GetOk
         :param properties: pika.spec.BasicProperties
         :param body: result of measuring any configuration except default in bytes format
         :return:optimal configuration
         """
-        with self.conf_lock:  # for be sure that any of configurations won't be added after finding the near-optimal configuration
+        with self.conf_lock:  # To be sure, that no Configuration will be added after satisfying all Stop Conditions.
             configuration = Configuration.from_json(body.decode())
             if not self._is_interrupted and self.experiment.is_configuration_evaluated(configuration):
-                self.experiment.try_add_configurations([configuration])
+                self.experiment.try_add_configuration(configuration)
                 self.selector.disable_configurations([configuration])
                 finish = self.posterior_stop_condition.validate_conditions()
                 if not finish:
@@ -185,13 +206,9 @@ class MainThread(threading.Thread):
                     optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
                     return optimal_configuration
                 else:
-                    temp_msg = "-- New Configuration(s) was(were) measured. Currently were evaluated " \
-                               f"{len(self.model.measured_configurations)} of {self.experiment.search_space.get_search_space_size()}" \
-                               " Configurations. Building Target System model.\n"
+                    temp_msg = "-- New Configuration was evaluated. Building Target System model."
                     self.logger.info(temp_msg)
                     self.sub.send('log', 'info', message=temp_msg)
-
-                    # repeat work() function until the near-optimal configuration will be found
                     self.send_new_configurations_to_measure()
 
     def send_new_configurations_to_measure(self):
@@ -200,39 +217,42 @@ class MainThread(threading.Thread):
         """
         model_built = self.model.update_data(self.experiment.measured_configurations).build_model()
         for n in range(self.worker_service_client.get_number_of_needed_configurations()):  # for dynamic parallelization
+            is_model_produce_unique_configuration = False
             if model_built and self.model.validate_model():
-                i = 1
-                while True:
-                    predicted_configurations = self.model.predict_next_configurations(i)
-                    is_unique_configuration = False
+                for i in range(5):  # 5 times to try to get unique configuration
+                    predicted_configurations = self.model.predict_next_configurations(i + 1)
                     for conf in predicted_configurations:
                         if conf.status == Configuration.Status.NEW:
                             self.repeater.measure_configurations([conf])
-                            is_unique_configuration = True
+                            is_model_produce_unique_configuration = True
                             break
-                    if is_unique_configuration:
+                    temp_msg = "Predicted following Configuration->Quality pairs: %s" \
+                               % list((str(c) + "->" + str(c.predicted_result) for c in predicted_configurations))
+                    self.logger.info(temp_msg)
+                    self.sub.send('log', 'info', message=temp_msg)
+
+                    if is_model_produce_unique_configuration:
                         break
-                    else:
-                        i += 1
-                temp_msg = "Predicted following Configuration->Quality pairs: %s" \
-                           % list((str(c) + "->" + str(c.predicted_result) for c in predicted_configurations))
-                self.logger.info(temp_msg)
-                self.sub.send('log', 'info', message=temp_msg)
-            else:
+            if not is_model_produce_unique_configuration:
                 while True:
                     configs_from_selector = self.selector.get_next_configuration()
                     if self.experiment.get_any_configuration_by_parameters(configs_from_selector.parameters) is None:
                         self.repeater.measure_configurations([configs_from_selector])
                         break
 
+    def get_state(self):
+        return self._state
+
     def stop(self):
         """
         The function for stop main thread externaly (e.g. from front-end)
         """
+        self._state = self.State.SHUTTING_DOWN
         self._is_interrupted = True
         self.worker_service_client.stop()
         self.repeater.stop()
         self.experiment.get_final_report_and_result(self.repeater)
+        self._state = self.State.IDLE
 
 
 def run(experiment_setup=None):
