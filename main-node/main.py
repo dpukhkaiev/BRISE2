@@ -187,7 +187,6 @@ class MainThread(threading.Thread):
         :param method:  pika.spec.Basic.GetOk
         :param properties: pika.spec.BasicProperties
         :param body: result of measuring any configuration except default in bytes format
-        :return:optimal configuration
         """
         with self.conf_lock:  # To be sure, that no Configuration will be added after satisfying all Stop Conditions.
             configuration = Configuration.from_json(body.decode())
@@ -201,10 +200,9 @@ class MainThread(threading.Thread):
                     except Exception as e:
                         self.logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
                 if finish:
-                    self.stop()  # stop all internal thread after getting the optimal configuration
+                    self.stop()  # stop all internal threads
                     self.sub.send('log', 'info', message="Solution validation success!")
-                    optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
-                    return optimal_configuration
+                    return
                 else:
                     temp_msg = "-- New Configuration was evaluated. Building Target System model."
                     self.logger.info(temp_msg)
