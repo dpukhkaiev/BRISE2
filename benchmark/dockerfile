@@ -40,6 +40,7 @@ ENV LANG C.UTF-8
 
 # Project dependencies
 COPY ./benchmark/requirements.txt /home/benchmark_user/requirements.txt
+RUN python3.7 -m pip install -q Cython
 RUN python3.7 -m pip install -q -r /home/benchmark_user/requirements.txt
 
 # Inner project dependencies
