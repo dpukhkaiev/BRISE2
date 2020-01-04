@@ -378,7 +378,7 @@ class Experiment:
         :return: current subsearchspace
         """
         params = [config.parameters for config in self.measured_configurations]
-        subsearchspace = np.array(params).T.tolist()
+        subsearchspace = np.array(params, dtype= 'object').T.tolist() 
         result = [list(set(dimension)) for dimension in subsearchspace]
         return result
 
