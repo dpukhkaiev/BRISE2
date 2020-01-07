@@ -85,5 +85,4 @@ export class RestService {
       .catch(this.handleError);
   }
 
-
 }

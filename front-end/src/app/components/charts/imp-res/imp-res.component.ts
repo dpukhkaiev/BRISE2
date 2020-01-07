@@ -43,6 +43,12 @@ export class ImpResComponent implements OnInit {
   private initMainEvents(): void {
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((obj: any) => {
+        this.bestRes.clear()
+        this.allRes.clear()
+        const element = this.impr.nativeElement;
+        element.style.display = 'none'
+        Plotly.purge(element)
+        this.solution = undefined
         this.experimentDescription = obj['description']['experiment description']
       });
 
@@ -98,34 +104,33 @@ export class ImpResComponent implements OnInit {
             'time': min + 'm ' + sec + 's',
             'measured points': this.allRes.size
           }
-
           // Check the best available point
+          let descr = this.experimentDescription
           this.bestRes && this.bestRes.forEach(function (resItem) {
             // TODO: Max or min from task
-            if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
-              temp.results = resItem.results
-              temp.configurations = resItem.configurations
+            if(descr["General"]["isMinimizationExperiment"] == true){
+              if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
+                temp.results = resItem.results
+                temp.configurations = resItem.configurations
+              }
+            }
+            else{
+              if (temp.results[0] < resItem.results[0]) { // check FIRST result from array!
+                temp.results = resItem.results
+                temp.configurations = resItem.configurations
+              }
             }
           })
           this.bestRes.add(temp) // Add the best available point(result)
         })
         this.bestRes.size>2 && this.render()
       });
-
-    this.ioMain.onEvent(MainEvent.EXPERIMENT)
-      .subscribe((obj: any) => {
-        if (obj["configuration"]) {
-          this.bestRes.clear()
-          this.allRes.clear()
-          this.solution = undefined
-        }
-      });
   }
 
   render() {
     // DOM element. Render point
     const element = this.impr.nativeElement
-
+    element.style.display = 'block'
     // X-axis data
     const xBest = Array.from(this.bestRes).map(i => i["measured points"]);
     // Results

@@ -2,12 +2,14 @@ export class Task {
     id: string = '';
     run: Run;
     config: Configuration;
+    stub_config: Array<any>;
     meta: MetaData;
     constructor(item) {
         this.id = item.task[0].results["task id"];
         this.run = item.task[0].run;
         this.config = item.task[0].configurations;
         this.meta = item.task[0].results;
+        this.stub_config = [];
     }
 }
 interface MetaData {
@@ -25,13 +27,6 @@ interface Configuration {
 interface Run {
     "method": String,
     "param": any
-}
-
-interface Results {
-    'threads': String,
-    'frequency': String,
-    'energy': number,
-    'time': number
 }
 
 export interface Solution {

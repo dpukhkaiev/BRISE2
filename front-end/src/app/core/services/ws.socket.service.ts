@@ -5,7 +5,6 @@ import { Observable } from 'rxjs/Observable';
 import * as socketIo from 'socket.io-client';
 
 // User
-import { Task } from '../../data/taskData.model';
 import { Event } from '../../data/client-enums';
 
 // Variables

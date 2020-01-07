@@ -1,9 +1,21 @@
 <div class="button-row">
-  <h3>Experiment: Method: {{experimentDescription?.TaskConfiguration?.TaskName}}; Scenario: {{experimentDescription?.TaskConfiguration?.Scenario?.ws_file}}</h3>
+  <mat-card>
+    <mat-list dense role="list">
+      <mat-list-item role="listitem">
+        <mat-icon>poll</mat-icon>
+        <span>Experiment:</span>
+        <span>{{experimentDescription?.TaskConfiguration?.TaskName}}</span>
+      </mat-list-item>
+      <mat-list-item role="listitem">
+        <mat-icon>insert_drive_file</mat-icon>
+        <span>Scenario:</span>
+        <span>{{experimentDescription?.TaskConfiguration?.Scenario?.ws_file}}</span>
+      </mat-list-item>
+    </mat-list>
+  </mat-card>
+
   <button mat-button (click)="startMain()" [disabled]="isRuning" color="primary">Start</button>
   <button mat-button (click)="stopMain()" [disabled]="!isRuning" color="warn">Stop</button>
-
-
   <button class="download" *ngIf=isFinish mat-raised-button (click)="openDownloadOption()">
     <mat-icon matListIcon>save</mat-icon> Save Experiment
   </button>

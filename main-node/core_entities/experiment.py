@@ -238,12 +238,6 @@ class Experiment:
         """
         self.measured_configurations.append(configuration)
 
-        # for Demo, please, uncomment next lines:
-        # stub_parameters = self.search_space.discard_Nones(configuration.parameters)
-        # self.api.send("new", "configuration",
-        #               configurations=[stub_parameters],
-        #               results=[configuration.get_average_result()])
-
         self.api.send("new", "configuration",
                       configurations=[configuration.parameters],
                       results=[configuration.get_average_result()])

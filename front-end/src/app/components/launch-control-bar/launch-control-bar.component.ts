@@ -51,6 +51,7 @@ export class LaunchControlBarComponent implements OnInit {
         .subscribe((res) => {
           console.log('Main start:', res)
           this.isRuning = true
+          this.isFinish = false
         }
         );
     }
@@ -63,7 +64,7 @@ export class LaunchControlBarComponent implements OnInit {
           this.isRuning = false
         }
         );
-    }
+      }
   }
 
   // Socket

@@ -6,133 +6,124 @@ import time
 import random
 import logging
 
-from WorkerServiceClient.WSClient_events import WSClient
-from tools.file_system_io import create_folder_if_not_exists
-from logger.default_logger import BRISELogConfigurator
+from copy import deepcopy
 
-def run(io=None):
-    """
-    Structure saved data:
-    model_and_data = {
-        "Search space": list
-        "Validated model": regression model object. dumped just after successful model validation
-        "Model with validated solution": regression model object.
-        "Final feature set": list. - feature set that was before final report and exit
-        "Final label set": list
-        "Solution": list - final reported configuration and energy
-        "Global config": dict
-        "Task config": dict 
-    }
-    """
-    if __name__ == "__main__":
-        logger = BRISELogConfigurator().get_logger(__name__)
-    else:
-        logger = logging.getLogger(__name__)
+from core_entities.experiment import Experiment
+from WorkerServiceClient.WSClient_sockets import WSClient
+from tools.file_system_io import create_folder_if_not_exists
+from tools.front_API import API
+from logger.default_logger import BRISELogConfigurator
+from repeater.repeater import Repeater
+
+
+if __name__ == "__main__":
+    logger = BRISELogConfigurator().get_logger(__name__)
+else:
+    logger = logging.getLogger(__name__)
+
+
+class LoggerStub(logging.Logger): pass
+class ApiStub(API): pass
+
+
+def run(experiment_description=None, mock_data_file = None):
     try:
-        with open("./tools/main_mock_data.pkl", 'rb') as f:
+        with open(mock_data_file, 'rb') as f:
             mock_data = pickle.loads(f.read())
-    except IOError or pickle.UnpicklingError as error:
-        logger.error("Unable to load saved MOCK data: %s" % error, exc_info=True)
+    except IOError or pickle.UnpicklingError as e:
+        logger.error("Unable to load saved MOCK data: %s" % e, exc_info=True)
         exit(1)
 
-    sleep_between_messages = 0  # In seconds. One second + ~25 seconds to overall running for current version of mock.
     # ------------------------------------------------------
     # Scenario:
-    # 1. Initial emits (the global and task configurations, the default configuration measurements results).
-    # 2. Measuring the first set of configurations - 13.
-    # 3. Building and validation of the first regression model.
-    # 4. Prediction of a solution - this solution will not pass the validation (because it is worse than the default).
-    # 5. Adding previous solution to the data set, measuring one new point.
-    # 6. Building and validation of the second (and final) model.
-    # 7. Prediction and validation of the solution.
-    # 8. Reporting the results.
+    # 1. Sending experiment description.
+    # 2. Measuring and sending default configuration.
+    # 3. Measuring initial configurations.          (Currently - 4 pc).
+    # 4. Building model and sending predictions:
+    #   If model adequate:                          (6 last models)
+    #       5. Predicting configuration, measuring, sending to the front-end.
+    #   else: (model not adequate)                  (6 first models)
+    #       5. Getting new configuration from Sobol.
+    # 6. Evaluating Stop Condition:
+    #   If terminating:
+    #       7. Reporting the solution (in summary - 17 Configurations was evaluated (including default and Solution).
+    #   else:
+    #       7. Go to 4.
     # ------------------------------------------------------
-    repetitions = 0
-    thresholds = {'good': (4, 8),
-                 'mid': (3, 4),
-                 'bad': (2, 3)}
+    # Saved data is a dictionary with following keyed parameters:
+    # 'Models and configurations': Chronological List of models and corresponding configurations used to build a model.
+    # 'Solution configuration':
+    # 'Initial configurations':
+    # 'Default configuration':
+    # 'Global config': Dict for initial config.
+    # 'Experiment': Experiment object dumped after initialization.
+
+    #  --- Presets
+    sleep_between_messages = 2  # In seconds. One second + ~25 seconds to overall running for current version of mock.
+    api = API()
     create_folder_if_not_exists('./Results/')
 
-    if io:
-        # Sasha asked also to send each 'measuring' point to Worker Service.
-        wsc = WSClient(mock_data["Task config"]["TaskConfiguration"],
-                       'w_service:49153',
-                       "MOCK_WSC.log")
-        # Sending global and task config
-        temp = {"global_config": mock_data["Global config"], "task": mock_data["Task config"]}
-        io.emit('main_config', temp)
-        time.sleep(sleep_between_messages)
-        logger.info("Measuring default configuration that we will used in regression to evaluate solution")
-        # Sending default configuration (like from the repeater) 10 times.
-        for x in range(10):
-            wsc.work(mock_data["Default configuration"][0])
-            repetitions += 1
-        io.emit('task result', {'configuration': mock_data["Default configuration"][0][0],
-                                "result": mock_data["Default configuration"][1][0][0]})
-        time.sleep(sleep_between_messages)
+    # --- Fixing dump issues (APIs and Logging objects were cut off).
+    # Removing all tasks from configurations to fix repetitions.
+    for state in mock_data["Models and configurations"]:
+        state["Model"].logger = logging.getLogger("model")
+        state["Model"].sub = API()
+        for config in state["Configurations"]:
+            config.logger = logging.getLogger("core_entities.configuration.py")
 
-        # Sending results of default configuration measurement (like from the main).
-        io.emit('default conf', {'configuration': mock_data["Default configuration"][0][0],
-                                 "result": mock_data["Default configuration"][1][0][0]})
-        time.sleep(sleep_between_messages)
 
-        logger.info("Measuring initial number experiments, while it is no sense in trying to create model"
-              "\n(because there is no data)...")
-        for feature, label in zip(mock_data["Features1"], mock_data["Labels1"]):
-            logger.info("Sending new task to IO.")
-            if label < [406.12]: bounds = thresholds['good']
-            elif label < [1083.67]: bounds = thresholds['mid']
-            else: bounds = thresholds['bad']
-            repits = random.randint(*bounds) 
-            repetitions += repits
-            wsc.work([feature for x in range(repits)])
-            io.emit('task result', {'configuration': feature, "result": label[0]})
-            time.sleep(sleep_between_messages)
+    # --- Start actual imitation.
+    experiment = Experiment(mock_data["Experiment"].description, mock_data["Experiment"].search_space)
+    api.send('experiment', 'description',
+                 global_config=mock_data["Global config"],
+                 experiment_description=experiment.description,
+                 searchspace_description=experiment.search_space.generate_searchspace_description()
+                 )
 
-        # First model validation.
-        mock_data["Model1"].validate_model(mock_data["Search space"])
-        time.sleep(sleep_between_messages)
+    # for config in [experiment.default_configuration, *mock_data["Solution configuration"], *mock_data["Initial configurations"]]:
+    #     config.logger = logging.getLogger("core_entities.configuration.py")
+    mock_data["Models and configurations"].pop()
 
-        # First model solution prediction (greater than default).
-        predicted_labels, predicted_features = mock_data["Model1"].predict_solution(mock_data["Search space"])
-        logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
-        io.emit('info', {'message': "Verifying solution that model gave.."})
-        time.sleep(sleep_between_messages)
+    worker_service_client = WSClient(experiment.description["TaskConfiguration"], 'w_service:49153', "MOCK_WSC.log")
 
-        # Sending additional configurations (including predicted configuration.
-        add_features = [config for config in mock_data["Final feature set"] if config not in mock_data["Features1"]]
-        add_labels = [result for result in mock_data["Final label set"] if result not in mock_data["Labels1"]]
-        for feature, label in zip(add_features, add_labels):
-            logger.info("Sending new task to IO.")
-            if label < [406.12]: bounds = thresholds['good']
-            elif label < [1083.67]: bounds = thresholds['mid']
-            else: bounds = thresholds['bad']
-            repits = random.randint(*bounds)
-            repetitions += repits
-            wsc.work([feature for x in range(repits)])
-            io.emit('task result', {'configuration': feature, 'result': label[0]})
-            time.sleep(sleep_between_messages)
+    # Creating runner for experiments that will repeat the configuration measurement to avoid fluctuations.
+    repeater = Repeater(worker_service_client, experiment)
+    logger.info("Measuring default configuration that we will used in regression to evaluate solution")
 
-        # Second (and final) model creation, validation, solution prediction.
-        mock_data["Final model"].validate_model(mock_data["Search space"])
+    # Sending default configuration.
+    experiment.search_space.set_default_configuration(mock_data["Default configuration"])
+    for task in mock_data["Default configuration"].get_tasks().keys():
+        api.send('new', 'task', configurations=[mock_data["Default configuration"].get_parameters()], results=[mock_data["Default configuration"].get_tasks()[task]])
         time.sleep(sleep_between_messages)
-        predicted_labels, predicted_features = mock_data["Final model"].predict_solution(mock_data["Search space"])
-        logger.info("Predicted solution features:%s, labels:%s." % (str(predicted_features), str(predicted_labels)))
-        time.sleep(sleep_between_messages)
-        io.emit('info', {'message': "Verifying solution that model gave.."})
-        time.sleep(sleep_between_messages)
-        repits = random.randint(*thresholds['good'])
-        [wsc._send_task([mock_data["Solution"][1]]) for x in range(repits)]
-        repetitions += repits
-        io.emit('task result', {'configuration': mock_data["Solution"][1], "result": mock_data["Solution"][0][0]})
-        time.sleep(sleep_between_messages)
-        io.emit('info', {'message': "Solution validation success!"})
-        time.sleep(sleep_between_messages)
-        # reporting results
-        repeater = A() # Just for reporting results. Fake object, in reporting only one field used.
-        repeater.performed_measurements = repetitions    # Just for reporting results. These field used in reporting.
-        mock_data["Final model"].get_result(repeater)
+    repeater.performed_measurements += len(mock_data["Default configuration"].get_tasks())
+    experiment.put_default_configuration(mock_data["Default configuration"])
 
+    logger.info("Measuring initial Configurations") # Initial configuration included into the first model.
+    for state_num, state in enumerate(mock_data['Models and configurations']):
+        # Select new configurations.
+        new_configs = []
+        for config in state['Configurations']:
+            config_is_new = True
+            for prev_config in experiment.measured_configurations:
+                if config.get_parameters() == prev_config.get_parameters():
+                    config_is_new = False
+            if config_is_new:
+                new_configs.append(config)
+        # Measure new configurations (selecting needed number of tasks from each of configurations)
+        for config in new_configs:
+            repeater.performed_measurements += len(config.get_tasks())
+            for task in config.get_tasks().keys():
+                api.send('new', 'task', configurations=[config.get_parameters()], results=[config.get_tasks()[task]])
+                time.sleep(sleep_between_messages)
+            experiment.add_configurations([config])
+        
+        number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration()
+        # Imitation of building the model, regression prediction:
+        state["Model"].predict_next_configurations(number_of_configurations_in_iteration)
+        api.send("log", "info", message="Built models is%s valid!" % ("" if state["Adequate"] else " NOT"))
+
+    # At this point stop condition said "Stop"
+    experiment.get_final_report_and_result(repeater)
 
 class A:
     @staticmethod
@@ -150,7 +141,7 @@ from sys import path
 chdir('..')
 path.append(abspath('.'))
     """
-    logger = BRISELogConfigurator.get_logger(__name__)
+    API(A())
     start = time.time()
-    run(io=A())
+    run()
     logger.info("Mock running time: %s(sec)." % round(time.time() - start))

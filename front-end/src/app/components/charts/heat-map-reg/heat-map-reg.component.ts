@@ -25,7 +25,7 @@ export class HeatMapRegComponent implements OnInit {
   // Variables
   prediction = new Map()
   solution: Solution
-  measPoints: Array<Array<number>> = []
+  measPoints: Array<Array<any>> = []
   
   resetRes() {
     this.prediction.clear()
@@ -39,8 +39,8 @@ export class HeatMapRegComponent implements OnInit {
   experimentDescription: ExperimentDescription
   searchspace: object
   // Rendering axises
-  y: Array<number>
-  x: Array<number>
+  y: Array<any>
+  x: Array<any>
 
   // Default theme
   theme = {
@@ -110,11 +110,11 @@ export class HeatMapRegComponent implements OnInit {
 
     Plotly.react(regression, data, layout);
   }
-  zParser(data: Map<String, Number>): Array<Array<Number>> {
+  zParser(data: Map<String, any>): Array<Array<any>> {
     var z = []
-    this.y.forEach(y => { // y - threads
+    this.y.forEach(y => {
       var row = []
-      this.x.forEach(x => { // x - frequency
+      this.x.forEach(x => {
         row.push(data.get(String([y, x]))[0]) // change [x,y] or [y,x] if require horizontal or vertical orientation
                                           // Get the first result from an array
       });
@@ -156,8 +156,10 @@ export class HeatMapRegComponent implements OnInit {
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
         this.searchspace = obj['description']['searchspace_description']
-        this.y = this.searchspace['boundaries'][0]
-        this.x = this.searchspace['boundaries'][1]
+        let boundaryObj : Object
+        boundaryObj = this.searchspace['boundaries']
+        this.x = Object.values(boundaryObj)[1]
+        this.y = Object.values(boundaryObj)[0]
       });
 
     this.ioMain.onEvent(MainEvent.PREDICTIONS)

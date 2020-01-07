@@ -216,19 +216,17 @@ class SearchSpace:
         :return: dict: search space description
         """
         search_space_description = {}
-        names = []
-        boundaries = []
+        boundaries = {}
+        boundary = []
         for hyperparameter_name in self.get_hyperparameter_names():
-            hyperparameter = self.__get_hyperparameter(hyperparameter_name)
-            if isinstance(hyperparameter, (UniformIntegerHyperparameter, UniformFloatHyperparameter)):
-                boundary = [hyperparameter.lower, hyperparameter.upper]
+            if self.get_hyperparameter_type(hyperparameter_name) is HyperparameterType.NUMERICAL_FLOAT or \
+                self.get_hyperparameter_type(hyperparameter_name) is HyperparameterType.NUMERICAL_INTEGER:
+                boundary = self.get_hyperparameter_boundaries(hyperparameter_name)
             else:
                 boundary = self.get_hyperparameter_categories(hyperparameter_name)
-            names.append(hyperparameter.name)
-            boundaries.append(np.array(boundary).T.tolist())
-        search_space_description["names"] = names
-        search_space_description["boundaries"] = boundaries
+            boundaries[hyperparameter_name] = boundary
         search_space_size = self.get_search_space_size()
+        search_space_description["boundaries"] = boundaries
         search_space_description["size"] = "Infinity" if search_space_size == float("inf") else search_space_size
         return search_space_description
 
@@ -246,19 +244,3 @@ class SearchSpace:
             parameters_in_indexes.insert(hyperparam_index, param_index)
         return parameters_in_indexes
 
-    # This method is only for DEMO!
-    # Avoid using it for standard runs, as it may hide conditional relations between hyperparameters!
-    def discard_Nones(self, hyperparameters):
-        '''
-        Replaces None values of parameters in configuration to default ones.
-        It should be used only before sending configurations to the frontend to avoid bad charts rendering.
-        :param hyperparameters: List. Configuration in form of its hyperparameters' values
-        :return: List. Stub hyperparameters' values
-        '''
-        stub_parameters = []
-        for idx, hyperparameter in enumerate(hyperparameters):
-            if hyperparameter == None:
-                stub_parameters.append(self.core_search_space.get_hyperparameter(self._hyperparameter_names[idx]).default_value)
-            else:
-                stub_parameters.append(hyperparameter)
-        return stub_parameters

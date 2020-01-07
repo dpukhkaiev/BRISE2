@@ -73,7 +73,7 @@ export class MultiDimComponent implements OnInit {
         this.experimentDescription = obj['description']['experiment description']
         this.searchspace = obj['description']['searchspace_description']
         let resultParams = this.experimentDescription['TaskConfiguration']['TaskParameters']
-        let rangeValues = this.searchspace["boundaries"]
+        let rangeValues = Object.values(this.searchspace["boundaries"])
 
         this.resultParamsRange = this.zip(resultParams, rangeValues)
         this.resultParamsRange.set('result', undefined) // range for results is undefined
@@ -99,10 +99,16 @@ export class MultiDimComponent implements OnInit {
       .subscribe((obj: any) => {
         obj["configuration"] && obj["configuration"].forEach(configuration => {
           if (configuration) {
+            // if configuration contains 'None' values mask them before graph rendering
+            let boundaries = Object.values(this.searchspace['boundaries'])
+            for (let i = 0; i < this.experimentDescription.DomainDescription.HyperparameterNames.length; ++i){
+              if (configuration['configurations'][i] == null){
+                configuration['configurations'][i] = boundaries[i][0]
+              }              
+            }
             let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
             point.set('result', configuration.results[0])
-            // console.log('New:', point)
-            this.allPoints.add(point)
+            this.allPoints.add(point) 
             this.render()
           }
           else {
@@ -154,7 +160,6 @@ export class MultiDimComponent implements OnInit {
       label: parameter.replace(/_/g, " ")
     }
     // If values are not numerical.
-    // TODO: reduced to one type. There are no logical transformations
     if (valuesRange && (typeof valuesRange[0] == "string" || typeof valuesRange[0] == "boolean")) {
       dim.tickvals = dimValues.map((_, i) => i)
       dim.values = dimValues.map(value => valuesRange.indexOf(value)),

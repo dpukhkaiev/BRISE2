@@ -27,6 +27,7 @@ export class InfoBoardComponent implements OnInit {
   news: Set<NewsPoint> = new Set()
 
   solution: Solution
+  configWithNones: String
   default_configuration: any
 
   globalConfig: object
@@ -42,6 +43,10 @@ export class InfoBoardComponent implements OnInit {
     this.initMainEvents()
   }
 
+  refresh(){
+    this.solution = undefined
+    this.news = new Set()
+  }
 
   private initMainEvents(): void {
 
@@ -71,6 +76,8 @@ export class InfoBoardComponent implements OnInit {
       .subscribe((obj: any) => {
         if (obj['configuration']) {
           this.solution = obj['configuration'][0]
+          this.configWithNones = String(this.solution.configurations)
+          this.configWithNones = this.configWithNones.replace(",,", ",None,")
           let temp = {
             'time': Date.now(),
             'message': '★★★ The optimum result is found. The best point is reached ★★★'
@@ -98,6 +105,7 @@ export class InfoBoardComponent implements OnInit {
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
         this.searchspace = obj['description']['searchspace_description']
+        this.refresh()
         this.searchspace['size'] = parseFloat(this.searchspace['size'])
         let temp = {
           'time': Date.now(),

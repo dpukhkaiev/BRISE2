@@ -37,13 +37,14 @@ export class HeatMapComponent implements OnInit {
 
   // Best point 
   solution: Solution
+  configWithNones: String
   // Measured points for the Regresion model from worker-service
-  measPoints: Array<Array<number>> = []
+  measPoints: Array<Array<any>> = []
   defaultConfiguration: Configuration
 
   // Rendering axises
-  y: Array<number>
-  x: Array<number>
+  y: Array<any>
+  x: Array<any>
 
   resetRes() {
     this.result.clear()
@@ -75,12 +76,12 @@ export class HeatMapComponent implements OnInit {
   ngOnInit() {
     this.initMainEvents();
   }
-  
+
   isModelType(type: String) {
     return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
-  zParser(data: Map<String,Number>): Array<Array<Number>> {
+  zParser(data: Map<String,any>): Array<Array<any>> {
     // Parse the answears in to array of Y rows
     var z = []
     this.x && 
@@ -132,14 +133,14 @@ export class HeatMapComponent implements OnInit {
         autosize: true,
         showlegend: false,
         xaxis: {
-          title: this.searchspace['names'][1],
+          title: Object.keys(this.searchspace['boundaries'])[1],
           type: 'category',
           autorange: true,
           range: [Math.min(...this.x), Math.max(...this.x)],
           showgrid: true
         },
         yaxis: {
-          title: this.searchspace['names'][0],
+          title: Object.keys(this.searchspace['boundaries'])[0],
           type: 'category',
           autorange: true,
           range: [Math.min(...this.y), Math.max(...this.y)],
@@ -172,8 +173,10 @@ export class HeatMapComponent implements OnInit {
         this.globalConfig = obj['description']['global configuration']
         this.experimentDescription = obj['description']['experiment description']
         this.searchspace = obj['description']['searchspace_description']
-        this.y = this.searchspace['boundaries'][0]
-        this.x = this.searchspace['boundaries'][1]
+        let boundaryObj : Object
+        boundaryObj = this.searchspace['boundaries']
+        this.x = Object.values(boundaryObj)[1]
+        this.y = Object.values(boundaryObj)[0]
       });
 
     this.ioMain.onEvent(MainEvent.NEW) // New configuration results
@@ -194,6 +197,8 @@ export class HeatMapComponent implements OnInit {
         obj["configuration"] && obj["configuration"].forEach(configuration => {
           if (configuration) {
             this.solution = configuration // In case if only one point solution
+            this.configWithNones = String(this.solution.configurations)
+            this.configWithNones = this.configWithNones.replace(",,", ",None,")
             console.log('Final:', obj["configuration"])
           } else {
             console.log("Empty solution")
