@@ -1,9 +1,16 @@
 # BRISE 2.3.0
 ##### Benchmark Reduction via Adaptive Instance Selection
 Software Product Line for Parameter Tuning\
-Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
-different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy consumption minimization` 
+[SEAMS'20](https://conf.researchr.org/home/seams-2020) use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
+different algorithms (data compression, sorting, encrpyption and database queries) w.r.t. `energy consumption minimization` 
 (optimization goal).  
+## Experiment results
+[Link](./benchmark/results/reports/)
+
+## Repetition management strategies implementation
+[Quantity-based](./main-node/repeater/default.py)
+
+[Acceptable-error-based (both variants)](./main-node/repeater/student_deviation.py)
 
 ## Getting started
 #### Requirements
