@@ -153,7 +153,6 @@ class MainThread(threading.Thread):
         """
 
         default_configuration = Configuration.from_json(body.decode())
-        self.selector.disable_configurations([default_configuration])
         if default_configuration.status == Configuration.Status.BAD:
             if type(self.default_config_handler) == DefaultConfigurationHandler:
                 self.logger.error("The specified default configuration is broken.")
@@ -164,6 +163,7 @@ class MainThread(threading.Thread):
             self.repeater.measure_configurations([default_configuration])
         if self.experiment.is_configuration_evaluated(default_configuration):
             self.experiment.put_default_configuration(default_configuration)
+            self.selector.disable_configuration(default_configuration)
 
             temp_msg = f"Evaluated Default Configuration: {default_configuration}"
             self.logger.info(temp_msg)
@@ -192,7 +192,7 @@ class MainThread(threading.Thread):
             configuration = Configuration.from_json(body.decode())
             if not self._is_interrupted and self.experiment.is_configuration_evaluated(configuration):
                 self.experiment.try_add_configuration(configuration)
-                self.selector.disable_configurations([configuration])
+                self.selector.disable_configuration(configuration)
                 finish = self.posterior_stop_condition.validate_conditions()
                 if not finish:
                     try:

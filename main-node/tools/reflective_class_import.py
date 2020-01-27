@@ -65,7 +65,7 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
         logger.warning("In the Module '%s' more than one Class provided '%s'. Selected by the most similar name: '%s'."
                        % (found_module, all_found_class_names, selected_class_name))
     else:
-        msg = "The Module file '%s' does not contains any classes!" % found_module
+        msg = "The Module file '%s' does not contain any classes!" % found_module
         logger.error(msg)
         raise NameError(msg)
     where_import_was_called = inspect.stack()[1].filename[inspect.stack()[1].filename.rfind("/"):] + ":" + \

@@ -35,46 +35,49 @@ class SobolSequence(SelectionAlgorithm):
         :return: list - point in current search space.
         """
         while True:
-            # TODO: It is possible to encapsulate control of 'getting stuck while retrieving unique point from selector'
-            # Getting next point from sobol sequence.
-            point = self.__generate_sobol_vector()
+            if len(self.returned_points) < self.experiment.search_space.get_search_space_size():
+                # TODO: It is possible to encapsulate control of 'getting stuck while retrieving unique point from selector'
+                # Getting next point from sobol sequence.
+                point = self.__generate_sobol_vector()
 
-            values = {}
-            # TODO: Access of search space object should be direct (need to solve it during Feature transformation)
-            search_space = self.experiment.search_space
-            for index, hyperparameter_name in enumerate(search_space.get_hyperparameter_names()):
-                # TODO: Feature transformation should be encapsulated. This code will be refactored.
-                value = None
-                hyperparameter_type = search_space.get_hyperparameter_type(hyperparameter_name)
-                if hyperparameter_type is HyperparameterType.NUMERICAL_INTEGER:
-                    lower, upper = search_space.get_hyperparameter_boundaries(hyperparameter_name)
-                    value = lower + math.floor(point[index] * (upper - lower))
-                elif hyperparameter_type is HyperparameterType.NUMERICAL_FLOAT:
-                    lower, upper = search_space.get_hyperparameter_boundaries(hyperparameter_name)
-                    value = lower + point[index] * (upper - lower)
-                elif hyperparameter_type in (HyperparameterType.CATEGORICAL_ORDINAL, HyperparameterType.CATEGORICAL_NOMINAL):
-                    #  Sobol cannot differentiate between ordinal and nominal types.
-                    choices = search_space.get_hyperparameter_categories(hyperparameter_name)
-                    choice_number = math.floor(point[index] * len(choices))
-                    value = choices[choice_number]
-                else:
-                    raise TypeError(f"Hyperparameter {hyperparameter_type} is not supported by Sobol selection algorithm!")
-                values[hyperparameter_name] = value
+                values = {}
+                # TODO: Access of search space object should be direct (need to solve it during Feature transformation)
+                search_space = self.experiment.search_space
+                for index, hyperparameter_name in enumerate(search_space.get_hyperparameter_names()):
+                    # TODO: Feature transformation should be encapsulated. This code will be refactored.
+                    value = None
+                    hyperparameter_type = search_space.get_hyperparameter_type(hyperparameter_name)
+                    if hyperparameter_type is HyperparameterType.NUMERICAL_INTEGER:
+                        lower, upper = search_space.get_hyperparameter_boundaries(hyperparameter_name)
+                        value = lower + math.floor(point[index] * (upper - lower))
+                    elif hyperparameter_type is HyperparameterType.NUMERICAL_FLOAT:
+                        lower, upper = search_space.get_hyperparameter_boundaries(hyperparameter_name)
+                        value = lower + point[index] * (upper - lower)
+                    elif hyperparameter_type in (HyperparameterType.CATEGORICAL_ORDINAL, HyperparameterType.CATEGORICAL_NOMINAL):
+                        #  Sobol cannot differentiate between ordinal and nominal types.
+                        choices = search_space.get_hyperparameter_categories(hyperparameter_name)
+                        choice_number = math.floor(point[index] * len(choices))
+                        value = choices[choice_number]
+                    else:
+                        raise TypeError(f"Hyperparameter {hyperparameter_type} is not supported by Sobol selection algorithm!")
+                    values[hyperparameter_name] = value
 
-            unique_point = None
+                # check conditions for conditional parameters and disable some parameters if needed
+                for hyperparameter_name in search_space.get_hyperparameter_names():
+                    conditions = search_space.get_conditions_for_hyperparameter(hyperparameter_name)
+                    for condition in conditions:
+                        if values[condition] not in conditions[condition]:
+                            values[hyperparameter_name] = None
 
-            # check conditions for conditional parameters and disable some parameters if needed
-            for hyperparameter_name in search_space.get_hyperparameter_names():
-                conditions = search_space.get_conditions_for_hyperparameter(hyperparameter_name)
-                for condition in conditions:
-                    if values[condition] not in conditions[condition]:
-                        values[hyperparameter_name] = None
+                candidate = self.experiment.search_space.create_configuration(values=values)
+                if self._is_unique_config(candidate):
+                    unique_point = candidate
+                    break
+            else:
+                raise ValueError("The whole search space was already explored. Selector can not find new points")
+        try:
+            self.logger.debug("Retrieving new configuration from the Sobol sequence: %s" % str(unique_point))
+            return unique_point
+        except Exception:
+            self.logger.error("Selector was not able to get new configuration!")
 
-            candidate = self.experiment.search_space.create_configuration(values=values)
-            if candidate not in self.returned_points and candidate is not None:
-                unique_point = candidate
-                self.returned_points.append(candidate)
-                break
-
-        self.logger.debug("Retrieving new configuration from the Sobol sequence: %s" % str(unique_point))
-        return unique_point

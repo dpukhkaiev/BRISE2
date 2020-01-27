@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from core_entities.experiment import Experiment
+from core_entities.configuration import Configuration
 
 
 class SelectionAlgorithm(ABC):
@@ -17,26 +18,26 @@ class SelectionAlgorithm(ABC):
     @abstractmethod
     def get_next_configuration(self): pass
 
-    def __disable_point(self, point):
+    def disable_configuration(self, configuration: Configuration):
         """
             This method should be used to let selector know,
-            that some points of search space have been already picked by prediction model.
-        :param point: list. Point from search space.
+            that some configurations have been already picked by prediction model.
+        :param configuration: Configuration. Configuration from search space.
         :return: None
         """
-        if point not in self.returned_points:
-            self.returned_points.append(point)
+        if configuration not in self.returned_points:
+            self.returned_points.append(configuration)
             return True
         else:
-            self.logger.warning("WARNING! Trying to disable point that have been already retrieved(or disabled).")
+            self.logger.warning("WARNING! Trying to disable configuration that have been already retrieved (or disabled).")
             return False
 
-    def disable_configurations(self, configurations):
-        """
-            This method should be used to forbid points of the Search Space that 
-            have been already picked as a Model prediction.
-        :param configurations: list of configurations. Configurations from search space.
-        :return: None
-        """
-        for p in configurations:
-            self.__disable_point(p)
+    def _is_unique_config(self, configuration: Configuration):
+        if configuration not in self.returned_points and configuration is not None:
+            if self.disable_configuration(configuration):            
+                return True
+            else:
+                return False
+        else:
+            return False
+

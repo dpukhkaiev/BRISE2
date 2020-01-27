@@ -1,9 +1,10 @@
 from selection.sobol import *
 from selection.cs_selector import *
 from tools.reflective_class_import import reflective_class_import
+from core_entities.experiment import Experiment
 
 
-def get_selector(experiment):
+def get_selector(experiment: Experiment):
     """
     Returns instance of selection algorithm with provided data
     :param experiment: the instance of Experiment class
