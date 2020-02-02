@@ -141,36 +141,38 @@ class TestSelector:
         # that prevents selector from picking them again. This test checks selector's behavior in case of external config being disabled
         # (selector type is not important here, as disabling functionality is common for both)
         # 'inputs_test_4.py' is used, that loads EnergyExperiment and imitates point to be predicted by the model
-        # Expected behavior of the selector - disable this point and select the next one, which was not retrieved before
+        # Expected behavior of the selector - select the next configuration, which was not retrieved before
         from selection.tests.inputs_test_4 import get_actual_result
         expected_result = Configuration([2700.0, 2], Configuration.Type.FROM_SELECTOR)
         used_selector, actual_result = get_actual_result("SobolSequence")
         assert actual_result == expected_result
         assert used_selector == "SobolSequence"
-
-    def test_11_disable_same_configuration_predicted_by_model_again(self, caplog):
-        # Test #11. For some reason configuration from other sources can repeat. They should be disabled only once
-        # 'inputs_test_5.py' is used, that loads EnergyExperiment and imitates 2 points to be predicted by the model
-        # Expected behavior of the selector - disable point once and emit warning on repeated disabling. Select new point
-        from selection.tests.inputs_test_5 import get_actual_result
-        expected_result = Configuration([2700.0, 2], Configuration.Type.FROM_SELECTOR)
-        used_selector, actual_result = get_actual_result("SobolSequence")
-        assert actual_result == expected_result
-        assert used_selector == "SobolSequence"
-        for record in caplog.records:
-            assert record.levelname == "WARNING"
-        assert "Trying to disable configuration that have been already retrieved (or disabled)." in caplog.text
         
     @staticmethod
     def get_actual_result(selector_type: str, experiment_description_file: str, number_of_configs: int = 1, returned_points: list = [], disabled_configs: list = []):
+        '''
+        This method incapsulates common functionality for all tests: Experiment and Selector instantiation and initialization, 
+        requesting Configuration(s) from Selector and adding them to the Experiment
+        
+        :param selector_type: str. Type of Selector to be instantiated
+        :param experiment_description_file: str. Experiment description to initialize Experiment
+        :param number_of_configs: int. Quantity of Configurations, that are requested from Selector
+        :param returned_points: list of Configurations. Those Configurations, that were already returned by Selector (according to some tests' intention)
+        :param disabled_configs: list of Configurations. Those Configurations, that were already returned by other instances, e.g. model (according to some tests' intention)
+        :returns: used_selector, actual_result. The type of Selector, that was instantiated and Configuration(s) that were returned by Selector
+        '''
         experiment_description, search_space = load_experiment_setup(experiment_description_file)
         experiment_description["SelectionAlgorithm"]["SelectionType"] = selector_type
         experiment = Experiment(experiment_description, search_space)
-        selector = get_selector(experiment=experiment)
-        selector.returned_points = returned_points
+        # add configs already returned by selector to the experiment
+        for returned_point in returned_points:
+            experiment.evaluated_configurations.append(returned_point)
+        # add configs predicted by model to the experiment
         for configuration in disabled_configs:
-            selector.disable_configuration(configuration)
+            experiment.evaluated_configurations.append(configuration)
+        selector = get_selector(experiment=experiment)
         for _ in range(0, number_of_configs):
             actual_result = selector.get_next_configuration()
+            experiment.evaluated_configurations.append(actual_result)
         used_selector = selector.__class__.__name__
         return used_selector, actual_result

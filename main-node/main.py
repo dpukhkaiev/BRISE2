@@ -163,7 +163,6 @@ class MainThread(threading.Thread):
             self.repeater.measure_configurations([default_configuration])
         if self.experiment.is_configuration_evaluated(default_configuration):
             self.experiment.put_default_configuration(default_configuration)
-            self.selector.disable_configuration(default_configuration)
 
             temp_msg = f"Evaluated Default Configuration: {default_configuration}"
             self.logger.info(temp_msg)
@@ -192,7 +191,6 @@ class MainThread(threading.Thread):
             configuration = Configuration.from_json(body.decode())
             if not self._is_interrupted and self.experiment.is_configuration_evaluated(configuration):
                 self.experiment.try_add_configuration(configuration)
-                self.selector.disable_configuration(configuration)
                 finish = self.posterior_stop_condition.validate_conditions()
                 if not finish:
                     try:
@@ -213,14 +211,14 @@ class MainThread(threading.Thread):
         """
         The function for building model and choosing configuration for measuring
         """
-        model_built = self.model.update_data(self.experiment.measured_configurations).build_model()
+        model_built = self.model.build_model()
         for n in range(self.worker_service_client.get_number_of_needed_configurations()):  # for dynamic parallelization
             is_model_produce_unique_configuration = False
             if model_built and self.model.validate_model():
                 for i in range(5):  # 5 times to try to get unique configuration
                     predicted_configurations = self.model.predict_next_configurations(i + 1)
                     for conf in predicted_configurations:
-                        if conf.status == Configuration.Status.NEW:
+                        if conf.status == Configuration.Status.NEW and conf not in self.experiment.evaluated_configurations:
                             self.repeater.measure_configurations([conf])
                             is_model_produce_unique_configuration = True
                             break
@@ -233,9 +231,9 @@ class MainThread(threading.Thread):
                         break
             if not is_model_produce_unique_configuration:
                 while True:
-                    configs_from_selector = self.selector.get_next_configuration()
-                    if self.experiment.get_any_configuration_by_parameters(configs_from_selector.parameters) is None:
-                        self.repeater.measure_configurations([configs_from_selector])
+                    config_from_selector = self.selector.get_next_configuration()
+                    if self.experiment.get_any_configuration_by_parameters(config_from_selector.parameters) is None:
+                        self.repeater.measure_configurations([config_from_selector])
                         break
 
     def get_state(self):

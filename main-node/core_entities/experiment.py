@@ -31,8 +31,10 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
-        self.measured_configurations = []
-        self.evaluated_configurations = []  # repeater already evaluate this configuration
+        # TODO: merge lists into a single one (https://github.com/dpukhkaiev/BRISEv2/pull/112#discussion_r371761149)
+        self.evaluated_configurations = []  # repeater already evaluates these configurations
+        self.measured_configurations = [] # the results for these configurations are already gotten
+
         self._description = description
         self.search_space = search_space
         self.end_time = self.start_time = datetime.datetime.now()

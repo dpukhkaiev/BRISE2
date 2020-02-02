@@ -18,11 +18,10 @@ class ConfigSpaceSelector(SelectionAlgorithm):
         :return: list - point in current search space.
         """    
         # try to generate points until a unique one will be retrieved
-        # TODO: add timeout - if only a small searchspace available and it's not possible to get unique point at all - break
         while True:
-            if len(self.returned_points) < self.experiment.search_space.get_search_space_size():
+            if len(self.experiment.evaluated_configurations) < self.experiment.search_space.get_search_space_size():
                 candidate = self.search_space.sample_configuration()
-                if self._is_unique_config(candidate):
+                if candidate not in self.experiment.evaluated_configurations and candidate is not None:
                     unique_point = candidate
                     break
             else:

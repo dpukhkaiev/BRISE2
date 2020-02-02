@@ -94,7 +94,6 @@ class BayesianOptimization(Model):
         self.vartypes = np.array(self.vartypes, dtype=int)
 
         # Data holding fields.
-        self.measured_configurations = []
         self.good_config_rankings = dict()
 
     def build_model(self, update_model=True):
@@ -112,17 +111,22 @@ class BayesianOptimization(Model):
             return False
 
         # b) if not enough points are available
-        if len(self.measured_configurations) <= self.min_points_in_model-1:
+        if len(self.experiment.measured_configurations) <= self.min_points_in_model-1:
             self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"
-                              %(len(self.measured_configurations), self.min_points_in_model+1))
+                              %(len(self.experiment.measured_configurations), self.min_points_in_model+1))
             return False
 
-        # c) during warnm starting when we feed previous results in and only update once
+        # c) during warm starting when we feed previous results in and only update once
         # TODO: The 'warm startup' feature not implemented yet.
         if not update_model:
             return False
 
         self.logger.info("INFO: Building the Bayesian optimization models..")
+
+        # prepare search space (convert parameters to parameters in indexes)
+        for config in self.experiment.measured_configurations:
+            config.add_parameters_in_indexes(config.parameters, \
+                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.parameters, self.experiment.get_current_sub_search_space()))
 
         # TODO: works only for single objective optimization with multiple priorities. Doesn't work with classical MOO
         priorities = self.experiment.description["TaskConfiguration"]["ResultPriorities"] \
@@ -136,7 +140,7 @@ class BayesianOptimization(Model):
         all_features = []
         all_labels = []
         # TODO: Feature encoding
-        for config in self.measured_configurations:
+        for config in self.experiment.measured_configurations:
             all_features.append(config.get_parameters_in_indexes())
             all_labels.append(config.get_average_result()[top_priority_index])
 
@@ -295,7 +299,7 @@ class BayesianOptimization(Model):
                                     "Using random configuration" % (self.sampling_size, traceback.format_exc()))
                 # TODO: Check if adding random configuration selection needed. Otherwise - remove this branch.
 
-        for configuration in self.measured_configurations:
+        for configuration in self.experiment.measured_configurations:
             if configuration.parameters == predicted_configuration.parameters:
                 configuration.add_predicted_result(parameters=predicted_configuration.parameters,
                                                    predicted_result=[predicted_result])
@@ -321,18 +325,6 @@ class BayesianOptimization(Model):
                 configurations_parameters.append(conf.parameters)
                 configurations.append(conf)
         return configurations
-
-    def update_data(self, configurations):
-        """
-        Method adds configurations to whole set of configurations. Convert configurations to its indexes.
-
-        :param configurations: List of Configuration's instances
-        """
-        self.measured_configurations = configurations
-        for config in self.measured_configurations:
-            config.add_parameters_in_indexes(config.parameters, \
-                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.parameters, self.experiment.get_current_sub_search_space()))
-        return self
     
     def impute_conditional_data(self, array):
 

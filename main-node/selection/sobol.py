@@ -35,7 +35,7 @@ class SobolSequence(SelectionAlgorithm):
         :return: list - point in current search space.
         """
         while True:
-            if len(self.returned_points) < self.experiment.search_space.get_search_space_size():
+            if len(self.experiment.evaluated_configurations) < self.experiment.search_space.get_search_space_size():
                 # TODO: It is possible to encapsulate control of 'getting stuck while retrieving unique point from selector'
                 # Getting next point from sobol sequence.
                 point = self.__generate_sobol_vector()
@@ -70,7 +70,7 @@ class SobolSequence(SelectionAlgorithm):
                             values[hyperparameter_name] = None
 
                 candidate = self.experiment.search_space.create_configuration(values=values)
-                if self._is_unique_config(candidate):
+                if candidate not in self.experiment.evaluated_configurations and candidate is not None:
                     unique_point = candidate
                     break
             else:
@@ -80,4 +80,3 @@ class SobolSequence(SelectionAlgorithm):
             return unique_point
         except Exception:
             self.logger.error("Selector was not able to get new configuration!")
-
