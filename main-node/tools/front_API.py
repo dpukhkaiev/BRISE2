@@ -1,6 +1,7 @@
 from logging import getLogger
 from tools.singleton import Singleton
 
+
 class API(metaclass=Singleton):
     """
             The singleton - enabled decorator for the API object with exposed `send` method instead emit.
@@ -30,7 +31,9 @@ class API(metaclass=Singleton):
 
             class DummyAPI:
                 """Stub for the api object"""
+
                 def emit(self, *args, **kwargs): pass
+
             self._api_object = DummyAPI()
         else:
             self._api_object = api_object
@@ -62,8 +65,8 @@ class API(metaclass=Singleton):
             # All is OK, sending the message.
             # --lowercase
             return self._api_object.emit(message_type.lower(),
-                                         {message_subtype.lower(): APIMessageBuilder.build(message_type.upper(),
-                                                                                           **key_value_params)})
+                                         message_subtype.lower(),
+                                         APIMessageBuilder.build(message_type.upper(), **key_value_params))
 
         except AssertionError as error:
             self.logger.error(error)

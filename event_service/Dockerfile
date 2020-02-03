@@ -2,6 +2,8 @@ FROM rabbitmq
 
 RUN rabbitmq-plugins enable rabbitmq_management  #enabling a management portal
 
+RUN rabbitmq-plugins enable rabbitmq_web_stomp
+
 RUN apt-get -qq update \
  && apt-get -qq install -y curl \
  && apt-get -qq clean \
@@ -10,4 +12,5 @@ RUN apt-get -qq update \
 
 COPY ./bin/definitions.json /etc/rabbitmq/
 COPY ./bin/rabbitmq.config /etc/rabbitmq/
-EXPOSE 49153 15672
+ENV RABBITMQ_LOGS=/var/log/rabbitmq/warning_log.log
+EXPOSE 49153 15672 15674

@@ -5,7 +5,7 @@ import { MainEvent } from '../../data/client-enums';
 import { ExperimentDescription } from '../../data/experimentDescription.model';
 
 // Service
-import { MainSocketService } from '../../core/services/main.socket.service';
+import {MainEventService} from '../../core/services/main.event.service';
 
 
 @Component({
@@ -19,24 +19,22 @@ export class MainComponent implements OnInit {
   experimentDescription: ExperimentDescription
 
   constructor(
-    private ioMain: MainSocketService,
+    private ioMain: MainEventService,
   )
   {}
 
   public ngOnInit() {
     this.initMainEvents();
   }
-
-  // HTTP: Main-node
-  // Socket
   private initMainEvents(): void {
-    this.ioMain.onEvent(MainEvent.FINAL)
-    .subscribe((obj: any) => {
-    });
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
-      .subscribe((obj: any) => {
-        this.experimentDescription = obj['description']['experiment description'];
-        this.selectedExperimentType = this.experimentDescription.ModelConfiguration.ModelType
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'description') {
+          const obj = JSON.parse(message.body);
+          this.experimentDescription = obj['experiment description'];
+          this.selectedExperimentType = this.experimentDescription.ModelConfiguration.ModelType;
+        }
       });
+
   }
 }

@@ -16,7 +16,6 @@ from core_entities.search_space import SearchSpace
 
 # Tools
 from shared_tools import restore, get_resource_as_string, MainAPIClient, chown_files_in_dir
-# from shared_tools import export_plot
 from tools.initial_config import load_experiment_setup
 from logger.default_logger import BRISELogConfigurator
 
@@ -98,18 +97,17 @@ class BRISEBenchmark:
        Class for building and running the benchmarking scenarios.
     """
 
-    def __init__(self, main_api_addr: str, results_storage: str):
+    def __init__(self, host_event_service: str, port_event_service: int, results_storage: str):
         """
             Initializes benchmarking client.
-        :param main_api_addr: str. URL of main node API. For example "http://main-node:49152"
         :param results_storage: str. Folder where to store benchmark results (dump files of experiments).
         """
-        os.sys.argv.pop()   # Because load_experiment_setup will consider 'benchmark' as Experiment Description).
+        os.sys.argv.pop()  # Because load_experiment_setup will consider 'benchmark' as Experiment Description).
         # Base experiment description and Search space should be loaded in each benchmark.
         self._base_experiment_description = None
         self._base_search_space = None
-        self.results_storage = results_storage if results_storage[-1] == "/" else results_storage  + "/"
-        self.main_api_client = MainAPIClient(main_api_addr, dump_storage=results_storage)
+        self.results_storage = results_storage if results_storage[-1] == "/" else results_storage + "/"
+        self.main_api_client = MainAPIClient(host_event_service, port_event_service, results_storage)
         self.logger = logging.getLogger(__name__)
         self.counter = 1
         self.experiments_to_be_performed = []   # List of experiment IDs
@@ -147,11 +145,11 @@ class BRISEBenchmark:
             benchmarking_function(self, *args, *kwargs)
         return wrapper
 
-    def execute_experiment(self, 
-                           experiment_description: dict, 
-                           search_space: SearchSpace = None, 
-                           number_of_repetitions: int = 3, 
-                           wait_for_results: int = 30*60):
+    def execute_experiment(self,
+                           experiment_description: dict,
+                           search_space: SearchSpace = None,
+                           number_of_repetitions: int = 3,
+                           wait_for_results: int = 30 * 60):
         """
              Check how many dumps are available for particular Experiment Description.
 
@@ -326,14 +324,15 @@ class BRISEBenchmark:
 
 
 def run_benchmark():
-    main_api_address = "http://main-node:49152"
     # Container creation performs --volume on `./results/` folder. Change wisely results_storage.
+    host_event_service = "event_service"
+    port_event_service = 49153
     results_storage = "./results/serialized/"
     try:
-        runner = BRISEBenchmark(main_api_address, results_storage)
+        runner = BRISEBenchmark(host_event_service, port_event_service, results_storage)
         try:
-        # ---    Add User defined benchmark scenarios execution below  ---#
-        # --- Possible variants: benchmark_repeater, benchmark_SA ---#
+            # ---    Add User defined benchmark scenarios execution below  ---#
+            # --- Possible variants: benchmark_repeater, benchmark_SA ---#
             runner.benchmark_repeater()
 
         # --- Helper method to remove outdated experiments from `./results` folder---#
@@ -345,6 +344,7 @@ def run_benchmark():
             runner.main_api_client.stop_main()
         finally:
             runner.main_api_client.stop_main()
+            runner.main_api_client.stop_client()
             chown_files_in_dir(results_storage)
             logging.info("The ownership of dump files was changed, exiting.")
     except Exception as err:

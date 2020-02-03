@@ -5,11 +5,10 @@ export class Task {
     stub_config: Array<any>;
     meta: MetaData;
     constructor(item) {
-        this.id = item.task[0].results["task id"];
-        this.run = item.task[0].run;
-        this.config = item.task[0].configurations;
-        this.meta = item.task[0].results;
-        this.stub_config = [];
+      this.id = item[0].results["task id"];
+      this.run = item[0].run;
+      this.config = item[0].configurations;
+      this.meta = item[0].results;
     }
 }
 interface MetaData {
@@ -34,5 +33,5 @@ export interface Solution {
     results: Array<any>;
     'measured points': Array<Number>
     'performed_measurements': number
-} 
+}
 

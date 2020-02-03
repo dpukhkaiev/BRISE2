@@ -1,7 +1,7 @@
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
 
 // Service
-import { MainSocketService } from '../../../core/services/main.socket.service';
+import {MainEventService} from '../../../core/services/main.event.service';
 
 import { MainEvent } from '../../../data/client-enums';
 import { ExperimentDescription } from '../../../data/experimentDescription.model';
@@ -40,7 +40,7 @@ export class MultiDimComponent implements OnInit {
   @ViewChild('multi') multi: ElementRef;
 
   constructor(
-    private ioMain: MainSocketService,
+    private ioMain: MainEventService,
   ) { }
 
   ngOnInit() {
@@ -52,80 +52,81 @@ export class MultiDimComponent implements OnInit {
     return this.experimentDescription && this.experimentDescription.ModelConfiguration.ModelType == type
   }
 
-  //                              WebSocket
   // --------------------------   Main-node
   private initMainEvents(): void {
 
-    this.ioMain.onEmptyEvent(MainEvent.CONNECT)
-      .subscribe(() => {
-        console.log(' multi-dim: connected');
-      });
-    this.ioMain.onEmptyEvent(MainEvent.DISCONNECT)
-      .subscribe(() => {
-        console.log(' multi-dim: disconnected');
-      });
-
-
     //                            Main events
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
-      .subscribe((obj: any) => {
-        this.resetRes()
-        this.experimentDescription = obj['description']['experiment description']
-        this.searchspace = obj['description']['searchspace_description']
-        let resultParams = this.experimentDescription['TaskConfiguration']['TaskParameters']
-        let rangeValues = Object.values(this.searchspace["boundaries"])
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'description') {
+          let obj = JSON.parse(message.body)
+          this.resetRes()
+          this.experimentDescription = obj['experiment description']
+          this.searchspace = obj['searchspace_description']
+          let resultParams = this.experimentDescription['TaskConfiguration']['TaskParameters']
+          let rangeValues = Object.values(this.searchspace["boundaries"])
 
-        this.resultParamsRange = this.zip(resultParams, rangeValues)
-        this.resultParamsRange.set('result', undefined) // range for results is undefined
+          this.resultParamsRange = this.zip(resultParams, rangeValues)
+          this.resultParamsRange.set('result', undefined) // range for results is undefined
+        }
+
       });
 
     this.ioMain.onEvent(MainEvent.DEFAULT) // Default configuration
-      .subscribe((obj: any) => {
-        obj["configuration"] && obj["configuration"].forEach(configuration => {
-          if (configuration) {
-            this.defaultPoint = configuration // In case if only one point default
-            let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
-            point.set('result', configuration.results[0])
-            this.allPoints.add(point)
-            this.render()
-          } else {
-            console.log("Empty default")
-          }
-        })
-        console.log('Default:', obj["configuration"])
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+          let configs = JSON.parse(message.body)
+          configs.forEach(configuration => {
+            if (configuration) {
+              this.defaultPoint = configuration // In case if only one point default
+              let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
+              point.set('result', configuration.results[0])
+              this.allPoints.add(point)
+              this.render()
+            } else {
+              console.log("Empty default")
+            }
+          })
+          console.log('Default:', configs)
+        }
       });
 
     this.ioMain.onEvent(MainEvent.NEW) // New task results
-      .subscribe((obj: any) => {
-        obj["configuration"] && obj["configuration"].forEach(configuration => {
-          if (configuration) {
-            // if configuration contains 'None' values mask them before graph rendering
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+          let configs = JSON.parse(message.body)
+          configs.forEach(configuration => {
+        if (configuration) {
             let boundaries = Object.values(this.searchspace['boundaries'])
             for (let i = 0; i < this.experimentDescription.DomainDescription.HyperparameterNames.length; ++i){
               if (configuration['configurations'][i] == null){
                 configuration['configurations'][i] = boundaries[i][0]
-              }              
+              }
             }
             let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
             point.set('result', configuration.results[0])
-            this.allPoints.add(point) 
+            this.allPoints.add(point)
             this.render()
           }
           else {
             console.log("Empty task")
           }
-        })
+          })
+        }
       });
     this.ioMain.onEvent(MainEvent.FINAL) // The final configuration, suggested by BRISE.
-      .subscribe((obj: any) => {
-        obj["configuration"] && obj["configuration"].forEach(configuration => {
-          if (configuration) {
-            this.solution = configuration // In case if only one point solution
-            console.log('Final:', obj["configuration"])
-          } else {
-            console.log("Empty solution")
-          }
-        })
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+          let configs = JSON.parse(message.body)
+          configs.forEach(configuration => {
+            if (configuration) {
+              this.solution = configuration // In case if only one point solution
+              console.log('Final:', configs)
+            } else {
+              console.log("Empty solution")
+            }
+          })
+        }
       });
   }
 

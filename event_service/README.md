@@ -56,13 +56,23 @@ Main communication steps relevant to this queue:
     1. The **Worker Service** *enqueue* a message for workers into those queues via `task_termination_sender`
     2. Each **worker** *dequeue* a message from his own queue as soon as it is available
     3. A **worker** does something depends on the content of a message (e.g. terminates his current execution task)
-    
+- `main_start_queue`, `main_status_queue`, `main_stop_queue`, `main_download_dump_queue`, `main_responses`: queues for RPC to the main node. Main communication steps relevant to this queues:
+    1. A client sends a request with a unique tag_id, and endpoint to publish results (mostly it is `main responses` queue)
+    2. EventAPI on the main node dequeues request messages from those queues and do relevant action
+    3. The main node publishes results to specified queue (mostly to `main responses`)
+- `front_log_queue`, `front_default_queue`, `front_new_queue`, `front_predictions_queue`, `front_final_queue`, `front_experiment_queue`, `benchmark_final_queue`: queues for sending events from nodes to consumers (e.g. benchmark, front-end). Each client has to have his own *queues* and those queues have to be registered in the specific *exchanger*. To save space and don't store unused messages in this queue message has **time to live** parameter that equal to **a second**. That means that consumer has one second to read a message if consumers don't read, that means that there no consumers and **messages will be deleted**.
+Main communication steps relevant to this queues:
+    1. A node sends an event message to specific queues via the specific *exchanger*
+    2. Consumers get information about an event from their own queues
 Exchanges:
 - `task_result_sender`: the exchanger used for sending result message to `task_result_queue` and as a finished  event to `finished_task_event_queue`
 - `task_termination_sender`: the exchanger used to broadcast termination messages
+- `event_log_sender`, `event_default_sender`, `event_new_sender`, `event_prediction_sender`, `event_final_sender`, `event_experiment_sender`: exchangers used to publish event messages to registered clients
 
 ![Queues structure](./BRISE_queues_structure.png "dependencies between all BRISE modules")
 
+
+![Events structure](./BRISE_events_structure.png "dependencies between all BRISE modules")
 ### Managing
 
 There are at least two opportunities for managing the RabbitMQ node. First of all, it is a [terminal tool](http://manpages.ubuntu.com/manpages/trusty/man1/rabbitmqctl.1.html), and also more useful **management portal** that is deployed in this node on the 15672 port. 

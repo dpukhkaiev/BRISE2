@@ -4,8 +4,7 @@ import { MatPaginator, MatTable, MatSort, MatTableDataSource } from '@angular/ma
 import { animate, state, style, transition, trigger } from '@angular/animations';
 
 // Service
-import { RestService } from '../../core/services/rest.service';
-import { MainSocketService } from '../../core/services/main.socket.service';
+import {MainEventService} from '../../core/services/main.event.service';
 
 
 import { Task } from '../../data/taskData.model';
@@ -25,7 +24,7 @@ import { ExperimentDescription } from '../../data/experimentDescription.model';
       state('expanded', style({ height: '*' })),
       transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
     ]),
-  ],  
+  ],
 })
 export class TaskListComponent implements OnInit {
 
@@ -43,7 +42,7 @@ export class TaskListComponent implements OnInit {
 
   public resultData: MatTableDataSource<Task>
 
-  constructor(private ws: RestService, private ioMain: MainSocketService) {
+  constructor(private ioMain: MainEventService) {
     this.resultData = new MatTableDataSource(this.result);
 
     this.resultData.filterPredicate = (task, filter) => {
@@ -56,7 +55,7 @@ export class TaskListComponent implements OnInit {
         results = results + String(result)
       });
       const dataStr = task.id +
-        params + 
+        params +
         results;
       return dataStr.indexOf(filter) != -1;
     }
@@ -131,10 +130,10 @@ export class TaskListComponent implements OnInit {
 
   getAverageResult(search: Array<any>) {
     let select = this.searchTasks(search)
-    let avg_res:any[] = new Array<any>() 
+    let avg_res:any[] = new Array<any>()
     let sum = new Array<Array<any>>()
     for (let i = 0; i < Object.values(select[0].meta.result).length; i++) {
-      sum[i]  = new Array<any>(); 
+      sum[i]  = new Array<any>();
     }
     select && select.map(task => {
       for (let i = 0; i < Object.values(task.meta.result).length; i++) {
@@ -147,24 +146,25 @@ export class TaskListComponent implements OnInit {
     return avg_res
   }
 
-  // --------------------- SOCKET ---------------
+  // --------------------- MainEvents ---------------
   private initMainEvents(): void {
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
-      .subscribe((obj: any) => {
-        this.experimentDescription = obj['description']['experiment description']
-        this.update = false
-        this.refresh()
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'description') {
+          this.experimentDescription = JSON.parse(message.body)['experiment description'];
+          this.update = false
+          this.refresh()
+        }
       });
 
     this.ioMain.onEvent(MainEvent.NEW)
-      .subscribe((obj: JSON) => {
-        if (obj["task"]) {
-          var fresh: Task = new Task(obj)
+      .subscribe((message) => {
+        if (message.headers['message_subtype'] === 'task') {
+          var fresh: Task = new Task(JSON.parse(message.body))
           var params_array = String(fresh.config).split(',')
           fresh.stub_config = this.replaceNones(params_array)
           // add a new task if it is not in the this.result
           !this.result.includes(fresh, -1) && this.result.push(fresh);
-
           this.resultData.data = this.result;
         }
       });

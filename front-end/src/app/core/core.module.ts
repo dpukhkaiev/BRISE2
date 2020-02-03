@@ -1,14 +1,25 @@
 import { NgModule, Optional, SkipSelf } from '@angular/core';
 
 /* Shared Service */
-import { RestService } from './services/rest.service';
-import { MainSocketService } from './services/main.socket.service';
+import {MainEventService} from './services/main.event.service';
+import {MainClientService} from './services/main.client.service';
+import {InjectableRxStompConfig, RxStompService, rxStompServiceFactory} from "@stomp/ng2-stompjs";
+import {myRxStompConfig} from "./services/my-rx-stomp.config";
 
 @NgModule({
   imports: [],
   providers: [
-    { provide: RestService, useClass: RestService },
-    { provide: MainSocketService, useClass: MainSocketService }
+    {provide: MainEventService, useClass: MainEventService},
+    {provide: MainClientService, useClass: MainClientService},
+    {
+      provide: InjectableRxStompConfig,
+      useValue: myRxStompConfig
+    },
+    {
+      provide: RxStompService,
+      useFactory: rxStompServiceFactory,
+      deps: [InjectableRxStompConfig]
+    }
   ],
   declarations: []
 })
