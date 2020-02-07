@@ -1,10 +1,9 @@
 import logging
-from enum import Enum
-
+import sys
 import pika
-import pika.exceptions
 import json
 import threading
+import os
 
 from WorkerServiceClient.WSClient_events import WSClient
 from tools.front_API import API
@@ -87,7 +86,7 @@ class ConsumerThread(threading.Thread):
 
 
 class Repeater:
-    def __init__(self, worker_service_client: WSClient, experiment):
+    def __init__(self, worker_service_client: WSClient, experiment: Experiment):
 
         self.worker_service_client = worker_service_client
         self.performed_measurements = 0
@@ -100,6 +99,15 @@ class Repeater:
 
         self._type = None
         self.set_type("Default")  # Default Configuration will be measured precisely with Default Repeater Type.
+        self.listen_thread = None
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.init_connection()
+
+    def init_connection(self):
+        """
+        The function creates a connection to a rabbitmq instance
+        :return:
+        """
         self.listen_thread = ConsumerThread(self)
         self.listen_thread.start()
 
@@ -194,9 +202,8 @@ class Repeater:
                     for i in range(current_measurement[point]['needed_tasks_count']):
                         tasks_to_send.append(current_measurement[point]['parameters'])
                         self.performed_measurements += 1
-
-            if configuration.status == Configuration.Status.MEASURED or \
-                    configuration.status == Configuration.Status.BAD:
+            if (configuration.status == Configuration.Status.MEASURED or
+                configuration.status == Configuration.Status.BAD) and os.environ.get('TEST_MODE') != 'UNIT_TEST':
                 with pika.BlockingConnection(
                         pika.ConnectionParameters(host=self.worker_service_client.event_host,
                                                   port=self.worker_service_client.event_port)) as connection:

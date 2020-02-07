@@ -22,29 +22,16 @@ class WSClient_Stub(WSClient):
     ####################################################################################################################
     # Supporting methods.
 
-    def is_all_tasks_finish(self, id_measurement):
+    def init_connection(self):
         """
-        Checking are all tasks for specific configuration finish or not
-        :param id_measurement: id specific measurement
-        :return: True or False
+        Override base function, for tests we don't need event service connections
+        :param host: host address of rabbitmq service
+        :param port: port of rabbitmq main-service
+        :return:
         """
-        if len(self.measurement[id_measurement]['task_results']) == len(self.measurement[id_measurement]['tasks_to_send']):
-            return True
-        else:
-            return False
+        pass
 
-    def is_measurement_finish(self, id_measurement):
-        """
-        Checking is specific measurement finish or not
-        :param id_measurement: id specific measurement
-        :return: True or False
-        """
-        for configuration in self.measurement[id_measurement].keys():
-            if self.measurement[id_measurement][configuration]['status'] != "Finished":
-                return False
-        return True
-
-    def _send_measurement(self, id_measurement, measurement):
+    def _send_measurement(self, id_measurement: str, measurement: dict) -> int:
 
         self.logger.info("Sending measurement: %s" % id_measurement)
 
@@ -71,10 +58,10 @@ class WSClient_Stub(WSClient):
 
             result = dict()
             if task["task_name"] == "energy_consumption":
-                result = self.__energy_consumption(params_to_send)
+                result = self._energy_consumption(params_to_send)
 
             elif task["task_name"] == "naiveBayes_mock":
-                result = self.__taskNB(params_to_send)
+                result = self._taskNB(params_to_send)
 
             #  TODO - data is needed
             # elif task["task_name"] is "GA":
@@ -94,9 +81,31 @@ class WSClient_Stub(WSClient):
                     return 0
         return -1
 
+    def is_all_tasks_finish(self, id_measurement: str) -> bool:
+        """
+        Checking are all tasks for specific configuration finish or not
+        :param id_measurement: id specific measurement
+        :return: True or False
+        """
+        if len(self.measurement[id_measurement]['task_results']) == len(
+                self.measurement[id_measurement]['tasks_to_send']):
+            return True
+        else:
+            return False
+
+    def is_measurement_finish(self, id_measurement: str) -> bool:
+        """
+        Checking is specific measurement finish or not
+        :param id_measurement: id specific measurement
+        :return: True or False
+        """
+        for configuration in self.measurement[id_measurement].keys():
+            if self.measurement[id_measurement][configuration]['status'] != "Finished":
+                return False
+        return True
 
     @staticmethod
-    def __str_to_bool(string):
+    def _str_to_bool(string) -> bool:
         if string.lower() in ("true"):
             return True
         elif string.lower() in ("false"):
@@ -104,14 +113,14 @@ class WSClient_Stub(WSClient):
         else:
             raise ValueError("String \"%s\" is not equal to \"True\" or \"False\"" % string)
 
-    def __energy_consumption(self, param):
+    def _energy_consumption(self, param: dict) -> dict:
         data = []
         path_to_file = self.__csv_folder + "energy_consumption/" + param['ws_file']
         try:
             with open(path_to_file, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
                 for row in reader:
-                    if row['FR'] == str(param['frequency']) and row ['TR'] == str(param['threads']):
+                    if row['FR'] == str(param['frequency']) and row['TR'] == str(param['threads']):
                         data.append(row)
                     else:
                         continue
@@ -126,20 +135,22 @@ class WSClient_Stub(WSClient):
         else:
             self.logger.error("Error in Stub (energy_consumption): No data for parameters: %s." % param)
 
-    def __taskNB(self, param):
+    def _taskNB(self, param: dict) -> dict:
         data = []
         path_to_file = self.__csv_folder + "rapid_miner/" + param['ws_file']
         try:
             with open(path_to_file, 'r') as csv_file:
                 reader = csv.DictReader(csv_file)
                 for row in reader:
-                    if self.__str_to_bool(row['laplace_correction']) == self.__str_to_bool(str(param['laplace_correction'])) and \
+                    if self._str_to_bool(row['laplace_correction']) == self._str_to_bool(
+                            str(param['laplace_correction'])) and \
                             row['estimation_mode'] == str(param['estimation_mode']) and \
                             row['bandwidth_selection'] == str(param['bandwidth_selection']) and \
                             row['bandwidth'] == str(param['bandwidth']) and \
                             row['minimum_bandwidth'] == str(param['minimum_bandwidth']) and \
                             row['number_of_kernels'] == str(param['number_of_kernels']) and \
-                            self.__str_to_bool(row['use_application_grid']) == self.__str_to_bool(str(param['use_application_grid'])) and \
+                            self._str_to_bool(row['use_application_grid']) == self._str_to_bool(
+                        str(param['use_application_grid'])) and \
                             row['application_grid_size'] == str(param['application_grid_size']):
                         data.append(row)
                     else:
@@ -155,7 +166,7 @@ class WSClient_Stub(WSClient):
         else:
             self.logger.error("Error in Stub (NB): No data for parameters: %s.\n" % param)
 
-    # def _genetic(self, param):
+    # def _genetic(self, param: dict):
     #     try:
     #         generations = str(param['generations'])
     #         populationSize = str(param['populationSize'])
@@ -183,57 +194,19 @@ class WSClient_Stub(WSClient):
     #     except Exception as e:
     #         self.logger.error("ERROR IN STUB during performing GA with parameters: %s" % param)
 
-
     ####################################################################################################################
     # Outgoing interface for running task(s)
-    def work(self, j_conf, tasks):
+    def work(self, j_conf: str, tasks: list) -> dict:
         measurement_id = str(uuid.uuid4())
         self.measurement[measurement_id] = {}
         self.measurement[measurement_id]["tasks_to_send"] = tasks
         self.measurement[measurement_id]["tasks_results"] = []
         self.measurement[measurement_id]["configuration"] = j_conf
         try:
-           result_code = self._send_measurement(measurement_id, self.measurement[measurement_id])
-           if result_code != 0:
-               self.logger.error("Error: Not all tasks were finished")
+            result_code = self._send_measurement(measurement_id, self.measurement[measurement_id])
+            if result_code != 0:
+                self.logger.error("Error: Not all tasks were finished")
         except Exception as er:
             self.logger.error("Error: {er}".format(er=er))
-        self.dump_results_to_csv()
+        self._report_according_to_required_structure()
         return self.measurement
-
-
-# A small unit test.
-if __name__ == "__main__":
-    config = {
-        "TaskName"          : "taskNB",
-        "Scenario": {
-            "ws_file": "taskNB1.csv"
-        },
-        "TaskParameters"  : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-        "ResultStructure" : ["PREC_AT_99_REC"],
-        "ResultDataTypes" : ["float"],
-        "MaxTimeToRunTask": 10
-    }
-    configurations = [[True, 'full', 'fix', 0.5, 1000, 1000, True, 10000],
-                 [True, 'full', 'heuristic', 50, 5, 50, False, 200],
-                 [True, 'full', 'fix', 0.5, 5, 100, True, 10000]]
-    measurement = {}
-    is_measurement_need_to_send = True
-    # Creating holders for current measurements
-    for configuration in configurations:
-        # Evaluating each Configuration in configurations list
-        needed_tasks_count = 1
-        measurement[str(configuration)] = {'parameters': configuration,
-                                                            'needed_tasks_count': needed_tasks_count,
-                                                            'tasks_to_send': [], 'task_results': [], 'task_ids': [],
-                                                            'task_workers': [], 'type': type,
-                                                            'status': "InProgress"}
-    for point in measurement.keys():
-        for i in range(measurement[point]['needed_tasks_count']):
-            measurement[point]['tasks_to_send'].append(measurement[point]['parameters'])
-
-    client = WSClient_Stub(config, 'event_service', 49153, 'Stub_WSClient_results.csv')
-    results = client.work(measurement)
-    logger = logging.getLogger(__name__)
-    logger.info(results)
-    logger.info("\n end")

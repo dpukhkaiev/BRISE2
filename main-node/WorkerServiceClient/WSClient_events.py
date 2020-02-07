@@ -108,21 +108,15 @@ class ConsumerThread(threading.Thread):
 
 class WSClient:
 
-    def __init__(self, task_configuration, host, port, logfile):
+    def __init__(self, task_configuration: dict, host: str, port: int, logfile: str):
         """
         Worker Service client, that uses pika library to communicate with rabbitmq: send task and get results
         (communication based on events).
         :param task_configuration: Dictionary. Represents "TaskConfiguration" of BRISE configuration file.
-        :param host: ip address of rabbitmq service
+        :param host: host address of rabbitmq service
         :param port: port of rabbitmq main-service
         :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
-        self.event_host = host
-        self.event_port = port
-        self.logger = logging.getLogger(__name__)
-
-        self.logger.info("Connecting to the Worker Service at {host}:{port} ...".format(host=host, port=port))
-
         # Properties that holds general task configuration (shared between task runs).
         self._task_name = task_configuration["TaskName"]
         self._task_parameters = task_configuration["TaskParameters"]
@@ -138,8 +132,22 @@ class WSClient:
         # Create a connection and channel for sending configurations
         self.number_of_workers_lock = threading.Lock()
         self._number_of_workers = None
+        self.logger = logging.getLogger(__name__)
+        self.event_host = host
+        self.event_port = port
+        self.listen_thread = None
+        self.init_connection()
+
+    def init_connection(self):
+        """
+        The function creates a connection to a rabbitmq instance
+        :param host: host address of rabbitmq service
+        :param port: port of rabbitmq main-service
+        :return:
+        """
+        self.logger.info(f"Connecting to the Worker Service at {self.event_host}:{self.event_port} ...")
         # Create listeners thread
-        self.listen_thread = ConsumerThread(host, port, self)
+        self.listen_thread = ConsumerThread(self.event_host, self.event_port, self)
         self.listen_thread.start()
 
     ####################################################################################################################
@@ -170,7 +178,7 @@ class WSClient:
                             else:
                                 raise err
 
-    def _report_according_to_required_structure(self):
+    def _report_according_to_required_structure(self) -> list:
         results_to_report = []
 
         for key in self.measurement.keys():
@@ -222,7 +230,7 @@ class WSClient:
         self.measurement[measurement_id]["configuration"] = j_conf
         self._send_measurement(measurement_id, self.measurement[measurement_id])
 
-    def get_number_of_workers(self):
+    def get_number_of_workers(self) -> int:
         with pika.BlockingConnection(pika.ConnectionParameters(self.event_host, self.event_port)) as connection:
             with connection.channel() as channel:
                 result = channel.queue_declare(
@@ -234,7 +242,7 @@ class WSClient:
                 )
         return result.method.consumer_count  # number of consumer for task_queue is number of workers
 
-    def get_number_of_needed_configurations(self):
+    def get_number_of_needed_configurations(self) -> int:
         """
         The function that returns the number of needed configurations for making balanced loading
         :return:

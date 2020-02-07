@@ -1,12 +1,15 @@
-from pytest import approx   # default is ± 2.3e-06
+import os
+
+from pytest import approx  # default is ± 2.3e-06
 from repeater.repeater import Repeater
-from WorkerServiceClient.tests.WS_stub import WSClient_Stub
+from WorkerServiceClient.WS_stub import WSClient_Stub
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from tools.initial_config import load_experiment_setup
 
-
-DESCRIPTION_NB, SEARCH_SPACE_NB = load_experiment_setup(exp_desc_file_path="Resources/MLExperiments/NB/NBExperiment.json")
+os.environ["TEST_MODE"] = 'UNIT_TEST'
+DESCRIPTION_NB, SEARCH_SPACE_NB = load_experiment_setup(
+    exp_desc_file_path="Resources/MLExperiments/NB/NBExperiment.json")
 DESCRIPTION_ENERGY, SEARCH_SPACE_ENERGY = load_experiment_setup(exp_desc_file_path="Resources/EnergyExperiment.json")
 DESCRIPTION_ENERGY["TaskConfiguration"]["Scenario"]["ws_file"] = "Radix-500mio_avg.csv"
 DESCRIPTION_NB["TaskConfiguration"]["Scenario"]["ws_file"] = "NB_final_result.csv"
@@ -19,29 +22,23 @@ def measure_task(task_parameters, description, search_space):
     configuration1 = Configuration(task_parameters[0], Configuration.Type.TEST)
     configuration2 = Configuration(task_parameters[1], Configuration.Type.TEST)
     repeater = Repeater(WSClient_exp, experiment)
-    try:
-        task = [configuration1, configuration2]
+    task = [configuration1, configuration2]
 
-        results_measurement = repeater.measure_configurations(task)
-        results_configurations = []
-        for key in results_measurement:
-            configuration = Configuration.from_json(results_measurement[key]["configuration"])
-            results_WO_outliers = repeater.outlier_detectors.find_outliers_for_taskset(
-                results_measurement[key]["tasks_results"],
-                repeater._result_structure,
-                [configuration],
-                results_measurement[key]["tasks_to_send"])
-            for parameters, task in zip(results_measurement[key]["tasks_to_send"], results_WO_outliers):
-                configuration.add_tasks(task)
-            results_configurations.append(configuration)
+    results_measurement = repeater.measure_configurations(task)
+    results_configurations = []
+    for key in results_measurement:
+        configuration = Configuration.from_json(results_measurement[key]["configuration"])
+        results_WO_outliers = repeater.outlier_detectors.find_outliers_for_taskset(
+            results_measurement[key]["tasks_results"],
+            repeater._result_structure,
+            [configuration],
+            results_measurement[key]["tasks_to_send"])
+        for parameters, task in zip(results_measurement[key]["tasks_to_send"], results_WO_outliers):
+            configuration.add_tasks(task)
+        results_configurations.append(configuration)
 
-        WSClient_exp.logger.info("Results: %s" % str(WSClient_exp._report_according_to_required_structure()))
-        WSClient_exp.dump_results_to_csv()
-        return results_configurations
-    finally:
-        repeater.stop()
-        WSClient_exp.stop()
-
+    WSClient_exp.logger.info("Results: %s" % str(WSClient_exp._report_according_to_required_structure()))
+    return results_configurations
 
 
 # TODO - must be improve, test function to check WS_stub
