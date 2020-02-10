@@ -104,8 +104,8 @@
                                 "type": "number"
                             }]
                         },
-                        "ModelAwareness": {
-                            "description": "Model awareness of the Repeater.",
+                        "ExperimentAwareness": {
+                            "description": "Experiment awareness of the Repeater.",
                             "anyOf": [
                                 {
                                     "title": "Enabled",
@@ -113,7 +113,7 @@
                                     "type": "object",
                                     "properties": {
                                         "isEnabled": {
-                                            "description": "Model awareness is enabled.",
+                                            "description": "Experiment awareness is enabled.",
                                             "type": "boolean",
                                             "enum": [true]
                                         },
@@ -168,7 +168,7 @@
                         "ConfidenceLevels",
                         "DevicesScaleAccuracies",
                         "DevicesAccuracyClasses",
-                        "ModelAwareness"
+                        "ExperimentAwareness"
                     ],
                     "additionalProperties": false
                 }

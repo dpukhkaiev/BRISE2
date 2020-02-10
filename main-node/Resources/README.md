@@ -146,7 +146,7 @@ Possible values of configurations for your system should be provided in separate
       "ConfidenceLevels": [0.95],
       "DevicesScaleAccuracies": [0],
       "DevicesAccuracyClasses": [0],
-      "ModelAwareness": {
+      "ExperimentAwareness": {
         "isEnabled": true,
         "MaxAcceptableErrors": [50],
         "RatiosMax": [10]

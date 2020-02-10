@@ -29,11 +29,11 @@ class StudentDeviationType(DefaultType):
         self.confidence_levels = repeater_configuration["ConfidenceLevels"]
         self.device_scale_accuracies = repeater_configuration["DevicesScaleAccuracies"]
         self.device_accuracy_classes = repeater_configuration["DevicesAccuracyClasses"]
-        self.is_model_aware = repeater_configuration["ModelAwareness"]["isEnabled"]
+        self.is_model_aware = repeater_configuration["ExperimentAwareness"]["isEnabled"]
 
         if self.is_model_aware:
-            self.ratios_max = repeater_configuration["ModelAwareness"]["RatiosMax"]
-            self.max_acceptable_errors = repeater_configuration["ModelAwareness"]["MaxAcceptableErrors"]
+            self.ratios_max = repeater_configuration["ExperimentAwareness"]["RatiosMax"]
+            self.max_acceptable_errors = repeater_configuration["ExperimentAwareness"]["MaxAcceptableErrors"]
             if not all(b_e <= m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
@@ -114,7 +114,7 @@ class StudentDeviationType(DefaultType):
                         else:
                             ratio = cur_solution_avg / avg_res
 
-                    adopted_threshold = b_t + (max_t - b_t) / (1 + exp(-1 * (ratio - r_max/2)))
+                    adopted_threshold = b_t + (max_t - b_t) / (1 + exp(- (10 / r_max) * (ratio - r_max/2)))
                     thresholds.append(adopted_threshold)
 
             else:
