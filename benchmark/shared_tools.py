@@ -260,7 +260,7 @@ class MainAPIClient:
         param = {}
         param['format'] = 'pkl'
         response = self.call("download_dump", json.dumps(param))
-        if response["status"] is "ok":
+        if response["status"] == "ok":
             # Parsing the name of stored dump in main-node
             file_name = response["file_name"]
             body = base64.b64decode(response["body"])
