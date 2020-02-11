@@ -19,43 +19,46 @@
   "SelectionAlgorithm":{
     "SelectionType"     : "SobolSequence"
   },
-  "OutliersDetection":[
-    {
-      "Type": "Dixon",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 30
+  "OutliersDetection":{
+    "isEnabled": true,
+    "Detectors": [
+      {
+        "Type": "Dixon",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 30
+        }
+      },
+      {
+        "Type": "Chauvenet",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "MAD",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Grubbs",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Quartiles",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
       }
-    },
-    {
-      "Type": "Chauvenet",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 10000
-      }
-    },
-    {
-      "Type": "MAD",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 10000
-      }
-    },
-    {
-      "Type": "Grubbs",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 10000
-      }
-    },
-    {
-      "Type": "Quartiles",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 10000
-      }
-    }
-  ],
+    ]
+  },
   "Repeater":{
     "Type": "student_deviation",
     "Parameters": {

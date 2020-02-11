@@ -48,10 +48,13 @@ class ConsumerThread(threading.Thread):
         configuration = Configuration.from_json(result["configuration"])
         tasks_to_send = result["tasks_to_send"]
         tasks_results = result["tasks_results"]
-        results_WO_outliers = self.repeater.outlier_detectors.find_outliers_for_taskset(tasks_results,
-                                                                                        self.repeater._result_structure,
-                                                                                        [configuration],
-                                                                                        tasks_to_send)
+        if self.repeater.experiment.description["OutliersDetection"]["isEnabled"]:
+            results_WO_outliers = self.repeater.outlier_detectors.find_outliers_for_taskset(tasks_results,
+                                                                                            self.repeater._result_structure,
+                                                                                            [configuration],
+                                                                                            tasks_to_send)
+        else:
+            results_WO_outliers = tasks_results
         # Sending data to API and adding Tasks to Configuration
         for parameters, task in zip(tasks_to_send, results_WO_outliers):
             if configuration.parameters == parameters:
@@ -91,12 +94,14 @@ class Repeater:
         self.worker_service_client = worker_service_client
         self.performed_measurements = 0
         self.repeater_parameters = experiment.description["Repeater"]["Parameters"]
-        self.outlier_detectors = get_outlier_detectors(experiment.get_outlier_detectors_parameters())
         self.logger = logging.getLogger(__name__)
         self._result_structure = experiment.description["TaskConfiguration"]["ResultStructure"]
         self.configurations = []
         self.experiment = experiment
-
+        if self.experiment.description["OutliersDetection"]["isEnabled"]:
+            self.outlier_detectors = get_outlier_detectors(experiment.get_outlier_detectors_parameters())
+        else:
+            self.logger.info("Outliers detection module is disabled")
         self._type = None
         self.set_type("Default")  # Default Configuration will be measured precisely with Default Repeater Type.
         self.listen_thread = None

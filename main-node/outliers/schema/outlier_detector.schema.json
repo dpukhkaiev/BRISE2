@@ -6,43 +6,55 @@
 
     "definitions": {
         "OutliersDetection":{
-            "description": "Outlier detection algorithms.",
-            "type": "array",
-            "minItems": 0,
-            "maxItems": 5,
-            "uniqueItems": true,
-            "items": {
-                "type": "object",
-                "properties": {
-                    "Type": {
-                        "type": "string",
-                        "enum": ["Dixon", "Chauvenet", "MAD", "Grubbs", "Quartiles"]
-                    },
-                    "Parameters":{
+            "type": "object",
+            "properties": {
+                "isEnabled":{
+                    "type": "boolean"
+                },
+                "Detectors":{
+                    "description": "Outlier detection algorithms.",
+                    "type": "array",
+                    "minItems": 0,
+                    "maxItems": 5,
+                    "uniqueItems": true,
+                    "items": {
                         "type": "object",
                         "properties": {
-                            "MinActiveNumberOfTasks": {
-                                "type": "integer",
-                                "minimum": 3
+                            "Type": {
+                                "type": "string",
+                                "enum": ["Dixon", "Chauvenet", "MAD", "Grubbs", "Quartiles"]
                             },
-                            "MaxActiveNumberOfTasks": {
-                                "type": "integer",
-                                "minimum": 3
-                            }
-                        },
-                        "required": [
-                            "MinActiveNumberOfTasks",
-                            "MaxActiveNumberOfTasks"
-                        ],
-                        "additionalProperties": false
+                            "Parameters":{
+                                "type": "object",
+                                "properties": {
+                                    "MinActiveNumberOfTasks": {
+                                        "type": "integer",
+                                        "minimum": 3
+                                    },
+                                    "MaxActiveNumberOfTasks": {
+                                        "type": "integer",
+                                        "minimum": 3
+                                    }
+                                },
+                                "required": [
+                                    "MinActiveNumberOfTasks",
+                                    "MaxActiveNumberOfTasks"
+                                ],
+                                "additionalProperties": false
+                                }
+                            },
+                            "required": [
+                                "Type",
+                                "Parameters"
+                            ],
+                            "additionalProperties": false
                         }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
+                    }
+                },
+                "required": [
+                    "isEnabled",
+                    "Detectors"
+                ]            
             }
         }
-    }
 }
