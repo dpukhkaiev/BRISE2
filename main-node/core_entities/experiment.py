@@ -8,7 +8,7 @@ import logging
 import numpy as np
 
 from threading import Lock
-from typing import Union
+from typing import Union, List
 from copy import deepcopy
 
 from tools.front_API import API
@@ -32,8 +32,8 @@ class Experiment:
         self.api = API()
 
         # TODO: merge lists into a single one (https://github.com/dpukhkaiev/BRISEv2/pull/112#discussion_r371761149)
-        self.evaluated_configurations = []  # repeater already evaluates these configurations
-        self.measured_configurations = [] # the results for these configurations are already gotten
+        self.evaluated_configurations: List[Configuration] = []  # repeater already evaluates these configurations
+        self.measured_configurations: List[Configuration] = [] # the results for these configurations are already gotten
 
         self._description = description
         self.search_space = search_space
@@ -365,18 +365,6 @@ class Experiment:
 
     def get_selection_algorithm_parameters(self):
         return self.description["SelectionAlgorithm"]
-
-    def get_current_sub_search_space(self):
-        """
-            This method is needed to represent current subsearchspace
-            (i.e. configurations, that were already added to experiment)
-            in form of lists of all used values for each parameter
-        :return: current subsearchspace
-        """
-        params = [config.parameters for config in self.measured_configurations]
-        subsearchspace = np.array(params, dtype= 'object').T.tolist() 
-        result = [list(set(dimension)) for dimension in subsearchspace]
-        return result
 
     def get_outlier_detectors_parameters(self):
         return self.description["OutliersDetection"]

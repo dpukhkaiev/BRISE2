@@ -211,30 +211,28 @@ class MainThread(threading.Thread):
         """
         The function for building model and choosing configuration for measuring
         """
-        model_built = self.model.build_model()
-        for n in range(self.worker_service_client.get_number_of_needed_configurations()):  # for dynamic parallelization
-            is_model_produce_unique_configuration = False
-            if model_built and self.model.validate_model():
-                for i in range(5):  # 5 times to try to get unique configuration
-                    predicted_configurations = self.model.predict_next_configurations(i + 1)
-                    for conf in predicted_configurations:
-                        if conf.status == Configuration.Status.NEW and conf not in self.experiment.evaluated_configurations:
-                            self.repeater.measure_configurations([conf])
-                            is_model_produce_unique_configuration = True
-                            break
-                    temp_msg = "Predicted following Configuration->Quality pairs: %s" \
-                               % list((str(c) + "->" + str(c.predicted_result) for c in predicted_configurations))
+        # for dynamic parallelization
+        needed_configs = self.worker_service_client.get_number_of_needed_configurations()
+
+        if self.model.build_model() and self.model.validate_model():
+            predicted_configurations = self.model.predict_next_configurations(needed_configs)
+            for conf in predicted_configurations:
+                if conf.status == Configuration.Status.NEW and conf not in self.experiment.evaluated_configurations:
+                    temp_msg = f"Model predicted {conf} with quality {conf.predicted_result}"
                     self.logger.info(temp_msg)
                     self.sub.send('log', 'info', message=temp_msg)
+                    # TODO: Remove possibility to work with bunch of Configurations in Repeater
+                    self.repeater.measure_configurations([conf])
+                    needed_configs -= 1
 
-                    if is_model_produce_unique_configuration:
-                        break
-            if not is_model_produce_unique_configuration:
-                while True:
-                    config_from_selector = self.selector.get_next_configuration()
-                    if self.experiment.get_any_configuration_by_parameters(config_from_selector.parameters) is None:
-                        self.repeater.measure_configurations([config_from_selector])
-                        break
+        while needed_configs > 0:
+            config = self.selector.get_next_configuration()
+            if self.experiment.get_any_configuration_by_parameters(config.parameters) is None:
+                temp_msg = f"Randomly sampled {config}."
+                self.logger.info(temp_msg)
+                self.sub.send('log', 'info', message=temp_msg)
+                self.repeater.measure_configurations([config])
+                needed_configs -= 1
 
     def get_state(self):
         return self._state

@@ -125,8 +125,8 @@ class BayesianOptimization(Model):
 
         # prepare search space (convert parameters to parameters in indexes)
         for config in self.experiment.measured_configurations:
-            config.add_parameters_in_indexes(config.parameters, \
-                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.parameters, self.experiment.get_current_sub_search_space()))
+            if not config.get_parameters_in_indexes():
+                config.add_parameters_in_indexes(config.parameters, self.experiment.search_space.get_indexes(config))
 
         # TODO: works only for single objective optimization with multiple priorities. Doesn't work with classical MOO
         priorities = self.experiment.description["TaskConfiguration"]["ResultPriorities"] \
@@ -159,8 +159,8 @@ class BayesianOptimization(Model):
         else:
             idx = np.argsort(-train_labels, axis=0)
 
-        train_data_good = self.impute_conditional_data(train_features[idx[:n_good]])
-        train_data_bad = self.impute_conditional_data(train_features[idx[n_good:n_good + n_bad]])
+        train_data_good = train_features[idx[:n_good]]
+        train_data_bad = train_features[idx[n_good:n_good + n_bad]]
 
         if train_data_good.shape[0] <= train_data_good.shape[1]:
             return False
@@ -315,42 +315,7 @@ class BayesianOptimization(Model):
         :return: list of Configurations that are needed to be measured.
         """
 
-        configurations_parameters = []
         configurations = []
         while len(configurations) != number:
-            conf = self.__predict_next_configuration()
-
-            # BO model is stochastic and could return the same Configuration several times, but we need unique ones.
-            if conf.parameters not in configurations_parameters:
-                configurations_parameters.append(conf.parameters)
-                configurations.append(conf)
+            configurations.append(self.__predict_next_configuration())
         return configurations
-    
-    def impute_conditional_data(self, array):
-
-        return_array = np.empty_like(array)
-        
-        for i in range(array.shape[0]):
-            datum = np.copy(array[i])
-            nan_indices = np.argwhere(np.isnan(datum)).flatten()
-
-            while (np.any(nan_indices)):
-                nan_idx = nan_indices[0]
-                valid_indices = np.argwhere(np.isfinite(array[:,nan_idx])).flatten()
-
-                if len(valid_indices) > 0:
-                    # pick one of them at random and overwrite all NaN values
-                    row_idx = np.random.choice(valid_indices)
-                    datum[nan_indices] = array[row_idx, nan_indices]
-
-                else:
-                    # no good point in the data has this value activated, so fill it with a valid but random value
-                    t = self.vartypes[nan_idx]
-                    if t == 0:
-                        datum[nan_idx] = np.random.rand()
-                    else:
-                        datum[nan_idx] = np.random.randint(t)
-
-                nan_indices = np.argwhere(np.isnan(datum)).flatten()
-            return_array[i, :] = datum
-        return return_array
