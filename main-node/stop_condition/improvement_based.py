@@ -1,37 +1,25 @@
-from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
+from stop_condition.stop_condition import StopCondition
+from core_entities.experiment import Experiment
 
 
-class ImprovementBasedType(StopConditionDecoratorPosterior):
+class ImprovementBasedType(StopCondition):
 
-    def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition, __name__)
-        self.max_configs_without_improvement = stop_condition_parameters["MaxConfigsWithoutImprovement"]
-        self.number_of_configurations_in_iteration = 1
-        self.configurations_without_improvement = 0
+    def __init__(self, experiment: Experiment, stop_condition_parameters: dict):
+        super().__init__(experiment, stop_condition_parameters)
+        self.max_configs_without_improvement = stop_condition_parameters["Parameters"]["MaxConfigsWithoutImprovement"]
+        self.start_threads()
 
     def is_finish(self):
-        if self.get_configurations_without_improvement() >= self.max_configs_without_improvement:
-            self.logger.info("Improvement-Based Stop Condition suggested to stop BRISE.")
-            return True
+
+        solution_index = self.experiment.measured_configurations.index(self.experiment.get_current_solution())
+        if (len(self.experiment.measured_configurations) - solution_index) >= self.max_configs_without_improvement:
+            self.logger.info("Improvement-based Stop Condition suggested to stop BRISE. "
+                             "Solution position - %s. "
+                             "Configurations without improvement - %s" %(solution_index, len(self.experiment.measured_configurations) - solution_index))
+            self.decision = True
         else:
-            self.logger.info("Improvement-Based Stop Condition suggested to continue running BRISE.")
-            return False
-
-    def _compare_best_configurations(self, candidate_configurations):
-        if(super()._compare_best_configurations(candidate_configurations)):
-            self.set_configurations_without_improvement(0)
-        else:
-            self.set_configurations_without_improvement(self.get_configurations_without_improvement() + self.number_of_configurations_in_iteration)
-            self.logger.info("Evaluated Configuration(s) without improvement: %s"
-                             % (self.get_configurations_without_improvement()))
-
-    def set_configurations_without_improvement(self, value):
-        self.configurations_without_improvement = value
-
-    def get_configurations_without_improvement(self):
-        return self.configurations_without_improvement
-    
-    def validate_conditions(self):
-        self._compare_best_configurations(self.get_experiment().get_current_best_configurations())
-        return super().validate_conditions()
-
+            self.logger.info("Improvement-based Stop Condition suggested to continue BRISE. "
+                             "Solution position - %s. "
+                             "Configurations without improvement - %s" %(solution_index, len(self.experiment.measured_configurations) - solution_index))
+            self.decision = False
+        self.update_expression(self.stop_condition_type, self.decision)

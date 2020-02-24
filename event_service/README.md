@@ -51,6 +51,17 @@ Main communication steps relevant to this queue:
     2. The **main** script in the **main-node** *dequeues* the result for a configuration as soon as it is available
     3. The **main** checks **stop conditions** 
     4. In a case when **stop conditions** suggest to continue running BRISE, the **main** script sends new configuration for measuring
+- `check_stop_condition_expression_queue`: the queue with Stop Condition decision results; connected **stop conditions** and **stop condition validator**.
+ Main communication steps relevant to this queue:
+    1. A **stop condition** *enqueues* the own decision whether to stop or not current experiment.
+    2. The **stop condition validator**  *dequeues* the **stop condition** decision as soon as it is available.
+    3. The **stop condition validator** *collects* all decisions from all **stop conditions**
+    4. The **stop condition validator** *enqueues* empty message to `stop_experiment_queue` queue if the validation according to expression is passed. 
+- `stop_experiment_queue`: the queue with Stop Condition Validator decision about stopping experiment; connected **stop condition validator** and **main-node**.
+ Main communication steps relevant to this queue:
+    1. A **stop condition validator** *enqueues* the final decision about experiment stopping.
+    2. The **main-node**  *dequeues* the **stop condition validator** message as soon as it is available.
+    3. The **main-node** *enqueues* empty message to components via `brise_termination_sender` which is used to stop components. 
 - *N* queues with "random" name, where *N* is the number of workers: the queues with termination messages; connected **workers** and **Worker Service** node. 
 Main communication steps relevant to this queue:
     1. The **Worker Service** *enqueue* a message for workers into those queues via `task_termination_sender`
@@ -68,6 +79,7 @@ Exchanges:
 - `task_result_sender`: the exchanger used for sending result message to `task_result_queue` and as a finished  event to `finished_task_event_queue`
 - `task_termination_sender`: the exchanger used to broadcast termination messages
 - `event_log_sender`, `event_default_sender`, `event_new_sender`, `event_prediction_sender`, `event_final_sender`, `event_experiment_sender`: exchangers used to publish event messages to registered clients
+- `brise_termination_sender`: the exchanger used for sending stop messages to each BRISE module
 
 ![Queues structure](./BRISE_queues_structure.png "dependencies between all BRISE modules")
 

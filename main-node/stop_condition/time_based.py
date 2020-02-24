@@ -1,30 +1,30 @@
+import time
 import datetime
 
-from stop_condition.stop_condition_decorator_prior import StopConditionDecoratorPrior
+from stop_condition.stop_condition import StopCondition
+from core_entities.experiment import Experiment
 
 
-class TimeBasedType(StopConditionDecoratorPrior):
-    """
-        Time based stop condition. 
-        Simple timer. Triggering of that timer will stop BRISE computations during next SC validation.
-    """
-    def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition, __name__)
+class TimeBased(StopCondition):
+
+    def __init__(self, experiment: Experiment, stop_condition_parameters: dict):
+        super().__init__(experiment, stop_condition_parameters)
         self.interval = datetime.timedelta(**{
-            stop_condition_parameters["TimeUnit"]: stop_condition_parameters["MaxRunTime"]
-        }).total_seconds()
+                stop_condition_parameters["Parameters"]["TimeUnit"]: stop_condition_parameters["Parameters"]["MaxRunTime"]
+            }).total_seconds()
+        self.start_threads()
 
-        self.initial_timestamp = datetime.datetime.now()
-        temp_msg = "Timeout is set. !!!WARNING!!! BRISE will not stop at timeout moment due to workflow."
+    def self_evaluation(self):
+        temp_msg = f"Timeout set to {self.interval} seconds."
         self.logger.info(temp_msg)
 
-    def is_finish(self):
-        current_timestamp = datetime.datetime.now()
-        diff = (current_timestamp-self.initial_timestamp).total_seconds()
-        if diff >= self.interval:
-            self.logger.info("Timeout reached. Time-based Stop Condition suggested to stop BRISE.")
-            return True
-        else:
-            self.logger.info("Time-based Stop Condition suggested to continue running BRISE.")
-            return False
-
+        self.counter = 0
+        while self.thread_is_active:
+            time.sleep(1)
+            self.counter = self.counter + 1
+            if self.counter >= self.interval:
+                self.logger.info("Timeout reached.")
+                self.decision = True
+                self.update_expression(self.stop_condition_type, self.decision)
+    
+    def is_finish(self): pass

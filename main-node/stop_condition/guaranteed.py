@@ -1,20 +1,18 @@
-from stop_condition.stop_condition_decorator_posterior import StopConditionDecoratorPosterior
+from stop_condition.stop_condition import StopCondition
+from core_entities.experiment import Experiment
 
 
-class GuaranteedType(StopConditionDecoratorPosterior):
-    def __init__(self, stop_condition, stop_condition_parameters):
-        super().__init__(stop_condition, __name__)
+class GuaranteedType(StopCondition):
+
+    def __init__(self, experiment: Experiment, stop_condition_parameters: dict):
+        super().__init__(experiment, stop_condition_parameters)
+        self.start_threads()
 
     def is_finish(self):
-        experiment = self.get_experiment()
-        current_best_configuration = experiment.get_current_solution()
-        if current_best_configuration.is_better_configuration(experiment.is_minimization(), experiment.search_space.get_default_configuration()):
+        current_best_configuration = self.experiment.get_current_solution()
+        if self.experiment.get_current_solution() != self.experiment.search_space.get_default_configuration():
             self.logger.info("Guaranteed Stop Condition suggested to stop BRISE. "
                              "Default Configuration - %s. "
-                             "Current best Configuration - %s" %(experiment.search_space.get_default_configuration(), current_best_configuration))
-            return True
-        else:
-            self.logger.info("Guaranteed Stop Condition suggested to continue running BRISE. "
-                             "Default Configuration - %s. "
-                             "Current best Configuration - %s" %(experiment.search_space.get_default_configuration(), current_best_configuration))
-            return False
+                             "Current best Configuration - %s" %(self.experiment.search_space.get_default_configuration(), current_best_configuration))
+            self.decision = True
+            self.update_expression(self.stop_condition_type, self.decision)

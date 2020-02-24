@@ -47,6 +47,7 @@ class Experiment:
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
         self.bad_configurations_number = 0
+        self.model_is_valid = False
 
         self.measured_conf_lock = Lock()
         self.evaluated_conf_lock = Lock()
@@ -161,30 +162,32 @@ class Experiment:
 
     def get_final_report_and_result(self, repeater):
         self.end_time = datetime.datetime.now()
+        if self.measured_configurations:
+            self.logger.info("\n\nFinal report:")
 
-        self.logger.info("\n\nFinal report:")
+            self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
+            for configuration in self.measured_configurations:
+                self.logger.info(configuration)
+            self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
+            self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
+            self.logger.info("Best found Configuration: %s" % self.get_current_solution())
+            self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
 
-        self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
-        for configuration in self.measured_configurations:
-            self.logger.info(configuration)
-        self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
-        self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
-        self.logger.info("Best found Configuration: %s" % self.get_current_solution())
-        self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
-
-        all_features = []
-        for configuration in self.measured_configurations:
-            all_features.append(configuration.parameters)
-        self.api.send('final', 'configuration',
-                      configurations=[self.get_current_solution().parameters],
-                      results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
-                      measured_points=[all_features],
-                      performed_measurements=[repeater.performed_measurements])
-        self.dump()  # Store instance of Experiment
-        self.summarize_results_to_file()
-        self.write_csv()
-
-        return self.current_best_configurations
+            all_features = []
+            for configuration in self.measured_configurations:
+                all_features.append(configuration.parameters)
+            self.api.send('final', 'configuration',
+                        configurations=[self.get_current_solution().parameters],
+                        results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
+                        measured_points=[all_features],
+                        performed_measurements=[repeater.performed_measurements])
+            self.dump()  # Store instance of Experiment
+            self.summarize_results_to_file()
+            self.write_csv()
+            return self.current_best_configurations
+        else:
+            self.logger.error('No configuration was measured. Please, check your Experiment Description.')
+        
 
     def get_current_status(self, serializable: bool = False):
         """
@@ -375,3 +378,9 @@ class Experiment:
 
     def get_bad_configuration_number(self):
         return self.bad_configurations_number
+    
+    def update_model_state(self, model_state):
+        self.model_is_valid = model_state
+
+    def get_model_state(self):
+        return self.model_is_valid

@@ -80,9 +80,16 @@
     "SamplingSize": 96,
     "ModelType"         : "BO"
   },
+  "StopConditionTriggerLogic":{
+    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and Adaptive and ValidationBased) or BadConfigurationBased or TimeBased",
+    "InspectionParameters":{
+      "RepetitionPeriod": 10,
+      "TimeUnit": "seconds"
+    }
+  },
   "StopCondition":[
     {
-      "Type": "Default",
+      "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
       }
@@ -104,17 +111,21 @@
       }
     },
     {
-      "Type": "TimeBased",
+      "Type": "BadConfigurationBased",
       "Parameters": {
+        "MaxBadConfigurations": 10
+      }
+    },
+    {
+      "Type": "TimeBased",
+      "Parameters":{
         "MaxRunTime": 10,
         "TimeUnit": "minutes"
       }
     },
     {
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
-      }
+      "Type": "ValidationBased",
+      "Parameters": {      }
     }
   ]
 }

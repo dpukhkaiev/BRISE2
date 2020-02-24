@@ -18,10 +18,12 @@ def load_experiment_setup(exp_desc_file_path: str):
     # Load Experiment description from json file.
     task_description = load_json_file(exp_desc_file_path)
     framework_settings = load_json_file('./Resources/SettingsBRISE.json')
+
     experiment_description = {**task_description, **framework_settings}
     # Validate and load Search space
     search_space_to_validate = load_json_file(experiment_description["DomainDescription"]["DataFile"])
     validate_experiment_data(search_space_to_validate)
+
     search_space = SearchSpace(experiment_description["DomainDescription"])
     create_folder_if_not_exists(experiment_description["General"]["results_storage"])
     logging.getLogger(__name__).info("The Experiment Description was loaded from the file '%s'. Search space was loaded from the file '%s'." \

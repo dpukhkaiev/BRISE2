@@ -18,7 +18,7 @@ from tools.initial_config import load_experiment_setup, validate_experiment_desc
 from tools.front_API import API
 from selection.selection_algorithms import get_selector
 from logger.default_logger import BRISELogConfigurator
-from stop_condition.stop_condition_selector import get_stop_condition
+from stop_condition.stop_condition_selector import launch_stop_condition_threads
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from default_config_handler.default_config_handler_selector import get_default_config_handler
@@ -100,10 +100,9 @@ class MainThread(threading.Thread):
                       )
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
-        # Initializing Prior group of Stop Conditions, according to Experiment Description specification.
-        self.prior_stop_condition = get_stop_condition(self.experiment, True)
-
-        # Initializing Selector Algorithm, according to Experiment Description specification.
+        # Create and launch Stop Condition services in separate threads.
+        launch_stop_condition_threads(self.experiment)
+        # Creating instance of selector algorithm, according to specified in experiment description type.
         self.selector = get_selector(experiment=self.experiment)
 
         # Instantiate client for Worker Service, establish connection.
@@ -128,17 +127,15 @@ class MainThread(threading.Thread):
                                            on_message_callback=self.get_default_configurations_results)
         self.consume_channel.basic_consume(queue='configurations_results_queue', auto_ack=True,
                                            on_message_callback=self.get_configurations_results)
+        self.consume_channel.basic_consume(queue='stop_experiment_queue', auto_ack=True,
+                                           on_message_callback=self.stop)
         default_configuration = self.default_config_handler.get_default_config()
 
         self.repeater.measure_configurations([default_configuration])
         # listen all queues with responses until the _is_interrupted flag is False
         try:
-            while self.consume_channel._consumer_infos:
+            while not self._is_interrupted:
                 self.consume_channel.connection.process_data_events(time_limit=1)  # 1 second
-                if self._is_interrupted:
-                    if self.connection.is_open:
-                        self.connection.close()
-                    break
         finally:
             if self.connection.is_open:
                 self.connection.close()
@@ -174,7 +171,6 @@ class MainThread(threading.Thread):
                                                                        self.experiment.description[
                                                                            "ModelConfiguration"][
                                                                            "ModelType"]))
-            self.posterior_stop_condition = get_stop_condition(self.experiment, False)
             self.repeater.set_type(self.experiment.description["Repeater"]["Type"])
             # starting main work: building model and choosing configuration for measuring
             self.send_new_configurations_to_measure()
@@ -191,21 +187,10 @@ class MainThread(threading.Thread):
             configuration = Configuration.from_json(body.decode())
             if not self._is_interrupted and self.experiment.is_configuration_evaluated(configuration):
                 self.experiment.try_add_configuration(configuration)
-                finish = self.posterior_stop_condition.validate_conditions()
-                if not finish:
-                    try:
-                        finish = self.prior_stop_condition.validate_conditions()
-                    except Exception as e:
-                        self.logger.error("Priori group SC was terminated by Exception: %s." % type(e), exc_info=e)
-                if finish:
-                    self.stop()  # stop all internal threads
-                    self.sub.send('log', 'info', message="Solution validation success!")
-                    return
-                else:
-                    temp_msg = "-- New Configuration was evaluated. Building Target System model."
-                    self.logger.info(temp_msg)
-                    self.sub.send('log', 'info', message=temp_msg)
-                    self.send_new_configurations_to_measure()
+                temp_msg = "-- New Configuration was evaluated. Building Target System model."
+                self.logger.info(temp_msg)
+                self.sub.send('log', 'info', message=temp_msg)
+                self.send_new_configurations_to_measure()
 
     def send_new_configurations_to_measure(self):
         """
@@ -213,8 +198,8 @@ class MainThread(threading.Thread):
         """
         # for dynamic parallelization
         needed_configs = self.worker_service_client.get_number_of_needed_configurations()
-
-        if self.model.build_model() and self.model.validate_model():
+        self.experiment.update_model_state(self.model.validate_model())
+        if self.model.build_model() and self.experiment.get_model_state():
             predicted_configurations = self.model.predict_next_configurations(needed_configs)
             for conf in predicted_configurations:
                 if conf.status == Configuration.Status.NEW and conf not in self.experiment.evaluated_configurations:
@@ -234,19 +219,23 @@ class MainThread(threading.Thread):
                 self.repeater.measure_configurations([config])
                 needed_configs -= 1
 
-    def get_state(self):
-        return self._state
-
-    def stop(self):
+    def stop(self, ch = None, method = None, properties = None, body = None):
         """
         The function for stop main thread externaly (e.g. from front-end)
         """
-        self._state = self.State.SHUTTING_DOWN
-        self._is_interrupted = True
-        self.worker_service_client.stop()
-        self.repeater.stop()
-        self.experiment.get_final_report_and_result(self.repeater)
-        self._state = self.State.IDLE
+        with self.conf_lock:
+            self._state = self.State.SHUTTING_DOWN
+            self._is_interrupted = True
+            self.consume_channel.basic_publish(exchange='brise_termination_sender', routing_key='', body='')
+            self.worker_service_client.stop()
+            self.repeater.stop()
+            self.sub.send('log', 'info', message="Solution validation success!")
+            optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
+            self._state = self.State.IDLE
+            return optimal_configuration
+
+    def get_state(self):
+        return self._state
 
 
 def run(experiment_setup=None):

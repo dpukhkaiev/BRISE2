@@ -110,6 +110,20 @@
       "arguments": {}
     },
     {
+      "name": "stop_experiment_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "check_stop_condition_expression_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
       "name": "front_log_queue",
       "vhost": "/",
       "durable": true,
@@ -242,6 +256,15 @@
       "vhost": "/",
       "type": "fanout",
       "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "brise_termination_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": false,
       "auto_delete": false,
       "internal": false,
       "arguments": {}
