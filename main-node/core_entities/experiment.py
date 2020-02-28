@@ -12,7 +12,6 @@ from typing import Union, List
 from copy import deepcopy
 
 from tools.front_API import API
-from tools.file_system_io import create_folder_if_not_exists
 from core_entities.configuration import Configuration
 from core_entities.search_space import SearchSpace
 
@@ -265,7 +264,7 @@ class Experiment:
         # Used to upload Experiment dump through web API
         os.environ["EXP_DUMP_NAME"] = self.name
 
-        create_folder_if_not_exists(folder_path)
+        os.makedirs(folder_path, exist_ok=True)
         file_name = '{}.pkl'.format(self.name)
         # write pickle
         with open(folder_path + file_name, 'wb') as output:
@@ -290,7 +289,7 @@ class Experiment:
             data = dumps(self.get_current_status(serializable=True), indent=4)
         else:
             raise TypeError("Wrong serialization format provided. Supported 'yaml' and 'json'.")
-        create_folder_if_not_exists(path)
+        os.makedirs(path, exist_ok=True)
         with open(output_file_name, 'w') as output_file:
             output_file.write(data)
             self.logger.info("Results of the Experiment have been writen to file: %s" % output_file_name)

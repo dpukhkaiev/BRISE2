@@ -67,7 +67,7 @@ export class LaunchControlBarComponent implements OnInit {
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
       .subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'description') {
-          this.experimentDescription = JSON.parse(message.body)['experiment description'];
+          this.experimentDescription = JSON.parse(message.body)['experiment_description'];
         }
       });
   }

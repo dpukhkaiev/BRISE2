@@ -31,7 +31,7 @@ export class MainComponent implements OnInit {
       .subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'description') {
           const obj = JSON.parse(message.body);
-          this.experimentDescription = obj['experiment description'];
+          this.experimentDescription = obj['experiment_description'];
           this.selectedExperimentType = this.experimentDescription.ModelConfiguration.ModelType;
         }
       });

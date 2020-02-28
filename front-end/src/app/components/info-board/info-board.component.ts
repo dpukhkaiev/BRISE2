@@ -97,8 +97,8 @@ export class InfoBoardComponent implements OnInit {
       .subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'description') {
           let obj = JSON.parse(message.body)
-          this.globalConfig = obj['global configuration']
-          this.experimentDescription = obj['experiment description']
+          this.globalConfig = obj['global_configuration']
+          this.experimentDescription = obj['experiment_description']
           this.searchspace = obj['searchspace_description']
           this.refresh()
           this.searchspace['size'] = parseFloat(this.searchspace['size'])

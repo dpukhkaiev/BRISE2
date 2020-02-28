@@ -1,9 +1,10 @@
 __doc__ = """
     Module to load configurations and experiment descriptions."""
 import logging
+import os
 from sys import argv
 
-from tools.file_system_io import load_json_file, create_folder_if_not_exists
+from tools.file_system_io import load_json_file
 from tools.json_validator import is_json_file_valid
 from tools.front_API import API
 from core_entities.search_space import SearchSpace
@@ -25,7 +26,7 @@ def load_experiment_setup(exp_desc_file_path: str):
     validate_experiment_data(search_space_to_validate)
 
     search_space = SearchSpace(experiment_description["DomainDescription"])
-    create_folder_if_not_exists(experiment_description["General"]["results_storage"])
+    os.makedirs(experiment_description["General"]["results_storage"], exist_ok=True)
     logging.getLogger(__name__).info("The Experiment Description was loaded from the file '%s'. Search space was loaded from the file '%s'." \
         % (exp_desc_file_path, experiment_description["DomainDescription"]["DataFile"]))
 
@@ -46,7 +47,7 @@ def validate_experiment_description(experiment_description: dict,
     if is_json_file_valid(validated_data=experiment_description, schema_path=schema_file_path):
         logger.info("Provided Experiment Description is valid.")
     else:
-        msg = "Provided Experiment Description have not passed the validation using schema in file %s. " \
+        msg = "Provided Experiment Description has not passed the validation using schema in file %s. " \
               "Experiment description: \n%s" % (schema_file_path, experiment_description)
         logger.error(msg)
         API().send('log', 'error', message=msg)

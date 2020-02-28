@@ -61,7 +61,7 @@ export class MultiDimComponent implements OnInit {
         if (message.headers['message_subtype'] === 'description') {
           let obj = JSON.parse(message.body)
           this.resetRes()
-          this.experimentDescription = obj['experiment description']
+          this.experimentDescription = obj['experiment_description']
           this.searchspace = obj['searchspace_description']
           let resultParams = this.experimentDescription['TaskConfiguration']['TaskParameters']
           let rangeValues = Object.values(this.searchspace["boundaries"])

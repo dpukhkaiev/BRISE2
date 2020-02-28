@@ -50,7 +50,7 @@ export class ImpResComponent implements OnInit {
           element.style.display = 'none';
           Plotly.purge(element);
           this.solution = undefined;
-          this.experimentDescription = JSON.parse(message.body)['experiment description'];
+          this.experimentDescription = JSON.parse(message.body)['experiment_description'];
         }
       });
 

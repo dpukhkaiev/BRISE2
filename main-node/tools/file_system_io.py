@@ -2,7 +2,6 @@ __doc__ = """
     Module to read data from files. Each function = 1 file type."""
 import json
 import logging
-from os import path, makedirs
 from tools.front_API import API
 
 
@@ -29,22 +28,3 @@ def load_json_file(path_to_file):
         front_api.send('log', 'error', message=msg)
         raise error
 
-
-def create_folder_if_not_exists(folderPath):
-    """
-    Method create folder if it don't exist.
-    :param folderPath: sting path to folder, could include filename.
-    :return: true if create folder or it exist
-    """
-    logger = logging.getLogger(__name__)
-    try:
-        dir_path = path.dirname(folderPath)
-        if dir_path:
-            if not path.exists(path.dirname(folderPath)):
-                makedirs(path.dirname(folderPath))
-        return True
-    except IOError as error:
-        msg = "Unable to create folder %s. Error information: %s" % (folderPath, e)
-        logger.error(msg, exc_info=True)
-        API().send("log", "error", message=msg)
-        raise error

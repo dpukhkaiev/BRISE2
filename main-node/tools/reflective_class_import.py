@@ -22,6 +22,9 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
     """
     logger = logging.getLogger(__name__)
 
+    if not isinstance(class_name, str) or len(class_name) < 1:
+        raise TypeError(f"class_name parameter should be non-empty string, not {type(class_name)}.")
+
     # Finding a Module
     selected_module_file_name = ''
     cutoff = 1

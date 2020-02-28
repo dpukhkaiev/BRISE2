@@ -5,12 +5,12 @@ import pickle
 import time
 import random
 import logging
+import os
 
 from copy import deepcopy
 
 from core_entities.experiment import Experiment
 from WorkerServiceClient.WSClient_sockets import WSClient
-from tools.file_system_io import create_folder_if_not_exists
 from tools.front_API import API
 from logger.default_logger import BRISELogConfigurator
 from repeater.repeater import Repeater
@@ -61,8 +61,7 @@ def run(experiment_description=None, mock_data_file = None):
     #  --- Presets
     sleep_between_messages = 2  # In seconds. One second + ~25 seconds to overall running for current version of mock.
     api = API()
-    create_folder_if_not_exists('./Results/')
-
+    os.makedirs('./Results/', exist_ok=True)
     # --- Fixing dump issues (APIs and Logging objects were cut off).
     # Removing all tasks from configurations to fix repetitions.
     for state in mock_data["Models and configurations"]:

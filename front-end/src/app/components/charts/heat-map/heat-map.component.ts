@@ -161,8 +161,8 @@ export class HeatMapComponent implements OnInit {
         if (message.headers['message_subtype'] === 'description') {
           const obj = JSON.parse(message.body);
           this.resetRes();
-          this.globalConfig = obj['global configuration'];
-          this.experimentDescription = obj['experiment description'];
+          this.globalConfig = obj['global_configuration'];
+          this.experimentDescription = obj['experiment_description'];
           this.searchspace = obj['searchspace_description'];
           let boundaryObj: Object;
           boundaryObj = this.searchspace['boundaries'];
