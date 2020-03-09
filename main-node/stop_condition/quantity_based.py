@@ -10,10 +10,7 @@ class QuantityBasedType(StopCondition):
         self.start_threads()
 
     def is_finish(self):
-        number_of_measured_configurations = self.experiment.get_number_of_measured_configurations()
-        if number_of_measured_configurations >= self.max_configs:
-            self.logger.info("Quantity-based Stop Condition suggested to stop BRISE. "
-                             "Number of measured configurations - %s. "
-                             "Max configurations - %s" %(number_of_measured_configurations, self.max_configs))
+        n_measured_configs = self.experiment.get_number_of_measured_configurations()
+        if n_measured_configs >= self.max_configs:
             self.decision = True
-            self.update_expression(self.stop_condition_type, self.decision)
+        self.logger.debug(f"Number of measured configurations - {n_measured_configs}. Maximum - {self.max_configs}")

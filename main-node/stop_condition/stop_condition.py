@@ -45,7 +45,16 @@ class StopCondition(ABC):
         self.thread_is_active = False
 
     @abstractmethod
-    def is_finish(self): pass
+    def is_finish(self):
+        """
+        Main logic of Stop Condition should be overridden in this method.
+        Later, this method will be called in `self_evaluation` method with defined in Experiment Description period.
+
+        When the Stop Condition is triggered to stop BRISE,
+        it changes internal state of variable 'self.decision' to True.
+        :return: None
+        """
+        pass
 
     def update_expression(self, stop_condition_type: str, decision: bool) -> None:
         """
@@ -70,18 +79,31 @@ class StopCondition(ABC):
         """
         This function performs self-evaluation of Stop Condition periodically according to user-defined repetition interval.
         """
-        self.counter = 0
+        counter = 0
         listen_interval = self.repetition_interval/10
+        previous_decision = self.decision   # for sending the update only when decision changes
         while self.thread_is_active:
             # time.sleep blocks thread execution for whole time specified in function argument
             # and stop message from main-node could be delivered only after this timer ends.
             # This code decision is designed to accelerate stopping process.   
             time.sleep(listen_interval)
-            self.counter = self.counter + 1
-            if self.counter == self.repetition_interval:
-                self.counter = 0
+            counter = counter + 1
+            if counter % 10 == 0:
+                counter = 0
                 if len(self.experiment.measured_configurations) > 0:
+                    search_space_size = self.experiment.search_space.get_search_space_size()
+                    if len(self.experiment.measured_configurations) >= search_space_size:
+                        self.decision = True
+                        self.logger.warning(f"{self.__class__.__name__}: Entire Search Space was measured, terminating.")
+                        self.update_expression(self.stop_condition_type, self.decision)
+                        break
                     self.is_finish()
+                    if previous_decision != self.decision:
+                        msg = f"{self.__class__.__name__} Stop Condition decision: " \
+                              f"{ 'stop' if self.decision else 'continue'} running Experiment."
+                        self.logger.info(msg)
+                        previous_decision = self.decision
+                        self.update_expression(self.stop_condition_type, self.decision)
 
     def stop_experiment_due_to_failed_sc_creation(self):
         """

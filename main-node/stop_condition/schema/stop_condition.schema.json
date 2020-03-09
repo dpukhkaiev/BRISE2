@@ -149,8 +149,9 @@
                             "type": "object",
                             "properties":{
                                 "MaxRunTime": {
-                                    "type": "integer",
-                                    "minimum": 1
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "exclusiveMinimum": true
                                 },
                                 "TimeUnit": {
                                     "type": "string",

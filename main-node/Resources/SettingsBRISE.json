@@ -81,9 +81,9 @@
     "ModelType"         : "BO"
   },
   "StopConditionTriggerLogic":{
-    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and Adaptive and ValidationBased) or BadConfigurationBased or TimeBased",
+    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and ValidationBased) or BadConfigurationBased or TimeBased",
     "InspectionParameters":{
-      "RepetitionPeriod": 10,
+      "RepetitionPeriod": 1,
       "TimeUnit": "seconds"
     }
   },
@@ -103,12 +103,6 @@
     {
       "Type": "Guaranteed",
       "Parameters": {      }
-    },
-    {
-      "Type": "Adaptive",
-      "Parameters": {
-        "SearchSpacePercentage": 15
-      }
     },
     {
       "Type": "BadConfigurationBased",

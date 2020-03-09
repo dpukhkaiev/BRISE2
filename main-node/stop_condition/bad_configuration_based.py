@@ -12,6 +12,5 @@ class BadConfigurationBasedType(StopCondition):
     def is_finish(self):
         bad_configurations_number = self.experiment.get_bad_configuration_number()
         if bad_configurations_number >= self.threshold:
-            self.logger.info("Bad-configuration-based Stop Condition suggested to stop BRISE.")
             self.decision = True
-            self.update_expression(self.stop_condition_type, self.decision)
+        self.logger.debug(f"Currently {bad_configurations_number} bad Configurations in Experiment.")

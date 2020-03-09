@@ -10,9 +10,8 @@ class GuaranteedType(StopCondition):
 
     def is_finish(self):
         current_best_configuration = self.experiment.get_current_solution()
-        if self.experiment.get_current_solution() != self.experiment.search_space.get_default_configuration():
-            self.logger.info("Guaranteed Stop Condition suggested to stop BRISE. "
-                             "Default Configuration - %s. "
-                             "Current best Configuration - %s" %(self.experiment.search_space.get_default_configuration(), current_best_configuration))
+        default_configuration = self.experiment.search_space.get_default_configuration()
+        if current_best_configuration != default_configuration:
             self.decision = True
-            self.update_expression(self.stop_condition_type, self.decision)
+        self.logger.debug(f"Default Configuration - {default_configuration}. "
+                          f"Current best Configuration - {current_best_configuration}.")

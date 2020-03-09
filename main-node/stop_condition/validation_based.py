@@ -9,8 +9,7 @@ class ValidationBasedType(StopCondition):
         self.start_threads()
 
     def is_finish(self):
-        if self.experiment.get_model_state():
-            self.logger.info("Validation-based Stop Condition suggested to stop BRISE. "
-                             "Model is valid.")
+        last_mode_is_valid = self.experiment.get_model_state()
+        if last_mode_is_valid:
             self.decision = True
-            self.update_expression(self.stop_condition_type, self.decision)
+        self.logger.debug(f"Last model was{'' if last_mode_is_valid else ' not'} valid.")

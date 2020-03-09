@@ -10,16 +10,12 @@ class ImprovementBasedType(StopCondition):
         self.start_threads()
 
     def is_finish(self):
-
         solution_index = self.experiment.measured_configurations.index(self.experiment.get_current_solution())
-        if (len(self.experiment.measured_configurations) - solution_index) >= self.max_configs_without_improvement:
-            self.logger.info("Improvement-based Stop Condition suggested to stop BRISE. "
-                             "Solution position - %s. "
-                             "Configurations without improvement - %s" %(solution_index, len(self.experiment.measured_configurations) - solution_index))
+        configs_without_improvement = len(self.experiment.measured_configurations) - solution_index
+        if configs_without_improvement >= self.max_configs_without_improvement:
             self.decision = True
         else:
-            self.logger.info("Improvement-based Stop Condition suggested to continue BRISE. "
-                             "Solution position - %s. "
-                             "Configurations without improvement - %s" %(solution_index, len(self.experiment.measured_configurations) - solution_index))
             self.decision = False
-        self.update_expression(self.stop_condition_type, self.decision)
+        self.logger.debug(f"Solution position - {solution_index}. "
+                          f"No improvement was made for last {configs_without_improvement} Configurations. "
+                          f"Maximum Configurations without improvement - {self.max_configs_without_improvement}.")

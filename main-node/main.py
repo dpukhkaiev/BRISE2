@@ -211,13 +211,17 @@ class MainThread(threading.Thread):
                     needed_configs -= 1
 
         while needed_configs > 0:
-            config = self.selector.get_next_configuration()
-            if self.experiment.get_any_configuration_by_parameters(config.parameters) is None:
-                temp_msg = f"Randomly sampled {config}."
-                self.logger.info(temp_msg)
-                self.sub.send('log', 'info', message=temp_msg)
-                self.repeater.measure_configurations([config])
-                needed_configs -= 1
+            if len(self.experiment.evaluated_configurations) < self.experiment.search_space.get_search_space_size():
+                config = self.selector.get_next_configuration()
+                if self.experiment.get_any_configuration_by_parameters(config.parameters) is None:
+                    temp_msg = f"Randomly sampled {config}."
+                    self.logger.info(temp_msg)
+                    self.sub.send('log', 'info', message=temp_msg)
+                    self.repeater.measure_configurations([config])
+                    needed_configs -= 1
+            else:
+                self.logger.warning("Whole Search Space is evaluated. Waiting for Stop Condition decision.")
+                break
 
     def stop(self, ch = None, method = None, properties = None, body = None):
         """
