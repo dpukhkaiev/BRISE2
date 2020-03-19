@@ -218,7 +218,7 @@ class BRISEBenchmark:
             In this particular example, the Repeater benchmark described in following way:
                 1. Using base Experiment Description for Energy Consumption.
                 2. Change ONE parameter of Repeater in a time.
-                    2.1. For each Repeater type (Default, Student and Student with enabled model-awareness).
+                    2.1. For each Repeater type (Default, Student and Student with enabled experiment-awareness).
                     2.2. For each Target System Scenario (ws_file).
                 3. Execute BRISE with this changed Experiment Description 3 times and save Experiment dump after
                     each execution.
@@ -238,7 +238,7 @@ class BRISEBenchmark:
                                               "MaxTasksPerConfiguration": 10}}}
         student_rep_skeleton = {"Repeater": {"Type": "student_deviation",
                                              "Parameters": {
-                                                 "ModelAwareness": {
+                                                 "ExperimentAwareness": {
                                                      "MaxAcceptableErrors": [50],
                                                      "RatiosMax": [10],
                                                      "isEnabled": True
@@ -260,15 +260,15 @@ class BRISEBenchmark:
             experiment_description.update(deepcopy(def_rep_skeleton))
             self.execute_experiment(experiment_description)
 
-            # benchmarking a student repeater with disabled model awareness
+            # benchmarking a student repeater with disabled experiment awareness
             experiment_description.update(deepcopy(student_rep_skeleton))
-            experiment_description['Repeater']['Parameters']['ModelAwareness']["isEnabled"] = False
+            experiment_description['Repeater']['Parameters']['ExperimentAwareness']["isEnabled"] = False
             for BaseAcceptableErrors in [5, 15, 50]:
                 experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
                 self.logger.info("Default Repeater: Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
                 self.execute_experiment(experiment_description)
 
-            # benchmarking a student repeater with enabled model awareness
+            # benchmarking a student repeater with enabled experiment awareness
             experiment_description.update(deepcopy(student_rep_skeleton))
             for BaseAcceptableErrors in [5, 15, 50]:
                 experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
@@ -277,13 +277,13 @@ class BRISEBenchmark:
 
             experiment_description.update(deepcopy(student_rep_skeleton))
             for MaxAcceptableErrors in [35, 50, 120]:
-                experiment_description['Repeater']['Parameters']['ModelAwareness']['MaxAcceptableErrors'] = [MaxAcceptableErrors]
+                experiment_description['Repeater']['Parameters']['ExperimentAwareness']['MaxAcceptableErrors'] = [MaxAcceptableErrors]
                 self.logger.info("Student Repeater: Changing MaxAcceptableErrors to %s" % MaxAcceptableErrors)
                 self.execute_experiment(experiment_description)
 
             experiment_description.update(deepcopy(student_rep_skeleton))
             for RatiosMax in [5, 10, 30]:
-                experiment_description['Repeater']['Parameters']['ModelAwareness']['RatiosMax'] = [RatiosMax]
+                experiment_description['Repeater']['Parameters']['ExperimentAwareness']['RatiosMax'] = [RatiosMax]
                 self.logger.info("Student Repeater: Changing RatiosMax to %s" % BaseAcceptableErrors)
                 self.execute_experiment(experiment_description)
 

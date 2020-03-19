@@ -17,8 +17,9 @@ class StopCondition(ABC):
         self.stop_condition_type = stop_condition_parameters["Type"]
         self.decision = False
         self.logger = logging.getLogger(stop_condition_parameters["Type"])
-        self.repetition_interval = self.interval = datetime.timedelta(**{
-                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
+        self.repetition_interval = datetime.timedelta(**{
+                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
+                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
                 }).total_seconds()
 
     def start_threads(self):
@@ -93,9 +94,6 @@ class StopCondition(ABC):
                 if len(self.experiment.measured_configurations) > 0:
                     search_space_size = self.experiment.search_space.get_search_space_size()
                     if len(self.experiment.measured_configurations) >= search_space_size:
-                        self.decision = True
-                        self.logger.warning(f"{self.__class__.__name__}: Entire Search Space was measured, terminating.")
-                        self.update_expression(self.stop_condition_type, self.decision)
                         break
                     self.is_finish()
                     if previous_decision != self.decision:

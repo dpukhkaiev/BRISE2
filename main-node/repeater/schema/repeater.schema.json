@@ -105,7 +105,7 @@
                             }]
                         },
                         "ExperimentAwareness": {
-                            "description": "Experiment awareness of the Repeater.",
+                            "description": "Experiment-awareness of the Repeater.",
                             "anyOf": [
                                 {
                                     "title": "Enabled",
@@ -113,7 +113,7 @@
                                     "type": "object",
                                     "properties": {
                                         "isEnabled": {
-                                            "description": "Experiment awareness is enabled.",
+                                            "description": "Experiment-awareness is enabled.",
                                             "type": "boolean",
                                             "enum": [true]
                                         },
@@ -127,7 +127,7 @@
                                                     }]
                                         },
                                         "MaxAcceptableErrors": {
-                                            "description": "Maximal values for acceptable Relative errors, used if Repeater is model-aware.",
+                                            "description": "Maximal values for acceptable Relative errors, used if Repeater is experiment-aware.",
                                             "type": "array",
                                             "items":[{
                                                 "type": "number",
@@ -148,7 +148,7 @@
                                     "type": "object",
                                     "properties": {
                                         "isEnabled": {
-                                            "description": "Model awareness is disabled.",
+                                            "description": "Experiment-awareness is disabled.",
                                             "type": "boolean",
                                             "enum": [false]
                                         }

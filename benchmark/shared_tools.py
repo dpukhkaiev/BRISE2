@@ -157,6 +157,7 @@ class MainAPIClient:
             """
             self.main_client.download_latest_dump()
             self.main_client.isBusy = False
+            self.consume_channel.basic_ack(delivery_tag=method.delivery_tag)
 
         def run(self):
             """

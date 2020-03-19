@@ -46,8 +46,8 @@ All other configurations are nested to these as key-value entities.
             - `ConfidenceLevels` - `array of floating numbers 0..1` - Probabilities, that Configuration results (each dimension) will appear in a boundary of an Acceptable Relative error.
             - `DevicesScaleAccuracies` - `array of floating numbers` - A minimal value on a device scale, that is possible to distinguish for each dimension in results.
             - `DevicesAccuracyClasses` - `array of integers` - Accuracy classes of devices that is used to estimate each dimension of the result.
-            - `ModelAware` - `boolean` - Is Repeater is in model-aware mode? If yes (`true`), the following parameters are obligatory:
-                - `MaxAcceptableErrors` - `array of floating numbers` - A maximal value for the Acceptable Relative errors, used if the Repeater is model-aware.
+            - `ExperimentAwareness` - `boolean` - Is Repeater is in experiment-aware mode? If yes (`true`), the following parameters are obligatory:
+                - `MaxAcceptableErrors` - `array of floating numbers` - A maximal value for the Acceptable Relative errors, used if the Repeater is experiment-aware.
                 - `RatioMax` - `array of floating numbers` - A relation between current solution Configuration and current Configuration, when Relative error threshold will reach MaxAcceptableErrors value. Specified separately for each dimension in a results.
             
     - *To disable repeater* (if the target algorithm is deterministic or Configuration evaluation considered precise) set `MaxTasksPerConfiguration` equal to `1` and `Type` to `default`.

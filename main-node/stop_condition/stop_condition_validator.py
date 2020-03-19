@@ -4,6 +4,8 @@ import json
 import pika
 import threading
 import logging
+import time
+import datetime
 
 
 class StopConditionValidator:
@@ -24,8 +26,14 @@ class StopConditionValidator:
         self.expression = self.expression.replace("or", "|").replace("and", "&")
         self.event_host = self.experiment.description["General"]["EventService"]["Address"]
         self.event_port = self.experiment.description["General"]["EventService"]["Port"]
+        self.repetition_interval = datetime.timedelta(**{
+                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
+                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
+                }).total_seconds()
         self.listen_thread = EventServiceConnection(self)
         self.listen_thread.start()
+        self.thread = threading.Thread(target=self.self_evaluation, args=())
+        self.thread.start()
         try:
             result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
         except KeyError:
@@ -33,6 +41,31 @@ class StopConditionValidator:
                                 "Experiment will be stopped in a few seconds. Please, check your experiment description.")
             self.logger.exception(temp_msg)
             self.stop_experiment_due_to_failed_sc_creation()
+
+    def self_evaluation(self):
+        """
+        This function performs Search Space filling check periodically according to user-defined repetition interval.
+        """
+        counter = 0
+        listen_interval = self.repetition_interval/10
+        while not self.blocked:
+            time.sleep(listen_interval)
+            counter = counter + 1
+            if counter % 10 == 0:
+                counter = 0
+                if len(self.experiment.measured_configurations) > 0:
+                    search_space_size = self.experiment.search_space.get_search_space_size()
+                    if len(self.experiment.measured_configurations) >= search_space_size and not self.blocked:
+                        self.blocked = True
+                        msg = "Entire Search Space was measured. Stopping the Experiment."
+                        self.logger.info(msg)
+                        with pika.BlockingConnection(
+                                pika.ConnectionParameters(host=self.event_host,
+                                                        port=self.event_port)) as connection:
+                            with connection.channel() as channel:
+                                channel.basic_publish(exchange='',
+                                                            routing_key='stop_experiment_queue',
+                                                            body='')
 
     def validate_conditions(self, ch, method, properties, body):
         """
