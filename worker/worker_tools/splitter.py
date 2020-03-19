@@ -28,7 +28,6 @@ class Splitter:
         elif string.lower() in ("false"):
             return False
         else:
-            self.logger.error("String \"%s\" is not equal to \"True\" or \"False\"" % string)
             raise ValueError("String \"%s\" is not equal to \"True\" or \"False\"" % string)
 
     def split(self, param):

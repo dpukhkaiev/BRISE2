@@ -1,5 +1,7 @@
 # BRISE 2.3.0
 ##### Benchmark Reduction via Adaptive Instance Selection
+![BRISE-CI](https://github.com/dpukhkaiev/BRISEv2/workflows/BRISE-CI/badge.svg?branch=github_actions)
+
 Software Product Line for Parameter Tuning\
 Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
 different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy consumption minimization` 
