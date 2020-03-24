@@ -16,17 +16,11 @@ class ConfigSpaceSelector(SelectionAlgorithm):
             Will return next data point imposed to the search space 
             (`Mersenne Twister pseudo-random generator is used as a core <https://docs.python.org/3/library/random.html>`_).
         :return: list - point in current search space.
-        """    
-        unique_point = None
-        # try to generate points until a unique one will be retrieved
-        while True:
-            candidate = self.search_space.sample_configuration()
-            if candidate not in self.returned_points:
-                unique_point = candidate
-                self.returned_points.append(candidate)
-                break
+        """  
 
-        self.logger.debug("Retrieving new configuration from ConfigSpace: %s" % str(unique_point))
-
-        self.numOfGeneratedPoints += 1
-        return unique_point
+        candidate = self.search_space.sample_configuration()
+        try:
+            self.logger.debug("Retrieving new configuration from ConfigSpace: %s" % str(candidate))
+            return candidate
+        except Exception:
+            self.logger.error("Selector was not able to get new configuration!")

@@ -1,6 +1,7 @@
 import sys
 
 from outliers.outliers_detector_selector import get_outlier_detectors
+from tools.initial_config import load_experiment_setup
 
 results_init = [{'result': {'energy': 100223.3292}, 'worker': 'alpha', 'task id': 'e699ce2aaad443f88f258ae543262ea2', 'ResultValidityCheckMark': 'OK'}, 
     {'result': {'energy': 426.294}, 'worker': 'alpha', 'task id': '19e1bb7007854fc1a6a827cab28ede3f', 'ResultValidityCheckMark': 'OK'}, 
@@ -13,11 +14,9 @@ results_init = [{'result': {'energy': 100223.3292}, 'worker': 'alpha', 'task id'
     {'result': {'energy': 426.294}, 'worker': 'alpha', 'task id': '68242f8c94ac4f849ba848785ced5ad2', 'ResultValidityCheckMark': 'OK'}, 
     {'result': {'energy': 201.645}, 'worker': 'alpha', 'task id': '315d0b8bf84f45018c14c4853baa321d', 'ResultValidityCheckMark': 'OK'}]
 
-outliers_criterion_init = [{'Parameters': {'MaxActiveNumberOfTasks': 30, 'MinActiveNumberOfTasks': 3}, 'Type': 'Dixon'}, 
-    {'Parameters': {'MaxActiveNumberOfTasks': 'Inf', 'MinActiveNumberOfTasks': 0}, 'Type': 'Chauvenet'}, 
-    {'Parameters': {'MaxActiveNumberOfTasks': 'Inf', 'MinActiveNumberOfTasks': 0}, 'Type': 'MAD'}, 
-    {'Parameters': {'MaxActiveNumberOfTasks': 'Inf', 'MinActiveNumberOfTasks': 0}, 'Type': 'Grubbs'}, 
-    {'Parameters': {'MaxActiveNumberOfTasks': 'Inf', 'MinActiveNumberOfTasks': 0}, 'Type': 'Quartiles'}]
+experiment_description, _ = load_experiment_setup("./Resources/EnergyExperiment.json")
+outliers_criterion_init = experiment_description["OutliersDetection"]
+outliers_criterion_init["isEnabled"] = True # if OutliersDetection is disabled, it is nothing to test. So it is forced enabled
 
 result_structure_init = ['energy']
 class TestOutliers:

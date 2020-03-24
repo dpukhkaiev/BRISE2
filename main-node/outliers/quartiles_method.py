@@ -35,7 +35,7 @@ class Quartiles(OutliersDetectionDecorator):
 			# find limits of quartiles (step 1)
 			first_Q = np.percentile(inputs, 25)
 			third_Q = np.percentile(inputs, 75)
-			Inter_QD = third_Q-first_Q
+			Inter_QD = third_Q - first_Q
 
 			# In this implementation only outer fences are used, because they are probable outlier (step 2 is skipped)
 

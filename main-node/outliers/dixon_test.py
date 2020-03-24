@@ -9,7 +9,7 @@ class Dixon(OutliersDetectionDecorator):
     def _find_outliers(self, inputs):
         criterion_used_flag = False
         if self.lower_threshold <= len(inputs) <= self.upper_threshold:
-            if len(inputs) < 30:
+            if len(inputs) <= 30:
                 # Dixon table values for 3 different confidence intervals
                 q90 = [0.941, 0.765, 0.642, 0.56, 0.507, 0.468, 0.437, 
                     0.412, 0.392, 0.376, 0.361, 0.349, 0.338, 0.329, 
@@ -35,9 +35,9 @@ class Dixon(OutliersDetectionDecorator):
                 # for example, we need to find Q90 value for 5 points in dataset
                 # in case of list we should turn to Q90[2] value
                 # in case of dict we turn to value of key "5"
-                Q90 = {n:q for n,q in zip(range(3,len(q90)+1), q90)}
-                Q95 = {n:q for n,q in zip(range(3,len(q95)+1), q95)}
-                Q99 = {n:q for n,q in zip(range(3,len(q99)+1), q99)}
+                Q90 = {n:q for n,q in zip(range(3,len(q90)+3), q90)}
+                Q95 = {n:q for n,q in zip(range(3,len(q95)+3), q95)}
+                Q99 = {n:q for n,q in zip(range(3,len(q99)+3), q99)}
                 # Call Dixon outlier function with some confidential interval as input
                 outliers = self.dixon_test(inputs, Q95)
                 unique = np.unique(outliers)

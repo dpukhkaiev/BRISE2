@@ -13,5 +13,6 @@ class RandomDefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
         """
         selector = get_selector(experiment=self.experiment)
         default_config = selector.get_next_configuration()
-        logging.getLogger(__name__).warning("Random Configuration is picked as a default one: %s" % default_config.parameters)
+        logging.getLogger(__name__).warning(
+            "Random Configuration is picked as a default one: %s" % default_config.parameters)
         return default_config

@@ -2,12 +2,13 @@ export class Task {
     id: string = '';
     run: Run;
     config: Configuration;
+    stub_config: Array<any>;
     meta: MetaData;
     constructor(item) {
-        this.id = item.task[0].results["task id"];
-        this.run = item.task[0].run;
-        this.config = item.task[0].configurations;
-        this.meta = item.task[0].results;
+      this.id = item[0].results["task id"];
+      this.run = item[0].run;
+      this.config = item[0].configurations;
+      this.meta = item[0].results;
     }
 }
 interface MetaData {
@@ -27,17 +28,10 @@ interface Run {
     "param": any
 }
 
-interface Results {
-    'threads': String,
-    'frequency': String,
-    'energy': number,
-    'time': number
-}
-
 export interface Solution {
     configurations: Array<any>;
     results: Array<any>;
     'measured points': Array<Number>
     'performed_measurements': number
-} 
+}
 

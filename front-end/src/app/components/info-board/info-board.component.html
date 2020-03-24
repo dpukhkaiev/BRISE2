@@ -37,29 +37,33 @@
          <mat-icon>star_rate</mat-icon>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    <ng-template matExpansionPanelContent>
-      <mat-list class="solution">
+    <ng-template matExpansionPanelContent id="expansion_content">
+      <mat-list class="solution" *ngIf="solution">
         <mat-list-item>
           <mat-icon matListIcon>outlined_flag</mat-icon>
-          <span class="desc">Configuration: </span> <span>{{solution.configurations}}</span>
+          <span class="desc">Configuration: </span> <span>{{solution ? configWithNones : ""}}</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>grade</mat-icon>
-          <span class="desc">Result: </span> <span>{{solution.results}}</span>
+          <span class="desc">Result: </span> <span>{{solution ? solution.results : ""}}</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>network_check</mat-icon>
-          <span class="desc">Quality gain: </span> <span>{{100*(solution.results[0] - default_configuration.results[0])/default_configuration.results[0] | number:'2.0-2'}}%</span>
+          <span class="desc">Quality gain: </span>
+          <span>{{solution ? (100 * (solution.results[0] - default_configuration.results[0]) / default_configuration.results[0] | number:'2.0-2') : ""}}
+            %</span>
         </mat-list-item>
         <mat-list-item>
           <mat-icon matListIcon>blur_on</mat-icon>
-          <span class="desc">Performed measurements: </span> <span>{{solution['performed_measurements']}}</span>
+          <span class="desc">Performed measurements: </span>
+          <span>{{solution ? solution['performed_measurements'] : ""}}</span>
         </mat-list-item>
         <mat-list-item>
-          <mat-icon matListIcon>sentiment_satisfied_alt</mat-icon>
-          <span class="desc">Saved efforts: </span> <span>
+          <mat-icon matListIcon *ngIf="searchspace['size'] != 'Infinity'">sentiment_satisfied_alt</mat-icon>
+          <span class="desc" *ngIf="searchspace['size'] != 'Infinity'">Saved efforts: </span> 
+          <span *ngIf="searchspace['size'] != 'Infinity'">
             {{
-            (1 - solution['performed_measurements'] / (searchspace["size"]
+            (1 - solution['performed_measurements'] / (searchspace['size']
               * experimentDescription['Repeater']['Parameters']['MaxTasksPerConfiguration'])) * 100 |number:'2.0-2'
             }}%
         </span>

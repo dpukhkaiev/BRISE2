@@ -1,17 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 
-import { MatBottomSheet } from '@angular/material';
+import {MatBottomSheet} from '@angular/material';
 
 // Enums
-import { MainEvent } from '../../data/client-enums';
-import { ExperimentDescription } from '../../data/experimentDescription.model';
+import {MainEvent} from '../../data/client-enums';
+import {ExperimentDescription} from '../../data/experimentDescription.model';
 
 // Service
-import { RestService as mainREST } from '../../core/services/rest.service';
-import { MainSocketService } from '../../core/services/main.socket.service';
+import {MainEventService} from '../../core/services/main.event.service';
+import {MainClientService} from '../../core/services/main.client.service';
 
 // Download Popup
-import {DownloadPopUp} from '../download-pop-up/download-pop-up.component'
+import {DownloadPopUp} from '../download-pop-up/download-pop-up.component';
 
 
 // -- Main
@@ -26,17 +26,14 @@ export class LaunchControlBarComponent implements OnInit {
   isRuning: boolean = false
   // Flag for finish experiment
   isFinish: boolean = false
-  // Flag for first using
-  isUsed: boolean = false
 
   experimentDescription: ExperimentDescription
 
   constructor(
-    private mainREST: mainREST,
-    private ioMain: MainSocketService,
-    private DownloadOption: MatBottomSheet
-  ) {
-  }
+    private eventService: MainClientService,
+    private ioMain: MainEventService,
+    private DownloadOption: MatBottomSheet,
+  ) { }
 
   ngOnInit() {
     this.initMainEvents();
@@ -50,37 +47,28 @@ export class LaunchControlBarComponent implements OnInit {
   startMain(): any {
     if (this.isRuning == false) {
       this.stopMain(); // Сlean the old tread experiment
-      this.mainREST.startMain()
-        .subscribe((res) => {
-          console.log('Main start:', res)
-            this.isRuning = true
-            this.isUsed = true
-        }
-        );
+      this.eventService.startMain()
+      this.isRuning = true
+      this.isFinish = false
     }
   }
   stopMain(): any {
     if (this.isRuning == true) {
-      this.mainREST.stopMain()
-        .subscribe((res) => {
-          console.log('Main stop:', res)
-          this.isRuning = false
-        }
-        );
+      this.eventService.stopMain()
+      this.isRuning = false
     }
   }
-
-  // Socket
   private initMainEvents(): void {
     this.ioMain.onEvent(MainEvent.FINAL)
-    .subscribe((obj: any) => {
-      this.isRuning = false
-      this.isFinish = true
-    });
+      .subscribe((message: any) => {
+        this.isRuning = false
+        this.isFinish = true
+      });
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
-      .subscribe((obj: any) => {
-        this.experimentDescription = obj['description']['experiment description'];
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'description') {
+          this.experimentDescription = JSON.parse(message.body)['experiment_description'];
+        }
       });
   }
-
 }

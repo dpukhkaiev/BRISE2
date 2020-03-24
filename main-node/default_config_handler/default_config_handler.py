@@ -3,7 +3,7 @@ from default_config_handler.abstract_default_config_handler import AbstractDefau
 
 
 class DefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
-        
+
     def get_default_config(self) -> Configuration:
         """ This method returns default configuration of type Configuration,
         if default configuration is specified correctly by user

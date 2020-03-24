@@ -1,25 +1,38 @@
 # Stop Condition.
-##### This folder contains a Basic Stop Condition class and different stop condition types, which are implemented as wrappers on the Basic Stop Condition. When you specify a Stop Condition in the Experiment description file `stop_condition_selector.py` reads the description and builds the Stop Condition object.
+##### This folder contains an Abstract Stop Condition class and some available out of the box Stop Conditions.
 
-All Stop Conditions are splitted in 2 groups: posterior and prior. Prior Stop Conditions can be initialized right away after experiment starts, while posterior Stop Conditions require statistical data collected during experiment.
+When you specify a Stop Condition in the Experiment description file `stop_condition_selector.py` reads the description
+ and builds Stop Condition modules. 
 
-In the current implementation, BRISE will stop if Basic Stop Condition and all additional posterior Stop Conditions agree on stopping BRISE or one of prior Stop Conditions decided to stop BRISE. If at least one of posterior and all of prior conditions were not satisfied BRISE will continue running.
+Each Stop Condition (except TimeBased) periodically performs self-validation according to a user-defined repetition 
+interval. Stop Condition Validator orchestrates all Stop Conditions. Connection between them is implemented through events. 
 
-## Variants of stop condition config
+The user could specify any logic of BRISE Experiment termination by composing operands `and`, `or`, brackets `(` `)` 
+and names of Stop Conditions into a single expression.
+This expression should be written at `StopConditionTriggerLogic` block of a BRISE settings file.
+###### Note: Stop Conditions, that are defined in `StopCondition` block, but not used in `StopConditionTriggerLogic` block will be ignored.
+Example of `StopConditionTriggerLogic` block:
 
+```json
+"StopConditionTriggerLogic":{
+    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and Adaptive) or BadConfigurationBased",
+    "InspectionParameters":{
+      "RepetitionPeriod": 10,
+      "TimeUnit": "seconds"
+    }
+}
+```
 
-#### Basic Stop Condition
+## Variants of Stop Condition configurations
 
-This Stop Condition is satisfied, when there is at least 1 successfully measured Configuration. Used as a base for Stop Condition Decorator.
+#### Quantity Based Stop Condition
 
-#### Default Stop Condition
-
-This posterior Stop Condition is satisfied, when the number of overall measured Configurations is greater than `StopCondition["MaxConfigs"]`.
+This Stop Condition is satisfied, when the number of overall measured Configurations is greater than `StopCondition["MaxConfigs"]`.
 
 ```json
 "StopCondition":[
     {
-      "Type": "Default",
+      "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
       }
@@ -29,7 +42,7 @@ This posterior Stop Condition is satisfied, when the number of overall measured 
 
 #### Guaranteed Stop Condition
 
-This posterior Stop Condition is satisfied, when the better Configuration than Default Configuration was found.
+This Stop Condition is satisfied, when a better Configuration than the Default Configuration was found.
 
 ```json
 "StopCondition":[
@@ -42,7 +55,8 @@ This posterior Stop Condition is satisfied, when the better Configuration than D
 
 #### Improvement Based Stop Condition
 
-This posterior Stop Condition is satisfied, when the better Configuration was not found after evaluating `StopCondition["MaxConfigsWithoutImprovement"]` number of Configurations in a row.
+This Stop Condition is satisfied, when a better Configuration was not found after evaluating 
+`StopCondition["MaxConfigsWithoutImprovement"]` number of Configurations in a row.
 
 ```json
 "StopCondition":[
@@ -57,8 +71,8 @@ This posterior Stop Condition is satisfied, when the better Configuration was no
 
 #### Adaptive Stop Condition
 
-This posterior Stop Condition is satisfied, when the BRISE had evaluated some percentage of overall number of Configurations in the Search Space. 
-This percentage is reflected as `StopCondition["SearchSpacePercentage"]` parameter for Adaptive Stop Condition.
+This Stop Condition is satisfied, when the BRISE had evaluated some percentage of overall number of Configurations in the Search Space. 
+This percentage can be specified by `StopCondition["SearchSpacePercentage"]` parameter for Adaptive Stop Condition.
 
 ```json
 "StopCondition":[
@@ -70,11 +84,28 @@ This percentage is reflected as `StopCondition["SearchSpacePercentage"]` paramet
     }
   ]
 ```
+#### Bad Configuration Based Stop Condition
+
+This Stop Condition is satisfied, when a total number of broken, failed or not suitable Configurations reaches a 
+user-defined limit. This limit is reflected as `StopCondition["MaxBadConfigurations"]` parameter for Bad Configuration 
+Based Stop Condition.
+
+```json
+"StopCondition":[
+    {
+      "Type": "BadConfigurationBased",
+      "Parameters": {
+        "MaxBadConfigurations": 10
+      }
+    }
+  ]
+```
 
 #### Time Based Stop Condition
 
-This prior Stop Condition is satisfied, when the user-defined timeout is reached.
-This timeout could be set using `StopCondition["MaxRunTime"]` and `StopCondition["TimeUnit"]` parameters of Time Based Stop Condition that represent time value and time unit (seconds, minutes etc.) respectively.
+This Stop Condition terminates BRISE execution, when the user-defined timeout is reached.
+This timeout could be set using `StopCondition["MaxRunTime"]` and `StopCondition["TimeUnit"]` parameters 
+that represent time value and time unit (seconds, minutes, etc.) respectively.
 
 ```json
 "StopCondition":[
@@ -88,26 +119,32 @@ This timeout could be set using `StopCondition["MaxRunTime"]` and `StopCondition
   ]
 ```
 
-#### Bad Configuration Based Stop Condition
+#### Validation Based Stop Condition
 
-This prior Stop Condition is satisfied, when total number of broken, failed and not suitable Configurations reaches user-defined limit. This limit is reflected as `StopCondition["MaxBadConfigurations"]` parameter for Bad Configuration Based Stop Condition.
+This Stop Condition is satisfied, when the model created during BRISE runtime is valid.
 
 ```json
 "StopCondition":[
     {
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
-      }
+      "Type": "ValidationBased",
+      "Parameters": {      }
     }
   ]
 ```
-####And can be used in different combinations
+
+#### An example of Stop Condition modules settings:
 
 ```json
+"StopConditionTriggerLogic":{
+    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and Adaptive or ValidationBased) or BadConfigurationBased",
+    "InspectionParameters":{
+      "RepetitionPeriod": 10,
+      "TimeUnit": "seconds"
+    }
+  },
 "StopCondition":[
     {
-      "Type": "Default",
+      "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
       }
@@ -129,6 +166,12 @@ This prior Stop Condition is satisfied, when total number of broken, failed and 
       }
     },
     {
+      "Type": "BadConfigurationBased",
+      "Parameters": {
+        "MaxBadConfigurations": 10
+      }
+    },
+    {
       "Type": "TimeBased",
       "Parameters": {
         "MaxRunTime": 10,
@@ -136,10 +179,8 @@ This prior Stop Condition is satisfied, when total number of broken, failed and 
       }
     },
     {
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
-      }
+      "Type": "ValidationBased",
+      "Parameters": {      }
     }
   ]
 ```

@@ -1,5 +1,8 @@
+import inspect
+
 from logging import getLogger
 from tools.singleton import Singleton
+
 
 class API(metaclass=Singleton):
     """
@@ -20,7 +23,7 @@ class API(metaclass=Singleton):
             Initializes API singleton (with or without provided API object to wrap).
 
         :param api_object: Object. Should support method "emit" with following signature:
-                api_object.emit(string_event_type, jsonable_payload)
+                api_object.emit(message_type:str, message_subtype:str, message:str)
         """
 
         self.logger = getLogger(__name__)
@@ -30,10 +33,33 @@ class API(metaclass=Singleton):
 
             class DummyAPI:
                 """Stub for the api object"""
-                def emit(self, *args, **kwargs): pass
+
+                def emit(self, *args, **kwargs): return args, kwargs
+
             self._api_object = DummyAPI()
         else:
-            self._api_object = api_object
+            object_methods = [method_name for method_name in dir(api_object)
+                  if callable(getattr(api_object, method_name))]
+            # check parameters of the API's emit() method (must be either correctly named or at least compatible by type)
+            if "emit" in object_methods:
+                emit_method_parameters = inspect.signature(api_object.__class__.emit).parameters
+                if len(emit_method_parameters.keys()) > 3 \
+                and str(emit_method_parameters[list(emit_method_parameters.keys())[1]].annotation) == "<class 'str'>" \
+                and str(emit_method_parameters[list(emit_method_parameters.keys())[2]].annotation) == "<class 'str'>" \
+                and str(emit_method_parameters[list(emit_method_parameters.keys())[3]].annotation) == "<class 'str'>":
+
+                    if not 'message_type' in emit_method_parameters.keys() \
+                    or not 'message_subtype' in emit_method_parameters.keys() \
+                    or not 'message' in emit_method_parameters.keys():
+                        self.logger.warning("Parameter names of the emit() method are untypical for your API object. It is advisable to check emit() parameters"
+                        "Expected parameters are: 'message_type', 'message_subtype', 'message'")
+                
+                    self._api_object = api_object
+                else:
+                    raise AttributeError("Provided API object has unsupported 'emit()' method. Its parameters do not correspond to the required!"
+                "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'")
+            else:
+                raise AttributeError("Provided API object doesn't contain 'emit()' method")
 
     def send(self, message_type: str, message_subtype: str, **key_value_params):
         """
@@ -62,8 +88,8 @@ class API(metaclass=Singleton):
             # All is OK, sending the message.
             # --lowercase
             return self._api_object.emit(message_type.lower(),
-                                         {message_subtype.lower(): APIMessageBuilder.build(message_type.upper(),
-                                                                                           **key_value_params)})
+                                         message_subtype.lower(),
+                                         APIMessageBuilder.build(message_type.upper(), **key_value_params))
 
         except AssertionError as error:
             self.logger.error(error)
@@ -130,8 +156,8 @@ class APIMessageBuilder:
         # Validation of input.
         try:
             # Verify that all mandatory fields provided.
-            assert "configurations" in kwargs.keys(), "The configurations(key parameter) are not provided!"
-            assert "results" in kwargs.keys(), "The results(key parameter) are not provided!"
+            assert "configurations" in kwargs.keys() and isinstance(kwargs["configurations"], list), "The configurations(key parameter) are not provided or have invalid format!"
+            assert "results" in kwargs.keys() and isinstance(kwargs["results"], list), "The results(key parameter) are not provided or have invalid format!"
 
             # Verify that length of all parameters are the same.
             assert all(len(kwargs[key]) == len(kwargs["configurations"]) for key in kwargs.keys()), \
@@ -153,23 +179,25 @@ class APIMessageBuilder:
     @staticmethod
     def _build_experiment_message(**kwargs) -> dict:
         """
-            Takes all key-value parameters and checks if "global_config" and "experiment_description" presents.
+            Takes all key-value parameters and checks if "global_config", "experiment_description" and "searchspace_description" are presents.
             Currently it just provides validation of input (needed fields are present).
 
             !!! In future, if new subtypes of the"EXPERIMENT" type will appear - this method should be refined.
 
-        :param kwargs: "global_config" and "experiment_config" as mandatory fields.
+        :param kwargs: "global_config", "experiment_description" and "searchspace_description" as mandatory fields.
         :return: Dictionary.
         """
         # Validation
         try:
             assert "global_config" in kwargs.keys(), "The global configuration is not provided!"
             assert "experiment_description" in kwargs.keys(), "The experiment description is not provided!"
+            assert "searchspace_description" in kwargs.keys(), "The search space description is not provided!"
         except AssertionError as error:
             getLogger(__name__).error(error)
+            raise KeyError("Invalid parameters passed to send message via API: %s" % error)
 
         return {
-            "global configuration": kwargs["global_config"],
-            "experiment description": kwargs["experiment_description"],
+            "global_configuration": kwargs["global_config"],
+            "experiment_description": kwargs["experiment_description"],
             "searchspace_description": kwargs["searchspace_description"]
         }

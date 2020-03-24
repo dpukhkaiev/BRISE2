@@ -1,6 +1,4 @@
 # This file contains inputs for all test cases of outliers module
-import pytest
-
 from outliers.tests.test_outliers import TestOutliers
 
 def get_inputs_for_outliers_test(results_init, outlier_criterions_init, result_structure_init):
@@ -14,7 +12,8 @@ def get_inputs_for_outliers_test(results_init, outlier_criterions_init, result_s
     # expected_results is used as check value  
 
     results = results_init
-    outlier_criterions = [{'Parameters': {'MaxActiveNumberOfTasks': 30, 'MinActiveNumberOfTasks': 3}, 'Type': 'Dixon'}, 
+    outlier_criterions = outlier_criterions_init
+    outlier_criterions["Detectors"] = [{'Parameters': {'MaxActiveNumberOfTasks': 30, 'MinActiveNumberOfTasks': 3}, 'Type': 'Dixon'}, 
     {'Parameters': {'MaxActiveNumberOfTasks': 'Inf', 'MinActiveNumberOfTasks': 15}, 'Type': 'Chauvenet'}, 
     {'Parameters': {'MaxActiveNumberOfTasks': 'Inf', 'MinActiveNumberOfTasks': 10}, 'Type': 'MAD'}, 
     {'Parameters': {'MaxActiveNumberOfTasks': 5, 'MinActiveNumberOfTasks': 0}, 'Type': 'Grubbs'}, 

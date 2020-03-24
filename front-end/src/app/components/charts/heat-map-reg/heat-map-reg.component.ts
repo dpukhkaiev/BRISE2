@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 // Service
-import { MainSocketService } from '../../../core/services/main.socket.service';
+import {MainEventService} from '../../../core/services/main.event.service';
 
 // Model
 import { MainEvent } from '../../../data/client-enums';
@@ -25,8 +25,8 @@ export class HeatMapRegComponent implements OnInit {
   // Variables
   prediction = new Map()
   solution: Solution
-  measPoints: Array<Array<number>> = []
-  
+  measPoints: Array<Array<any>> = []
+
   resetRes() {
     this.prediction.clear()
     this.solution = undefined
@@ -39,8 +39,8 @@ export class HeatMapRegComponent implements OnInit {
   experimentDescription: ExperimentDescription
   searchspace: object
   // Rendering axises
-  y: Array<number>
-  x: Array<number>
+  y: Array<any>
+  x: Array<any>
 
   // Default theme
   theme = {
@@ -52,7 +52,8 @@ export class HeatMapRegComponent implements OnInit {
   public colors = colors
   public smooth = smooth
 
-  constructor(private ioMain: MainSocketService) { }
+  constructor(private ioMain: MainEventService) {
+  }
 
   ngOnInit() {
     this.initMainConnection();
@@ -81,7 +82,7 @@ export class HeatMapRegComponent implements OnInit {
         name: 'measured points',
         marker: { color: 'grey', size: 8, symbol: 'x' },
         x: this.measPoints.map(arr => arr[1]),
-        y: this.measPoints.map(arr => arr[0]) 
+        y: this.measPoints.map(arr => arr[0])
       },
       {
         type: 'scatter',
@@ -100,7 +101,7 @@ export class HeatMapRegComponent implements OnInit {
       xaxis: { title: "Threads",
         type: 'category',
         autorange: true,
-        range: [Math.min(...this.x), Math.max(...this.x)] 
+        range: [Math.min(...this.x), Math.max(...this.x)]
       },
       yaxis: { title: "Frequency",
         type: 'category',
@@ -110,11 +111,11 @@ export class HeatMapRegComponent implements OnInit {
 
     Plotly.react(regression, data, layout);
   }
-  zParser(data: Map<String, Number>): Array<Array<Number>> {
+  zParser(data: Map<String, any>): Array<Array<any>> {
     var z = []
-    this.y.forEach(y => { // y - threads
+    this.y.forEach(y => {
       var row = []
-      this.x.forEach(x => { // x - frequency
+      this.x.forEach(x => {
         row.push(data.get(String([y, x]))[0]) // change [x,y] or [y,x] if require horizontal or vertical orientation
                                           // Get the first result from an array
       });
@@ -125,22 +126,14 @@ export class HeatMapRegComponent implements OnInit {
 
   // Init conection
   private initMainConnection(): void {
-
-    this.ioMain.onEmptyEvent(MainEvent.CONNECT)
-      .subscribe(() => {
-        console.log(' regresion: connected');
-      });
-    this.ioMain.onEmptyEvent(MainEvent.DISCONNECT)
-      .subscribe(() => {
-        console.log(' regresion disconnected');
-      });
     // ---- Main events
 
     this.ioMain.onEvent(MainEvent.FINAL)
-      .subscribe((obj: any) => {
-        if (obj["configuration"]) {
-          if (obj["configuration"].length > 1) console.log("WARNING! More than one solution received!")
-          let result = obj["configuration"][0]
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+          let configs = JSON.parse(message.body)
+          if (configs.length > 1) console.log("WARNING! More than one solution received!")
+          let result = configs[0]
           if (result) {
               this.solution = result // In case if only one point solution
               this.measPoints.push(result['configurations'])
@@ -151,26 +144,34 @@ export class HeatMapRegComponent implements OnInit {
       });
 
     this.ioMain.onEvent(MainEvent.EXPERIMENT)
-      .subscribe((obj: any) => {
-        this.resetRes()
-        this.globalConfig = obj['description']['global configuration']
-        this.experimentDescription = obj['description']['experiment description']
-        this.searchspace = obj['description']['searchspace_description']
-        this.y = this.searchspace['boundaries'][0]
-        this.x = this.searchspace['boundaries'][1]
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'description') {
+          const obj = JSON.parse(message.body);
+          this.resetRes();
+          this.globalConfig = obj['global_configuration'];
+          this.experimentDescription = obj['experiment_description'];
+          this.searchspace = obj['searchspace_description'];
+          let boundaryObj: Object;
+          boundaryObj = this.searchspace['boundaries'];
+          this.x = Object.values(boundaryObj)[1];
+          this.y = Object.values(boundaryObj)[0];
+        }
       });
 
     this.ioMain.onEvent(MainEvent.PREDICTIONS)
-      .subscribe((obj: any) => {
-        obj["configurations"] && obj["configurations"].forEach(point => {
-          if (point) {
-            this.prediction.set(String(point['configurations']), point['results'])
-          } else {
-            console.log("Empty prediction point")
-          }
-        })
-        console.log(" Regresion points:", obj['configurations'].length)
-        this.prediction.size && this.regrRender()
+      .subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+          const configs = JSON.parse(message.body)
+          configs.forEach(point => {
+            if (point) {
+              this.prediction.set(String(point['configurations']), point['results']);
+            } else {
+              console.log('Empty prediction point')
+            }
+          });
+          console.log(' Prediction points:', configs.length);
+          this.prediction.size && this.regrRender();
+        }
       });
 
   }

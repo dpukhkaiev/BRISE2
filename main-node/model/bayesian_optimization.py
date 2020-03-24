@@ -93,7 +93,6 @@ class BayesianOptimization(Model):
         self.vartypes = np.array(self.vartypes, dtype=int)
 
         # Data holding fields.
-        self.measured_configurations = []
         self.good_config_rankings = dict()
 
     def build_model(self, update_model=True):
@@ -110,16 +109,21 @@ class BayesianOptimization(Model):
             return False
 
         # b) if not enough points are available
-        if len(self.measured_configurations) <= self.min_points_in_model-1:
+        if len(self.experiment.measured_configurations) <= self.min_points_in_model-1:
             self.logger.debug("Only %i run(s) available, need more than %s -> can't build model!"
-                              %(len(self.measured_configurations), self.min_points_in_model+1))
+                              %(len(self.experiment.measured_configurations), self.min_points_in_model+1))
             return False
 
-        # c) during warnm starting when we feed previous results in and only update once
+        # c) during warm starting when we feed previous results in and only update once
         if not update_model:
             return False
 
         self.logger.info("INFO: Building the Bayesian optimization models..")
+
+        # prepare search space (convert parameters to parameters in indexes)
+        for config in self.experiment.measured_configurations:
+            if not config.get_parameters_in_indexes():
+                config.add_parameters_in_indexes(config.parameters, self.experiment.search_space.get_indexes(config))
 
         priorities = self.experiment.description["TaskConfiguration"]["ResultPriorities"] \
             if "ResultPriorities" in self.experiment.description["TaskConfiguration"] else [0] * \
@@ -131,7 +135,7 @@ class BayesianOptimization(Model):
 
         all_features = []
         all_labels = []
-        for config in self.measured_configurations:
+        for config in self.experiment.measured_configurations:
             all_features.append(config.get_parameters_in_indexes())
             all_labels.append(config.get_average_result()[top_priority_index])
 
@@ -149,8 +153,8 @@ class BayesianOptimization(Model):
         else:
             idx = np.argsort(-train_labels, axis=0)
 
-        train_data_good = self.impute_conditional_data(train_features[idx[:n_good]])
-        train_data_bad = self.impute_conditional_data(train_features[idx[n_good:n_good + n_bad]])
+        train_data_good = train_features[idx[:n_good]]
+        train_data_bad = train_features[idx[n_good:n_good + n_bad]]
 
         if train_data_good.shape[0] <= train_data_good.shape[1]:
             return False
@@ -249,6 +253,7 @@ class BayesianOptimization(Model):
                 if predicted_result_vector is None:
                     self.logger.info("Sampling based optimization with %i samples failed -> using random configuration" % self.sampling_size)
                 else:
+
                     # new configuration is sampled from the vector, provided by model
                     predicted_configuration = self.experiment.search_space.create_configuration(vector=np.asarray(predicted_result_vector))
 
@@ -274,7 +279,7 @@ class BayesianOptimization(Model):
                 self.logger.warning("Sampling based optimization with %i samples failed\n %s\n"
                                     "Using random configuration" % (self.sampling_size, traceback.format_exc()))
 
-        for configuration in self.measured_configurations:
+        for configuration in self.experiment.measured_configurations:
             if configuration.parameters == predicted_configuration.parameters:
                 configuration.add_predicted_result(parameters=predicted_configuration.parameters,
                                                    predicted_result=[predicted_result])
@@ -290,54 +295,7 @@ class BayesianOptimization(Model):
         :return: list of Configurations that are needed to be measured.
         """
 
-        configurations_parameters = []
         configurations = []
         while len(configurations) != number:
-            conf = self.__predict_next_configuration()
-
-            # BO model is stochastic and could return the same Configuration several times, but we need unique ones.
-            if conf.parameters not in configurations_parameters:
-                configurations_parameters.append(conf.parameters)
-                configurations.append(conf)
+            configurations.append(self.__predict_next_configuration())
         return configurations
-
-    def update_data(self, configurations):
-        """
-        Method adds configurations to whole set of configurations. Convert configurations to its indexes.
-
-        :param configurations: List of Configuration's instances
-        """
-        self.measured_configurations = configurations
-        for config in self.measured_configurations:
-            config.add_parameters_in_indexes(config.parameters, \
-                SearchSpace.extract_parameters_in_indexes_from_sub_search_space(config.parameters, self.experiment.get_current_sub_search_space()))
-        return self
-    
-    def impute_conditional_data(self, array):
-
-        return_array = np.empty_like(array)
-        
-        for i in range(array.shape[0]):
-            datum = np.copy(array[i])
-            nan_indices = np.argwhere(np.isnan(datum)).flatten()
-
-            while (np.any(nan_indices)):
-                nan_idx = nan_indices[0]
-                valid_indices = np.argwhere(np.isfinite(array[:,nan_idx])).flatten()
-
-                if len(valid_indices) > 0:
-                    # pick one of them at random and overwrite all NaN values
-                    row_idx = np.random.choice(valid_indices)
-                    datum[nan_indices] = array[row_idx, nan_indices]
-
-                else:
-                    # no good point in the data has this value activated, so fill it with a valid but random value
-                    t = self.vartypes[nan_idx]
-                    if t == 0:
-                        datum[nan_idx] = np.random.rand()
-                    else:
-                        datum[nan_idx] = np.random.randint(t)
-
-                nan_indices = np.argwhere(np.isnan(datum)).flatten()
-            return_array[i, :] = datum
-        return return_array

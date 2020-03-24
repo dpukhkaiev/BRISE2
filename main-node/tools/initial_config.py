@@ -1,31 +1,13 @@
 __doc__ = """
     Module to load configurations and experiment descriptions."""
 import logging
+import os
 from sys import argv
 
-from tools.file_system_io import load_json_file, create_folder_if_not_exists
+from tools.file_system_io import load_json_file
 from tools.json_validator import is_json_file_valid
 from tools.front_API import API
 from core_entities.search_space import SearchSpace
-
-
-def load_global_config(global_config_path: str = './GlobalConfig.json'):
-    """
-    Method reads configuration for BRISE from GlobalConfig.json configuration file.
-    :param global_config_path: sting path to file.
-    :return: dict with configuration for BRISE
-    """
-    logger = logging.getLogger(__name__)
-
-    # Check if main.py running with a specified global configuration file path
-    if len(argv) > 2:
-        global_config_path = argv[2]
-
-    config = load_json_file(global_config_path)
-    create_folder_if_not_exists(config['results_storage'])
-    logger.info("Global BRISE configuration loaded from file '%s'" % global_config_path)
-    return config
-
 
 def load_experiment_setup(exp_desc_file_path: str):
     """
@@ -35,13 +17,16 @@ def load_experiment_setup(exp_desc_file_path: str):
     :return: loaded Experiment Description, loaded search space
     """
     # Load Experiment description from json file.
-    experiment_description = load_json_file(exp_desc_file_path)
+    task_description = load_json_file(exp_desc_file_path)
+    framework_settings = load_json_file('./Resources/SettingsBRISE.json')
 
+    experiment_description = {**task_description, **framework_settings}
     # Validate and load Search space
     search_space_to_validate = load_json_file(experiment_description["DomainDescription"]["DataFile"])
     validate_experiment_data(search_space_to_validate)
-    search_space = SearchSpace(experiment_description["DomainDescription"])
 
+    search_space = SearchSpace(experiment_description["DomainDescription"])
+    os.makedirs(experiment_description["General"]["results_storage"], exist_ok=True)
     logging.getLogger(__name__).info("The Experiment Description was loaded from the file '%s'. Search space was loaded from the file '%s'." \
         % (exp_desc_file_path, experiment_description["DomainDescription"]["DataFile"]))
 
@@ -62,7 +47,7 @@ def validate_experiment_description(experiment_description: dict,
     if is_json_file_valid(validated_data=experiment_description, schema_path=schema_file_path):
         logger.info("Provided Experiment Description is valid.")
     else:
-        msg = "Provided Experiment Description have not passed the validation using schema in file %s. " \
+        msg = "Provided Experiment Description has not passed the validation using schema in file %s. " \
               "Experiment description: \n%s" % (schema_file_path, experiment_description)
         logger.error(msg)
         API().send('log', 'error', message=msg)
