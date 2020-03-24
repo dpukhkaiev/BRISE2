@@ -75,7 +75,3 @@ genetic_NSGA2,5558,34620.200000000004,0,true,false
 ```
 
 [Link to MQUAT2 project](https://git-st.inf.tu-dresden.de/mquat/mquat2/tree/Genetic_Kosovnenko).
-
-##### Worker for RapidMiner Machine Learning algorithms optimization
-
-By default BRISE is not connected to [RapidMiner](https://rapidminer.com) data science platform. However, a template for using RapidMiner with BRISE is prepared. Please, see this [guide](./RapidMiner_worker_setup_guide.md) to setup BRISE for RapidMiner use case.

@@ -4,8 +4,6 @@ import inspect
 import importlib
 import difflib
 
-# TODO shared library from main-node.tools wish adaptation for worker
-
 
 def get_worker_methods(found_module):
     """
@@ -45,9 +43,6 @@ def get_worker_module():
     reduction_step = 0.1
     files = os.listdir()
     if not files:
-        # TODO: aspect weaving logging and debug info before every raise?
-        #  Or maybe raising some specific Exception (with behavior) and catching it in API to handle expected errors:
-        #  propagation to the front, dumping locals, saving stack (logger.error()and etc..
         msg = "Specified directory is empty."
         logger.error(msg)
         raise NameError(msg)

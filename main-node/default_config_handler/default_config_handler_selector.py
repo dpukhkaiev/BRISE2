@@ -18,17 +18,6 @@ def get_default_config_handler(experiment: Experiment) -> AbstractDefaultConfigu
             len(experiment.search_space.get_hyperparameter_names()):
         from default_config_handler.default_config_handler import DefaultConfigurationHandler
         config_handler = DefaultConfigurationHandler(experiment)
-    elif handler_name == "Automodel":
-        # currently Automodel supports only RandomForest among those ML algorithms that are processed by Brise
-        if experiment.description["TaskConfiguration"]["TaskName"] == "randomForest":
-            from default_config_handler.automodel_default_config_handler import AutomodelDefaultConfigurationHandler
-            config_handler = AutomodelDefaultConfigurationHandler(experiment)
-            logger.info("RapidMiner Automodel will be used to define default configuration")
-        else:
-            from default_config_handler.random_default_config_handler import RandomDefaultConfigurationHandler
-            config_handler = RandomDefaultConfigurationHandler(experiment)
-            logger.warning("It seems that Automodel is not supported for your experiment -"
-                           " random default configuration will be picked instead!")
     else:
         from default_config_handler.random_default_config_handler import RandomDefaultConfigurationHandler
         config_handler = RandomDefaultConfigurationHandler(experiment)

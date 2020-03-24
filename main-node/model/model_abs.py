@@ -13,5 +13,4 @@ class Model(ABC):
 
     @abstractmethod
     def predict_next_configurations(self, number):
-        # TODO: Make it `template method` or 'strategy'.
         return Configuration

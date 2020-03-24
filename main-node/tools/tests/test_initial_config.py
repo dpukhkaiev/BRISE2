@@ -13,10 +13,8 @@ class TestInitialConfig:
         from core_entities.search_space import SearchSpace
         input_file = "./Resources/EnergyExperiment.json"
         expected_experiment = "energy_consumption"
-        expected_log_file = "BRISE.log"
         actual_experiment_description, actual_search_space = load_experiment_setup(input_file)
         assert actual_experiment_description["TaskConfiguration"]["TaskName"] == expected_experiment
-        assert actual_experiment_description["General"]["log_filename"] == expected_log_file
         assert isinstance(actual_search_space, SearchSpace)
 
     def test_1_load_invalid_experiment_setup(self):

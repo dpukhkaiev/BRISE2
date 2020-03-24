@@ -106,7 +106,6 @@ class MainThread(threading.Thread):
         self.selector = get_selector(experiment=self.experiment)
 
         # Instantiate client for Worker Service, establish connection.
-        # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
         # (task.json)
 
         self.worker_service_client = WSClient(self.experiment.description["TaskConfiguration"],
@@ -206,7 +205,6 @@ class MainThread(threading.Thread):
                     temp_msg = f"Model predicted {conf} with quality {conf.predicted_result}"
                     self.logger.info(temp_msg)
                     self.sub.send('log', 'info', message=temp_msg)
-                    # TODO: Remove possibility to work with bunch of Configurations in Repeater
                     self.repeater.measure_configurations([conf])
                     needed_configs -= 1
 

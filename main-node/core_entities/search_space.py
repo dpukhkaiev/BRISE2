@@ -133,10 +133,6 @@ class SearchSpace:
         in the defined Search Space.
         If Continuous Hyperparameters do exist in Search Space definition,
         the Search Space size assumed to be infinite.
-
-        TODO: Hyperparameter conditions are not taken into account for the sake of simplicity,
-            since this logic does not affect crucial BRISE functionality,
-            Returned number of Configurations is an upper bound of number of all possible Configurations.
         :return: float, number of unique Configurations in Search Space.
         """
         if self.search_space_size is not None:
@@ -240,8 +236,6 @@ class SearchSpace:
         indexes = []
         for idx, param in enumerate(config.parameters):
             if param is None:
-                # TODO: Note that this is a temporal work-around for dependent Configuration Search Spaces,
-                #  it will be resolved in upcoming updates of BRISE.
                 # 'None' values appear when a dependency
                 # between parameters are violated and some of parameters are "disabled".
                 indexes.append(-1)

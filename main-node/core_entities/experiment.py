@@ -30,7 +30,6 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
-        # TODO: merge lists into a single one (https://github.com/dpukhkaiev/BRISEv2/pull/112#discussion_r371761149)
         self.evaluated_configurations: List[Configuration] = []  # repeater already evaluates these configurations
         self.measured_configurations: List[Configuration] = [] # the results for these configurations are already gotten
 
@@ -42,8 +41,6 @@ class Experiment:
         self.name = "exp_{task_name}_{experiment_hash}".format(
             task_name=self.description["TaskConfiguration"]["TaskName"],
             experiment_hash=self.id)
-        # TODO MultiOpt: Currently we store only one solution configuration here,
-        #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
         self.bad_configurations_number = 0
         self.model_is_valid = False

@@ -19,7 +19,6 @@ def generate_worker_function(experiment_description_path):
     except IOError as error:
         logger.error("Error with reading %s/templates/worker_f_template file: %s" % (os.path.dirname(__file__), error))
         raise error
-    # TODO: Usage of shared functionality - load_json_file
     try:
         with open(experiment_description_path) as json_file:
             data = json.load(json_file)

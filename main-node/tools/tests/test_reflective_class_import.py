@@ -71,18 +71,9 @@ class TestReflectiveClassImport:
         if os.path.exists("./test_folder"):
             os.rmdir("./test_folder")
 
-    def test_8_import_from_invalid_module(self):
-        # Test #8. Try to import class from invalid module
-        # Expected result: class is not imported, error is raised
-        expected_result = "Unable to import module"
-        with pytest.raises(ImportError) as excinfo:
-            reflective_class_import(class_name="SobolSequence", folder_path="tools")
-        assert expected_result in str(excinfo.value)
-
     def test_9_import_if_multiple_choices(self, caplog):
         # Test #9. Try to import class if many classes meet the request
         # Expected result: class with the most similar name is imported, warning is emmited
-        # TODO: check expected behavior: alphabet order is used if all names are the same
         # only 1 class is being found in module, if classes are in different files!
         import logging
         caplog.set_level(logging.WARNING)

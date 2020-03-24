@@ -1,6 +1,6 @@
-# BRISE 2.3.0
+# BRISE 2.4.0
 ##### Benchmark Reduction via Adaptive Instance Selection
-![BRISE-CI](https://github.com/dpukhkaiev/BRISEv2/workflows/BRISE-CI/badge.svg?branch=dev)
+![BRISE-CI](https://github.com/dpukhkaiev/BRISEv2/workflows/BRISE-CI/badge.svg?branch=master)
 
 Software Product Line for Parameter Tuning\
 Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
@@ -60,8 +60,8 @@ If require to make own front-end build:
 2. Update NPM to version 3.0+
 3. `$ npm install @angular/cli -g`
 4. From front-end root `$ npm install`
-5. Start front-server with `$ ng serve --host 0.0.0.0 --port 4201`
-6. Go to [localhost:4201](http://localhost:4201)
+5. Start front-server with `$ ng serve --host 0.0.0.0 --port 80`
+6. Go to [localhost:80](http://localhost:80)
 
 ## Questions, contributing.
 ##### Questions, suggestions, remarks? Feel free to contact us via [:mailbox_with_mail:](mailto:dmytro.pukhkaiev@tu-dresden.de)

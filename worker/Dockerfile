@@ -5,17 +5,8 @@ RUN echo "deb http://ftp.us.debian.org/debian sid main" >> /etc/apt/sources.list
     && apt-get update -qq \
     && apt-get install -y -qq rsync vim git unzip \
 
-# Installing Java (Open JDK) for Rapidminer and MQUAT problems
-    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk \
-
-# Installing R and related packages for Rapidminer
-    && apt-get install -y -qq r-base && \
-    Rscript -e "install.packages('data.table', repos='http://cran.rstudio.com/')" && \
-    Rscript -e "install.packages('ROCR', repos='http://cran.rstudio.com/')" && \
-    Rscript -e "install.packages('PRROC', repos='http://cran.rstudio.com/')" \
-    && apt-get -qq clean \
-    && apt-get -qq autoremove \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Installing Java (Open JDK) for MQUAT problems
+    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk
 
 ENV JAVA_HOME="$(dirname $(dirname $(readlink -f $(which javac))))"
 
@@ -27,8 +18,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 # Installing Python Socket and Pika for communication within BRISE
-RUN pip install -U python-socketio "python-engineio[client]" && \
-    pip install -U pika
+RUN pip install -U pika
 
 # create worker user
 RUN useradd -ms /bin/bash w_user && echo "w_user:w_user" | chpasswd && adduser w_user sudo

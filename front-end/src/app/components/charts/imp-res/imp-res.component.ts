@@ -117,7 +117,6 @@ export class ImpResComponent implements OnInit {
             // Check the best available point
             const descr = this.experimentDescription;
             this.bestRes && this.bestRes.forEach(function (resItem) {
-              // TODO: Max or min from task
               if (descr['General']['isMinimizationExperiment'] === true) {
                 if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
                   temp.results = resItem.results;

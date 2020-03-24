@@ -63,7 +63,6 @@ class WSClient_Stub(WSClient):
             elif task["task_name"] == "naiveBayes_mock":
                 result = self._taskNB(params_to_send)
 
-            #  TODO - data is needed
             # elif task["task_name"] is "GA":
             #     result = self._genetic(params_to_send)
 
@@ -166,35 +165,7 @@ class WSClient_Stub(WSClient):
         else:
             self.logger.error("Error in Stub (NB): No data for parameters: %s.\n" % param)
 
-    # def _genetic(self, param: dict):
-    #     try:
-    #         generations = str(param['generations'])
-    #         populationSize = str(param['populationSize'])
-    #         file_name = "results/scenarios/"+param['ws_file']
-    #
-    #         import os
-    #
-    #         command = ("java -jar binary/jastadd-mquat-solver-genetic-1.0.0-SNAPSHOT.jar %s %s %s"
-    #                    % (generations, populationSize, param['ws_file']))
-    #         os.system(command)
-    #
-    #         data = Splitter(file_name)
-    #         data.searchGA(generations, populationSize, file_name)
-    #
-    #         result = choice(data.new_data)
-    #         return {
-    #             'generations': result["generations"],
-    #             'populationSize': result["populationSize"],
-    #             'Solved': result["Solved"],
-    #             'energy': result["Obj"],
-    #             'Valid': result["Valid"],
-    #             'TimeOut': result["TimeOut"]
-    #         }
-    #
-    #     except Exception as e:
-    #         self.logger.error("ERROR IN STUB during performing GA with parameters: %s" % param)
-
-    ####################################################################################################################
+   ####################################################################################################################
     # Outgoing interface for running task(s)
     def work(self, j_conf: str, tasks: list) -> dict:
         measurement_id = str(uuid.uuid4())

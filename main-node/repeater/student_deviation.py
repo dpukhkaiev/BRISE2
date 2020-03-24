@@ -86,7 +86,6 @@ class StudentDeviationType(DefaultType):
             relative_errors = []
             for interval, avg_res in zip(absolute_errors, average_result):
                 if not avg_res:     # it is 0 or 0.0
-                    # TODO: WorkAround for cases where avg = 0, need to review it here and in \ratio\ calculation
                     # if new use-cases appear with the same behaviour.
                     if interval == 0:
                         avg_res = 1  # Anyway relative error will be 0 and avg will not be changed.

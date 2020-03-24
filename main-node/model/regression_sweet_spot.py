@@ -155,11 +155,6 @@ class RegressionSweetSpot(Model):
                 conf = Configuration(list(configs_list[index]), Configuration.Type.PREDICTED)
                 predicted_results.append((predicted_result, conf))
 
-        # Only for DEMO 
-        # self.sub.send('predictions', 'configurations',
-        #               configurations=[self.experiment.search_space[index] for (predicted_result, index) in predicted_results],
-        #               results=[[round(predicted_result[0], 2)] for (predicted_result, index) in predicted_results])
-        
         # 2. Update predicted results for already evaluated Configurations.
         for config in self.experiment.measured_configurations:
             for pred_tuple in predicted_results:

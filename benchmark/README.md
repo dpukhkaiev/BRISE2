@@ -70,7 +70,3 @@ Benchmark currently can be extended and modified with the following dependencies
 | [Jinja2](http://jinja.pocoo.org/docs/2.10/) | Templating language for Python |
 | [Docker](https://docs.docker.com/) | Containerization |
 
-### Todos :construction:
-
- - Write plots for a large number of experiments
-
