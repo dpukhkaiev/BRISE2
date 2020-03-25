@@ -29,17 +29,6 @@ class TestSelector:
         assert actual_result == expected_result
         assert used_selector == "SobolSequence"
 
-    def test_1_get_point_Nones(self):
-        # Test #1. Get point containing inactive dependent parameters (None values) from Sobol selector
-        # The aim of this test is to check, how selector deals with dependent parameters (it shouldn't miss any condition and produce None values properly)
-        # 'inputs_test_1.py' is used, that loads NBExperiment and requests a single configuration from selector
-        # As SobolSequence is determinated selector, we expect to get a specific configuration containing None values as a first one for NBExperiment
-        from selection.tests.inputs_test_1 import get_actual_result
-        expected_result = Configuration(['false', 'greedy', None, 500.0005, 500.0005, 500, 'false', None], Configuration.Type.FROM_SELECTOR)
-        used_selector, actual_result = get_actual_result("SobolSequence")
-        assert actual_result == expected_result
-        assert used_selector == "SobolSequence"
-
     #####################
     # CS selector tests #
     #####################
@@ -55,17 +44,6 @@ class TestSelector:
             assert param is not None
         assert actual_result.type == Configuration.Type.FROM_SELECTOR
         assert used_selector == "ConfigSpaceSelector"
-
-    def test_3_get_point_Nones(self):
-        # Test #3. Get point containing inactive dependent parameters (None values) from ConfigSpace selector
-        # 'inputs_test_1.py' is used, that loads NBExperiment and requests a single configuration from selector
-        # ConfigSpace selector is non-determinated one, so it is expected to get some valid configuration of type 'FROM_SELECTOR'
-        from selection.tests.inputs_test_1 import get_actual_result
-        used_selector, actual_result = get_actual_result("ConfigSpaceSelector")
-        assert isinstance(actual_result, Configuration)
-        assert actual_result.type == Configuration.Type.FROM_SELECTOR
-        assert used_selector == "ConfigSpaceSelector"
-
 
     #####################
     # invalid selector  #
@@ -93,13 +71,13 @@ class TestSelector:
         assert actual_result == expected_result
         assert used_selector == "SobolSequence"
 
-        
     @staticmethod
-    def get_actual_result(selector_type: str, experiment_description_file: str, number_of_configs: int = 1, returned_points: list = []):
+    def get_actual_result(selector_type: str, experiment_description_file: str, number_of_configs: int = 1,
+                          returned_points: list = []):
         '''
-        This method incapsulates common functionality for all tests: Experiment and Selector instantiation and initialization, 
+        This method incapsulates common functionality for all tests: Experiment and Selector instantiation and initialization,
         requesting Configuration(s) from Selector and adding them to the Experiment
-        
+
         :param selector_type: str. Type of Selector to be instantiated
         :param experiment_description_file: str. Experiment description to initialize Experiment
         :param number_of_configs: int. Quantity of Configurations, that are requested from Selector

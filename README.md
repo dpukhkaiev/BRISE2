@@ -1,4 +1,4 @@
-# BRISE 2.3.0
+# BRISE 2.4.0
 ##### Benchmark Reduction via Adaptive Instance Selection
 ![BRISE-CI](https://github.com/dpukhkaiev/BRISEv2/workflows/BRISE-CI/badge.svg?branch=dev)
 
