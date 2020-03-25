@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+
 from typing import Union, Dict, List
 from copy import deepcopy
 from enum import Enum
@@ -57,7 +58,7 @@ class SearchSpace:
     def get_hyperparameter_names(self) -> List[str]:
         return deepcopy(self.__hyperparameter_names)
 
-    def __get_hyperparameter(self, hyperparameter_name) -> Hyperparameter:
+    def _get_hyperparameter(self, hyperparameter_name: str) -> Hyperparameter:
         return self._config_space.get_hyperparameter(hyperparameter_name)
     
     def get_hyperparameter_type(self, hyperparameter_name: str) -> HyperparameterType:
@@ -70,7 +71,7 @@ class SearchSpace:
             - 'HyperparameterType.CATEGORICAL_ORDINAL' and 'HyperparameterType.CATEGORICAL_NOMINAL' for categorical.
         """
 
-        hyperparameter = self.__get_hyperparameter(hyperparameter_name)
+        hyperparameter = self._get_hyperparameter(hyperparameter_name)
         h_type = None
         if isinstance(hyperparameter, UniformFloatHyperparameter):
             h_type = HyperparameterType.NUMERICAL_FLOAT
@@ -89,7 +90,7 @@ class SearchSpace:
         :param  hyperparameter_name: str. Name of hyperparameters to get boundaries of
         :return: lower_bound, upper_bound
         """
-        hyperparameter = self.__get_hyperparameter(hyperparameter_name)
+        hyperparameter = self._get_hyperparameter(hyperparameter_name)
         try:
             return hyperparameter.lower, hyperparameter.upper
         except AttributeError:
@@ -102,7 +103,7 @@ class SearchSpace:
         :param  hyperparameter_name: str. Name of hyperparameters to get choices of
         :return: List of choices
         """
-        hyperparameter = self.__get_hyperparameter(hyperparameter_name)
+        hyperparameter = self._get_hyperparameter(hyperparameter_name)
         if isinstance(hyperparameter, CategoricalHyperparameter):
             return deepcopy(hyperparameter.choices)
         elif isinstance(hyperparameter, OrdinalHyperparameter):
@@ -211,32 +212,41 @@ class SearchSpace:
         :return: dict: search space description
         """
         search_space_description = {}
-        names = []
-        boundaries = []
+        boundaries = {}
+        boundary = []
         for hyperparameter_name in self.get_hyperparameter_names():
-            hyperparameter = self.__get_hyperparameter(hyperparameter_name)
-            if isinstance(hyperparameter, (UniformIntegerHyperparameter, UniformFloatHyperparameter)):
-                boundary = [hyperparameter.lower, hyperparameter.upper]
+            if self.get_hyperparameter_type(hyperparameter_name) is HyperparameterType.NUMERICAL_FLOAT or \
+                self.get_hyperparameter_type(hyperparameter_name) is HyperparameterType.NUMERICAL_INTEGER:
+                boundary = self.get_hyperparameter_boundaries(hyperparameter_name)
             else:
                 boundary = self.get_hyperparameter_categories(hyperparameter_name)
-            names.append(hyperparameter.name)
-            boundaries.append(np.array(boundary).T.tolist())
-        search_space_description["names"] = names
-        search_space_description["boundaries"] = boundaries
+            boundaries[hyperparameter_name] = boundary
         search_space_size = self.get_search_space_size()
+        search_space_description["boundaries"] = boundaries
         search_space_description["size"] = "Infinity" if search_space_size == float("inf") else search_space_size
         return search_space_description
 
-    @staticmethod
-    def extract_parameters_in_indexes_from_sub_search_space(parameters, current_sub_search_space):
+    def get_indexes(self, config: Configuration) -> List[Union[int, float]]:
         """
         Helper function to extract configuration from the searchspace in format of its indexes in this search space.
-        :param parameters: List. Parameters of configuration.
-        :param current_sub_search_space: List. Configurations that were already measured within a continuous search space.
-        :return: parameters in the format of their indexes in searchspace
+        :param config: Configuration.
+        :return: List of parameter indexes.
         """
-        parameters_in_indexes = []
-        for hyperparam_index, value in enumerate(parameters):
-            param_index = current_sub_search_space[hyperparam_index].index(value)
-            parameters_in_indexes.insert(hyperparam_index, param_index)
-        return parameters_in_indexes
+        hyperparameters = [self._get_hyperparameter(name) for name in self.get_hyperparameter_names()]
+        indexes = []
+        for idx, param in enumerate(config.parameters):
+            if param is None:
+                # 'None' values appear when a dependency
+                # between parameters are violated and some of parameters are "disabled".
+                indexes.append(-1)
+            else:
+                hp = hyperparameters[idx]
+                if isinstance(hp, (CategoricalHyperparameter, OrdinalHyperparameter)):
+                    choices = self.get_hyperparameter_categories(self.get_hyperparameter_names()[idx])
+                    indexes.append(choices.index(param))
+                elif isinstance(hp, (UniformIntegerHyperparameter, UniformFloatHyperparameter)):
+                    lower, upper = self.get_hyperparameter_boundaries(self.get_hyperparameter_names()[idx])
+                    indexes.append((param - lower) / (upper - lower))
+                else:
+                    raise TypeError(f"Unsupported hyperparameter {hp}.")
+        return indexes

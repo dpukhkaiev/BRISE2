@@ -4,6 +4,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    margin-bottom: 0.7%;
     // background-color: $divider-color;
     .brise {
         display: flex;
@@ -17,22 +18,6 @@
     }
     svg {
         margin-left: 5px;
-    }
-    .haec {
-        align-self: center;
-        margin-left: auto;
-        margin-right: 25px;
-        img {
-            height: 40px; 
-            -webkit-filter: grayscale(100%);
-            filter: grayscale(100%);
-            -webkit-transition: .3s ease-in-out;
-            transition: .3s ease-in-out;
-        }
-        &:hover img {
-            -webkit-filter: grayscale(0);
-            filter: grayscale(0);
-        }
     }
 }
 #logo {
@@ -60,7 +45,6 @@ h1 {
 }
 
 .footer {
-    // background-color: $divider-color;
     display: flex;
     flex-direction: row;
     align-items: flex-end;

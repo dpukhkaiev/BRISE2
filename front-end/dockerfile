@@ -1,4 +1,3 @@
-#Front-end prod config
 # Stage 0, "build-stage", based on Node.js, to build and compile the frontend
 FROM tiangolo/node-frontend as build-stage
 COPY package*.json /app/

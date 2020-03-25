@@ -134,176 +134,33 @@
                 }
             ]
         },
-        "StopCondition": {
-            "description": "Conditions for stopping an experiment.",
-            "type": "array",
-            "minItems": 0,
-            "uniqueItems": true,
-            "items": {
-                "oneOf" : [
-                    {
+        "StopConditionTriggerLogic": {
+            "type": "object",
+            "properties": {
+                "Expression": {
+                    "type": "string"
+                },
+                "InspectionParameters":{
                     "type": "object",
                     "properties": {
-                        "Type": {
-                            "type": "string",
-                            "enum": ["Default"]
+                        "RepetitionPeriod": {
+                            "type": "number",
+                            "minimum": 0,
+                            "exclusiveMinimum": true
                         },
-                        "Parameters":{
-                            "type": "object",
-                            "properties":{
-                                "MaxConfigs": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                }
-                            },
-                            "required": [
-                                "MaxConfigs"
-                            ],
-                            "additionalProperties": false
+                        "TimeUnit": {
+                            "type": "string",
+                            "enum": ["seconds","minutes","hours","days"]
                         }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
-                    },
-                    {
-                    "type": "object",
-                    "properties": {
-                        "Type": {
-                            "type": "string",
-                            "enum": ["ImprovementBased"]
-                        },
-                        "Parameters":{
-                            "type": "object",
-                            "properties":{
-                                "MaxConfigsWithoutImprovement": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                }
-                            },
-                            "required": [
-                                "MaxConfigsWithoutImprovement"
-                            ],
-                            "additionalProperties": false
-                        }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
-                    },
-                    {
-                    "type": "object",
-                    "properties": {
-                        "Type": {
-                            "type": "string",
-                            "enum": ["Guaranteed"]
-                        },
-                        "Parameters":{
-                            "type": "object",
-                            "properties":{  },
-                            "additionalProperties": false
-                          }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
-                    },
-                    {
-                    "type": "object",
-                    "properties": {
-                        "Type": {
-                            "type": "string",
-                            "enum": ["Adaptive"]
-                        },
-                        "Parameters":{
-                            "type": "object",
-                            "properties":{
-                                "SearchSpacePercentage": {
-                                    "type": "number",
-                                    "minimum": 0,
-                                    "maximum": 100,
-                                    "exclusiveMinimum": true
-                                }
-                            },
-                            "required": [
-                                "SearchSpacePercentage"
-                            ],
-                            "additionalProperties": false
-                        }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
-                    },
-                    {
-                    "type": "object",
-                    "properties": {
-                        "Type": {
-                            "type": "string",
-                            "enum": ["TimeBased"]
-                        },
-                        "Parameters":{
-                            "type": "object",
-                            "properties":{
-                                "MaxRunTime": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                },
-                                "TimeUnit": {
-                                    "type": "string",
-                                    "enum": ["seconds","minutes","hours","days"]
-                                }
-                            },
-                            "required": [
-                                "MaxRunTime",
-                                "TimeUnit"
-                            ],
-                            "additionalProperties": false
-                        }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
-                    },
-                    {
-                    "type": "object",
-                    "properties": {
-                        "Type": {
-                            "type": "string",
-                            "enum": ["BadConfigurationBased"]
-                        },
-                        "Parameters":{
-                            "type": "object",
-                            "properties":{
-                                "MaxBadConfigurations": {
-                                    "type": "integer",
-                                    "minimum": 1
-                                }
-                            },
-                            "required": [
-                                "MaxBadConfigurations"
-                            ],
-                            "additionalProperties": false
-                        }
-                    },
-                    "required": [
-                        "Type",
-                        "Parameters"
-                    ],
-                    "additionalProperties": false
                     }
-                ]
-            }
+                }
+            },
+            "required": [
+                "Expression"
+            ]
+        },
+        "StopCondition": {
+            "$ref": "./stop_condition/schema/stop_condition.schema.json#/definitions/StopCondition"
         }
     },
     "required": [

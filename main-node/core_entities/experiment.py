@@ -8,11 +8,10 @@ import logging
 import numpy as np
 
 from threading import Lock
-from typing import Union
+from typing import Union, List
 from copy import deepcopy
 
 from tools.front_API import API
-from tools.file_system_io import create_folder_if_not_exists
 from core_entities.configuration import Configuration
 from core_entities.search_space import SearchSpace
 
@@ -31,8 +30,9 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
-        self.measured_configurations = []
-        self.evaluated_configurations = []  # repeater already evaluate this configuration
+        self.evaluated_configurations: List[Configuration] = []  # repeater already evaluates these configurations
+        self.measured_configurations: List[Configuration] = [] # the results for these configurations are already gotten
+
         self._description = description
         self.search_space = search_space
         self.end_time = self.start_time = datetime.datetime.now()
@@ -43,6 +43,7 @@ class Experiment:
             experiment_hash=self.id)
         self.current_best_configurations = []
         self.bad_configurations_number = 0
+        self.model_is_valid = False
 
         self.measured_conf_lock = Lock()
         self.evaluated_conf_lock = Lock()
@@ -129,7 +130,8 @@ class Experiment:
                     else:
                         return False
             else:
-                raise ValueError(f"Can not add Configuration with status {configuration_instance.status} to Experiment.")
+                raise ValueError(
+                    f"Can not add Configuration with status {configuration_instance.status} to Experiment.")
 
     def get_any_configuration_by_parameters(self, parameters: tuple) -> Union[None, Configuration]:
         """
@@ -156,30 +158,32 @@ class Experiment:
 
     def get_final_report_and_result(self, repeater):
         self.end_time = datetime.datetime.now()
+        if self.measured_configurations:
+            self.logger.info("\n\nFinal report:")
 
-        self.logger.info("\n\nFinal report:")
+            self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
+            for configuration in self.measured_configurations:
+                self.logger.info(configuration)
+            self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
+            self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
+            self.logger.info("Best found Configuration: %s" % self.get_current_solution())
+            self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
 
-        self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
-        for configuration in self.measured_configurations:
-            self.logger.info(configuration)
-        self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
-        self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
-        self.logger.info("Best found Configuration: %s" % self.get_current_solution())
-        self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
-
-        all_features = []
-        for configuration in self.measured_configurations:
-            all_features.append(configuration.parameters)
-        self.api.send('final', 'configuration',
-                      configurations=[self.get_current_solution().parameters],
-                      results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
-                      measured_points=[all_features],
-                      performed_measurements=[repeater.performed_measurements])
-        self.dump()  # Store instance of Experiment
-        self.summarize_results_to_file()
-        self.write_csv()
-
-        return self.current_best_configurations
+            all_features = []
+            for configuration in self.measured_configurations:
+                all_features.append(configuration.parameters)
+            self.api.send('final', 'configuration',
+                        configurations=[self.get_current_solution().parameters],
+                        results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
+                        measured_points=[all_features],
+                        performed_measurements=[repeater.performed_measurements])
+            self.dump()  # Store instance of Experiment
+            self.summarize_results_to_file()
+            self.write_csv()
+            return self.current_best_configurations
+        else:
+            self.logger.error('No configuration was measured. Please, check your Experiment Description.')
+        
 
     def get_current_status(self, serializable: bool = False):
         """
@@ -257,7 +261,7 @@ class Experiment:
         # Used to upload Experiment dump through web API
         os.environ["EXP_DUMP_NAME"] = self.name
 
-        create_folder_if_not_exists(folder_path)
+        os.makedirs(folder_path, exist_ok=True)
         file_name = '{}.pkl'.format(self.name)
         # write pickle
         with open(folder_path + file_name, 'wb') as output:
@@ -282,7 +286,7 @@ class Experiment:
             data = dumps(self.get_current_status(serializable=True), indent=4)
         else:
             raise TypeError("Wrong serialization format provided. Supported 'yaml' and 'json'.")
-        create_folder_if_not_exists(path)
+        os.makedirs(path, exist_ok=True)
         with open(output_file_name, 'w') as output_file:
             output_file.write(data)
             self.logger.info("Results of the Experiment have been writen to file: %s" % output_file_name)
@@ -361,18 +365,6 @@ class Experiment:
     def get_selection_algorithm_parameters(self):
         return self.description["SelectionAlgorithm"]
 
-    def get_current_sub_search_space(self):
-        """
-            This method is needed to represent current subsearchspace
-            (i.e. configurations, that were already added to experiment)
-            in form of lists of all used values for each parameter
-        :return: current subsearchspace
-        """
-        params = [config.parameters for config in self.measured_configurations]
-        subsearchspace = np.array(params).T.tolist()
-        result = [list(set(dimension)) for dimension in subsearchspace]
-        return result
-
     def get_outlier_detectors_parameters(self):
         return self.description["OutliersDetection"]
 
@@ -382,3 +374,9 @@ class Experiment:
 
     def get_bad_configuration_number(self):
         return self.bad_configurations_number
+    
+    def update_model_state(self, model_state):
+        self.model_is_valid = model_state
+
+    def get_model_state(self):
+        return self.model_is_valid

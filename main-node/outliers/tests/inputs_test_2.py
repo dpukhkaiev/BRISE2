@@ -1,6 +1,4 @@
 # This file contains inputs for all test cases of outliers module
-import pytest
-
 from outliers.tests.test_outliers import TestOutliers
 
 def get_inputs_for_outliers_test(results_init, outlier_criterions_init, result_structure_init):

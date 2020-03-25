@@ -16,7 +16,7 @@ There is also a wrapper for the main.py, that contains Websocket and HTTP server
 It exposes HTTP commands to control BRISE launch and run (start, stop, check status and download Experiment dump)
 and Websocket server for data fetching (used in front-end and benchmarking nodes).
 
-- Run BRISE with default configuration files ([Experiment Description](Resources/EnergyExperiment.json) and [global configuration](./GlobalConfig.json)):
+- Run BRISE with default configuration files ([experiment_description](Resources/EnergyExperiment.json) and [global_configuration](Resources/SettingsBRISE.json)):
 
 `python3.7 main.py`
 

@@ -3,9 +3,7 @@ numpy
 plotly
 Jinja2
 psutil
-python-socketio
 PyYAML
-requests
 jsonschema
-websocket-client
 ConfigSpace
+pika

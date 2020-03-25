@@ -14,7 +14,3 @@ class Model(ABC):
     @abstractmethod
     def predict_next_configurations(self, number):
         return Configuration
-    
-    @abstractmethod
-    def update_data(self, configurations: List[Configuration]):
-        return self
