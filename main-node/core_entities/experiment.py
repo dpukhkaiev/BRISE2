@@ -5,7 +5,6 @@ import json
 import csv
 import os
 import logging
-import numpy as np
 
 from threading import Lock
 from typing import Union, List

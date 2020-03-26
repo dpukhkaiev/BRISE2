@@ -1,8 +1,6 @@
 __doc__ = """
     Module to load configurations and experiment descriptions."""
 import logging
-import os
-from sys import argv
 
 from tools.file_system_io import load_json_file
 from tools.json_validator import is_json_file_valid
@@ -26,7 +24,6 @@ def load_experiment_setup(exp_desc_file_path: str):
     validate_experiment_data(search_space_to_validate)
 
     search_space = SearchSpace(experiment_description["DomainDescription"])
-    os.makedirs(experiment_description["General"]["results_storage"], exist_ok=True)
     logging.getLogger(__name__).info("The Experiment Description was loaded from the file '%s'. Search space was loaded from the file '%s'." \
         % (exp_desc_file_path, experiment_description["DomainDescription"]["DataFile"]))
 

@@ -1,12 +1,12 @@
 {
   "DomainDescription":{
     "HyperparameterNames"      : ["frequency", "threads"],
-    "DataFile"          : "./Resources/EnergyExperimentData.json"
+    "DataFile"          : "./Resources/EnergyExperimentData(512points).json"
   },
   "TaskConfiguration":{
     "TaskName"          : "energy_consumption",
     "Scenario":{
-      "ws_file": "search_space_96/Radix-500mio_full.csv"
+      "ws_file": "search_space_512/pigz_cr_audio1.wav_compress_full.csv"
     },
     "TaskParameters"   : ["frequency", "threads"],
     "ResultStructure"   : ["energy"],

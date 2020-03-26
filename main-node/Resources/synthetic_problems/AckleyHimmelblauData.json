@@ -1,0 +1,22 @@
+{
+  "hyperparameters": [
+    {
+      "name": "x",
+      "type": "uniform_float",
+      "log": false,
+      "lower": -4.0,
+      "upper": 5.0,
+      "default": 1
+    },
+    {
+      "name": "y",
+      "type": "uniform_float",
+      "log": false,
+      "lower": -4.0,
+      "upper": 5.0,
+      "default": 1
+    }
+  ],
+  "conditions": [],
+  "forbiddens": []
+}

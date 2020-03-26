@@ -48,13 +48,15 @@ COPY ./main-node/core_entities /home/benchmark_user/core_entities/
 COPY ./main-node/tools /home/benchmark_user/tools/
 COPY ./main-node/logger /home/benchmark_user/logger/
 
-# Copying information for benchmark
+# Copying common information for benchmark
 COPY ./benchmark/ /home/benchmark_user/
 COPY ./main-node/Resources/ /home/benchmark_user/Resources/
-## Remove not needed scenarios
-COPY ./worker/scenarios/energy_consumption/*.csv /home/benchmark_user/scenarios/energy_consumption/
-RUN rm /home/benchmark_user/scenarios/energy_consumption/*avg.csv
 
+# Copying information for specific benchmarks
+# -     add your information here   -
+
+
+# Switching user, working dir and ownership of files
 WORKDIR /home/benchmark_user
 RUN chown --recursive benchmark_user:benchmark_user .
 USER benchmark_user

@@ -155,7 +155,7 @@ class SearchSpace:
 
                 elif h_type is HyperparameterType.NUMERICAL_INTEGER:
                     lower, upper = self.get_hyperparameter_boundaries(h_name)
-                    search_space_size *= upper - lower
+                    search_space_size *= upper - lower + 1
 
                 elif h_type in (HyperparameterType.CATEGORICAL_ORDINAL, HyperparameterType.CATEGORICAL_NOMINAL):
                     search_space_size *= len(self.get_hyperparameter_categories(h_name))

@@ -167,7 +167,7 @@ class WSClient:
                         task_description["result_structure"] = self._result_structure
                         task_description["params"] = {}
                         for index, parameter in enumerate(self._task_parameters):
-                            task_description["params"][self._task_parameters[index]] = str(task_parameter[index])
+                            task_description["params"][self._task_parameters[index]] = task_parameter[index]
                         try:
                             channel.basic_publish(exchange='',
                                                   routing_key='task_queue',

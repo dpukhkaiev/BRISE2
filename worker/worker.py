@@ -1,15 +1,10 @@
-import os
-import sys
-import subprocess
 import logging
-from random import choice
-
-from worker_tools.rm_script import insert_config_to_RM_process, run_RM
-from worker_tools.splitter import Splitter
-from worker_tools.mock_values_corrector import correct_values
 
 
 def energy_consumption(task_parameters: dict, scenario: dict):
+    from random import choice
+    from worker_tools.splitter import Splitter
+
     try:
         data = Splitter("scenarios/energy_consumption/" + scenario['ws_file'])
         data.search(str(task_parameters['frequency']), str(task_parameters['threads']))
@@ -25,12 +20,19 @@ def energy_consumption(task_parameters: dict, scenario: dict):
 
 
 def naiveBayes_mock(task_parameters: dict, scenario: dict):
+    from random import choice
+    from worker_tools.mock_values_corrector import correct_values
+    from worker_tools.splitter import Splitter
+
     try:
         data = Splitter("scenarios/rapid_miner/" + scenario['ws_file'])
         # Only for demo! 
         # To enable mock data to be used, real values of continuous parameters must be discretized
         corrected_bandwidth, corrected_min_bandwidth, corrected_num_kernels, corrected_app_grid_size = \
-            correct_values(task_parameters['bandwidth'], task_parameters['minimum_bandwidth'], task_parameters['number_of_kernels'], task_parameters['application_grid_size'])
+            correct_values(task_parameters['bandwidth'],
+                           task_parameters['minimum_bandwidth'],
+                           task_parameters['number_of_kernels'],
+                           task_parameters['application_grid_size'])
         data.searchNB(str(task_parameters['laplace_correction']), str(task_parameters['estimation_mode']),
                       str(task_parameters['bandwidth_selection']), str(corrected_bandwidth),
                       str(corrected_min_bandwidth), str(corrected_num_kernels),
@@ -41,13 +43,16 @@ def naiveBayes_mock(task_parameters: dict, scenario: dict):
             'PREC_AT_99_REC': float(result["PREC_AT_99_REC"])
         }
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing 'taskNB' (NaiveBayes mock) Task with parameters %s: %s" % (task_parameters, error))
+        logging.getLogger(__name__).error("An error occurred during performing 'taskNB' (NaiveBayes mock) Task "
+                                          "with parameters %s: %s" % (task_parameters, error))
     return {
         'PREC_AT_99_REC':'NaN'
     }
 
 
 def naiveBayes(task_parameters: dict, scenario: dict):
+    from worker_tools.rm_script import insert_config_to_RM_process, run_RM
+
     """Initialization function to run NaiveBayes algorithm inside RapidMiner
 
     :param task_parameters:dict: current measured configuration of NaiveBayes in a {key:value} format
@@ -70,6 +75,8 @@ def naiveBayes(task_parameters: dict, scenario: dict):
     return run_RM(path2RM, RMrepository, RMprocess, path2result)
 
 def randomForest(task_parameters: dict, scenario: dict):
+    from worker_tools.rm_script import insert_config_to_RM_process, run_RM
+
     """Initialization function to run RandomForest algorithm inside RapidMiner
 
     :param task_parameters:dict: current measured configuration of RandomForest in a {key:value} format
@@ -99,6 +106,8 @@ def randomForest(task_parameters: dict, scenario: dict):
     return run_RM(path2RM, RMrepository, RMprocess, path2result)
 
 def neuralNet(task_parameters: dict, scenario: dict):
+    from worker_tools.rm_script import insert_config_to_RM_process, run_RM
+
     """Initialization function to run NeuralNet algorithm inside RapidMiner
 
     :param task_parameters:dict: current measured configuration of NeuralNet in a {key:value} format
@@ -121,8 +130,9 @@ def neuralNet(task_parameters: dict, scenario: dict):
     return run_RM(path2RM, RMrepository, RMprocess, path2result)
 
 
-
 def SVM(task_parameters: dict, scenario: dict):
+    from worker_tools.rm_script import insert_config_to_RM_process, run_RM
+
     """Initialization function to run Support Vector Machine (SVM) algorithm inside RapidMiner
 
     :param task_parameters:dict: current measured configuration of Support Vector Machine (SVM) in a {key:value} format
@@ -144,7 +154,14 @@ def SVM(task_parameters: dict, scenario: dict):
         logger.error("An error occurred during performing SVM Task with parameters %s: %s" % (task_parameters, error))
     return run_RM(path2RM, RMrepository, RMprocess, path2result)
 
+
 def genetic(task_parameters: dict, scenario: dict):
+    import subprocess
+    import sys
+    import os
+    from random import choice
+    from worker_tools.splitter import Splitter
+
     logger = logging.getLogger(__name__)
     try:
         generations = str(task_parameters['generations'])
@@ -214,7 +231,14 @@ def genetic(task_parameters: dict, scenario: dict):
         'Validity':'NaN'
     }
 
+
 def simulatedAnnealing(param, scenario):
+    import subprocess
+    from random import choice
+    from worker_tools.splitter import Splitter
+    import sys
+    import os
+
     logger = logging.getLogger(__name__)
     try:
         # params
@@ -242,7 +266,6 @@ def simulatedAnnealing(param, scenario):
         seed = str(scenario['seed'])
         # file_name = "result_v{}_q{}_d{}_r{}.csv".\
         #     format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio.replace('.', '_'))
-        import os
         command = (
                 "java -jar binaries/jastadd-mquat-solver-mh-1.0-SNAPSHOT.jar %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
                 % (subComponentUnassignedFactor, softwareComponentUnassignedFactor,
@@ -281,3 +304,24 @@ def simulatedAnnealing(param, scenario):
         'hardScoreImprovement': 'NaN',
         'softScoreImprovement': 'NaN'
     }
+
+
+def synthetic_problems(param: dict, scenario: dict):
+    import math
+    import random as rd
+    func = scenario.get('function name', None)
+    if func == "ackley":
+        x = param['x']
+        y = param['y']
+        part_1 = -0.2 * math.sqrt(0.5 * (math.pow(x, 2) + math.pow(y, 2)))
+        part_2 = 0.5 * (math.cos(2 * math.pi * x) + math.cos(2 * math.pi * y))
+        result = -20 * math.exp(part_1) - math.exp(part_2) + math.exp(1) + 20
+    elif func == "himmelblau":
+        x = param['x']
+        y = param['y']
+        result = math.pow(math.pow(x, 2) + y + 11, 2) + math.pow(x + math.pow(y, 2) - 7, 2)
+    else:
+        raise TypeError(f"Unknown function name specified in scenario: {scenario}")
+    deviation = scenario.get('deviation, %', 0)
+    result = rd.gauss(mu=result, sigma=result * deviation / 100)
+    return {"result": result}

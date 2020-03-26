@@ -11,7 +11,7 @@ CONTAINER_NAME="brise-benchmark"
 BRISE_NETWORK="brise_network"
 
 HOMEDIR="/home/$USER"
-EXECUTE_AS="sudo -u $USER HOME=$HOME_DIR"
+EXECUTE_AS="sudo -u $USER HOME=$HOMEDIR"
 SCRIPT_DIR=$(dirname "${BASH_SOURCE}")
 
 
@@ -67,7 +67,7 @@ restart(){
 build_image() {
   log "Building Benchmark image."
   cd .. 
-  docker build -t $IMAGE_NAME --build-arg host_uid=$(id -u) --build-arg host_gid=$(id -g) --rm -f "benchmark/dockerfile" .
+  docker build -t $IMAGE_NAME --build-arg host_uid=$(id -u) --build-arg host_gid=$(id -g) --rm -f "benchmark/Dockerfile" .
   cd benchmark
 
   [ $? != 0 ] && error "Docker image build failed !" && exit 100
@@ -75,9 +75,14 @@ build_image() {
 }
 
 run_container() {
-  log "Running benchmark.py script with '${1}' parameter in the $CONTAINER_NAME container."
+  log "Running '${1}' in the $CONTAINER_NAME container."
   mkdir -p ./results/serialized/ ./results/reports/
-  docker run -it --name="$CONTAINER_NAME" -v $(pwd)/results:/home/benchmark_user/results:z --network=$BRISE_NETWORK $IMAGE_NAME /usr/bin/python3.7 benchmark.py ${1}
+  docker run -it                                      \
+    --name="$CONTAINER_NAME"                          \
+    -v $(pwd)/results:/home/benchmark_user/results:z  \
+    --restart=on-failure:10                           \
+    --network=$BRISE_NETWORK $IMAGE_NAME              \
+    /usr/bin/python3.7 entrypoint.py ${1}
 
   [ $? != 0 ] && error "Container run failed!" && exit 105
 }

@@ -1,0 +1,19 @@
+{
+  "DomainDescription":{
+    "HyperparameterNames"      : ["x", "y"],
+    "DataFile"          : "./Resources/synthetic_problems/AckleyHimmelblauData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "synthetic_problems",
+    "Scenario":{
+      "function name": "ackley",
+      "COMMENT: supported function names are": ["ackley", "himmelblau"],
+      "deviation, %": 10
+    },
+    "TaskParameters"   : ["x", "y"],
+    "ResultStructure"   : ["result"],
+    "ResultDataTypes"  : ["float"],
+    "ExpectedValuesRange": [[-Infinity, Infinity]],
+    "MaxTimeToRunTask": 10
+  }
+}

@@ -19,13 +19,9 @@
             "properties": {
                 "HyperparameterNames": {
                     "type": "array",
-                    "items": [{
-                            "type": "string"
-                        },
-                        {
+                    "items": {
                             "type": "string"
                         }
-                    ]
                 },
                 "DataFile": {
                     "type": "string"
@@ -58,41 +54,37 @@
                 },
                 "TaskParameters": {
                     "type": "array",
-                    "items": [{
-                            "type": "string"
-                        },
-                        {
+                    "items": {
                             "type": "string"
                         }
-                    ]
                 },
                 "ResultStructure": {
                     "type": "array",
-                    "items": [{
+                    "items": {
                         "type": "string"
-                    }]
+                    }
                 },
                 "ResultDataTypes": {
                     "type": "array",
-                    "items": [{
+                    "items": {
                         "type": "string"
-                    }]
+                    }
                 },
                 "ExpectedValuesRange": {
                     "type": "array",
-                    "items": [{
+                    "items": {
                         "type": "array",
-                        "items":[{
+                        "items":{
                             "type":"number"
-                        }]
-                    }]
+                        }
+                    }
                 },
                 "ResultPriorities": {
                     "type": "array",
-                    "items": [{
+                    "items": {
                         "type": "integer",
                         "minimum": 0
-                    }]
+                    }
                 },
                 "MaxTimeToRunTask": {
                     "type": "number",

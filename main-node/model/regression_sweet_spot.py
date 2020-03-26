@@ -89,8 +89,8 @@ class RegressionSweetSpot(Model):
                         current_test_size, best_got))
                     return True
                 else:
-                    current_test_size -= 0.01
-            cur_accuracy -= 0.01
+                    current_test_size -= 0.05
+            cur_accuracy -= 0.05
         self.logger.info("Unable to build model, current best accuracy: %s need more data.." % best_got)
         return False
 

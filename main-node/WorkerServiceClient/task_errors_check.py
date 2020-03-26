@@ -27,19 +27,13 @@ def error_check(tasks, parameter, expected_values_range, expected_data_type):
         # define lower and upper limits of expected results (described in json)
         # if limit is not defined, it is automatically sets as infinity
         task_result_value = tasks['result'][parameter]
-        try:
-            lower_limit = float(expected_values_range[0])
-        except Exception as e:
-            lower_limit = float("-inf")
-        try:
-            upper_limit = float(expected_values_range[1])
-        except Exception as e:
-            upper_limit = float("inf")
-        if "nil" in str(task_result_value) or\
-        "null" in str(task_result_value) or\
-        "nan" in str(task_result_value) or\
-        task_result_value < lower_limit or\
-        task_result_value > upper_limit:
+        lower_limit = float(expected_values_range[0])
+        upper_limit = float(expected_values_range[1])
+        forbidden_values = ('nil', 'null', 'nan')
+
+        if any(value in str(task_result_value) for value in forbidden_values):
+            tasks['ResultValidityCheckMark'] = "Bad value"
+        elif not lower_limit <= task_result_value <= upper_limit:
             tasks['ResultValidityCheckMark'] = "Out of bounds"
 
     return tasks

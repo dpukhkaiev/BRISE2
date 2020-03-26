@@ -37,9 +37,9 @@ class StopConditionValidator:
         try:
             result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
         except KeyError:
-            temp_msg = ("ERROR! Some required in StopConditionTriggerLogic expression Stop Condition blocks were undetected. "
-                                "Experiment will be stopped in a few seconds. Please, check your experiment description.")
-            self.logger.exception(temp_msg)
+            temp_msg = ("Some required in StopConditionTriggerLogic expression Stop Condition blocks were undetected. "
+                        "Experiment will be stopped in a few seconds. Please, check your experiment description.")
+            self.logger.error(temp_msg)
             self.stop_experiment_due_to_failed_sc_creation()
 
     def self_evaluation(self):
@@ -61,11 +61,11 @@ class StopConditionValidator:
                         self.logger.info(msg)
                         with pika.BlockingConnection(
                                 pika.ConnectionParameters(host=self.event_host,
-                                                        port=self.event_port)) as connection:
+                                                          port=self.event_port)) as connection:
                             with connection.channel() as channel:
                                 channel.basic_publish(exchange='',
-                                                            routing_key='stop_experiment_queue',
-                                                            body='')
+                                                      routing_key='stop_experiment_queue',
+                                                      body='')
 
     def validate_conditions(self, ch, method, properties, body):
         """

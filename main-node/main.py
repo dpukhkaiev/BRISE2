@@ -3,6 +3,7 @@ Main module for running BRISE configuration balancing."""
 
 import logging
 import pika
+import os
 import threading
 from enum import Enum
 from sys import argv
@@ -81,6 +82,7 @@ class MainThread(threading.Thread):
             search_space = self.experiment_setup["search_space"]
 
         validate_experiment_description(experiment_description)
+        os.makedirs(experiment_description["General"]["results_storage"], exist_ok=True)
 
         # Initializing instance of Experiment - main data holder.
         self.experiment = Experiment(experiment_description, search_space)

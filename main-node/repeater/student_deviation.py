@@ -17,7 +17,7 @@ class StudentDeviationType(DefaultType):
         """
         :param repeater_configuration: RepeaterConfiguration part of experiment description
         """
-        self.max_tasks_per_configuration = repeater_configuration["MaxTasksPerConfiguration"]
+        super().__init__(repeater_configuration)
 
         if self.max_tasks_per_configuration < repeater_configuration["MinTasksPerConfiguration"]:
             raise ValueError("Invalid configuration of Repeater provided: MinTasksPerConfiguration(%s) "
@@ -46,14 +46,22 @@ class StudentDeviationType(DefaultType):
         :return: int min_tasks_per_configuration if Configuration was not measured at all or 1 if Configuration was not measured precisely or 0 if it finished
         """
         tasks_data = current_configuration.get_tasks()
+        average_result = current_configuration.get_average_result()
+        current_solution = experiment.get_current_solution().get_average_result()
 
-        if len(tasks_data) < self.min_tasks_per_configuration:
+        if len(tasks_data) == 0:
+            return 1
+
+        elif len(tasks_data) < self.min_tasks_per_configuration:
+            if self.is_experiment_aware:
+                ratios = [cur_config_dim / cur_solution_dim for cur_config_dim, cur_solution_dim in zip(average_result, current_solution)]
+                if all([ratio >= ratio_max for ratio, ratio_max in zip(ratios, self.ratios_max)]):
+                    return 0
             return self.min_tasks_per_configuration - len(tasks_data)
 
         elif len(tasks_data) >= self.max_tasks_per_configuration:
             return 0
         else:
-            average_result = current_configuration.get_average_result()
             # Calculating standard deviation
             all_dim_std = current_configuration.get_standard_deviation()
 
@@ -98,7 +106,6 @@ class StudentDeviationType(DefaultType):
             thresholds = []
             if self.is_experiment_aware:
                 # We adapt thresholds
-                current_solution = experiment.get_current_solution().get_average_result()
                 minimization_experiment = experiment.is_minimization()
 
                 for b_t, max_t, r_max, avg_res, cur_solution_avg in \

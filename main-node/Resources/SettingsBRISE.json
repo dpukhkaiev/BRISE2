@@ -104,7 +104,7 @@
     },
     {
       "Type": "TimeBased",
-      "Parameters":{
+      "Parameters": {
         "MaxRunTime": 10,
         "TimeUnit": "minutes"
       }

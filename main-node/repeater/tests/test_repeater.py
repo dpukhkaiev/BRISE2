@@ -11,7 +11,7 @@ os.environ["TEST_MODE"] = 'UNIT_TEST'
 DESCRIPTION_NB, SEARCH_SPACE_NB = load_experiment_setup(
     exp_desc_file_path="Resources/MLExperiments/NB/NBExperiment.json")
 DESCRIPTION_ENERGY, SEARCH_SPACE_ENERGY = load_experiment_setup(exp_desc_file_path="Resources/EnergyExperiment.json")
-DESCRIPTION_ENERGY["TaskConfiguration"]["Scenario"]["ws_file"] = "Radix-500mio_avg.csv"
+DESCRIPTION_ENERGY["TaskConfiguration"]["Scenario"]["ws_file"] = "search_space_96/Radix-500mio_avg.csv"
 DESCRIPTION_NB["TaskConfiguration"]["Scenario"]["ws_file"] = "NB_final_result.csv"
 
 
