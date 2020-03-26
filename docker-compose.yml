@@ -28,6 +28,7 @@ services:
     ports:
       - "49153:49153"
       - "15672:15672"
+      - "15674:15674"
     restart: on-failure
 
   worker_service:

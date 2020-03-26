@@ -18,8 +18,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 # Installing Python Socket and Pika for communication within BRISE
-RUN pip install -U python-socketio "python-engineio[client]" && \
-    pip install -U pika
+RUN pip install -U pika
 
 # ssh
 RUN mkdir -p /root/.ssh

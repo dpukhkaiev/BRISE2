@@ -1,14 +1,15 @@
+import base64
 import sys
 import pickle
 import random
-import requests
+import uuid
+from threading import Thread
+
+import pika
 import datetime
-import socketio  # high-level transport protocol
 import logging
-import socket # low-level (3-4th levels of OSI model), binding IP and port
 import json
 import time
-import re
 import os
 from typing import Union
 from string import ascii_lowercase
@@ -16,20 +17,19 @@ from string import ascii_lowercase
 import plotly.io as pio
 
 sys.path.append('/app')
-from core_entities import configuration, experiment
 from core_entities.search_space import SearchSpace
 
 # COLORS = [
-    # '#1f77b4',  # muted blue
-    # '#ff7f0e',  # safety orange
-    # '#2ca02c',  # cooked asparagus green
-    # '#d62728',  # brick red
-    # '#9467bd',  # muted purple
-    # '#8c564b',  # chestnut brown
-    # '#e377c2',  # raspberry yogurt pink
-    # '#7f7f7f',  # middle gray
-    # '#bcbd22',  # curry yellow-green
-    # '#17becf'   # blue-teal
+# '#1f77b4',  # muted blue
+# '#ff7f0e',  # safety orange
+# '#2ca02c',  # cooked asparagus green
+# '#d62728',  # brick red
+# '#9467bd',  # muted purple
+# '#8c564b',  # chestnut brown
+# '#e377c2',  # raspberry yogurt pink
+# '#7f7f7f',  # middle gray
+# '#bcbd22',  # curry yellow-green
+# '#17becf'   # blue-teal
 # ]
 COLORS = [
     '#ff8b6a',
@@ -48,7 +48,7 @@ COLORS = [
 ]
 
 
-def restore(*args, workdir="./results/serialized/", **kwargs):
+def restore(*args, workdir: str = "./results/serialized/", **kwargs):
     """ De-serializing a Python object structure from binary files.
 
     Args:
@@ -67,7 +67,8 @@ def restore(*args, workdir="./results/serialized/", **kwargs):
     return exp
 
 
-def export_plot(plot, wight=600, height=400, path='./results/reports/', file_format='.svg'):
+def export_plot(plot: dict, wight: int = 600, height: int = 400, path: str = './results/reports/',
+                file_format: str = '.svg'):
     """ Export plot in another format. Support vector and raster - svg, pdf, png, jpg, webp.
 
     Args:
@@ -78,10 +79,10 @@ def export_plot(plot, wight=600, height=400, path='./results/reports/', file_for
         file_format (str, optional): Export file format. Defaults to '.svg'.
     """
     name = ''.join(random.choice(ascii_lowercase) for _ in range(10)) + file_format
-    pio.write_image(plot, path+name, width=wight, height=height)
+    pio.write_image(plot, path + name, width=wight, height=height)
 
 
-def get_resource_as_string(name, charset='utf-8'):
+def get_resource_as_string(name: str, charset: str = 'utf-8'):
     with open(name, "r", encoding=charset) as f:
         return f.read()
 
@@ -91,10 +92,10 @@ def chown_files_in_dir(directory):
         for f in files:
             os.chown(os.path.abspath(os.path.join(root, f)),
                      int(os.environ['host_uid']), int(os.environ['host_gid']))
-        break   # do not traverse recursively
+        break  # do not traverse recursively
 
 
-def check_file_appearance_rate(folder: str = 'results/serialized/', interval_length: int = 60*60):
+def check_file_appearance_rate(folder: str = 'results/serialized/', interval_length: int = 60 * 60):
     """
     Logs out the rate of file appearance within a given folder. Could be useful when running benchmark to see how many
         Experiments were performed hourly / daily since startup. Does not traverses recursively.
@@ -119,119 +120,171 @@ def check_file_appearance_rate(folder: str = 'results/serialized/', interval_len
         while files and files_and_date[files[0]] < time_interval + interval_length:
             counter += 1
             files.pop(0)
-        logger.info(" " + time.ctime(time_interval) + " |->| " + time.ctime(time_interval + interval_length) + ': Runned %s experiments.' % counter)
+        logger.info(" " + time.ctime(time_interval) + " |->| " + time.ctime(
+            time_interval + interval_length) + ': Runned %s experiments.' % counter)
 
     logging.basicConfig(level=previous_logging_level)
 
 
 class MainAPIClient:
-    def __init__(self, api_address: str = 'http://localhost:49152', dump_storage: str = "./results/serialized"):
+    class ConsumerThread(Thread):
+        """
+           This class runs in a separate thread and handles final event from the main node,'
+            connected to the `benchmark_final_queue` as a consumer,
+            downloads a latest dump file and changes main_client.isBusy to False
+           """
+
+        def __init__(self, host: str, port: int, main_client, *args, **kwargs):
+            super(MainAPIClient.ConsumerThread, self).__init__(*args, **kwargs)
+
+            self._host = host
+            self._port = port
+            self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, port=port))
+            self.consume_channel = self.connection.channel()
+            self.consume_channel.basic_consume(queue='benchmark_final_queue', auto_ack=False,
+                                               on_message_callback=self.final_event)
+            self._is_interrupted = False
+            self.main_client = main_client
+
+        def final_event(self, ch: pika.spec.Channel, method: pika.spec.methods, properties: pika.spec.BasicProperties,
+                        body: bytes):
+            """
+            Function for handling a final event that comes from the main node
+            :param ch: pika.spec.Channel
+            :param method:  pika.spec.Basic.GetOk
+            :param properties: pika.spec.BasicProperties
+            :param body: result of a configurations in bytes format
+            """
+            self.main_client.download_latest_dump()
+            self.main_client.isBusy = False
+            self.consume_channel.basic_ack(delivery_tag=method.delivery_tag)
+
+        def run(self):
+            """
+            Point of entry to final event consumer functionality, listening of the queue with final events
+            """
+            try:
+                while self.consume_channel._consumer_infos:
+                    self.consume_channel.connection.process_data_events(time_limit=1)  # 1 second
+                    if self._is_interrupted:
+                        if self.connection.is_open:
+                            self.connection.close()
+                        break
+            finally:
+                if self.connection.is_open:
+                    self.connection.close()
+
+        def stop(self):
+            self._is_interrupted = True
+
+    def __init__(self, host_event_service: str, port_event_service: int, dump_storage: str = "./results/serialized"):
 
         self.logger = logging.getLogger(__name__)
-        if self._check_remote_socket_availability(api_address):
-            self.main_api_address = api_address
-        else:
-            raise ValueError("Main node HTTP API is not available at %s" % api_address)
         self.dump_storage = dump_storage
-        logger_for_sockets = logging.getLogger("SocketIOClient")
-        logger_for_engineio = logging.getLogger("EngineIO")
-        logger_for_sockets.setLevel(logging.WARNING)
-        logger_for_engineio.setLevel(logging.WARNING)
-        self.socket_client = socketio.Client(logger=logger_for_sockets, engineio_logger=logger_for_engineio)
-        self.socket_client.on("final", self.download_latest_dump, namespace='/')
-        self.isBusy = True
-        self._connect_if_needed()
 
-    def __del__(self):
-        if "socket_client" in self.__dict__.keys():
-            self.socket_client.disconnect()
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=host_event_service, port=port_event_service))
 
-    def _connect_if_needed(self):
-        while not self.socket_client.eio.sid:
-            self.logger.debug("Connecting to the main node API at %s" % self.main_api_address)
-            self.socket_client.connect(self.main_api_address)
-            if not self.socket_client.eio.sid:
-                self.logger.warning("Unable to connect to main node API at %s." % self.main_api_address)
-                self.socket_client.sleep(5)
+        self.channel = self.connection.channel()
 
-    # --- HTTP API commands ---
-    def _send_get_request(self, url: str):
-        response = requests.get(url)
-        if response.status_code != 200:
-            raise Exception("%s RESPONSE FOR GET: %s -> %s" %
-                            response.status_code, response.request.path_url, response.text)
-        else:
-            self.logger.debug(url + "|->|" + response.text)
-            return response.text
+        self.channel.basic_consume(
+            queue="main_responses",
+            on_message_callback=self.on_response,
+            auto_ack=True)
+        self.customer_thread = self.ConsumerThread('event_service', 49153, self)
+        self.customer_thread.start()
+        self.response = None
+        self.corr_id = None
 
-    def _send_post_request(self, url: str, data: dict):
-        response = requests.post(url=url, data=data)
-        if response.status_code != 200:
-            raise Exception("%s RESPONSE FOR POST: %s, %s -> %s" %
-                            response.status_code, response.request.path_url, response.request.body, response.text)
-        else:
-            self.logger.debug(url + "|->|" + response.text)
-            return response.text
+    def on_response(self, ch: pika.spec.Channel, method: pika.spec.methods, properties: pika.spec.BasicProperties,
+                    body: bytes):
+        """
+        Call back function for RPC `call` function
+        :param ch: pika.spec.Channel
+        :param method:  pika.spec.Basic.GetOk
+        :param properties: pika.spec.BasicProperties
+        :param body: result of a configurations in bytes format
+        """
+        if self.corr_id == properties.correlation_id:
+            self.response = json.loads(body)
+
+    def call(self, action: str, param: str = ""):
+        """
+        RPC function
+        :param action: action on the main node:
+            - start: to start the main script
+            - status: to get the status of the main process
+            - stop: to stop the main script
+            - download_dump: to download dump file
+        :param param: body for a specific action. See details in specific action in main-node/api-supreme.py
+        """
+        self.response = None
+        self.corr_id = str(uuid.uuid4())
+
+        self.channel.basic_publish(
+            exchange='',
+            routing_key=f'main_{action}_queue',
+            properties=pika.BasicProperties(
+                reply_to="main_responses",
+                correlation_id=self.corr_id,
+                headers={'body_type': 'pickle'}
+            ),
+            body=param)
+
+        while self.response is None:
+            self.connection.process_data_events()
+        return self.response
 
     def update_status(self):
-        status_report = json.loads(self._send_get_request(self.main_api_address + '/status'))
+        status_report = self.call("status")
         self.isBusy = status_report['MAIN_PROCESS']['main process']
-        return json.loads(self._send_get_request(self.main_api_address + '/status'))
+        return status_report
 
     def start_main(self, experiment_description: dict, search_space: SearchSpace):
         data = pickle.dumps(
             {"experiment_description": experiment_description,
              "search_space": search_space}
         )
-        response = self._send_post_request(self.main_api_address + '/main_start', data=data)
-        return json.loads(response)
+        response = self.call("start", param=data)
+
+        return response
 
     def stop_main(self):
-        return json.loads(self._send_get_request(self.main_api_address + '/main_stop'))
+        return self.call("stop")
+
+    def stop_client(self):
+        self.customer_thread.stop()
 
     def download_latest_dump(self, *args, **kwargs):
         if not os.path.exists(self.dump_storage):
             os.makedirs(self.dump_storage)
-
-        response = requests.get(self.main_api_address + '/download_dump/pkl')
-
-        # Parsing the name of stored dump in main-node
-        file_name = re.findall('filename=(.+)', response.headers.get('content-disposition'))[0]
-
-        # Unique name for a dump
-        full_file_name = self.dump_storage + file_name
-        backup_counter = 0
-        while os.path.exists(full_file_name):
-            file_name = file_name[:file_name.rfind(".")] + "({0})".format(backup_counter) + file_name[file_name.rfind("."):]
+        param = {}
+        param['format'] = 'pkl'
+        response = self.call("download_dump", json.dumps(param))
+        if response["status"] == "ok":
+            # Parsing the name of stored dump in main-node
+            file_name = response["file_name"]
+            body = base64.b64decode(response["body"])
+            # Unique name for a dump
             full_file_name = self.dump_storage + file_name
-            backup_counter += 1
+            backup_counter = 0
+            while os.path.exists(full_file_name):
+                file_name = file_name[:file_name.rfind(".")] + "({0})".format(backup_counter) + file_name[
+                                                                                                file_name.rfind("."):]
+                full_file_name = self.dump_storage + file_name
+                backup_counter += 1
 
-        # Store the Experiment dump
-        with open(full_file_name, 'wb') as f:
-            f.write(response.content)
+            # Store the Experiment dump
+            with open(full_file_name, 'wb') as f:
+                f.write(body)
+        else:
+            self.logger.error(response["status"])
 
         self.update_status()
 
-    @staticmethod
-    def _check_remote_socket_availability(address: Union[str, tuple]):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
-        # is_not_available return value is Int (exit code). 0 - if all is ok (available).
-        try:
-            if type(address) == str:
-                sock.connect((address.split(':')[1][2:], int(address.split(':')[2])))
-            else:   # address = (Hostname(str), port(int))
-                sock.connect(address)
-            sock.close()
-            is_available = True
-        except Exception as e:
-            is_available = False
-            logging.error("Connection to %s failed: %s" % (address, e))
-        finally:
-            return is_available
-
     # --- General out-of-box methods ---
-    def perform_experiment(self, experiment_description: dict = None, search_space: SearchSpace = None, wait_for_results: Union[bool, float] = 20 * 60):
+    def perform_experiment(self, experiment_description: dict = None, search_space: SearchSpace = None,
+                           wait_for_results: Union[bool, float] = 20 * 60):
         """
             Send the Experiment Description to the Main node and start the Experiment.
 
@@ -250,7 +303,6 @@ class MainAPIClient:
         :return: (bool) Falase if unable to execute experiment or exectuion failed (becasuse of the Timeout).
                         True if experiment was executed properly or in case of async execution - experimen was accepted.
         """
-        self._connect_if_needed()
         self.update_status()
         if self.isBusy:
             self.logger.error("Unable to perform an experiment, Main node is currently running an Experiment.")
@@ -275,10 +327,7 @@ class MainAPIClient:
                     self.logger.error("Unable to finish Experiment in time. Terminating.")
                     self.stop_main()
                     return False
-            self.socket_client.sleep(1)
-            self._connect_if_needed()
             continue
-
         return True
 
 

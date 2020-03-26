@@ -19,7 +19,7 @@ class DefaultType:
         """
         Return max_tasks_per_configuration to measure default Configuration or 0.
         :param current_configuration: instance of Configuration class.
-        :param experiment: instance of 'experiment' is required for model-awareness.
+        :param experiment: instance of 'experiment' is required for experiment-awareness.
         :return: max_tasks_per_configuration or 0
         """
 

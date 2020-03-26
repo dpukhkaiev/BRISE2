@@ -26,6 +26,41 @@
   "policies": [],
   "queues": [
     {
+      "name": "main_start_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main_status_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main_stop_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main_download_dump_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main_responses",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
       "name": "task_result_queue",
       "vhost": "/",
       "durable": true,
@@ -73,6 +108,83 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {}
+    },
+    {
+      "name": "stop_experiment_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "check_stop_condition_expression_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "front_log_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
+    },
+    {
+      "name": "front_default_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
+    },
+    {
+      "name": "front_new_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
+    },
+    {
+      "name": "front_predictions_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
+    },
+    {
+      "name": "front_final_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
+    },
+    {
+      "name": "front_experiment_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
+    },
+    {
+      "name": "benchmark_final_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1000
+      }
     }
   ],
   "exchanges": [
@@ -90,6 +202,69 @@
       "vhost": "/",
       "type": "fanout",
       "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "event_log_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "event_default_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "event_new_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "event_prediction_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "event_final_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "event_experiment_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "brise_termination_sender",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": false,
       "auto_delete": false,
       "internal": false,
       "arguments": {}
@@ -120,10 +295,66 @@
       "routing_key": "*",
       "arguments": {}
     },
-     {
+    {
       "source": "task_result_sender",
       "vhost": "/",
       "destination": "finished_task_event_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_log_sender",
+      "vhost": "/",
+      "destination": "front_log_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_default_sender",
+      "vhost": "/",
+      "destination": "front_default_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_new_sender",
+      "vhost": "/",
+      "destination": "front_new_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_prediction_sender",
+      "vhost": "/",
+      "destination": "front_predictions_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_final_sender",
+      "vhost": "/",
+      "destination": "front_final_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_experiment_sender",
+      "vhost": "/",
+      "destination": "front_experiment_queue",
+      "destination_type": "queue",
+      "routing_key": "*",
+      "arguments": {}
+    },
+    {
+      "source": "event_final_sender",
+      "vhost": "/",
+      "destination": "benchmark_final_queue",
       "destination_type": "queue",
       "routing_key": "*",
       "arguments": {}

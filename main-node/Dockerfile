@@ -20,7 +20,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 
 # Installing project requirements
 COPY requirements.txt /root
-RUN python3.7 -m pip install --upgrade Cython
+RUN python3.7 -m pip install -q Cython
 RUN python3.7 -m pip install --no-cache-dir -q -r /root/requirements.txt
 
 # Copying project

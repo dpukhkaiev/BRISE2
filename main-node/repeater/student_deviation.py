@@ -29,11 +29,11 @@ class StudentDeviationType(DefaultType):
         self.confidence_levels = repeater_configuration["ConfidenceLevels"]
         self.device_scale_accuracies = repeater_configuration["DevicesScaleAccuracies"]
         self.device_accuracy_classes = repeater_configuration["DevicesAccuracyClasses"]
-        self.is_model_aware = repeater_configuration["ModelAwareness"]["isEnabled"]
+        self.is_experiment_aware = repeater_configuration["ExperimentAwareness"]["isEnabled"]
 
-        if self.is_model_aware:
-            self.ratios_max = repeater_configuration["ModelAwareness"]["RatiosMax"]
-            self.max_acceptable_errors = repeater_configuration["ModelAwareness"]["MaxAcceptableErrors"]
+        if self.is_experiment_aware:
+            self.ratios_max = repeater_configuration["ExperimentAwareness"]["RatiosMax"]
+            self.max_acceptable_errors = repeater_configuration["ExperimentAwareness"]["MaxAcceptableErrors"]
             if not all(b_e <= m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
@@ -42,7 +42,7 @@ class StudentDeviationType(DefaultType):
         Return number of measurements to finish Configuration or 0 if it finished.
         In other case - compute result as average between all experiments.
         :param current_configuration: instance of Configuration class
-        :param experiment: instance of 'experiment' is required for model-awareness.
+        :param experiment: instance of 'experiment' is required for experiment-awareness.
         :return: int min_tasks_per_configuration if Configuration was not measured at all or 1 if Configuration was not measured precisely or 0 if it finished
         """
         tasks_data = current_configuration.get_tasks()
@@ -95,7 +95,7 @@ class StudentDeviationType(DefaultType):
 
             # Thresholds for relative errors that should not be exceeded for accurate measurement.
             thresholds = []
-            if self.is_model_aware:
+            if self.is_experiment_aware:
                 # We adapt thresholds
                 current_solution = experiment.get_current_solution().get_average_result()
                 minimization_experiment = experiment.is_minimization()
@@ -113,7 +113,7 @@ class StudentDeviationType(DefaultType):
                         else:
                             ratio = cur_solution_avg / avg_res
 
-                    adopted_threshold = b_t + (max_t - b_t) / (1 + exp(-1 * (ratio - r_max/2)))
+                    adopted_threshold = b_t + (max_t - b_t) / (1 + exp(- (10 / r_max) * (ratio - r_max/2)))
                     thresholds.append(adopted_threshold)
 
             else:

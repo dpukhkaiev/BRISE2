@@ -1,10 +1,9 @@
 import logging
-from enum import Enum
-
+import sys
 import pika
-import pika.exceptions
 import json
 import threading
+import os
 
 from WorkerServiceClient.WSClient_events import WSClient
 from tools.front_API import API
@@ -49,10 +48,13 @@ class ConsumerThread(threading.Thread):
         configuration = Configuration.from_json(result["configuration"])
         tasks_to_send = result["tasks_to_send"]
         tasks_results = result["tasks_results"]
-        results_WO_outliers = self.repeater.outlier_detectors.find_outliers_for_taskset(tasks_results,
-                                                                                        self.repeater._result_structure,
-                                                                                        [configuration],
-                                                                                        tasks_to_send)
+        if self.repeater.experiment.description["OutliersDetection"]["isEnabled"]:
+            results_WO_outliers = self.repeater.outlier_detectors.find_outliers_for_taskset(tasks_results,
+                                                                                            self.repeater._result_structure,
+                                                                                            [configuration],
+                                                                                            tasks_to_send)
+        else:
+            results_WO_outliers = tasks_results
         # Sending data to API and adding Tasks to Configuration
         for parameters, task in zip(tasks_to_send, results_WO_outliers):
             if configuration.parameters == parameters:
@@ -87,19 +89,30 @@ class ConsumerThread(threading.Thread):
 
 
 class Repeater:
-    def __init__(self, worker_service_client: WSClient, experiment):
+    def __init__(self, worker_service_client: WSClient, experiment: Experiment):
 
         self.worker_service_client = worker_service_client
         self.performed_measurements = 0
         self.repeater_parameters = experiment.description["Repeater"]["Parameters"]
-        self.outlier_detectors = get_outlier_detectors(experiment.get_outlier_detectors_parameters())
         self.logger = logging.getLogger(__name__)
         self._result_structure = experiment.description["TaskConfiguration"]["ResultStructure"]
         self.configurations = []
         self.experiment = experiment
-
+        if self.experiment.description["OutliersDetection"]["isEnabled"]:
+            self.outlier_detectors = get_outlier_detectors(experiment.get_outlier_detectors_parameters())
+        else:
+            self.logger.info("Outliers detection module is disabled")
         self._type = None
         self.set_type("Default")  # Default Configuration will be measured precisely with Default Repeater Type.
+        self.listen_thread = None
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.init_connection()
+
+    def init_connection(self):
+        """
+        The function creates a connection to a rabbitmq instance
+        :return:
+        """
         self.listen_thread = ConsumerThread(self)
         self.listen_thread.start()
 
@@ -194,9 +207,8 @@ class Repeater:
                     for i in range(current_measurement[point]['needed_tasks_count']):
                         tasks_to_send.append(current_measurement[point]['parameters'])
                         self.performed_measurements += 1
-
-            if configuration.status == Configuration.Status.MEASURED or \
-                    configuration.status == Configuration.Status.BAD:
+            if (configuration.status == Configuration.Status.MEASURED or
+                configuration.status == Configuration.Status.BAD) and os.environ.get('TEST_MODE') != 'UNIT_TEST':
                 with pika.BlockingConnection(
                         pika.ConnectionParameters(host=self.worker_service_client.event_host,
                                                   port=self.worker_service_client.event_port)) as connection:

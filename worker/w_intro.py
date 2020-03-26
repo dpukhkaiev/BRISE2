@@ -93,7 +93,7 @@ class WorkerMainThread(threading.Thread):
                         'task_result':
                             {
                               'task id': task_description["task_id"],
-                              'worker': os.environ['workername'],
+                              'worker': os.environ.get('workername', 'undefined'),
                               'result': result_from_worker
                             }
                        }
