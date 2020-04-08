@@ -17,7 +17,7 @@ from tools.rabbit_API_class import RabbitApi
 # from tools.main_mock import run as main_run
 
 # Initialize the API singleton
-API(api_object=RabbitApi("event_service", 49153))
+API(api_object=RabbitApi(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))
 
 
 class ConsumerThread(Thread):
@@ -182,6 +182,6 @@ class ConsumerThread(Thread):
 
 
 if __name__ == '__main__':
-    consumer_thread = ConsumerThread("event_service", 49153)
+    consumer_thread = ConsumerThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     consumer_thread.start()
     consumer_thread.join()

@@ -5,6 +5,7 @@ import json
 import datetime
 import threading
 import copy
+import os
 logging.getLogger("pika").propagate = False
 
 
@@ -110,7 +111,8 @@ class WorkerServiceThread(threading.Thread):
 
 
 def run():
-    workers_service_thread = WorkerServiceThread("event_service", 49153)
+    workers_service_thread = WorkerServiceThread(os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                                                 os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     workers_service_thread.start()
     workers_service_thread.join()
     workers_service_thread.stop()

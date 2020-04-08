@@ -5,7 +5,6 @@
 
 export const environment = {
   production: false,
-  workerService: 'http://localhost:49153',
-  mainNode: 'http://localhost:49152',
+  eventService: 'http://localhost:49153',
   nameSpace: '/front-end'
 };

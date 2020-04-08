@@ -92,9 +92,9 @@ class WorkerMainThread(threading.Thread):
                         'id_measurement': task_description["id_measurement"],
                         'task_result':
                             {
-                              'task id': task_description["task_id"],
-                              'worker': os.environ.get('workername', 'undefined'),
-                              'result': result_from_worker
+                                'task id': task_description["task_id"],
+                                'worker': f"worker_:{os.uname()[1]}",
+                                'result': result_from_worker
                             }
                        }
 
@@ -171,8 +171,9 @@ CURRENT_TASK_ID = ""
 
 # Basic functionality
 while True:
-    w_thread = WorkerMainThread("event_service", 49153)
-    t_thread = WorkerTerminationThread("event_service", 49153)
+    w_thread = WorkerMainThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
+    t_thread = WorkerTerminationThread(os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                                       os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     try:
         w_thread.start()
         t_thread.start()

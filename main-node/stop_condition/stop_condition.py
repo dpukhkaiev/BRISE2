@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 import pika
 import time
@@ -12,15 +13,15 @@ class StopCondition(ABC):
 
     def __init__(self, experiment: Experiment, stop_condition_parameters: dict):
         self.experiment = experiment
-        self.event_host = self.experiment.description["General"]["EventService"]["Address"]
-        self.event_port = self.experiment.description["General"]["EventService"]["Port"]
+        self.event_host = os.getenv("BRISE_EVENT_SERVICE_HOST")
+        self.event_port = os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")
         self.stop_condition_type = stop_condition_parameters["Type"]
         self.decision = False
         self.logger = logging.getLogger(stop_condition_parameters["Type"])
         self.repetition_interval = datetime.timedelta(**{
-                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
+            self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
                 self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
-                }).total_seconds()
+        }).total_seconds()
 
     def start_threads(self):
         """

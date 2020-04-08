@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-service
+spec:
+  selector:
+    matchLabels:
+      app: worker-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: worker-service
+    spec:
+      containers:
+        - name: worker-service
+          image: master-node:5000/local/worker_service_image
+          imagePullPolicy: Always

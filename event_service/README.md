@@ -87,6 +87,6 @@ Exchanges:
 ![Events structure](./BRISE_events_structure.png "dependencies between all BRISE modules")
 ### Managing
 
-There are at least two opportunities for managing the RabbitMQ node. First of all, it is a [terminal tool](http://manpages.ubuntu.com/manpages/trusty/man1/rabbitmqctl.1.html), and also more useful **management portal** that is deployed in this node on the 15672 port. 
+There are at least two opportunities for managing the RabbitMQ node. First of all, it is a [terminal tool](http://manpages.ubuntu.com/manpages/trusty/man1/rabbitmqctl.1.html), and also more useful **management portal** that is deployed in this node on the 49154 port. 
 
 You are able to use default user for managing. Login - **guest**, password - **guest**. You can easily add a new user via a `./bin/definitions.json` file.

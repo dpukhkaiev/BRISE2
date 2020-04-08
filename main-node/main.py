@@ -7,6 +7,7 @@ import os
 import threading
 from enum import Enum
 from sys import argv
+import os
 
 from warnings import filterwarnings
 
@@ -90,9 +91,8 @@ class MainThread(threading.Thread):
 
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=self.experiment.description["General"]["EventService"]["Address"],
-                port=self.experiment.description["General"]["EventService"]["Port"]))
+            pika.ConnectionParameters(os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                                      os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))
         self.consume_channel = self.connection.channel()
 
         self.sub.send('experiment', 'description',
@@ -112,10 +112,11 @@ class MainThread(threading.Thread):
         # (task.json)
 
         self.worker_service_client = WSClient(self.experiment.description["TaskConfiguration"],
-                                              self.experiment.description["General"]["EventService"]["Address"],
-                                              self.experiment.description["General"]["EventService"]["Port"],
-                                              logfile='%s%s_WSClient.csv' % (self.experiment.description["General"]['results_storage'],
-                                                                             self.experiment.get_name()))
+                                              os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                                              os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"),
+                                              logfile='%s%s_WSClient.csv' % (
+                                                  self.experiment.description["General"]['results_storage'],
+                                                  self.experiment.get_name()))
 
         # Initialize Repeater - encapsulate Configuration evaluation process to avoid results fluctuations.
         # (achieved by multiple Configuration evaluations on Workers - Tasks)

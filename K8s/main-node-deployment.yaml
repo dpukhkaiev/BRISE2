@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-node
+spec:
+  selector:
+    matchLabels:
+      app: main-node
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: main-node
+    spec:
+      containers:
+        - name: main-node
+          image: master-node:5000/local/main-node_image
+          imagePullPolicy: Always

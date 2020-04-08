@@ -1,9 +1,11 @@
 {
   "General":{
+    "NumberOfWorkers": 3,
     "isMinimizationExperiment": true,
     "EventService": {
-      "Address": "event_service",
-      "Port" : 49153
+      "Address": "event-service",
+      "AMQTPort": 49153,
+      "GUIPort": 49154
     },
     "COMMENT": "These configurations should also be moved to \"Main node\".",
     "results_storage": "./Results/"

@@ -1,3 +1,4 @@
+import os
 import numexpr as ne
 import re
 import json
@@ -24,12 +25,12 @@ class StopConditionValidator:
             if re.search(self.experiment.description["StopCondition"][sc_index]["Type"], self.expression):
                 self.stop_condition_states[self.experiment.description["StopCondition"][sc_index]["Type"]] = False
         self.expression = self.expression.replace("or", "|").replace("and", "&")
-        self.event_host = self.experiment.description["General"]["EventService"]["Address"]
-        self.event_port = self.experiment.description["General"]["EventService"]["Port"]
+        self.event_host = os.getenv("BRISE_EVENT_SERVICE_HOST")
+        self.event_port = os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")
         self.repetition_interval = datetime.timedelta(**{
-                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
+            self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
                 self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
-                }).total_seconds()
+        }).total_seconds()
         self.listen_thread = EventServiceConnection(self)
         self.listen_thread.start()
         self.thread = threading.Thread(target=self.self_evaluation, args=())

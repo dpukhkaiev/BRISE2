@@ -6,8 +6,42 @@
         "General": {
             "type": "object",
             "properties": {
+                "NumberOfWorkers": {
+                    "type": "integer",
+                    "minimum": 0
+                },
                 "isMinimizationExperiment": {
                     "type": "boolean"
+                },
+                "EventService": {
+                    "type": "object",
+                    "properties": {
+                        "Address": {
+                            "type": "string"
+                        },
+                        "AMQTPort": {
+                            "type": "integer",
+                            "minimum": 49152,
+                            "maximum": 65535
+                        },
+                        "GUIPort": {
+                            "type": "integer",
+                            "minimum": 49152,
+                            "maximum": 65535
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required":[
+                        "Address",
+                        "AMQTPort",
+                        "GUIPort"
+                    ]
+                },
+                "COMMENT": {
+                    "type": "string"
+                },
+                "results_storage": {
+                    "type": "string"
                 }
             },
             "required": [

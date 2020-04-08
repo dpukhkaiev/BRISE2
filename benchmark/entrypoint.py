@@ -10,7 +10,7 @@ from shared_tools import chown_files_in_dir
 
 def run_benchmark():
     # Container creation performs --volume on `./results/` folder. Change wisely results_storage.
-    host_event_service = "event_service"
+    host_event_service = "event-service"
     port_event_service = 49153
     results_storage = "./results/serialized/"
     try:

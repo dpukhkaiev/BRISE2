@@ -16,7 +16,8 @@ DESCRIPTION_NB["TaskConfiguration"]["Scenario"]["ws_file"] = "NB_final_result.cs
 
 
 def measure_task(task_parameters, description, search_space):
-    WSClient_exp = WSClient_Stub(description["TaskConfiguration"], 'event_service', 49153, 'TEST_WSClient_results.csv')
+    WSClient_exp = WSClient_Stub(description["TaskConfiguration"], os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                                 os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"), 'TEST_WSClient_results.csv')
     experiment = Experiment(description, search_space)
     Configuration.set_task_config(experiment.description["TaskConfiguration"])
     configuration1 = Configuration(task_parameters[0], Configuration.Type.TEST)
