@@ -353,7 +353,7 @@ class MainAPIClient:
             queue="main_responses",
             on_message_callback=self.on_response,
             auto_ack=True)
-        self.customer_thread = self.ConsumerThread('event_service', 49153, self)
+        self.customer_thread = self.ConsumerThread('event-service', 49153, self)
         self.customer_thread.start()
         self.response = None
         self.corr_id = None

@@ -146,7 +146,7 @@ Value - `dictionary` with following key-value pairs.
   "General":{
     "isMinimizationExperiment"  : true,
     "EventService": {
-      "Address": "event_service",
+      "Address": "event-service",
       "Port" : 49153
     }
   },

@@ -3,7 +3,7 @@
     "NumberOfWorkers": 3,
     "isMinimizationExperiment": true,
     "EventService": {
-      "Address": "event-service",
+      "Address": "localhost",
       "AMQTPort": 49153,
       "GUIPort": 49154
     },

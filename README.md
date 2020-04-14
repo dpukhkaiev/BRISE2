@@ -22,10 +22,10 @@ Hardware requirements:
 #### Installing and running basic installation
 To get a working instance of BRISE:
 - `git clone` this repository and
-- `./init.sh up -m docker-compose` in the root folder of copied repository to deploy the BRISE instance using *docker-compose*.
-Run  `./init.sh help` to see possible options for starting it.
+- `./brise.sh up -m docker-compose` in the root folder of copied repository to deploy the BRISE instance using *docker-compose*.
+Run  `./brise.sh help` to see possible options for starting it.
 
-`NOTE. init.sh is designed for UNIX operating system. Running the script under Windows Subsystem for Linux may 
+`NOTE. brise.sh is designed for UNIX operating system. Running the script under Windows Subsystem for Linux may 
 require additional actions, for example, using [dos2unix](https://linux.die.net/man/1/dos2unix) tools.` 
 
 The following Docker containers will be created:

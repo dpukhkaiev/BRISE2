@@ -1,7 +1,7 @@
 ## Using Kubernetes 
 To deploy BRISE onto the Kubernetes cluster you can either use our cluster or create your own.
 
-Generally, you should use `init.sh` with mode `k8s`, and pick which service you want to run. 
+Generally, you should use `brise.sh` with mode `k8s`, and pick which service you want to run. 
 
 Under the hood, the script builds images for specified services, pushes them to specified `docker-hub` 
 (should be local to protect private info) and builds relevant `k8s services` (the orchestrator decides where to 
@@ -11,7 +11,7 @@ After that, you are able to use the services as you want (via the management por
 
 `NOTE: Because of the DNS problem, during the initialization pods could fail several times.`
 
-Be aware that if you use `init.sh` control script to deploy BRISE on K8s,
+Be aware that if you use `brise.sh` control script to deploy BRISE on K8s,
 the master-node of your cluster will need to connect to the **local** `Docker hub` where images of BRISE services 
 will be stored and the domain name of the `docker hub` in the cluster and on the host machine must be the same.
 See details in the use case for `minikube`.
@@ -24,8 +24,8 @@ Also, for K8s deployment, user should be authorized to execute `kubectl` command
 ![Variant 1](./img/use_case_1.png)
 
 - Login in the `master-node` via ssh: `ssh user@141.76.65.28`
-- Delete existing services: `./init.sh down -m k8s` 
-- Run `./init.sh up -m k8s`
+- Delete existing services: `./brise.sh down -m k8s` 
+- Run `./brise.sh up -m k8s`
 - Wait until all services will run stable.
 - Find the `main-node` pod full name, by using the dashboard or `kubectl get pods`. 
 - Run `python3.7 main.py ./relative/path/to/config/file.json` in the `main-node` pod. You can use the dashboard to 
@@ -37,8 +37,8 @@ run the command or `kubectl exec -it main-node-xxxxx -- command`.
 ![Variant 2](./img/use_case_2.png)
 
 - Login in the `master-node` via ssh: `ssh user@141.76.65.28`
-- Delete existing services: `./init.sh down -m k8s`
-- Run `./init.sh up -m k8s -s event_service worker_service worker`
+- Delete existing services: `./brise.sh down -m k8s`
+- Run `./brise.sh up -m k8s -s event_service worker_service worker`
 - Wait until services will run stable.
 - Bind local ports to the cluster ports where event service runs AMQP and GUI service.
  
@@ -48,10 +48,10 @@ run the command or `kubectl exec -it main-node-xxxxx -- command`.
     The command binds the local `30153` port to the `30153` port on the `master-node` of the cluster. 
 - Run the `main-node` service in a local Docker container and specify event service hostname (IP) and ports for AMQP and GUI service:
 
-    `./init.sh up -m docker-compose -e 127.0.0.1 -eAMQP 30153  -eGUI 30154 -s main-node`
+    `./brise.sh up -m docker-compose -e 127.0.0.1 -eAMQP 30153  -eGUI 30154 -s main-node`
 
 Additionally, for debug purposes you may want to run the `main-node` (or any other service) on the local machine 
-without using `init.sh` and a Docker container.
+without using `brise.sh` and a Docker container.
 To do so, specify the next environment variables on your local machine:
 
  - `BRISE_EVENT_SERVICE_AMQP_PORT` - as AMQP port of RabbitMQ service
@@ -67,7 +67,7 @@ main-node locally as for debugging purposes.`
 
 ![Variant 3](./img/use_case_3.png)
 
-An important detail, in your cluster and on a machine where you run `init.sh` the Docker hub hostname must be the same.
+An important detail, in your cluster and on a machine where you run `brise.sh` the Docker hub hostname must be the same.
 Therefore, in the next guide, the DNS name `hub` is used as the Docker hub hostname.
 
 On your local machine:
@@ -93,8 +93,8 @@ In the minikube cluster (run `minikube ssh`):
     4. Exit from minikube. Run `exit`
 
 On your local machine:
-- Use `init.sh ` file to run commands on the machine:
-    `./init.sh up -m k8s --k8s_docker_hub_name hub -s event_service worker_service`
+- Use `brise.sh` file to run commands on the machine:
+    `./brise.sh up -m k8s --k8s_docker_hub_name hub -s event_service worker_service`
 
 
 ### Some useful commands and information

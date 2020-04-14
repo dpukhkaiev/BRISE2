@@ -8,7 +8,7 @@ BLUE="\\033[1;34m"
 # Names to identify images and containers of this app
 IMAGE_NAME="brise-benchmark_image"
 CONTAINER_NAME="brise-benchmark"
-BRISE_NETWORK="brise_network"
+BRISE_NETWORK="host"
 
 HOMEDIR="/home/$USER"
 EXECUTE_AS="sudo -u $USER HOME=$HOMEDIR"
@@ -81,7 +81,8 @@ run_container() {
     --name="$CONTAINER_NAME"                          \
     -v $(pwd)/results:/home/benchmark_user/results:z  \
     --restart=on-failure:10                           \
-    --network=$BRISE_NETWORK $IMAGE_NAME              \
+    --network=$BRISE_NETWORK                          \
+    $IMAGE_NAME                                       \
     /usr/bin/python3.7 entrypoint.py ${1}
 
   [ $? != 0 ] && error "Container run failed!" && exit 105
