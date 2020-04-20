@@ -174,14 +174,14 @@ class Experiment:
             all_features = []
             for configuration in self.measured_configurations:
                 all_features.append(configuration.parameters)
+            self.dump()  # Store instance of Experiment
+            self.summarize_results_to_file()
+            self.write_csv()
             self.api.send('final', 'configuration',
                         configurations=[self.get_current_solution().parameters],
                         results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
                         measured_points=[all_features],
                         performed_measurements=[repeater.performed_measurements])
-            self.dump()  # Store instance of Experiment
-            self.summarize_results_to_file()
-            self.write_csv()
             return self.current_best_configurations
         else:
             self.logger.error('No configuration was measured. Please, check your Experiment Description.')
