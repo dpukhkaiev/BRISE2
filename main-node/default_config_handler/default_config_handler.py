@@ -10,4 +10,4 @@ class DefaultConfigurationHandler(AbstractDefaultConfigurationHandler):
         
         :rtype:Configuration
         """
-        return self.experiment.search_space.get_default_configuration()
+        return self.experiment.search_space.get_default_configuration_from_ConfigSpace()

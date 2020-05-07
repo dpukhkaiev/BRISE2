@@ -5,14 +5,17 @@ import json
 import csv
 import os
 import logging
+import uuid 
 
 from threading import Lock
 from typing import Union, List
 from copy import deepcopy
+from collections.abc import Mapping
 
 from tools.front_API import API
 from core_entities.configuration import Configuration
 from core_entities.search_space import SearchSpace
+from tools.mongo_dao import MongoDB
 
 
 class Experiment:
@@ -36,11 +39,13 @@ class Experiment:
         self._description = description
         self.search_space = search_space
         self.end_time = self.start_time = datetime.datetime.now()
-        # A unique ID that is used to differentiate Experiments by descriptions.
-        self.id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
+        # An ID that is used to differentiate Experiments by descriptions.
+        self.ed_id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
+        # A unique ID, different for every experiment (even with the same description)
+        self.unique_id = str(uuid.uuid4())
         self.name = "exp_{task_name}_{experiment_hash}".format(
             task_name=self.description["TaskConfiguration"]["TaskName"],
-            experiment_hash=self.id)
+            experiment_hash=self.ed_id)
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations = []
@@ -49,6 +54,20 @@ class Experiment:
 
         self.measured_conf_lock = Lock()
         self.evaluated_conf_lock = Lock()
+
+        # initialize connection to the database
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
+                                    os.getenv("BRISE_DATABASE_PORT"), 
+                                    os.getenv("BRISE_DATABASE_NAME"),
+                                    os.getenv("BRISE_DATABASE_USER"),
+                                    os.getenv("BRISE_DATABASE_PASS"))
+        else:
+            self.database = MongoDB(self.description["General"]["Database"]["Address"],
+                                    self.description["General"]["Database"]["Port"],
+                                    self.description["General"]["Database"]["DatabaseName"],
+                                    self.description["General"]["Database"]["DatabaseUser"],
+                                    self.description["General"]["Database"]["DatabasePass"])
 
     def _get_description(self):
         return deepcopy(self._description)
@@ -73,6 +92,7 @@ class Experiment:
         del space['logger']
         del space['measured_conf_lock']
         del space['evaluated_conf_lock']
+        del space['database']
         return space
 
     def __setstate__(self, space):
@@ -92,6 +112,7 @@ class Experiment:
                               configurations=[default_configuration.parameters],
                               results=[default_configuration.get_average_result()])
                 self.measured_configurations.append(default_configuration)
+                self.database.write_one_record("Measured_configurations", default_configuration.get_configuration_record(self.unique_id))
                 self._calculate_current_best_configurations()
             else:
                 raise ValueError("The default Configuration was registered already.")
@@ -240,6 +261,15 @@ class Experiment:
         :return: None
         """
         self.measured_configurations.append(configuration)
+        self.database.write_one_record("Measured_configurations", configuration.get_configuration_record(self.unique_id))
+        if self.database.get_last_record_by_experiment_id("Experiment_state", self.unique_id) is None:
+            self.database.write_one_record("Experiment_state", self.get_experiment_state_record())
+        else:
+            self.database.update_record("Experiment_state", {"Exp_unique_ID" : self.unique_id}, 
+                {"Number_of_measured_configs" : self.get_number_of_measured_configurations(),
+                "Number_of_bad_configs" : self.get_bad_configuration_number(),
+                "Current_solution" : self.get_current_solution().get_configuration_record(self.unique_id),
+                "is_model_valid" : self.get_model_state()})
 
         self.api.send("new", "configuration",
                       configurations=[configuration.parameters],
@@ -269,6 +299,8 @@ class Experiment:
         with open(folder_path + file_name, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
             self.logger.info("Saved experiment instance. Path: %s" % (folder_path + file_name))
+        # update database record with a dumped experiment
+        self.database.update_record("Experiment_description", {"Exp_unique_ID" : self.unique_id}, {"ExperimentObject" : pickle.dumps(self, pickle.HIGHEST_PROTOCOL)})
 
     def summarize_results_to_file(self, report_format: str = 'yaml', path: str = 'Results/'):
         """
@@ -382,3 +414,37 @@ class Experiment:
 
     def get_model_state(self):
         return self.model_is_valid
+
+    def get_experiment_description_record(self) -> Mapping:
+        '''
+        The helper method that formats an experiment description to be stored as a record in a Database
+        :return: Mapping. Field names of the database collection with respective information
+        '''
+        record = {}
+        record["Exp_unique_ID"] = self.unique_id
+        record["Exp_ID"] = self.ed_id
+        record["isMinimizationExperiment"] = self.description["General"]["isMinimizationExperiment"]
+        record["DomainDescription"] = self.description["DomainDescription"]
+        record["TaskConfiguration"] = self.description["TaskConfiguration"]
+        record["SelectionAlgorithm"] = self.description["SelectionAlgorithm"]
+        record["OutliersDetection"] = self.description["OutliersDetection"]
+        record["Repeater"] = self.description["Repeater"]
+        record["ModelConfiguration"] = self.description["ModelConfiguration"]
+        record["StopCondition"] = self.description["StopCondition"]
+        record["StopConditionTriggerLogic"] = self.description["StopConditionTriggerLogic"]
+        # experiment description record will be updated at the end of the experiment
+        record["ExperimentObject"] = None
+        return record
+
+    def get_experiment_state_record(self) -> Mapping:
+        '''
+        The helper method that formats current experiment state to be stored as a record in a Database
+        :return: Mapping. Field names of the database collection with respective information
+        '''
+        record = {}
+        record["Exp_unique_ID"] = self.unique_id
+        record["Number_of_measured_configs"] = self.get_number_of_measured_configurations()
+        record["Number_of_bad_configs"] = self.get_bad_configuration_number()
+        record["Current_solution"] = self.get_current_solution().get_configuration_record(self.unique_id)
+        record["is_model_valid"] = self.get_model_state()
+        return record

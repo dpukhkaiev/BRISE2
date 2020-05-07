@@ -1,10 +1,12 @@
 import pytest
+import os
 
 from selection.selection_algorithms import get_selector
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from tools.initial_config import load_experiment_setup
 
+os.environ["TEST_MODE"] = 'UNIT_TEST'
 
 class TestSelector:
     # This test set is aimed to cover the logic of new configurations selection from the search space.

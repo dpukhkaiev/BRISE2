@@ -1,8 +1,12 @@
 import json
 import logging
+import uuid
+import pickle
+
 from enum import Enum
 from copy import deepcopy
 from typing import Iterable
+from collections.abc import Mapping
 
 import numpy as np
 
@@ -63,6 +67,8 @@ class Configuration:
         self.type:                      shape - Configuration.Type, e.g   ``DEFAULT``
         """
         self.logger = logging.getLogger(__name__)
+        # The unique configuration ID
+        self.unique_id = str(uuid.uuid4())
         self._parameters = parameters
         self._parameters_in_indexes = []
         self._tasks = {}
@@ -153,7 +159,9 @@ class Configuration:
         return self._standard_deviation.copy()
 
     def to_json(self):
-        dictionary_dump = {"parameters": self._parameters,
+        # TODO: this method partially repeats the functionality of 'Configuration.get_configuration_record()'. Refactoring needed 
+        dictionary_dump = {"configuration_id": self.unique_id,
+                           "parameters": self._parameters,
                            "parameters_in_indexes": self._parameters_in_indexes,
                            "average_result": self._average_result,
                            "tasks": self._tasks,
@@ -169,8 +177,12 @@ class Configuration:
 
     @staticmethod
     def from_json(json_string):
+        # TODO: communication should be reworked in a way that we avoid using this method 
+        # (as it creates additional physical objects for a single logical configuration)
         dictionary_dump = json.loads(json_string)
         conf = Configuration(dictionary_dump["parameters"], dictionary_dump["type"])
+        # Configuration id is rewritten here, which is undesirable behavior
+        conf.unique_id = dictionary_dump["configuration_id"]
         conf._parameters_in_indexes = dictionary_dump["parameters_in_indexes"]
         conf._average_result = dictionary_dump["average_result"]
         conf._tasks = dictionary_dump["tasks"]
@@ -323,3 +335,34 @@ class Configuration:
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
             return False
+
+    def get_configuration_record(self, experiment_id: str) -> Mapping:
+        '''
+        The helper method that formats a configuration to be stored as a record in a Database
+        :return: Mapping. Field names of the database collection with respective information
+        '''
+        record = {}
+        record["Exp_unique_ID"] = experiment_id
+        record["Configuration_ID"] = self.unique_id
+        record["Parameters"] = self.parameters
+        record["Type"] = self.type
+        record["Status"] = self.status
+        record["Parameters_in_indexes"] = self._parameters_in_indexes
+        record["Average_result"] = self._average_result
+        record["Predicted_result"] = self.predicted_result
+        record["Standard_deviation"] = self._standard_deviation
+        record["is_enabled"] = self.is_enabled
+        record["Number_of_failed_tasks"] = self.number_of_failed_tasks
+        record["ConfigurationObject"] = pickle.dumps(self)
+        return record
+
+    def get_task_record(self, task: dict) -> Mapping:
+        '''
+        The helper method that formats a task description to be stored as a record in a Database
+        :return: Mapping. Field names of the database collection with respective information
+        '''
+        record = {}
+        record["Configuration_ID"] = self.unique_id
+        record["Task_ID"] = task['task id']
+        record["Task"] = task
+        return record

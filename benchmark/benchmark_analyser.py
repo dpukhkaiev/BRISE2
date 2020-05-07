@@ -285,13 +285,13 @@ class BRISEBenchmarkAnalyser:
 
         # Group repeated experiment by id field in groups.
         groups = []
-        ids = [exp.id for exp in self.get_experiments()]
+        ids = [exp.ed_id for exp in self.get_experiments()]
         indices_for_sorting = np.argsort(ids)
 
         group_of_same_experiments = []
         for index in indices_for_sorting:
             if len(group_of_same_experiments) == 0 or \
-                    self.get_experiments()[index].id == group_of_same_experiments[-1].id:
+                    self.get_experiments()[index].ed_id == group_of_same_experiments[-1].ed_id:
                 group_of_same_experiments.append(self.get_experiments()[index])
             else:
                 groups.append(group_of_same_experiments)

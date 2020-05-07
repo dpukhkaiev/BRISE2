@@ -9,3 +9,4 @@ pandas
 ConfigSpace
 pika
 sortedcontainers
+pymongo

@@ -7,6 +7,13 @@
       "AMQTPort": 49153,
       "GUIPort": 49154
     },
+    "Database": {
+      "Address": "localhost",
+      "Port": 27017,
+      "DatabaseName": "BRISE_db",
+      "DatabaseUser": "admin",
+      "DatabasePass": "5V5Scp1E"
+    },
     "COMMENT": "These configurations should also be moved to \"Main node\".",
     "results_storage": "./Results/"
   },

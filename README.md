@@ -23,7 +23,10 @@ Hardware requirements:
 To get a working instance of BRISE:
 - `git clone` this repository and
 - `./brise.sh up -m docker-compose` in the root folder of copied repository to deploy the BRISE instance using *docker-compose*.
-Run  `./brise.sh help` to see possible options for starting it.
+
+Run  `./brise.sh help` to see possible options for starting it. For example, if you want to overwrite the standard addresses and ports used by the `event-service` or `database`, you may use the following command:
+`./brise.sh up -m docker-compose -eAMQP 49153  -eGUI 49154 -db_host localhost -db_port 27017`
+If no values are specified, the default ones will be taken from the [SettingsBRISE.json](./main-node/Resources/SettingsBRISE.json).
 
 `NOTE. brise.sh is designed for UNIX operating system. Running the script under Windows Subsystem for Linux may 
 require additional actions, for example, using [dos2unix](https://linux.die.net/man/1/dos2unix) tools.` 
@@ -36,6 +39,7 @@ extendable features to customize your optimization process.
 - `N` [workers](./worker/README.md) - evaluate the target system with concrete parameters.
 - [front-end](./front-end/README.md) - control and visualisation of the optimization process.
 - [event-service](./event_service/README.md) - [RabbitMQ](https://www.rabbitmq.com/) server instance for event management.
+- [mongo-db](./mongo-db/README.md) - [MongoDB](https://www.mongodb.com/) server instance for the BRISE database management.
 
 #### Testing the installation
 - Get into **main-node**:

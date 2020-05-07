@@ -13,8 +13,8 @@ def get_default_config_handler(experiment: Experiment) -> AbstractDefaultConfigu
     handler_name = experiment.description["DomainDescription"]["DefaultConfigurationHandler"] \
         if "DefaultConfigurationHandler" in experiment.description["DomainDescription"] else None
 
-    if experiment.search_space.get_default_configuration() and \
-            len(experiment.search_space.get_default_configuration().parameters) == \
+    if experiment.search_space.get_default_configuration_from_ConfigSpace() and \
+            len(experiment.search_space.get_default_configuration_from_ConfigSpace().parameters) == \
             len(experiment.search_space.get_hyperparameter_names()):
         from default_config_handler.default_config_handler import DefaultConfigurationHandler
         config_handler = DefaultConfigurationHandler(experiment)

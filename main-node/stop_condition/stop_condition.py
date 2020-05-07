@@ -5,23 +5,31 @@ import pika
 import time
 import datetime
 import json
+import os
 
 from abc import ABC, abstractmethod
-from core_entities.experiment import Experiment
+from tools.mongo_dao import MongoDB
+
 
 class StopCondition(ABC):
 
-    def __init__(self, experiment: Experiment, stop_condition_parameters: dict):
-        self.experiment = experiment
+    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
         self.event_host = os.getenv("BRISE_EVENT_SERVICE_HOST")
         self.event_port = os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
+                        os.getenv("BRISE_DATABASE_PORT"), 
+                        os.getenv("BRISE_DATABASE_NAME"),
+                        os.getenv("BRISE_DATABASE_USER"),
+                        os.getenv("BRISE_DATABASE_PASS"))
+
+        self.experiment_id = experiment_id
         self.stop_condition_type = stop_condition_parameters["Type"]
         self.decision = False
         self.logger = logging.getLogger(stop_condition_parameters["Type"])
         self.repetition_interval = datetime.timedelta(**{
-            self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
-        }).total_seconds()
+                experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
+                experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
+                }).total_seconds()
 
     def start_threads(self):
         """
@@ -92,9 +100,14 @@ class StopCondition(ABC):
             counter = counter + 1
             if counter % 10 == 0:
                 counter = 0
-                if len(self.experiment.measured_configurations) > 0:
-                    search_space_size = self.experiment.search_space.get_search_space_size()
-                    if len(self.experiment.measured_configurations) >= search_space_size:
+                numb_of_measured_configurations = 0
+                try:
+                    numb_of_measured_configurations = self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)["Number_of_measured_configs"]
+                except TypeError:
+                    self.logger.warning(f"No Experiment state is yet available for the experiment {self.experiment_id}")    
+                if numb_of_measured_configurations > 0:
+                    search_space_size = self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
+                    if numb_of_measured_configurations >= search_space_size:
                         break
                     self.is_finish()
                     if previous_decision != self.decision:

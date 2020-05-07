@@ -25,30 +25,30 @@ Also, for K8s deployment, user should be authorized to execute `kubectl` command
 
 - Login in the `master-node` via ssh: `ssh user@141.76.65.28`
 - Delete existing services: `./brise.sh down -m k8s` 
-- Run `./brise.sh up -m k8s`
+- Run `./brise.sh up -m k8s -e event-service -db_port 27017 -db_host mongodb://mongo-db`
 - Wait until all services will run stable.
 - Find the `main-node` pod full name, by using the dashboard or `kubectl get pods`. 
 - Run `python3.7 main.py ./relative/path/to/config/file.json` in the `main-node` pod. You can use the dashboard to 
 run the command or `kubectl exec -it main-node-xxxxx -- command`.
 *May fail a few times because of the DNS problem.*
 
-#### Workers, worker service end the event service in the cluster
+#### Workers, worker service, mongo-db and the event service in the remote cluster
 
 ![Variant 2](./img/use_case_2.png)
 
 - Login in the `master-node` via ssh: `ssh user@141.76.65.28`
 - Delete existing services: `./brise.sh down -m k8s`
-- Run `./brise.sh up -m k8s -s event_service worker_service worker`
+- Run `./brise.sh up -m k8s -e event-service -db_port 27017 -db_host mongodb://mongo-db -s event_service worker_service worker mongo-db`
 - Wait until services will run stable.
-- Bind local ports to the cluster ports where event service runs AMQP and GUI service.
+- Bind local ports to the cluster ports (on `master-node`) where event service runs AMQP and GUI service, and database runs:
  
     `ssh -L 30153:master-node:30153 user@141.76.65.28` - to bind AMQP port
     `ssh -L 30154:master-node:30154 user@141.76.65.28` - to bind GUI port
-    
-    The command binds the local `30153` port to the `30153` port on the `master-node` of the cluster. 
-- Run the `main-node` service in a local Docker container and specify event service hostname (IP) and ports for AMQP and GUI service:
+    `ssh -L 30156:master-node:30156 user@141.76.65.28` - to bind database port
 
-    `./brise.sh up -m docker-compose -e 127.0.0.1 -eAMQP 30153  -eGUI 30154 -s main-node`
+- Run the `main-node` service in a local Docker container and specify event service hostname (IP), ports for AMQP and GUI service and database-related information:
+
+    `./brise.sh up -m docker-compose -eAMQP 30153  -eGUI 30154 -db_host mongodb://localhost -db_port 30156 -s main-node`
 
 Additionally, for debug purposes you may want to run the `main-node` (or any other service) on the local machine 
 without using `brise.sh` and a Docker container.
@@ -56,6 +56,11 @@ To do so, specify the next environment variables on your local machine:
 
  - `BRISE_EVENT_SERVICE_AMQP_PORT` - as AMQP port of RabbitMQ service
  - `BRISE_EVENT_SERVICE_HOST` - as IP or domain name of RabbitMQ service
+ - `BRISE_DATABASE_HOST` - as IP or domain name of the BRISE database
+ - `BRISE_DATABASE_PORT` - as port of the BRISE database
+ - `BRISE_DATABASE_NAME` - as name of the BRISE database
+ - `BRISE_DATABASE_USER` - as user of the BRISE database
+ - `BRISE_DATABASE_PASS` - as password for the BRISE database user
 
 After that, you can run any services by using python commands.
 

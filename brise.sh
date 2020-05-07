@@ -9,7 +9,8 @@ N_workers=1
 command=
 mode=
 event_service_host=
-services=("main-node" "event_service" "worker_service" "front-end" "worker")
+services=("main-node" "event_service" "worker_service" "front-end" "worker" "mongo-db")
+database=BRISE_db
 
 
 log() {
@@ -40,6 +41,16 @@ help() {
   echo "                                    By default equal the 'General.EventService.AMQTPort' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --event_service_GUI_port or -eGUI: A parameter that overrides the GUI port of an event service."
   echo "                                    By default equal the 'General.EventService.GUIPort' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "        --database_host or -db_host: A parameter that overrides the hostname/IP of a BRISE database."
+  echo "                                    By default equal the 'General.Database.Address' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "        --database_port or -db_port: A parameter that overrides the port of a BRISE database."
+  echo "                                    By default equal the 'General.Database.Port' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "        --database_name or -db_name: A parameter that overrides the name of a BRISE database."
+  echo "                                    By default equal the 'General.Database.DatabaseName' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "        --database_user or -db_user: A parameter that overrides the username of a BRISE database."
+  echo "                                    By default equal the 'General.Database.DatabaseUser' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "        --database_pass or -db_pass: A parameter that overrides the password of a BRISE database user."
+  echo "                                    By default equal the 'General.Database.DatabasePass' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --workers or -w: A parameter that overrides the number of workers."
   echo "                                    By default equal the 'General.NumberOfWorkers' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --k8s_docker_hub_name or -k8s_d_n: A parameter to specify the docker hub name that is used by Kubernetes for deployment."
@@ -56,6 +67,10 @@ help() {
   echo
   echo "   > restart - 'down' and 'up'."
   echo
+  echo "   > clean_database - Cleans the BRISE database."
+  echo "        Optional parameter:"
+  echo "        --database or -db: A parameter that overwrites the default name of the BRISE database to be cleaned. The default name is 'BRISE_db'"
+  echo
   echo "   > help - Display this help message."
   echo -e -n "$NORMAL"
   echo "-----------------------------------------------------------------------"
@@ -70,21 +85,35 @@ up() {
         docker-compose build --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}" \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\
+                             --build-arg BRISE_DATABASE_HOST="${database_host}" \
+                             --build-arg BRISE_DATABASE_PORT="${database_port}" \
+                             --build-arg BRISE_DATABASE_NAME="${database_name}" \
+                             --build-arg BRISE_DATABASE_USER="${database_user}" \
+                             --build-arg BRISE_DATABASE_PASS="${database_pass}" \
                               ${services[*]}
         log "Starting ${services[*]}"
         docker-compose up -d --scale worker=${N_workers} ${services[*]}
   elif  [[ "${mode}" == "k8s" ]]; then
         log "Building and starting BRISE K8s deployment based on local service description files."
         for service in "${services[@]}"; do
-             docker build --tag "${service}_image" --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}"\
-                                                   --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
-                                                   --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\
-                                                    "./${service}/"
-             docker tag "${service}_image:latest" "${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
-             docker push "${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
+             if [[ "${service}" != "mongo-db" ]]; then
+                docker build --tag "${service}_image" --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}"\
+                                                    --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
+                                                    --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\
+                                                    --build-arg BRISE_DATABASE_HOST="${database_host}" \
+                                                    --build-arg BRISE_DATABASE_PORT="${database_port}" \
+                                                    --build-arg BRISE_DATABASE_NAME="${database_name}" \
+                                                    --build-arg BRISE_DATABASE_USER="${database_user}" \
+                                                    --build-arg BRISE_DATABASE_PASS="${database_pass}" \
+                                                        "./${service}/"
+                docker tag "${service}_image:latest" "${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
+                docker push "${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
+             fi
              kubectl create -f "./K8s/${service}-deployment.yaml"
              if [[ "${k8s_docker_hub_name}" != "master-node" ]] || [[ "${k8s_docker_hub_port}" != "5000" ]]; then
-                kubectl set image "deployment.apps/${service//[_]/-}" "*=${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
+                if [[ "${service}" != "mongo-db" ]]; then
+                    kubectl set image "deployment.apps/${service//[_]/-}" "*=${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
+                fi
              fi
              if [[ "${service}" == "worker" ]]; then
                   kubectl scale deployment.apps/worker --replicas=${N_workers}
@@ -92,6 +121,8 @@ up() {
                   kubectl create -f ./K8s/event_service-service-NodePort.yaml
              elif [[ "${service}" == "front-end" ]]; then
                   kubectl create -f ./K8s/front-end-service-NodePort.yaml
+             elif [[ "${service}" == "mongo-db" ]]; then
+                  kubectl create -f ./K8s/mongo-db-service-NodePort.yaml
              fi
         done
   else
@@ -113,6 +144,9 @@ down() {
              fi
              if [[ "${service}" == "front-end" ]]; then
                 kubectl delete -f ./K8s/front-end-service-NodePort.yaml
+             fi
+             if [[ "${service}" == "mongo-db" ]]; then
+                kubectl delete -f ./K8s/mongo-db-service-NodePort.yaml
              fi
         done
    else
@@ -151,6 +185,29 @@ dependency_check(){
     fi
 }
 
+clean_database() {
+    container_name=mongo-db
+    container_prev_state=
+
+    if [[ $(docker ps --filter "name=^/$container_name$" --format '{{.Names}}') == $container_name ]]; then
+        container_prev_state=1
+    else
+        container_prev_state=0
+        docker-compose up -d --build mongo-db
+    fi
+
+    while true; do
+        sleep 1
+        docker exec -it -i mongo-db mongo $database --eval "db.serverStatus()" > /dev/null 2>&1 == 0 || break
+    done
+
+    docker exec -it -i mongo-db mongo $database --eval "db.dropDatabase();"
+
+    if [[ $container_prev_state == 0 ]]; then
+        docker-compose stop mongo-db
+    fi
+}
+
 if [[ -z ${1}  ]]; then
   help
 else
@@ -159,6 +216,11 @@ else
     event_service_host=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.EventService.Address' )
     event_service_AMQP_port=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.EventService.AMQTPort' )
     event_service_GUI_port=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.EventService.GUIPort' )
+    database_host=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.Database.Address' )
+    database_port=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.Database.Port' )
+    database_name=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.Database.DatabaseName' )
+    database_user=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.Database.DatabaseUser' )
+    database_pass=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.Database.DatabasePass' )
     k8s_docker_hub_name='master-node'
     k8s_docker_hub_port='5000'
 
@@ -210,6 +272,61 @@ else
                 fi
                 ;;
 
+            -db_host | --database_host )
+                shift
+                if [[ "${command}" == "up" ]] || [[ "${command}" == "restart" ]]; then
+                    database_host=$1
+                else
+                    error "Wrong parameter --database_host (-db_host)"
+                    help
+                    exit 1
+                fi
+                ;;
+
+            -db_port | --database_port )
+                shift
+                if [[ "${command}" == "up" ]] || [[ "${command}" == "restart" ]]; then
+                    database_port=$1
+                else
+                    error "Wrong parameter --database_port (-db_port)"
+                    help
+                    exit 1
+                fi
+                ;;
+
+            -db_name | --database_name )
+                shift
+                if [[ "${command}" == "up" ]] || [[ "${command}" == "restart" ]]; then
+                    database_name=$1
+                else
+                    error "Wrong parameter --database_name (-db_name)"
+                    help
+                    exit 1
+                fi
+                ;;
+
+            -db_user | --database_user )
+                shift
+                if [[ "${command}" == "up" ]] || [[ "${command}" == "restart" ]]; then
+                    database_user=$1
+                else
+                    error "Wrong parameter --database_user (-db_user)"
+                    help
+                    exit 1
+                fi
+                ;;
+
+            -db_pass | --database_pass )
+                shift
+                if [[ "${command}" == "up" ]] || [[ "${command}" == "restart" ]]; then
+                    database_pass=$1
+                else
+                    error "Wrong parameter --database_pass (-db_pass)"
+                    help
+                    exit 1
+                fi
+                ;;
+
             -w | --workers )
                 shift
                 if [[ "${command}" == "up" ]] || [[ "${command}" == "restart" ]]; then
@@ -221,6 +338,18 @@ else
                 fi
                 if ! [[ "$N_workers" =~ ^[0-9]+$ ]]; then
                     error "Wrong number of workers"
+                    help
+                    exit 1
+                fi
+                ;;
+
+
+            -db | --database )
+                shift
+                if [[ "${command}" == "clean_database" ]]; then
+                    database=$1
+                else
+                    error "Wrong parameter --database (-db)"
                     help
                     exit 1
                 fi

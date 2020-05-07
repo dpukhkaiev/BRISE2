@@ -11,6 +11,7 @@ from tools.reflective_class_import import reflective_class_import
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 from outliers.outliers_detector_selector import get_outlier_detectors
+from tools.mongo_dao import MongoDB
 
 logging.getLogger("pika").propagate = False
 
@@ -35,6 +36,12 @@ class ConsumerThread(threading.Thread):
 
         self.consume_channel.basic_consume(queue='measurement_results_queue', auto_ack=True,
                                            on_message_callback=self.callback_func)
+        # initialize connection to the database
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
+                                os.getenv("BRISE_DATABASE_PORT"), 
+                                os.getenv("BRISE_DATABASE_NAME"),
+                                os.getenv("BRISE_DATABASE_USER"),
+                                os.getenv("BRISE_DATABASE_PASS"))
 
     def callback_func(self, channel, method, properties, body):
         """
@@ -60,6 +67,7 @@ class ConsumerThread(threading.Thread):
             if configuration.parameters == parameters:
                 if configuration.is_valid_task(task):
                     configuration.add_tasks(task)
+                    self.database.write_one_record("Tasks", configuration.get_task_record(task))	
                 else:
                     configuration.increase_failed_tasks_number()
 

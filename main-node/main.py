@@ -5,6 +5,8 @@ import logging
 import pika
 import os
 import threading
+import os
+import pickle
 from enum import Enum
 from sys import argv
 import os
@@ -25,6 +27,7 @@ from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from default_config_handler.default_config_handler_selector import get_default_config_handler
 from default_config_handler.default_config_handler import DefaultConfigurationHandler
+from tools.mongo_dao import MongoDB
 
 
 class MainThread(threading.Thread):
@@ -95,6 +98,17 @@ class MainThread(threading.Thread):
                                       os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))
         self.consume_channel = self.connection.channel()
 
+        # initialize connection to the database
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
+                                os.getenv("BRISE_DATABASE_PORT"), 
+                                os.getenv("BRISE_DATABASE_NAME"),
+                                os.getenv("BRISE_DATABASE_USER"),
+                                os.getenv("BRISE_DATABASE_PASS"))
+
+        # write initial settings to the database
+        self.database.write_one_record("Experiment_description", self.experiment.get_experiment_description_record())
+        self.database.write_one_record("Search_space", self.experiment.search_space.get_search_space_record(self.experiment.unique_id))
+
         self.sub.send('experiment', 'description',
                       global_config=self.experiment.description["General"],
                       experiment_description=self.experiment.description,
@@ -103,7 +117,7 @@ class MainThread(threading.Thread):
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
-        launch_stop_condition_threads(self.experiment)
+        launch_stop_condition_threads(self.experiment.unique_id)
         # Creating instance of selector algorithm, according to specified in experiment description type.
         self.selector = get_selector(experiment=self.experiment)
 
@@ -162,6 +176,12 @@ class MainThread(threading.Thread):
             default_configuration = self.default_config_handler.get_default_config()
             self.repeater.measure_configurations([default_configuration])
         if self.experiment.is_configuration_evaluated(default_configuration):
+            # set default configuration for the search space and update search space db record respectively
+            self.experiment.search_space.set_default_configuration(default_configuration)
+            self.database.update_record("Search_space", {"Exp_unique_ID" : self.experiment.unique_id}, 
+                {"Default_configuration" : self.experiment.search_space.get_default_configuration().get_configuration_record(self.experiment.unique_id)})
+            self.database.update_record("Search_space", {"Exp_unique_ID" : self.experiment.unique_id}, 
+                {"SearchspaceObject" : pickle.dumps(self.experiment.search_space)})
             self.experiment.put_default_configuration(default_configuration)
 
             temp_msg = f"Evaluated Default Configuration: {default_configuration}"

@@ -1,9 +1,11 @@
 import logging
+import pickle
 import numpy as np
 
 from typing import Union, Dict, List
 from copy import deepcopy
 from enum import Enum
+from collections.abc import Mapping
 
 from ConfigSpace.configuration_space import Configuration as CSConfiguration
 from ConfigSpace import InCondition, EqualsCondition
@@ -43,17 +45,7 @@ class SearchSpace:
         # initialize search space from ConfigurationSpace object
         self.search_space_size = None
         self.__hyperparameter_names = domain_description["HyperparameterNames"]
-
-        # initialize default configuration, if it is provided correctly
-        try:
-            CS_default_configuration = self._config_space.get_default_configuration()
-            parameters = []
-            for parameter_name in self.__hyperparameter_names:
-                parameters.append(CS_default_configuration.get(parameter_name))
-            self.__default_configuration = Configuration(parameters, Configuration.Type.DEFAULT)
-        except Exception as e:
-            self.logger.error("Unable to load default Configuration: %s" % e)
-            self.__default_configuration = None
+        self.__default_configuration = None
 
     def get_hyperparameter_names(self) -> List[str]:
         return deepcopy(self.__hyperparameter_names)
@@ -113,6 +105,17 @@ class SearchSpace:
     
     def get_default_configuration(self):
         return self.__default_configuration
+
+    def get_default_configuration_from_ConfigSpace(self):
+        try:
+            CS_default_configuration = self._config_space.get_default_configuration()
+            parameters = []
+            for parameter_name in self.__hyperparameter_names:
+                parameters.append(CS_default_configuration.get(parameter_name))
+            return Configuration(parameters, Configuration.Type.DEFAULT)
+        except Exception as e:
+            self.logger.error("Unable to load default Configuration: %s" % e)
+            return None
     
     def set_default_configuration(self, default_configuration: Configuration):
         self.__default_configuration = default_configuration
@@ -256,3 +259,27 @@ class SearchSpace:
                 else:
                     raise TypeError(f"Unsupported hyperparameter {hp}.")
         return indexes
+
+    def __getstate__(self):
+        space = self.__dict__.copy()
+        del space['logger']
+        return space
+
+    def __setstate__(self, space):
+        self.__dict__ = space
+        self.logger = logging.getLogger(__name__)
+
+    def get_search_space_record(self, experiment_id: str) -> Mapping:
+        '''
+        The helper method that formats a search space description to be stored as a record in a Database
+        :return: Mapping. Field names of the database collection with respective information
+        '''
+        record = {}
+        record["Exp_unique_ID"] = experiment_id
+        if self.get_default_configuration() is not None:
+            record["Default_configuration"] = self.get_default_configuration().get_configuration_record(experiment_id)
+        else:
+            record["Default_configuration"] = None
+        record["Search_space_size"] = self.get_search_space_size()
+        record["SearchspaceObject"] = pickle.dumps(self)
+        return record

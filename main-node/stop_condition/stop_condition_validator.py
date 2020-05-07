@@ -7,6 +7,9 @@ import threading
 import logging
 import time
 import datetime
+import os
+
+from tools.mongo_dao import MongoDB
 
 
 class StopConditionValidator:
@@ -15,22 +18,28 @@ class StopConditionValidator:
     using user-defined pattern (StopConditionLogic in experiment description)
     and then execute it with numexpr (math-only functions analogue of eval)
     """
-    def __init__(self, experiment):
-        self.logger = logging.getLogger(__name__)
-        self.blocked = False
-        self.experiment = experiment
-        self.expression = self.experiment.description["StopConditionTriggerLogic"]["Expression"]
-        self.stop_condition_states = {}
-        for sc_index in range(0, len(self.experiment.description["StopCondition"])):
-            if re.search(self.experiment.description["StopCondition"][sc_index]["Type"], self.expression):
-                self.stop_condition_states[self.experiment.description["StopCondition"][sc_index]["Type"]] = False
-        self.expression = self.expression.replace("or", "|").replace("and", "&")
+    def __init__(self, experiment_id: str, experiment_description: dict):
         self.event_host = os.getenv("BRISE_EVENT_SERVICE_HOST")
         self.event_port = os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
+                        os.getenv("BRISE_DATABASE_PORT"), 
+                        os.getenv("BRISE_DATABASE_NAME"),
+                        os.getenv("BRISE_DATABASE_USER"),
+                        os.getenv("BRISE_DATABASE_PASS"))
+
+        self.experiment_id = experiment_id
+        self.logger = logging.getLogger(__name__)
+        self.blocked = False
+        self.expression = experiment_description["StopConditionTriggerLogic"]["Expression"]
+        self.stop_condition_states = {}
+        for sc_index in range(0, len(experiment_description["StopCondition"])):
+            if re.search(experiment_description["StopCondition"][sc_index]["Type"], self.expression):
+                self.stop_condition_states[experiment_description["StopCondition"][sc_index]["Type"]] = False
+        self.expression = self.expression.replace("or", "|").replace("and", "&")
         self.repetition_interval = datetime.timedelta(**{
-            self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-                self.experiment.description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
-        }).total_seconds()
+                experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
+                experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
+                }).total_seconds()
         self.listen_thread = EventServiceConnection(self)
         self.listen_thread.start()
         self.thread = threading.Thread(target=self.self_evaluation, args=())
@@ -54,9 +63,15 @@ class StopConditionValidator:
             counter = counter + 1
             if counter % 10 == 0:
                 counter = 0
-                if len(self.experiment.measured_configurations) > 0:
-                    search_space_size = self.experiment.search_space.get_search_space_size()
-                    if len(self.experiment.measured_configurations) >= search_space_size and not self.blocked:
+                last_experiment_state = self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)
+                if last_experiment_state is not None:
+                    numb_of_measured_configurations = last_experiment_state["Number_of_measured_configs"]
+                else:
+                    numb_of_measured_configurations = 0
+                    self.logger.warning(f"No Experiment state is yet available for the experiment {self.experiment_id}")    
+                if numb_of_measured_configurations > 0:
+                    search_space_size = self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
+                    if numb_of_measured_configurations >= search_space_size and not self.blocked:
                         self.blocked = True
                         msg = "Entire Search Space was measured. Stopping the Experiment."
                         self.logger.info(msg)
