@@ -27,11 +27,11 @@ def launch_stop_condition_threads(experiment_id: str):
     logger.debug(f"Assigned Stop Condition validator.")
 
     for sc in parameters:
-        if sc["Type"] in experiment_description["StopConditionTriggerLogic"]["Expression"]:
+        sc_name = sc["Name"]
+        sc_type = sc["Type"]
+        if sc["Name"] in experiment_description["StopConditionTriggerLogic"]["Expression"]:
             stop_condition_class = reflective_class_import(class_name=sc["Type"], folder_path="stop_condition")
             stop_condition_class(sc, experiment_description, experiment_id)
-            msg = sc["Type"]
-            logger.debug(f"Assigned {msg} Stop Condition.")
+            logger.debug(f"Assigned {sc_name} Stop Condition of type {sc_type}.")
         else:
-            msg = sc["Type"]
-            logger.warning(f"{msg} is not used in StopConditionTriggerLogic definition and will be ignored!")
+            logger.warning(f"{sc_name} is not used in StopConditionTriggerLogic definition and will be ignored!")

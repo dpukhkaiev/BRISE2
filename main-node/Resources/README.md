@@ -86,7 +86,8 @@ The intent of the Repetition Manager is to ensure statistical significance of ea
 - `StopConditionTriggerLogic` - The user could specify any logic of BRISE Experiment termination by composing the operands 
 `and`, `or`, brackets `(` `)` and names of Stop Conditions into a single expression.
 - `StopCondition` - termination criteria of BRISE Experiment.
-    - `Stop Condition Name` - `String` Strategy used for BRISE Experiment termination. *Variants (with parameters)*
+    - `Stop Condition Name` - `String` Name of the Stop Condition which plays roll of an ID. Should be unique.  
+    - `Stop Condition Type` - `String` Strategy used for BRISE Experiment termination. *Variants (with parameters)*
         - `QuantityBased` - `String` Stop when the specified number of configuration was measured.
             `MaxConfigs` - `Int` Maximum number of measured configurations. 
         - `ValidationBased` - `String` Stop if the valid model was built.

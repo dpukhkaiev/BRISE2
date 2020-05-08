@@ -61,7 +61,7 @@ class TestInitialConfig:
         # Note: SettingsBRISE.json is not enough to pass the scheme. File is treated as invalid. Both (settings and ED) must be provided
         # Expected result: experiment description is invalid, error is raised
         input_description = load_json_file("./Resources/SettingsBRISE.json")
-        expected_result = "Provided Experiment Description has not passed the validation using schema in file"
+        expected_result = "Some errors caused during validation. Please, check the Experiment Description."
         with pytest.raises(ValueError) as excinfo:
             validate_experiment_description(input_description)
         assert expected_result in str(excinfo.value)

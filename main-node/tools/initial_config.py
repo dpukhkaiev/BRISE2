@@ -3,7 +3,7 @@ __doc__ = """
 import logging
 
 from tools.file_system_io import load_json_file
-from tools.json_validator import is_json_file_valid
+from tools.json_validator import is_json_file_valid, get_duplicated_sc_names, get_missing_sc_entities
 from tools.front_API import API
 from core_entities.search_space import SearchSpace
 
@@ -40,14 +40,26 @@ def validate_experiment_description(experiment_description: dict,
     :return:
     """
     logger = logging.getLogger(__name__)
-
-    if is_json_file_valid(validated_data=experiment_description, schema_path=schema_file_path):
-        logger.info("Provided Experiment Description is valid.")
-    else:
-        msg = "Provided Experiment Description has not passed the validation using schema in file %s. " \
-              "Experiment description: \n%s" % (schema_file_path, experiment_description)
+    validity_check = is_json_file_valid(validated_data=experiment_description, schema_path=schema_file_path)
+    uniqueness_check = get_duplicated_sc_names(experiment_description)
+    presence_check = get_missing_sc_entities(experiment_description)
+    if not validity_check:
+        msg = f"Provided Experiment Description has not passed the validation using schema in file {schema_file_path}."
+        logger.error(msg)
+        API().send('log', 'error', message=msg) 
+    if uniqueness_check:
+        msg = f"Some Stop Condition instances are duplicated: {uniqueness_check}."
         logger.error(msg)
         API().send('log', 'error', message=msg)
+    if presence_check:
+        msg = f"Some Stop Conditions defined in Stop Condition Trigger Logic expression are missing: {presence_check}."
+        logger.error(msg)
+        API().send('log', 'error', message=msg)
+    
+    if validity_check and not uniqueness_check and not presence_check:
+        logger.info("Provided Experiment Description is valid.")
+    else:
+        msg = "Some errors caused during validation. Please, check the Experiment Description."
         raise ValueError(msg)
 
 def validate_experiment_data(experiment_data: dict,

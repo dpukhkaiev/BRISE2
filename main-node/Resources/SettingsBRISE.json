@@ -90,28 +90,33 @@
   },
   "StopCondition":[
     {
+      "Name": "QuantityBased",
       "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
       }
     },
     {
+      "Name": "ImprovementBased",
       "Type": "ImprovementBased",
       "Parameters": {
         "MaxConfigsWithoutImprovement": 5
       }
     },
     {
+      "Name": "Guaranteed",
       "Type": "Guaranteed",
       "Parameters": {      }
     },
     {
+      "Name": "BadConfigurationBased",
       "Type": "BadConfigurationBased",
       "Parameters": {
         "MaxBadConfigurations": 10
       }
     },
     {
+      "Name": "TimeBased",
       "Type": "TimeBased",
       "Parameters": {
         "MaxRunTime": 10,
@@ -119,6 +124,7 @@
       }
     },
     {
+      "Name": "ValidationBased",
       "Type": "ValidationBased",
       "Parameters": {      }
     }

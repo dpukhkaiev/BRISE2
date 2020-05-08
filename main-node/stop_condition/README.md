@@ -4,7 +4,7 @@
 When you specify a Stop Condition in the Experiment description file `stop_condition_selector.py` reads the description
  and builds Stop Condition modules. 
 
-Each Stop Condition (except TimeBased) periodically performs self-validation according to a user-defined repetition 
+Each Stop Condition periodically performs self-validation according to a user-defined repetition 
 interval. Stop Condition Validator orchestrates all Stop Conditions. Connection between them is implemented through events. 
 
 The user could specify any logic of BRISE Experiment termination by composing operands `and`, `or`, brackets `(` `)` 
@@ -22,6 +22,19 @@ Example of `StopConditionTriggerLogic` block:
     }
 }
 ```
+## Stop Condition "Name" and "Type" parameters
+
+#### Name
+
+"Name" reflects Stop Condition ID. Each name should be unique. You could use any combination of letters, numericals and special symbols to define name. 
+
+##### Hint: Use meaningful name which consists of Stop Condition type and Stop Condition parameters.
+For example "Name": "TimeBased10m" which reflects "TimeBased" Stop Condition with 10 minutes timeout.
+
+#### Type
+
+"Type" reflects BRISE Experiment termination strategy with own parameter set. Each type is designed to spot different trigger events. You could use only predefined set of types. Any other type will cause an error, and the experiment will be terminated.
+All Stop Condition types are described in the section below.
 
 ## Variants of Stop Condition configurations
 
@@ -32,6 +45,7 @@ This Stop Condition is satisfied, when the number of overall measured Configurat
 ```json
 "StopCondition":[
     {
+      "Name": "QuantityBased",
       "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
@@ -47,6 +61,7 @@ This Stop Condition is satisfied, when a better Configuration than the Default C
 ```json
 "StopCondition":[
     {
+      "Name": "Guaranteed",
       "Type": "Guaranteed",
       "Parameters": {      }
     }
@@ -61,6 +76,7 @@ This Stop Condition is satisfied, when a better Configuration was not found afte
 ```json
 "StopCondition":[
     {
+      "Name": "ImprovementBased",
       "Type": "ImprovementBased",
       "Parameters": {
         "MaxConfigsWithoutImprovement": 5
@@ -77,6 +93,7 @@ This percentage can be specified by `StopCondition["SearchSpacePercentage"]` par
 ```json
 "StopCondition":[
     {
+      "Name": "Adaptive",
       "Type": "Adaptive",
       "Parameters": {
         "SearchSpacePercentage": 15
@@ -93,6 +110,7 @@ Based Stop Condition.
 ```json
 "StopCondition":[
     {
+      "Name": "BadConfigurationBased",
       "Type": "BadConfigurationBased",
       "Parameters": {
         "MaxBadConfigurations": 10
@@ -110,6 +128,7 @@ that represent time value and time unit (seconds, minutes, etc.) respectively.
 ```json
 "StopCondition":[
     {
+      "Name": "TimeBased",
       "Type": "TimeBased",
       "Parameters": {
         "MaxRunTime": 10,
@@ -126,6 +145,7 @@ This Stop Condition is satisfied, when the model created during BRISE runtime is
 ```json
 "StopCondition":[
     {
+      "Name": "ValidationBased",
       "Type": "ValidationBased",
       "Parameters": {      }
     }
@@ -144,34 +164,40 @@ This Stop Condition is satisfied, when the model created during BRISE runtime is
   },
 "StopCondition":[
     {
+      "Name": "QuantityBased",
       "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
       }
     },
     {
+      "Name": "ImprovementBased",
       "Type": "ImprovementBased",
       "Parameters": {
         "MaxConfigsWithoutImprovement": 5
       }
     },
     {
+      "Name": "Guaranteed",
       "Type": "Guaranteed",
       "Parameters": {      }
     },
     {
+      "Name": "Adaptive",
       "Type": "Adaptive",
       "Parameters": {
         "SearchSpacePercentage": 15
       }
     },
     {
+      "Name": "BadConfigurationBased",
       "Type": "BadConfigurationBased",
       "Parameters": {
         "MaxBadConfigurations": 10
       }
     },
     {
+      "Name": "TimeBased",
       "Type": "TimeBased",
       "Parameters": {
         "MaxRunTime": 10,
@@ -179,6 +205,7 @@ This Stop Condition is satisfied, when the model created during BRISE runtime is
       }
     },
     {
+      "Name": "ValidationBased",
       "Type": "ValidationBased",
       "Parameters": {      }
     }

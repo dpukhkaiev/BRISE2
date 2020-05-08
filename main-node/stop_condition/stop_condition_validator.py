@@ -33,8 +33,8 @@ class StopConditionValidator:
         self.expression = experiment_description["StopConditionTriggerLogic"]["Expression"]
         self.stop_condition_states = {}
         for sc_index in range(0, len(experiment_description["StopCondition"])):
-            if re.search(experiment_description["StopCondition"][sc_index]["Type"], self.expression):
-                self.stop_condition_states[experiment_description["StopCondition"][sc_index]["Type"]] = False
+            if re.search(experiment_description["StopCondition"][sc_index]["Name"], self.expression):
+                self.stop_condition_states[experiment_description["StopCondition"][sc_index]["Name"]] = False
         self.expression = self.expression.replace("or", "|").replace("and", "&")
         self.repetition_interval = datetime.timedelta(**{
                 experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
@@ -44,13 +44,6 @@ class StopConditionValidator:
         self.listen_thread.start()
         self.thread = threading.Thread(target=self.self_evaluation, args=())
         self.thread.start()
-        try:
-            result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
-        except KeyError:
-            temp_msg = ("Some required in StopConditionTriggerLogic expression Stop Condition blocks were undetected. "
-                        "Experiment will be stopped in a few seconds. Please, check your experiment description.")
-            self.logger.error(temp_msg)
-            self.stop_experiment_due_to_failed_sc_creation()
 
     def self_evaluation(self):
         """
@@ -117,21 +110,7 @@ class StopConditionValidator:
         :param body: empty
         """
         self.listen_thread.stop()
-        self.thread_is_active = False
-
-    def stop_experiment_due_to_failed_sc_creation(self):
-        """
-        This function sends stop_experiment message to main node. It could be triggered only if
-        Stop Condition initialization fails.
-        """
-        with pika.BlockingConnection(
-                pika.ConnectionParameters(host=self.event_host,
-                                        port=self.event_port)) as connection:
-            with connection.channel() as channel:
-                channel.basic_publish(exchange='',
-                                        routing_key='stop_experiment_queue',
-                                        body="")
-
+        self.blocked = True
 
 class EventServiceConnection(threading.Thread):
     """

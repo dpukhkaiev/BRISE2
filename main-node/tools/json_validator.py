@@ -1,3 +1,4 @@
+import re
 from os.path import abspath
 import logging
 
@@ -33,6 +34,37 @@ def is_json_file_valid(validated_data: dict, schema_path):
         logging.getLogger(__name__).error(error)
         return False
 
+def get_duplicated_sc_names(validated_data: dict):
+    """
+    Validates if all Stop Condition names are unique.
+    :validated_data: dict. Dictionary for validation.
+    :return: list of duplicates.
+    """
+    sc_names = []
+    for sc in validated_data["StopCondition"]:
+        sc_names.append(sc["Name"])
+    duplicates = []
+    if len(sc_names) > len(set(sc_names)):
+        duplicates = set([x for x in sc_names if sc_names.count(x) > 1])
+    return duplicates
+
+def get_missing_sc_entities(validated_data: dict):
+    """
+    Validates if all Stop Conditions defined in the Stop Condition Trigger Logic expression 
+    are present in the Experiment Description.
+    :validated_data: dict. Dictionary for validation.
+    :return: list of missing Stop Conditions.
+    """
+    sc_names = []
+    for sc in validated_data["StopCondition"]:
+        sc_names.append(sc["Name"])
+    expression = validated_data["StopConditionTriggerLogic"]["Expression"]
+    expression_components = re.sub("[^\w]", " ",  expression).split()
+    missing_components = []
+    for component in expression_components:
+        if component != "and" and component != "or" and component not in sc_names:
+            missing_components.append(component)
+    return missing_components
 
 if __name__ == "__main__":
     # Basic unit test - load EnergyExperiment and check if it valid (should be valid).

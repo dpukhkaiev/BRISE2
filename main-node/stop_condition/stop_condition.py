@@ -23,9 +23,9 @@ class StopCondition(ABC):
                         os.getenv("BRISE_DATABASE_PASS"))
 
         self.experiment_id = experiment_id
-        self.stop_condition_type = stop_condition_parameters["Type"]
+        self.stop_condition_type = stop_condition_parameters["Name"]
         self.decision = False
-        self.logger = logging.getLogger(stop_condition_parameters["Type"])
+        self.logger = logging.getLogger(stop_condition_parameters["Name"])
         self.repetition_interval = datetime.timedelta(**{
                 experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: 
                 experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]
