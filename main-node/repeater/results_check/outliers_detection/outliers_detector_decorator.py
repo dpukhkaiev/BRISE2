@@ -1,6 +1,6 @@
 import logging
 
-from outliers.outliers_detector import OutlierDetector
+from repeater.results_check.outliers_detection.outliers_detector import OutlierDetector
 
 
 class OutliersDetectionDecorator(OutlierDetector):

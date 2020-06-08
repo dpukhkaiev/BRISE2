@@ -38,7 +38,7 @@
         }
       },
       {
-        "Type": "MAD",
+        "Type": "Mad",
         "Parameters": {
           "MinActiveNumberOfTasks": 3,
           "MaxActiveNumberOfTasks": 10000
@@ -61,7 +61,7 @@
     ]
   },
   "Repeater":{
-    "Type": "student_deviation",
+    "Type": "AcceptableErrorBased",
     "Parameters": {
       "MaxFailedTasksPerConfiguration": 5,
       "MaxTasksPerConfiguration": 10,

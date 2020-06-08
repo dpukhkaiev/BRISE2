@@ -1,9 +1,9 @@
 import numpy as np
 
-from outliers.outliers_detector_decorator import OutliersDetectionDecorator
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 
 
-class MAD(OutliersDetectionDecorator):
+class Mad(OutliersDetectionDecorator):
     
     def __init__(self, outlier_detector, parameters):
         super().__init__(outlier_detector, __name__, parameters)

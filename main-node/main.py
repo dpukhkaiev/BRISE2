@@ -4,6 +4,7 @@ Main module for running BRISE configuration balancing."""
 import logging
 import pika
 import os
+import json
 import threading
 import os
 import pickle
@@ -17,7 +18,7 @@ filterwarnings("ignore")  # disable warnings for demonstration.
 
 from WorkerServiceClient.WSClient_events import WSClient
 from model.model_selection import get_model
-from repeater.repeater import Repeater
+from repeater.repeater_selector import RepeaterOrchestration
 from tools.initial_config import load_experiment_setup, validate_experiment_description
 from tools.front_API import API
 from selection.selection_algorithms import get_selector
@@ -59,7 +60,7 @@ class MainThread(threading.Thread):
         sampled for evaluation (respectively, the queues for Configuration measurement results initializes).
         """
         self.sub = API()  # subscribers
-
+        logging.getLogger("pika").setLevel(logging.WARNING)
         if __name__ == "__main__":
             self.logger = BRISELogConfigurator().get_logger(__name__)
         else:
@@ -119,22 +120,22 @@ class MainThread(threading.Thread):
         # Create and launch Stop Condition services in separate threads.
         launch_stop_condition_threads(self.experiment.unique_id)
         # Creating instance of selector algorithm, according to specified in experiment description type.
-        self.selector = get_selector(experiment=self.experiment)
+
 
         # Instantiate client for Worker Service, establish connection.
         # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
         # (task.json)
-
-        self.worker_service_client = WSClient(self.experiment.description["TaskConfiguration"],
-                                              os.getenv("BRISE_EVENT_SERVICE_HOST"),
-                                              os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"),
-                                              logfile='%s%s_WSClient.csv' % (
-                                                  self.experiment.description["General"]['results_storage'],
-                                                  self.experiment.get_name()))
+        self.selector = get_selector(experiment=self.experiment)
+        WSClient(self.experiment.description["TaskConfiguration"],
+                    os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                    os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"),
+                    logfile='%s%s_WSClient.csv' % (
+                        self.experiment.description["General"]['results_storage'],
+                        self.experiment.get_name()))
 
         # Initialize Repeater - encapsulate Configuration evaluation process to avoid results fluctuations.
         # (achieved by multiple Configuration evaluations on Workers - Tasks)
-        self.repeater = Repeater(self.worker_service_client, self.experiment)
+        RepeaterOrchestration(self.experiment)
 
         self.default_config_handler = get_default_config_handler(self.experiment)
         temp_msg = "Measuring default Configuration."
@@ -146,9 +147,16 @@ class MainThread(threading.Thread):
                                            on_message_callback=self.get_configurations_results)
         self.consume_channel.basic_consume(queue='stop_experiment_queue', auto_ack=True,
                                            on_message_callback=self.stop)
-        default_configuration = self.default_config_handler.get_default_config()
+        self.consume_channel.basic_consume(queue="get_new_configuration_queue", auto_ack=True,
+                                           on_message_callback=self.send_new_configurations_to_measure)
 
-        self.repeater.measure_configurations([default_configuration])
+        default_configuration = self.default_config_handler.get_default_config()
+        dictionary_dump = {"configuration": default_configuration.to_json()}
+        body = json.dumps(dictionary_dump)
+
+        self.consume_channel.basic_publish(exchange='',
+                                routing_key='measure_new_configuration_queue',
+                                body=body)
         # listen all queues with responses until the _is_interrupted flag is False
         try:
             while not self._is_interrupted:
@@ -174,7 +182,12 @@ class MainThread(threading.Thread):
                 self.sub.send('log', 'info', message="The specified default configuration is broken.")
                 return
             default_configuration = self.default_config_handler.get_default_config()
-            self.repeater.measure_configurations([default_configuration])
+            dictionary_dump = {"configuration": default_configuration.to_json()}
+            body = json.dumps(dictionary_dump)
+
+            self.consume_channel.basic_publish(exchange='',
+                                routing_key='measure_new_configuration_queue',
+                                body=body)
         if self.experiment.is_configuration_evaluated(default_configuration):
             # set default configuration for the search space and update search space db record respectively
             self.experiment.search_space.set_default_configuration(default_configuration)
@@ -194,9 +207,11 @@ class MainThread(threading.Thread):
                                                                        self.experiment.description[
                                                                            "ModelConfiguration"][
                                                                            "ModelType"]))
-            self.repeater.set_type(self.experiment.description["Repeater"]["Type"])
+
             # starting main work: building model and choosing configuration for measuring
-            self.send_new_configurations_to_measure()
+            self.consume_channel.basic_publish(exchange='',
+                                routing_key='get_worker_capacity_queue',
+                                body='')
 
     def get_configurations_results(self, ch, method, properties, body):
         """
@@ -213,14 +228,17 @@ class MainThread(threading.Thread):
                 temp_msg = "-- New Configuration was evaluated. Building Target System model."
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
-                self.send_new_configurations_to_measure()
+                self.consume_channel.basic_publish(exchange='',
+                                routing_key='get_worker_capacity_queue',
+                                body='')
 
-    def send_new_configurations_to_measure(self):
+    def send_new_configurations_to_measure(self, ch, method, properties, body):
         """
         The function for building model and choosing configuration for measuring
         """
         # for dynamic parallelization
-        needed_configs = self.worker_service_client.get_number_of_needed_configurations()
+        dictionary_dump = json.loads(body.decode())
+        needed_configs = dictionary_dump["worker_capacity"]
         self.experiment.update_model_state(self.model.validate_model())
         if self.model.build_model() and self.experiment.get_model_state():
             predicted_configurations = self.model.predict_next_configurations(needed_configs)
@@ -230,7 +248,11 @@ class MainThread(threading.Thread):
                     self.logger.info(temp_msg)
                     self.sub.send('log', 'info', message=temp_msg)
                     # TODO: Remove possibility to work with bunch of Configurations in Repeater
-                    self.repeater.measure_configurations([conf])
+                    dictionary_dump = {"configuration": conf.to_json()}
+                    body = json.dumps(dictionary_dump)
+                    self.consume_channel.basic_publish(exchange='',
+                                            routing_key='measure_new_configuration_queue',
+                                            body=body)
                     needed_configs -= 1
 
         while needed_configs > 0:
@@ -240,7 +262,11 @@ class MainThread(threading.Thread):
                     temp_msg = f"Randomly sampled {config}."
                     self.logger.info(temp_msg)
                     self.sub.send('log', 'info', message=temp_msg)
-                    self.repeater.measure_configurations([config])
+                    dictionary_dump = {"configuration": config.to_json()}
+                    body = json.dumps(dictionary_dump)
+                    self.consume_channel.basic_publish(exchange='',
+                                            routing_key='measure_new_configuration_queue',
+                                            body=body)
                     needed_configs -= 1
             else:
                 self.logger.warning("Whole Search Space is evaluated. Waiting for Stop Condition decision.")
@@ -248,16 +274,14 @@ class MainThread(threading.Thread):
 
     def stop(self, ch = None, method = None, properties = None, body = None):
         """
-        The function for stop main thread externaly (e.g. from front-end)
+        The function for stop main thread externally (e.g. from front-end)
         """
         with self.conf_lock:
             self._state = self.State.SHUTTING_DOWN
             self._is_interrupted = True
             self.consume_channel.basic_publish(exchange='brise_termination_sender', routing_key='', body='')
-            self.worker_service_client.stop()
-            self.repeater.stop()
             self.sub.send('log', 'info', message="Solution validation success!")
-            optimal_configuration = self.experiment.get_final_report_and_result(self.repeater)
+            optimal_configuration = self.experiment.get_final_report_and_result()
             self._state = self.State.IDLE
             return optimal_configuration
 

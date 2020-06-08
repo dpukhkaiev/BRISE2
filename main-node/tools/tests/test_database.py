@@ -78,16 +78,21 @@ class TestDatabase:
             records.append(config.get_configuration_record(experiment.unique_id))
         database.write_many_records("Measured_configurations", records)
         written_records = database.get_all_records("Measured_configurations")
-        assert c1.unique_id in [written_records[0]["Configuration_ID"], written_records[1]["Configuration_ID"]]
-        assert c2.unique_id in [written_records[0]["Configuration_ID"], written_records[1]["Configuration_ID"]]
-        assert experiment.unique_id == written_records[0]["Exp_unique_ID"] == written_records[1]["Exp_unique_ID"]
+        configuration_ids = []
+        experiment_ids = []
+        for record in written_records:
+            configuration_ids.append(record["Configuration_ID"])
+            experiment_ids.append(record["Exp_unique_ID"])
+        assert c1.unique_id in configuration_ids
+        assert c2.unique_id in configuration_ids
+        assert experiment.unique_id in experiment_ids
 
     def test_4_write_task_record(self):
         # Test #4. Format and write Task record to the database
         # Expected result: record can be read from the database. 
         # Task belongs to the expected configuration and has expected task ID
         c1 = Configuration(["dummy"], Configuration.Type.DEFAULT)
-        task = {'task id': 'id', 'worker': 'worker', 'result': {'PREC_AT_99_REC': 0.9}, 'ResultValidityCheckMark': 'OK'}
+        task = {'task id': 'id', 'worker': 'worker', 'result': {'energy': 0.9}, 'ResultValidityCheckMark': 'OK'}
         c1.add_tasks(task)
         database.write_one_record("Tasks", c1.get_task_record(task))
         written_record = database.get_all_records("Tasks")[0]

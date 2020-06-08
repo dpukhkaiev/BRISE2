@@ -87,19 +87,22 @@ class StopConditionValidator:
         :return: result of SC validation according to user-defined pattern.
         """
         dictionary_dump = json.loads(body.decode())
-        self.stop_condition_states[dictionary_dump["stop_condition_type"]] = dictionary_dump["decision"]
-        result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
-        if result and not self.blocked:
-            self.blocked = True
-            msg = "Stop Condition(s) was reached. Stopping the Experiment."
-            self.logger.info(msg)
-            with pika.BlockingConnection(
-                    pika.ConnectionParameters(host=self.event_host,
-                                            port=self.event_port)) as connection:
-                with connection.channel() as channel:
-                    channel.basic_publish(exchange='',
-                                                routing_key='stop_experiment_queue',
-                                                body='')
+        if dictionary_dump["experiment_id"] == self.experiment_id:
+            self.stop_condition_states[dictionary_dump["stop_condition_type"]] = dictionary_dump["decision"]
+            result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
+            if result and not self.blocked:
+                self.blocked = True
+                msg = "Stop Condition(s) was reached. Stopping the Experiment."
+                self.logger.info(msg)
+                dictionary_dump = {"experiment_id": self.experiment_id}
+                body = json.dumps(dictionary_dump)
+                with pika.BlockingConnection(
+                        pika.ConnectionParameters(host=self.event_host,
+                                                port=self.event_port)) as connection:
+                    with connection.channel() as channel:
+                        channel.basic_publish(exchange='',
+                                                    routing_key='stop_experiment_queue',
+                                                    body=body)
 
     def stop_thread(self, ch, method, properties, body):
         """

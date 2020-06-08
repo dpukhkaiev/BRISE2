@@ -5,18 +5,18 @@
     "description": "Approach for configuration variance reduction.",
 
     "definitions": {
-        "Default": {
-            "title": "Default.",
-            "description": "Evaluates Configuration MaxTasksPerConfiguration times. Good for default Configuration estimation.",
+        "QuantityBased": {
+            "title": "QuantityBased.",
+            "description": "Evaluates Configuration MaxTasksPerConfiguration times.",
             "type": "object",
             "properties": {
                 "Type": {
                     "type": "string",
-                    "enum": ["default"]
+                    "enum": ["QuantityBased"]
                 },
                 "Parameters":{
                     "type": "object",
-                    "description": "Configuration used in Default Repeater.",
+                    "description": "Configuration used in QuantityBased Repeater.",
                     "properties":{
                         "MaxFailedTasksPerConfiguration": {
                             "description": "Maximum number of failed tasks per each Configuration.",
@@ -42,18 +42,18 @@
             ],
             "additionalProperties": false
         },
-        "Student": {
-            "title": "Student Deviation.",
-            "description": "Checks the overall absolute deviation between Tasks and takes into account Configuration quality (how it close to default / current best Configuration). Good for further Configuration estimation.",
+        "AcceptableErrorBased": {
+            "title": "AcceptableErrorBased.",
+            "description": "Checks the overall absolute deviation between Tasks and takes into account Configuration quality (how it close to default / current best Configuration).",
             "type": "object",
             "properties": {
                 "Type": {
                     "type": "string",
-                    "enum": ["student_deviation"]
+                    "enum": ["AcceptableErrorBased"]
                 },
                 "Parameters": {
                     "type": "object",
-                    "description": "Configuration used in Student Repeater.",
+                    "description": "Configuration used in AcceptableErrorBased Repeater.",
                     "properties":{
                         "MaxFailedTasksPerConfiguration": {
                             "description": "Maximum number of failed tasks per each Configuration.",

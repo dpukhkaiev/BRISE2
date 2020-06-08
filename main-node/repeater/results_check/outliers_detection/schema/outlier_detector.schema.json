@@ -22,7 +22,7 @@
                         "properties": {
                             "Type": {
                                 "type": "string",
-                                "enum": ["Dixon", "Chauvenet", "MAD", "Grubbs", "Quartiles"]
+                                "enum": ["Dixon", "Chauvenet", "Mad", "Grubbs", "Quartiles"]
                             },
                             "Parameters":{
                                 "type": "object",

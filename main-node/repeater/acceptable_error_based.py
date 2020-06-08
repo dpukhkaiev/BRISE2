@@ -1,39 +1,39 @@
-import numpy as np
 from math import exp, sqrt
 from scipy.stats import t
 
-from repeater.default import DefaultType
+from repeater.repeater import Repeater
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 
 
-class StudentDeviationType(DefaultType):
+class AcceptableErrorBasedType(Repeater):
     """
         Repeats each Configuration until results for reach acceptable accuracy,
     the quality of each Configuration (better Configuration - better quality)
     and deviation of all Tasks are taken into account.
     """
-    def __init__(self, repeater_configuration: dict):
+    def __init__(self, experiment: Experiment, repeater_configuration: dict):
         """
         :param repeater_configuration: RepeaterConfiguration part of experiment description
         """
-        super().__init__(repeater_configuration)
+        super().__init__(experiment)
+        self.max_tasks_per_configuration = repeater_configuration["Parameters"]["MaxTasksPerConfiguration"]
 
-        if self.max_tasks_per_configuration < repeater_configuration["MinTasksPerConfiguration"]:
+        if self.max_tasks_per_configuration < repeater_configuration["Parameters"]["MinTasksPerConfiguration"]:
             raise ValueError("Invalid configuration of Repeater provided: MinTasksPerConfiguration(%s) "
                              "is greater than ManTasksPerConfiguration(%s)!" %
-                             (self.max_tasks_per_configuration, repeater_configuration["MinTasksPerConfiguration"]))
-        self.min_tasks_per_configuration = repeater_configuration["MinTasksPerConfiguration"]
+                             (self.max_tasks_per_configuration, repeater_configuration["Parameters"]["MinTasksPerConfiguration"]))
+        self.min_tasks_per_configuration = repeater_configuration["Parameters"]["MinTasksPerConfiguration"]
 
-        self.base_acceptable_errors = repeater_configuration["BaseAcceptableErrors"]
-        self.confidence_levels = repeater_configuration["ConfidenceLevels"]
-        self.device_scale_accuracies = repeater_configuration["DevicesScaleAccuracies"]
-        self.device_accuracy_classes = repeater_configuration["DevicesAccuracyClasses"]
-        self.is_experiment_aware = repeater_configuration["ExperimentAwareness"]["isEnabled"]
+        self.base_acceptable_errors = repeater_configuration["Parameters"]["BaseAcceptableErrors"]
+        self.confidence_levels = repeater_configuration["Parameters"]["ConfidenceLevels"]
+        self.device_scale_accuracies = repeater_configuration["Parameters"]["DevicesScaleAccuracies"]
+        self.device_accuracy_classes = repeater_configuration["Parameters"]["DevicesAccuracyClasses"]
+        self.is_experiment_aware = repeater_configuration["Parameters"]["ExperimentAwareness"]["isEnabled"]
 
         if self.is_experiment_aware:
-            self.ratios_max = repeater_configuration["ExperimentAwareness"]["RatiosMax"]
-            self.max_acceptable_errors = repeater_configuration["ExperimentAwareness"]["MaxAcceptableErrors"]
+            self.ratios_max = repeater_configuration["Parameters"]["ExperimentAwareness"]["RatiosMax"]
+            self.max_acceptable_errors = repeater_configuration["Parameters"]["ExperimentAwareness"]["MaxAcceptableErrors"]
             if not all(b_e <= m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
@@ -54,6 +54,7 @@ class StudentDeviationType(DefaultType):
 
         elif len(tasks_data) < self.min_tasks_per_configuration:
             if self.is_experiment_aware:
+                # TODO: issue #140
                 ratios = [cur_config_dim / cur_solution_dim for cur_config_dim, cur_solution_dim in zip(average_result, current_solution)]
                 if all([ratio >= ratio_max for ratio, ratio_max in zip(ratios, self.ratios_max)]):
                     return 0

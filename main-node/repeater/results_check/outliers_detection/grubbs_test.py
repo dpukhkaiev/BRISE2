@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import t, zscore
 
-from outliers.outliers_detector_decorator import OutliersDetectionDecorator
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 
 
 class Grubbs(OutliersDetectionDecorator):

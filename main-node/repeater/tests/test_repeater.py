@@ -1,64 +1,99 @@
 import os
+import json
 
-from pytest import approx  # default is ± 2.3e-06
-from repeater.repeater import Repeater
-from WorkerServiceClient.WS_stub import WSClient_Stub
+from repeater.repeater_selector import RepeaterOrchestration
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
-from tools.initial_config import load_experiment_setup
+from core_entities.search_space import SearchSpace
 
 os.environ["TEST_MODE"] = 'UNIT_TEST'
-DESCRIPTION_NB, SEARCH_SPACE_NB = load_experiment_setup(
-    exp_desc_file_path="Resources/MLExperiments/NB/NBExperiment.json")
-DESCRIPTION_ENERGY, SEARCH_SPACE_ENERGY = load_experiment_setup(exp_desc_file_path="Resources/EnergyExperiment.json")
-DESCRIPTION_ENERGY["TaskConfiguration"]["Scenario"]["ws_file"] = "search_space_96/Radix-500mio_avg.csv"
-DESCRIPTION_NB["TaskConfiguration"]["Scenario"]["ws_file"] = "NB_final_result.csv"
 
 
-def measure_task(task_parameters, description, search_space):
-    WSClient_exp = WSClient_Stub(description["TaskConfiguration"], os.getenv("BRISE_EVENT_SERVICE_HOST"),
-                                 os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"), 'TEST_WSClient_results.csv')
-    experiment = Experiment(description, search_space)
+def test_0(get_sample):
+    # New Default Configuration
+    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 0, Configuration.Type.DEFAULT, Configuration.Status.NEW)
+
+    assert configuration.status == Configuration.Status.EVALUATED
+    assert needed_tasks_count > 0
+
+def test_1(get_sample):
+    # Measured Default Configuration
+    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 10, Configuration.Type.DEFAULT, Configuration.Status.EVALUATED)
+
+    assert configuration.status == Configuration.Status.MEASURED
+    assert needed_tasks_count == 0
+
+def test_2(get_sample):
+    # New Predicted Configuration
+    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 0, Configuration.Type.PREDICTED, Configuration.Status.NEW)
+
+    assert configuration.status == Configuration.Status.EVALUATED
+    assert needed_tasks_count > 0
+
+def test_3(get_sample):
+    # Measured Predicted configuration with low relative error in measurings.
+    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 2, Configuration.Type.PREDICTED, Configuration.Status.EVALUATED)
+
+    assert configuration.status == Configuration.Status.MEASURED
+    assert needed_tasks_count == 0
+
+def test_4(get_sample):
+    # Measured Predicted configuration with high relative error in measurings.
+    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 8, Configuration.Type.PREDICTED, Configuration.Status.EVALUATED)
+
+    assert configuration.status == Configuration.Status.REPEATED_MEASURING
+    assert needed_tasks_count > 0
+
+def test_5(get_sample):
+    # Measured Predicted configuration with number of measured tasks = threshold.
+    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 10, Configuration.Type.PREDICTED, Configuration.Status.EVALUATED)
+
+    assert configuration.status == Configuration.Status.MEASURED
+    assert needed_tasks_count == 0
+
+
+def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict, search_space: SearchSpace, measured_tasks: int, config_type: Configuration.Type, config_status: Configuration.Status):
+    """
+    Test function for Repeater module.
+    Main steps:
+    0. Take default tasks sample.
+    1. Create instances of Repeater, Experiment, Default Configuration according to test requirements.
+    2. Create instance of current measurement.
+    3. Call Repeater function. 
+
+    :param configurations_sample: default sample of measured configurations
+    :param tasks_sample: default sample of measured tasks
+    :param experiment_description: Experiment Description sample in json format
+    :param search_space: Search Space sample
+    :param measured_tasks: specify number of measured tasks in current measurement.
+    :param config_type: specify current measurement configuration type.
+    :param config_status: specify current measurement configuration status.
+
+    :return: list of configuration status and number of tasks to measure.
+    """
+    experiment = Experiment(experiment_description, search_space)
     Configuration.set_task_config(experiment.description["TaskConfiguration"])
-    configuration1 = Configuration(task_parameters[0], Configuration.Type.TEST)
-    configuration2 = Configuration(task_parameters[1], Configuration.Type.TEST)
-    repeater = Repeater(WSClient_exp, experiment)
-    task = [configuration1, configuration2]
+    configuration = Configuration(configurations_sample[1]["Params"], config_type)
+    configuration.status = config_status
+    for i in range(0, measured_tasks):
+        configuration.add_tasks(tasks_sample[i])
+    orchestrator = RepeaterOrchestration(experiment)
+    if config_type == Configuration.Type.DEFAULT:
+        orchestrator._type = orchestrator.get_repeater(True)
+    else:
+        orchestrator._type = orchestrator.get_repeater()
+        default_configuration = Configuration(configurations_sample[0]["Params"], Configuration.Type.DEFAULT)
+        default_configuration.status = Configuration.Status.MEASURED
+        default_configuration._task_amount = configurations_sample[0]["Tasks"]
+        default_configuration._average_result = configurations_sample[0]["Avg.result"]
+        default_configuration._standard_deviation = configurations_sample[0]["STD"]
+        experiment.put_default_configuration(default_configuration)
+    task = json.dumps({"configuration": configuration.to_json()})
 
-    results_measurement = repeater.measure_configurations(task)
-    results_configurations = []
-    for key in results_measurement:
-        configuration = Configuration.from_json(results_measurement[key]["configuration"])
-        results_WO_outliers = repeater.outlier_detectors.find_outliers_for_taskset(
-            results_measurement[key]["tasks_results"],
-            repeater._result_structure,
-            [configuration],
-            results_measurement[key]["tasks_to_send"])
-        for parameters, task in zip(results_measurement[key]["tasks_to_send"], results_WO_outliers):
-            configuration.add_tasks(task)
-        results_configurations.append(configuration)
+    dummy_channel = None
+    dummy_method = None
+    dummy_properties = None
 
-    WSClient_exp.logger.info("Results: %s" % str(WSClient_exp._report_according_to_required_structure()))
-    return results_configurations
+    results_measurement = orchestrator.measure_configurations(dummy_channel, dummy_method, dummy_properties, task)
 
-
-# TODO - must be improve, test function to check WS_stub
-def test_measure_task_energy():
-    task_parameters = [[1200.0, 32], [1900.0, 2]]
-    result_exp = [4357.868, 17449.26]
-
-    result_configurations = measure_task(task_parameters, DESCRIPTION_ENERGY, SEARCH_SPACE_ENERGY)
-
-    assert result_exp[0] == approx(result_configurations[0].get_average_result()[0])
-    assert result_exp[1] == approx(result_configurations[1].get_average_result()[0])
-
-
-def test_measure_task_NB():
-    task_parameters = [[True, 'full', 'heuristic', 0.5, None, None, True, 100],
-                       [True, 'greedy', None, 10, 0.001, 100, False, None]]
-    result_exp = [0.8078, 0.145]
-
-    result_configurations = measure_task(task_parameters, DESCRIPTION_NB, SEARCH_SPACE_NB)
-
-    assert result_exp[0] == approx(result_configurations[0].get_average_result()[0])
-    assert result_exp[1] == approx(result_configurations[1].get_average_result()[0])
+    return results_measurement

@@ -73,8 +73,9 @@ class StopCondition(ABC):
         :param stop_condition_type: Stop Condition identificator
         :param decision: Stop Condition decision (boolean)
         """
-        dictionary_dump = {"stop_condition_type": stop_condition_type,
-                           "decision": decision
+        dictionary_dump = {"experiment_id": self.experiment_id,
+                            "stop_condition_type": stop_condition_type,
+                            "decision": decision
                            }
         body = json.dumps(dictionary_dump)
         with pika.BlockingConnection(

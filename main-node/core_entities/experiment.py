@@ -179,16 +179,17 @@ class Experiment:
         """
         return configuration in self.evaluated_configurations
 
-    def get_final_report_and_result(self, repeater):
+    def get_final_report_and_result(self):
         self.end_time = datetime.datetime.now()
         if self.measured_configurations:
+            performed_measurements = self.database.get_last_record_by_experiment_id("Repeater_measurements", self.unique_id)["Performed_measurements"]
             self.logger.info("\n\nFinal report:")
 
             self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
             for configuration in self.measured_configurations:
                 self.logger.info(configuration)
             self.logger.info("Number of measured Configurations: %s" % len(self.measured_configurations))
-            self.logger.info("Number of Tasks: %s" % repeater.performed_measurements)
+            self.logger.info("Number of Tasks: %s" % performed_measurements)
             self.logger.info("Best found Configuration: %s" % self.get_current_solution())
             self.logger.info("BRISE running time: %s" % str(self.get_running_time()))
 
@@ -202,7 +203,7 @@ class Experiment:
                         configurations=[self.get_current_solution().parameters],
                         results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
                         measured_points=[all_features],
-                        performed_measurements=[repeater.performed_measurements])
+                        performed_measurements=[performed_measurements])
             return self.current_best_configurations
         else:
             self.logger.error('No configuration was measured. Please, check your Experiment Description.')
@@ -401,6 +402,9 @@ class Experiment:
 
     def get_outlier_detectors_parameters(self):
         return self.description["OutliersDetection"]
+
+    def get_repeater_parameters(self):
+        return self.description["Repeater"]
 
     def increment_bad_configuration_number(self):
         self.bad_configurations_number = self.bad_configurations_number + 1

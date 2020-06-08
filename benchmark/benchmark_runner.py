@@ -165,9 +165,9 @@ class BRISEBenchmarkRunner:
         self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/EnergyExperiment.json")
         self._experiment_timeout = 5 * 60
 
-        def_rep_skeleton = {
+        quality_based_repeater_skeleton = {
             "Repeater": {
-                "Type": "default",
+                "Type": "QuantityBased",
                 "Parameters": {
                     "MaxFailedTasksPerConfiguration": 5,
                     "MaxTasksPerConfiguration": 10
@@ -175,9 +175,9 @@ class BRISEBenchmarkRunner:
             }
         }
 
-        student_rep_skeleton = {
+        acceptable_error_based_repeater_skeleton = {
             "Repeater": {
-                "Type": "student_deviation",
+                "Type": "AcceptableErrorBased",
                 "Parameters": {
                     "ExperimentAwareness": {
                         "MaxAcceptableErrors": [50],
@@ -209,18 +209,18 @@ class BRISEBenchmarkRunner:
 
             # benchmarking a quantity-based repeater
             for max_repeat in range(1, 11):
-                experiment_description.update(deepcopy(def_rep_skeleton))
+                experiment_description.update(deepcopy(quality_based_repeater_skeleton))
                 experiment_description['Repeater']['Parameters']["MaxTasksPerConfiguration"] = max_repeat
                 self.execute_experiment(experiment_description)
 
             # benchmarking a quantity-based repeater with an extended number of repetitions
             for max_repeat in [20, 30, 40, 50]:
-                experiment_description.update(deepcopy(def_rep_skeleton))
+                experiment_description.update(deepcopy(quality_based_repeater_skeleton))
                 experiment_description['Repeater']['Parameters']["MaxTasksPerConfiguration"] = max_repeat
                 self.execute_experiment(experiment_description)
 
             # benchmarking an acceptable-error-based repeater with disabled experiment-awareness
-            experiment_description.update(deepcopy(student_rep_skeleton))
+            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
             experiment_description['Repeater']['Parameters']['ExperimentAwareness']["isEnabled"] = False
             # different MaxTasksPerConfiguration
             for MaxTasksPerConfiguration in [10, 50]:
@@ -233,20 +233,20 @@ class BRISEBenchmarkRunner:
                     self.execute_experiment(experiment_description)
 
             # benchmarking an acceptable-error-based repeater with enabled experiment-awareness
-            experiment_description.update(deepcopy(student_rep_skeleton))
+            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
             for BaseAcceptableErrors in [1, 5, 10, 25, 50]:
                 experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
                 self.logger.info("Experiment-aware acceptable-error-based Repeater: Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
                 self.execute_experiment(experiment_description)
 
-            experiment_description.update(deepcopy(student_rep_skeleton))
+            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
             for MaxAcceptableErrors in [25, 50, 75]:
                 experiment_description['Repeater']['Parameters']['ExperimentAwareness']['MaxAcceptableErrors'] = [
                     MaxAcceptableErrors]
                 self.logger.info("Experiment-aware acceptable-error-based Repeater: Changing MaxAcceptableErrors to %s" % MaxAcceptableErrors)
                 self.execute_experiment(experiment_description)
 
-            experiment_description.update(deepcopy(student_rep_skeleton))
+            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
             for RatiosMax in [2, 3, 5, 10, 25]:
                 experiment_description['Repeater']['Parameters']['ExperimentAwareness']['RatiosMax'] = [RatiosMax]
                 self.logger.info("Experiment-aware acceptable-error-based Repeater: Changing RatiosMax to %s" % RatiosMax)

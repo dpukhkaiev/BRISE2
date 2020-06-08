@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import erfc
 
-from outliers.outliers_detector_decorator import OutliersDetectionDecorator
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 
 
 class Chauvenet(OutliersDetectionDecorator):

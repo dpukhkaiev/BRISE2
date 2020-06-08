@@ -45,10 +45,10 @@ from other observations (Tasks) and those bias Configuration measurement results
 - `Repeater` (Repetition Manager) - Results of each Configuration evaluation could not be precise/deterministic. 
 The intent of the Repetition Manager is to ensure statistical significance of each Configuration evaluation by running it several times (Tasks).
     - `Type` - `string` - a type of a Repetition Manager represents a strategy to check the accuracy of the 
-    Configuration measurement. Variants: `default`, `student_deviation`
-        - `default` - evaluates Configuration *MaxTasksPerConfiguration* times. Required parameters:
+    Configuration measurement. Variants: `QuantityBased`, `AcceptableErrorBased`
+        - `QuantityBased` - evaluates Configuration *MaxTasksPerConfiguration* times. Required parameters:
             - `MaxTasksPerConfiguration` - a maximum number of times to evaluate (run) each Configuration.
-        - `student_deviation` - checks the overall absolute deviation between Tasks and takes into account
+        - `AcceptableErrorBased` - checks the overall absolute deviation between Tasks and takes into account
          the Configuration quality (how close it is to the currently best Configuration found). Required parameters:
             - `MinTasksPerConfiguration` - `int` - a minimum number of repetitions to evaluate (run) each Configuration.
             - `MaxTasksPerConfiguration` - `int` - a maximum number of repetitions to evaluate (run) each Configuration.
@@ -70,7 +70,8 @@ The intent of the Repetition Manager is to ensure statistical significance of ea
                 Specified separately for each dimension in a results.
             
     - *To disable the repetition management* (if the target algorithm is deterministic or 
-    Configuration evaluation is considered precise) set `MaxTasksPerConfiguration` equal to `1` and `Type` to `default`.
+    Configuration evaluation is considered precise) set `MaxTasksPerConfiguration` equal to `1` and `Type` to `QuantityBased`.
+    - To get more information on Repetition Manager, please consult with a corresponding [README](./../repeater/README.md)  
  
      
 - `ModelConfiguration` - section with the configuration related to the surrogate prediction model creating process.
@@ -171,7 +172,7 @@ Value - `dictionary` with following key-value pairs.
     }
   ],
   "Repeater":{
-    "Type": "student_deviation",
+    "Type": "AcceptableErrorBased",
     "Parameters": {
       "MaxFailedTasksPerConfiguration": 5,
       "MaxTasksPerConfiguration": 10,
@@ -180,7 +181,7 @@ Value - `dictionary` with following key-value pairs.
       "ConfidenceLevels": [0.95],
       "DevicesScaleAccuracies": [0],
       "DevicesAccuracyClasses": [0],
-      "ExperimentAwareness": {
+      "ExperimentAwareness":{
         "isEnabled": true,
         "MaxAcceptableErrors": [50],
         "RatiosMax": [10]

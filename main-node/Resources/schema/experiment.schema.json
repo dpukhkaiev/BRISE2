@@ -136,16 +136,16 @@
             ]
         },
         "OutliersDetection":{
-            "$ref": "./outliers/schema/outlier_detector.schema.json#/definitions/OutliersDetection"
+            "$ref": "./repeater/results_check/outliers_detection/schema/outlier_detector.schema.json#/definitions/OutliersDetection"
         },
         "Repeater": {
             "description": "Parameters related to Configuration evaluation accuracy.",
             "anyOf": [
                 {
-                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/Default"
+                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/QuantityBased"
                 },
                 {
-                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/Student"
+                    "$ref": "./repeater/schema/repeater.schema.json#/definitions/AcceptableErrorBased"
                 }
             ]
         },
