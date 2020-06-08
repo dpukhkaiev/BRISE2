@@ -1,5 +1,5 @@
 #Front-end dev config
-FROM node
+FROM node:12.17.0
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 

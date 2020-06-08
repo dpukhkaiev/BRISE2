@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: mongo-db
-          image: mongo:latest
+          image: mongo:4.2.7
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               value: admin

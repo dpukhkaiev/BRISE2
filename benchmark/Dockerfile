@@ -10,11 +10,14 @@ RUN groupadd -g $host_gid benchmark_user
 RUN useradd -rm -s /bin/bash -g $host_gid -G sudo -u $host_uid benchmark_user
 RUN usermod -aG sudo benchmark_user
 
-RUN apt -qq update && \
-    apt -qq install -y ca-certificates wget xvfb software-properties-common && \
-    apt -qq clean && \
-    apt -qq autoremove && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update && apt-get install -y -qq \
+    ca-certificates=20190110~16.04.1 \
+    wget=1.17.1-1ubuntu1.5 \
+    xvfb=2:1.18.4-0ubuntu0.8 \
+    software-properties-common=0.96.20.9 \
+    && apt -qq clean \
+    && apt -qq autoremove \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN add-apt-repository ppa:deadsnakes/ppa && \
     apt -qq update && \
@@ -40,7 +43,7 @@ ENV LANG C.UTF-8
 
 # Project dependencies
 COPY ./benchmark/requirements.txt /home/benchmark_user/requirements.txt
-RUN python3.7 -m pip install -q Cython
+RUN python3.7 -m pip install -q Cython==0.29.19
 RUN python3.7 -m pip install -q -r /home/benchmark_user/requirements.txt
 
 # Inner project dependencies
@@ -52,9 +55,12 @@ COPY ./main-node/logger /home/benchmark_user/logger/
 COPY ./benchmark/ /home/benchmark_user/
 COPY ./main-node/Resources/ /home/benchmark_user/Resources/
 
-# Copying information for specific benchmarks
-# -     add your information here   -
+# Copying information for specific benchmarks, for example
 
+# COPY ./worker/scenarios/energy_consumption/search_space_96/*.csv /home/benchmark_user/scenarios/energy_consumption/search_space_96/	
+# RUN rm /home/benchmark_user/scenarios/energy_consumption/search_space_96/*avg.csv
+
+# -     add your information here   -
 
 # Switching user, working dir and ownership of files
 WORKDIR /home/benchmark_user

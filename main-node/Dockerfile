@@ -1,12 +1,17 @@
 FROM ubuntu:16.04
 
 # Updating the system and adding python3
-RUN apt-get update -qq \
-    && apt-get install -y -qq software-properties-common \
+RUN apt-get update && apt-get install -y -qq \
+    software-properties-common=0.96.20.9 \
     && add-apt-repository ppa:deadsnakes/ppa \
-    && apt-get update -qq \
-    && apt-get install -y -qq apt-utils rsync vim \
-    && apt-get install -y -qq python3.7 python3-pip python3.7-dev wget \
+    && apt-get update && apt-get install -y -qq \
+    apt-utils=1.2.32ubuntu0.1 \
+    rsync=3.1.1-3ubuntu1.3 \
+    vim=2:7.4.1689-3ubuntu1.4 \
+    python3.7 \
+    python3-pip \
+    python3.7-dev \
+    wget=1.17.1-1ubuntu1.5 \
     && apt-get -qq clean \
     && apt-get -qq autoremove \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -20,7 +25,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 
 # Installing project requirements
 COPY requirements.txt /root
-RUN python3.7 -m pip install -q Cython
+RUN python3.7 -m pip install -q Cython==0.29.19
 RUN python3.7 -m pip install --no-cache-dir -q -r /root/requirements.txt
 
 # Copying project

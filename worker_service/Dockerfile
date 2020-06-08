@@ -10,8 +10,8 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 
 RUN apk add --no-cache curl build-base && \
  pip install --upgrade pip && \
- pip install python-socketio && \
- pip install pika
+ pip install python-socketio==4.6.0 && \
+ pip install pika==1.1.0
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app

@@ -19,7 +19,7 @@ services:
     restart: on-failure
 
   mongo-db:
-    image: mongo:latest
+    image: mongo:4.2.7
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=5V5Scp1E
