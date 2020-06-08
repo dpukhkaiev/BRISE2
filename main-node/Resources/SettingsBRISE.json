@@ -8,11 +8,11 @@
       "GUIPort": 49154
     },
     "Database": {
-      "Address": "localhost",
+      "Address": "172.22.1.167",
       "Port": 27017,
       "DatabaseName": "BRISE_db",
-      "DatabaseUser": "admin",
-      "DatabasePass": "5V5Scp1E"
+      "DatabaseUser": "BRISEdbuser",
+      "DatabasePass": "5V5Scp1E2"
     },
     "COMMENT": "These configurations should also be moved to \"Main node\".",
     "results_storage": "./Results/"

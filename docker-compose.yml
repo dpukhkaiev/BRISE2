@@ -17,17 +17,17 @@ services:
     container_name: event-service
     network_mode: host
     restart: on-failure
-
-  mongo-db:
-    image: mongo:4.2.7
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=5V5Scp1E
-    ports:
-        - '27017:27017'
-    container_name: mongo-db
-    network_mode: host
-    restart: on-failure
+  
+  # mongo-db:
+  #   image: mongo:4.2.7
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=admin
+  #     - MONGO_INITDB_ROOT_PASSWORD=5V5Scp1E
+  #   ports:
+  #       - '27017:27017'
+  #   container_name: mongo-db
+  #   network_mode: host
+  #   restart: on-failure
 
   worker_service:
     build: ./worker_service/

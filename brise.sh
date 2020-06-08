@@ -9,7 +9,7 @@ N_workers=1
 command=
 mode=
 event_service_host=
-services=("main-node" "event_service" "worker_service" "front-end" "worker" "mongo-db")
+services=("main-node" "event_service" "worker_service" "front-end" "worker")
 database=BRISE_db
 
 

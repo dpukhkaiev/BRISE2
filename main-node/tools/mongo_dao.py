@@ -16,7 +16,7 @@ class MongoDB(metaclass=Singleton):
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             username = urllib.parse.quote_plus(user)
             password = urllib.parse.quote_plus(passwd)
-            self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port), username=username, password=password)
+            self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port), username=username, password=password, authSource=database_name)
             self.database = self.client[database_name]
         else:
             # if test mode - initialize connection to a database mock
