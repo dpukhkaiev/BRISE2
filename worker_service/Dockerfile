@@ -1,17 +1,5 @@
-# Service
-FROM python:3-alpine
-
-# Installing dockerize tool
-ENV DOCKERIZE_VERSION v0.6.1
-
-RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
-    && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-
-RUN apk add --no-cache curl build-base && \
- pip install --upgrade pip && \
- pip install python-socketio==4.6.0 && \
- pip install pika==1.1.0
+# TODO: change basic image to own
+FROM brisedev/worker-service-dev:latest
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
