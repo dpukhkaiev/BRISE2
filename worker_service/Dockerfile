@@ -1,4 +1,3 @@
-# TODO: change basic image to own
 FROM brisedev/worker-service-dev:latest
 
 RUN mkdir -p /usr/src/app
@@ -14,4 +13,4 @@ ENV BRISE_EVENT_SERVICE_AMQP_PORT ${BRISE_EVENT_SERVICE_AMQP_PORT}
 
 ARG BRISE_EVENT_SERVICE_GUI_PORT
 ENV BRISE_EVENT_SERVICE_GUI_PORT ${BRISE_EVENT_SERVICE_GUI_PORT}
-CMD dockerize -wait http://${BRISE_EVENT_SERVICE_HOST}:${BRISE_EVENT_SERVICE_GUI_PORT} python3 -u ./intro.py
+CMD dockerize -wait http://${BRISE_EVENT_SERVICE_HOST}:${BRISE_EVENT_SERVICE_GUI_PORT} python3.7 -u ./intro.py

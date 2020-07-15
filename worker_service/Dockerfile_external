@@ -1,5 +1,5 @@
 # Service
-FROM python:3-alpine
+FROM python:3.7
 
 # Installing dockerize tool
 ENV DOCKERIZE_VERSION v0.6.1
@@ -8,8 +8,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
-RUN apk add --no-cache curl build-base && \
- pip install --upgrade pip && \
- pip install python-socketio==4.6.0 && \
- pip install pika==1.1.0
+RUN pip install --upgrade pip && \
+    pip install python-socketio==4.6.0 && \
+    pip install pika==1.1.0
  
