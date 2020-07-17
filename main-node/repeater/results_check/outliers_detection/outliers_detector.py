@@ -75,17 +75,18 @@ class OutlierDetector:
         output_message = f"Configuration {config.parameters} has"
 
         if len(bad_value_tasks) + len(outbound_value_tasks) + len(outlier_value_tasks) == 0:
-            output_message += f" no tasks with bad/outbound resulting values or outliers."
+            output_message += f" no tasks with bad/outbound resulting values or outliers"
 
         if len(bad_value_tasks) > 0:
-            output_message += f" {len(bad_value_tasks)} task(s) with bad values: ({bad_value_tasks});"
+            output_message += f" {len(bad_value_tasks)} task(s) with bad values "
 
         if len(outbound_value_tasks) > 0:
-            output_message += f" {len(outbound_value_tasks)} task(s) with outbound values: ({outbound_value_tasks});"
+            output_message += f"; {len(outbound_value_tasks)} task(s) with outbound values"
 
         if len(outlier_value_tasks) > 0:
-            output_message += f" {len(outlier_value_tasks)} task(s) with outlier values: " \
-                              f"({outlier_value_tasks}), {criterions_used_number} outlier detection criteria used;"
+            output_message += f"; {len(outlier_value_tasks)} task(s) with outlier values, " \
+                              f"{criterions_used_number} outlier detection criteria were used"
+        output_message += "."
 
         logging.getLogger(__name__).info(output_message)
 

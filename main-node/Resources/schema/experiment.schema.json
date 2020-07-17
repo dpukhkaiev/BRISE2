@@ -10,9 +10,6 @@
                     "type": "integer",
                     "minimum": 0
                 },
-                "isMinimizationExperiment": {
-                    "type": "boolean"
-                },
                 "EventService": {
                     "type": "object",
                     "properties": {
@@ -37,6 +34,36 @@
                         "GUIPort"
                     ]
                 },
+                "Database": {
+                    "type": "object",
+                    "properties": {
+                        "Address": {
+                            "type": "string"
+                        },
+                        "Port": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 65535
+                        },
+                        "DatabaseName": {
+                            "type": "string"
+                        },
+                        "DatabaseUser": {
+                            "type": "string"
+                        },
+                        "DatabasePass": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required":[
+                        "Address",
+                        "Port",
+                        "DatabaseName",
+                        "DatabaseUser",
+                        "DatabasePass"
+                    ]
+                },
                 "COMMENT": {
                     "type": "string"
                 },
@@ -44,19 +71,17 @@
                     "type": "string"
                 }
             },
+            "additionalProperties": false,
             "required": [
-                "isMinimizationExperiment"
+                "NumberOfWorkers",
+                "EventService",
+                "Database",
+                "results_storage"
             ]
         },
         "DomainDescription": {
             "type": "object",
             "properties": {
-                "HyperparameterNames": {
-                    "type": "array",
-                    "items": {
-                            "type": "string"
-                        }
-                },
                 "DataFile": {
                     "type": "string"
                 },
@@ -65,7 +90,6 @@
                 }
             },
             "required": [
-                "HyperparameterNames",
                 "DataFile"
             ]
         },
@@ -86,38 +110,45 @@
                 "Scenario": {
                     "type": "object"
                 },
-                "TaskParameters": {
-                    "type": "array",
-                    "items": {
-                            "type": "string"
-                        }
-                },
-                "ResultStructure": {
+                "Objectives": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "ResultDataTypes": {
+                "ObjectivesDataTypes": {
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "ObjectivesMinimization": {
+                    "type": "array",
+                    "items": {
+                        "type": "boolean"
+                    }
+                },
+                "ObjectivesPriorities": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "ObjectivesPrioritiesModels": {
+                    "type": "array",
+                    "items": {
+                        "type": "number",
+                        "minimum": 0
                     }
                 },
                 "ExpectedValuesRange": {
                     "type": "array",
                     "items": {
                         "type": "array",
-                        "items":{
+                        "items": {
                             "type":"number"
                         }
-                    }
-                },
-                "ResultPriorities": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer",
-                        "minimum": 0
                     }
                 },
                 "MaxTimeToRunTask": {
@@ -129,9 +160,11 @@
             "required": [
                 "TaskName",
                 "Scenario",
-                "TaskParameters",
-                "ResultStructure",
-                "ResultDataTypes",
+                "Objectives",
+                "ObjectivesDataTypes",
+                "ObjectivesMinimization",
+                "ObjectivesPriorities",
+                "ObjectivesPrioritiesModels",
                 "ExpectedValuesRange"
             ]
         },

@@ -54,5 +54,5 @@ def get_sample():
         {'result': {'energy': 426.294}, 'worker': 'alpha', 'task id': '68242f8c94ac4f849ba848785ced5ad2', 'ResultValidityCheckMark': 'OK'}, 
         {'result': {'energy': 201.645}, 'worker': 'alpha', 'task id': '315d0b8bf84f45018c14c4853baa321d', 'ResultValidityCheckMark': 'OK'}]
 
-    experiment_description, search_space = load_experiment_setup("./Resources/EnergyExperiment.json")
+    experiment_description, search_space = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
     yield (configurations_sample, tasks_sample, experiment_description, search_space)

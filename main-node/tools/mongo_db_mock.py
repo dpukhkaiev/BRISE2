@@ -2,9 +2,16 @@ from typing import Mapping
 import uuid
 
 
-class MongoDB_mock():
+class MongoDB_mock:
     def __init__(self):
-        self.collections_names = ["Experiment_description", "Search_space", "Measured_configurations", "Experiment_state", "Tasks"]
+        self.collections_names = [
+            "Experiment_description",
+            "Search_space",
+            "Measured_configurations",
+            "Experiment_state",
+            "Tasks",
+            "warm_startup_info"
+        ]
         self.collections = {}
         for collection in self.collections_names:
             self.init_collection(collection)
@@ -14,7 +21,7 @@ class MongoDB_mock():
         self.collections[collection_name] = collection
 
 
-class Collection():
+class Collection:
     def __init__(self, collection_name: str):
         self.collection_name = collection_name
         self.rows = []
@@ -33,11 +40,12 @@ class Collection():
     def find(self):
         return self.rows
 
-class Insertion():
-    def __init__(self, id: str):
-        self.inserted_id = id
 
-class MultipleInsertion():
+class Insertion:
+    def __init__(self, id_: str):
+        self.inserted_id = id_
+
+
+class MultipleInsertion:
     def __init__(self, ids: list):
         self.inserted_ids = ids
-    

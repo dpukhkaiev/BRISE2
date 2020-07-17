@@ -1,0 +1,67 @@
+{
+  "hyperparameters": [
+    {
+      "name": "low level heuristic",
+      "type": "categorical",
+      "choices": ["jMetal.EvolutionStrategy"],
+      "default": "jMetal.EvolutionStrategy"
+    },
+    {
+      "name": "j.ES|mu",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "j.ES|lambda",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "j.ES|elitist",
+      "type": "categorical",
+      "choices": ["True", "False"],
+      "default": "False"
+    },
+    {
+      "name": "j.ES|mutation_probability",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 1,
+      "default": 0.5
+    }
+  ],
+  "conditions": [
+    {
+      "child": "j.ES|mu",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    },
+    {
+      "child": "j.ES|lambda",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    },
+    {
+      "child": "j.ES|elitist",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    },
+    {
+      "child": "j.ES|mutation_probability",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    }
+  ],
+  "forbiddens": []
+}

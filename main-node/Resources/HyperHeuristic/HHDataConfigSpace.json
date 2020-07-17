@@ -1,0 +1,187 @@
+{
+  "hyperparameters": [
+    {
+      "name": "low level heuristic",
+      "type": "categorical",
+      "choices": ["jMetalPy.SimulatedAnnealing", "jMetalPy.EvolutionStrategy", "jMetal.EvolutionStrategy"],
+      "default": "jMetalPy.EvolutionStrategy"
+    },
+    {
+      "name": "py.SA|mutation_type",
+      "type": "categorical",
+      "choices": ["PermutationSwapMutation", "ScrambleMutation"],
+      "default": "PermutationSwapMutation"
+    },
+    {
+      "name": "py.SA_PSM|mutation_probability",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "py.SA_SM|mutation_probability",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "py.ES|mu",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "py.ES|lambda_",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "py.ES|elitist",
+      "type": "categorical",
+      "choices": ["True", "False"],
+      "default": "False"
+    },
+    {
+      "name": "py.ES|mutation_type",
+      "type": "categorical",
+      "choices": ["PermutationSwapMutation", "ScrambleMutation"],
+      "default": "PermutationSwapMutation"
+    },
+    {
+      "name": "py.ES_PSM|mutation_probability",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "py.ES_SM|mutation_probability",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "j.ES|mu",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "j.ES|lambda",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 1000,
+      "default": 500
+    },
+    {
+      "name": "j.ES|elitist",
+      "type": "categorical",
+      "choices": ["True", "False"],
+      "default": "False"
+    },
+    {
+      "name": "j.ES|mutation_probability",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0,
+      "upper": 1,
+      "default": 0.5
+    }
+  ],
+  "conditions": [
+    {
+      "child": "py.SA|mutation_type",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetalPy.SimulatedAnnealing"
+    },
+    {
+      "child": "py.SA_PSM|mutation_probability",
+      "parent": "py.SA|mutation_type",
+      "type": "EQ",
+      "value": "PermutationSwapMutation"
+    },
+    {
+      "child": "py.SA_SM|mutation_probability",
+      "parent": "py.SA|mutation_type",
+      "type": "EQ",
+      "value": "ScrambleMutation"
+    },
+    {
+      "child": "py.ES|mu",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetalPy.EvolutionStrategy"
+    },
+    {
+      "child": "py.ES|lambda_",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetalPy.EvolutionStrategy"
+    },
+    {
+      "child": "py.ES|elitist",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetalPy.EvolutionStrategy"
+    },
+    {
+      "child": "py.ES|mutation_type",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetalPy.EvolutionStrategy"
+    },
+    {
+      "child": "py.ES_PSM|mutation_probability",
+      "parent": "py.ES|mutation_type",
+      "type": "EQ",
+      "value": "PermutationSwapMutation"
+    },
+    {
+      "child": "py.ES_SM|mutation_probability",
+      "parent": "py.ES|mutation_type",
+      "type": "EQ",
+      "value": "ScrambleMutation"
+    },
+    {
+      "child": "j.ES|mu",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    },
+    {
+      "child": "j.ES|lambda",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    },
+    {
+      "child": "j.ES|elitist",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    },
+    {
+      "child": "j.ES|mutation_probability",
+      "parent": "low level heuristic",
+      "type": "EQ",
+      "value": "jMetal.EvolutionStrategy"
+    }
+  ],
+  "forbiddens": []
+}

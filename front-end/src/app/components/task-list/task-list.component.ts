@@ -38,6 +38,7 @@ export class TaskListComponent implements OnInit {
   focus: any
   displayedColumns: String[] =  ['id', 'run', 'result'];
   experimentDescription: ExperimentDescription
+  searchSpaceDescription: Object
   update: boolean
 
   public resultData: MatTableDataSource<Task>
@@ -152,6 +153,7 @@ export class TaskListComponent implements OnInit {
       .subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'description') {
           this.experimentDescription = JSON.parse(message.body)['experiment_description'];
+          this.searchSpaceDescription = JSON.parse(message.body)['searchspace_description'];
           this.update = false
           this.refresh()
         }

@@ -85,7 +85,8 @@ class TestFrontApi:
         # Test #8. Build experiment message according to the API message format
         # Expected result: the message of type 'dictionary' is built and contains all needed fields
         from tools.initial_config import load_experiment_setup
-        experiment_description, searchspace_description = load_experiment_setup("./Resources/EnergyExperiment.json")
+        experiment_description, searchspace_description = \
+            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         global_config = experiment_description["General"]
         actual_result = APIMessageBuilder.build('EXPERIMENT', global_config=global_config, experiment_description=experiment_description,
         searchspace_description=searchspace_description)
@@ -98,7 +99,7 @@ class TestFrontApi:
         # Expected result: error is raised
         from tools.initial_config import load_experiment_setup
         expected_result = "Invalid parameters passed to send message via API: The search space description is not provided!"
-        experiment_description, _ = load_experiment_setup("./Resources/EnergyExperiment.json")
+        experiment_description, _ = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         global_config = experiment_description["General"]
         with pytest.raises(KeyError) as excinfo:
             APIMessageBuilder.build('EXPERIMENT', global_config=global_config, experiment_description=experiment_description)

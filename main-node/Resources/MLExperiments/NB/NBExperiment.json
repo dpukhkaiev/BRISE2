@@ -1,6 +1,5 @@
 {
   "DomainDescription":{
-    "HyperparameterNames"      : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
     "DataFile"          : "./Resources/MLExperiments/NB/NBExperimentData.json"
   },
   "TaskConfiguration":{
@@ -8,9 +7,11 @@
     "Scenario":{
       "ws_file": "NB_final_result.csv"
     },
-    "TaskParameters"   : ["laplace_correction", "estimation_mode", "bandwidth_selection", "bandwidth", "minimum_bandwidth", "number_of_kernels", "use_application_grid", "application_grid_size"],
-    "ResultStructure"   : ["PREC_AT_99_REC"],
-    "ResultDataTypes"  : ["float"],
+    "Objectives"   : ["PREC_AT_99_REC"],
+    "ObjectivesDataTypes"  : ["float"],
+    "ObjectivesMinimization": [false],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
     "ExpectedValuesRange": [[0, 1]],
     "MaxTimeToRunTask": 10
   }

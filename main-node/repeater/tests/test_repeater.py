@@ -84,7 +84,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
         orchestrator._type = orchestrator.get_repeater()
         default_configuration = Configuration(configurations_sample[0]["Params"], Configuration.Type.DEFAULT)
         default_configuration.status = Configuration.Status.MEASURED
-        default_configuration._task_amount = configurations_sample[0]["Tasks"]
+        default_configuration._task_number = configurations_sample[0]["Tasks"]
         default_configuration._average_result = configurations_sample[0]["Avg.result"]
         default_configuration._standard_deviation = configurations_sample[0]["STD"]
         experiment.put_default_configuration(default_configuration)

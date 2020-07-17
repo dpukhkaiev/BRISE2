@@ -17,23 +17,20 @@ def generate_worker_function(experiment_description_path):
         env = Environment(loader=file_loader)
         template = env.get_template('worker_f_template')
     except IOError as error:
-        logger.error("Error with reading %s/templates/worker_f_template file: %s" % (os.path.dirname(__file__), error))
+        logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}", exc_info=True)
         raise error
     # TODO: Usage of shared functionality - load_json_file
     try:
         with open(experiment_description_path) as json_file:
             data = json.load(json_file)
     except IOError as error:
-        logger.error("Error with reading %s file: %s" % (experiment_description_path, error))
+        logger.error(f"Error with reading {experiment_description_path} file: {error}", exc_info=True)
         raise error
     except json.JSONDecodeError as error:
-        logger.error("Error with decoding %s json file: %s" % (experiment_description_path, error))
+        logger.error(f"Error with decoding {experiment_description_path} json file: {error}")
         raise error
-    in_parameters = data['TaskConfiguration']['TaskParameters']
-    in_scenario = data['TaskConfiguration']['Scenario'].keys()
-    out_parameters = data['TaskConfiguration']['ResultStructure']
-    task_name = data['TaskConfiguration']['TaskName']
-    output = template.render(in_parameters=in_parameters, in_scenario=in_scenario, out_parameters=out_parameters, task_name=task_name)
+    task_name = data['TaskConfiguration']
+    output = template.render(task=task_name)
     with open("./worker/worker.py", "r") as f:
         file = f.read()
         f.close()

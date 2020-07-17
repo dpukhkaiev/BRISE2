@@ -6,28 +6,28 @@ import pika
 import os
 import json
 import threading
-import os
 import pickle
 from enum import Enum
 from sys import argv
-import os
 
 from warnings import filterwarnings
 
 filterwarnings("ignore")  # disable warnings for demonstration.
 
 from WorkerServiceClient.WSClient_events import WSClient
-from model.model_selection import get_model
+from model.model_selection import get_model, Model
 from repeater.repeater_selector import RepeaterOrchestration
 from tools.initial_config import load_experiment_setup, validate_experiment_description
 from tools.front_API import API
-from selection.selection_algorithms import get_selector
+from selection.selection_algorithms import get_selector, SelectionAlgorithm
 from logger.default_logger import BRISELogConfigurator
 from stop_condition.stop_condition_selector import launch_stop_condition_threads
 from core_entities.experiment import Experiment
+from core_entities.search_space import SearchSpace
 from core_entities.configuration import Configuration
 from default_config_handler.default_config_handler_selector import get_default_config_handler
 from default_config_handler.default_config_handler import DefaultConfigurationHandler
+from default_config_handler.abstract_default_config_handler import AbstractDefaultConfigurationHandler
 from tools.mongo_dao import MongoDB
 
 
@@ -42,7 +42,7 @@ class MainThread(threading.Thread):
         SHUTTING_DOWN = 1
         IDLE = 2
 
-    def __init__(self, experiment_setup=None):
+    def __init__(self, experiment_setup: [Experiment, SearchSpace] = None):
         """
         The function for initializing main thread
         :param experiment_setup: fully initialized experiment, r.g from a POST request
@@ -53,22 +53,32 @@ class MainThread(threading.Thread):
         self._state = self.State.IDLE
         self.experiment_setup = experiment_setup
 
-    def run(self):
-        """
-        Entry point to the main node functionality - measuring default Configuration.
-        When the default Configuration finishes it's evaluation, the first bunch of Configurations will be
-        sampled for evaluation (respectively, the queues for Configuration measurement results initializes).
-        """
-        self.sub = API()  # subscribers
+        self.sub = API()  # front-end subscribers
         logging.getLogger("pika").setLevel(logging.WARNING)
         if __name__ == "__main__":
             self.logger = BRISELogConfigurator().get_logger(__name__)
         else:
             self.logger = logging.getLogger(__name__)
 
+        # TODO: Description for the fields?
+        self.experiment: Experiment = None
+        self.connection: pika.BlockingConnection = None
+        self.consume_channel = None
+        self.selector: SelectionAlgorithm = None
+        self.model: Model = None
+        self.wsc_client: WSClient = None
+        self.repeater: RepeaterOrchestration = None
+        self.database: MongoDB = None
+        self.default_config_handler: AbstractDefaultConfigurationHandler = None
+
+    def run(self):
+        """
+        The entry point to the main node functionality - measuring default Configuration.
+        When the default Configuration finishes its evaluation, the first set of Configurations will be
+        sampled for evaluation (respectively, the queues for Configuration measurement results initialize).
+        """
         self._state = self.State.RUNNING
         self.logger.info("Starting BRISE")
-
         self.sub.send('log', 'info', message="Starting BRISE")
 
         if not self.experiment_setup:
@@ -76,7 +86,7 @@ class MainThread(threading.Thread):
             if len(argv) > 1:
                 exp_desc_file_path = argv[1]
             else:
-                exp_desc_file_path = './Resources/EnergyExperiment.json'
+                exp_desc_file_path = './Resources/EnergyExperiment/EnergyExperiment.json'
                 log_msg = f"The Experiment Setup was not provided and the path to an experiment file was not specified." \
                           f" The default one will be executed: {exp_desc_file_path}"
                 self.logger.warning(log_msg)
@@ -91,24 +101,31 @@ class MainThread(threading.Thread):
 
         # Initializing instance of Experiment - main data holder.
         self.experiment = Experiment(experiment_description, search_space)
+        search_space.experiment_id = self.experiment.unique_id
         Configuration.set_task_config(self.experiment.description["TaskConfiguration"])
 
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(os.getenv("BRISE_EVENT_SERVICE_HOST"),
-                                      os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))
+            pika.ConnectionParameters(
+                os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                int(os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
+            )
+        )
         self.consume_channel = self.connection.channel()
 
         # initialize connection to the database
-        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
-                                os.getenv("BRISE_DATABASE_PORT"), 
-                                os.getenv("BRISE_DATABASE_NAME"),
-                                os.getenv("BRISE_DATABASE_USER"),
-                                os.getenv("BRISE_DATABASE_PASS"))
+        self.database = MongoDB(
+            os.getenv("BRISE_DATABASE_HOST"),
+            int(os.getenv("BRISE_DATABASE_PORT")),
+            os.getenv("BRISE_DATABASE_NAME"),
+            os.getenv("BRISE_DATABASE_USER"),
+            os.getenv("BRISE_DATABASE_PASS")
+        )
 
         # write initial settings to the database
         self.database.write_one_record("Experiment_description", self.experiment.get_experiment_description_record())
         self.database.write_one_record("Search_space", self.experiment.search_space.get_search_space_record(self.experiment.unique_id))
+        self.experiment.send_state_to_db()
 
         self.sub.send('experiment', 'description',
                       global_config=self.experiment.description["General"],
@@ -121,17 +138,16 @@ class MainThread(threading.Thread):
         launch_stop_condition_threads(self.experiment.unique_id)
         # Creating instance of selector algorithm, according to specified in experiment description type.
 
-
         # Instantiate client for Worker Service, establish connection.
-        # TODO: LOGFILE parameter should be chosen according to the name of file, that provides Experiment description
-        # (task.json)
         self.selector = get_selector(experiment=self.experiment)
-        WSClient(self.experiment.description["TaskConfiguration"],
-                    os.getenv("BRISE_EVENT_SERVICE_HOST"),
-                    os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"),
-                    logfile='%s%s_WSClient.csv' % (
-                        self.experiment.description["General"]['results_storage'],
-                        self.experiment.get_name()))
+        self.wsc_client = WSClient(
+            self.experiment.description["TaskConfiguration"],
+            os.getenv("BRISE_EVENT_SERVICE_HOST"),
+            int(os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
+        )
+        # TODO: change this to event-based communication.
+        #  (https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r440165389)
+        self.wsc_client.parameter_names = self.experiment.search_space.get_hyperparameter_names()
 
         # Initialize Repeater - encapsulate Configuration evaluation process to avoid results fluctuations.
         # (achieved by multiple Configuration evaluations on Workers - Tasks)
@@ -151,6 +167,7 @@ class MainThread(threading.Thread):
                                            on_message_callback=self.send_new_configurations_to_measure)
 
         default_configuration = self.default_config_handler.get_default_config()
+        default_configuration.experiment_id = self.experiment.unique_id
         dictionary_dump = {"configuration": default_configuration.to_json()}
         body = json.dumps(dictionary_dump)
 
@@ -173,7 +190,6 @@ class MainThread(threading.Thread):
         :param properties: pika.spec.BasicProperties
         :param body: result of measuring default configuration in bytes format
         """
-
         default_configuration = Configuration.from_json(body.decode())
         if default_configuration.status == Configuration.Status.BAD:
             if type(self.default_config_handler) == DefaultConfigurationHandler:
@@ -239,15 +255,15 @@ class MainThread(threading.Thread):
         # for dynamic parallelization
         dictionary_dump = json.loads(body.decode())
         needed_configs = dictionary_dump["worker_capacity"]
+        self.model.build_model()
         self.experiment.update_model_state(self.model.validate_model())
-        if self.model.build_model() and self.experiment.get_model_state():
+        if self.experiment.get_model_state():
             predicted_configurations = self.model.predict_next_configurations(needed_configs)
             for conf in predicted_configurations:
                 if conf.status == Configuration.Status.NEW and conf not in self.experiment.evaluated_configurations:
                     temp_msg = f"Model predicted {conf} with quality {conf.predicted_result}"
                     self.logger.info(temp_msg)
                     self.sub.send('log', 'info', message=temp_msg)
-                    # TODO: Remove possibility to work with bunch of Configurations in Repeater
                     dictionary_dump = {"configuration": conf.to_json()}
                     body = json.dumps(dictionary_dump)
                     self.consume_channel.basic_publish(exchange='',

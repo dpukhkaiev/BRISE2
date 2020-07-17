@@ -1,12 +1,11 @@
+from __future__ import annotations
 import json
 import logging
 import uuid
 import pickle
-
 from enum import Enum
 from copy import deepcopy
-from typing import Iterable
-from collections.abc import Mapping
+from typing import Iterable, Mapping, List
 
 import numpy as np
 
@@ -80,7 +79,9 @@ class Configuration:
         self._standard_deviation = []
         self.is_enabled = True
         self.number_of_failed_tasks = 0
-        self._task_amount = 0
+        self._task_number = 0
+        self.warm_startup_info = {}
+        self.experiment_id = None
 
     def __getstate__(self):
         space = self.__dict__.copy()
@@ -98,7 +99,9 @@ class Configuration:
     def __eq__(self, other):
         if not isinstance(other, Configuration):
             return False
-        return self.parameters == other.parameters
+        # TODO: This is a temporal solution. More details at:
+        #  https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r446104461
+        return self.unique_id == other.unique_id or self.parameters == other.parameters
 
     def _set_parameters(self, parameters):
         if not self._parameters:
@@ -128,6 +131,7 @@ class Configuration:
         :param task: List of task results
         """
         task_id = task["task id"]
+        self.warm_startup_info = task["result"].pop("warm_startup_info", {})
         self._tasks[str(task_id)] = task
         self.__assemble_tasks_results()
 
@@ -149,7 +153,7 @@ class Configuration:
         marks = []
         for task in self._tasks.values():
             from_one_task = []
-            for domain in self.__class__.TaskConfiguration["ResultStructure"]:
+            for domain in self.__class__.TaskConfiguration["Objectives"]:
                 from_one_task.append(task['result'][domain])
             from_all_tasks.append(from_one_task)
             marks.append(task['ResultValidityCheckMark'])
@@ -171,7 +175,9 @@ class Configuration:
                            "status": self.status,
                            "is_enabled": self.is_enabled,
                            "number_of_failed_tasks": self.number_of_failed_tasks,
-                           "_task_amount": self._task_amount
+                           "_task_number": self._task_number,
+                           "warm_startup_info": self.warm_startup_info,
+                           "experiment_id": self.experiment_id
                            }
         return json.dumps(dictionary_dump)
 
@@ -192,48 +198,48 @@ class Configuration:
         conf.status = Configuration.Status(dictionary_dump["status"])
         conf.is_enabled = dictionary_dump["is_enabled"]
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
-        conf._task_amount = dictionary_dump["_task_amount"]
+        conf._task_number = dictionary_dump["_task_number"]
+        conf.warm_startup_info = dictionary_dump["warm_startup_info"]
+        conf.experiment_id = dictionary_dump["experiment_id"]
         return conf
 
-    def is_better_configuration(self, is_minimization_experiment, current_best_solution):
+    def is_better(self, o_minimize: List[bool], o_prio: List[int], other: Configuration) -> bool:
         """
-        Returns bool value. True - self is better then  current_best_solution, otherwise False.
-        :param is_minimization_experiment: bool, is taken from json file description
-        :param current_best_solution: configuration instance
-        :return: bool
-        """
-        if self.get_average_result() != [] and current_best_solution.get_average_result() != []:
-            if is_minimization_experiment is True:
-                if self < current_best_solution:
-                    return True
-                else:
-                    return False
-            elif is_minimization_experiment is False:
-                if self > current_best_solution:
-                    return True
-                else:
-                    return False
-        elif self.get_average_result() == [] or current_best_solution.get_average_result() == []:
-            self.logger.error('On of the object has empty average_result: self.average_result = %s, \
-                               solution_candidate.get_average_result = %s'
-                              % (self.get_average_result(), current_best_solution.get_average_result()))
+        Comparison of Configurations on their Objective values.
 
-    def __lt__(self, compared_configuration):
+        :param o_minimize: list of boolean values. Indicates the direction of optimization for each objective.
+        :param o_prio: list of integers. Indicates the priorities among objectives for comparison.
+        :param other: configuration instance, against which the comparison is performed.
+        :return: bool True - this configuration is better then 'other', otherwise False.
+        """
+        top_prio_index = o_prio.index(max(o_prio))
+        if self.get_average_result() != [] and other.get_average_result() != []:
+            if o_minimize[top_prio_index] is True:
+                if self < other:
+                    return True
+                else:
+                    return False
+            elif o_minimize[top_prio_index] is False:
+                if self > other:
+                    return True
+                else:
+                    return False
+        else:
+            self.logger.error(f"One (or both) of Configurations doesn't (don't) have the results: {self}, {other}.")
+
+    def __lt__(self, other: Configuration) -> bool:
         """
         Returns True, if 'self' < 'compared_configuration'. Otherwise - False
-        :param compared_configuration: instance of Configuration class
+        :param other: instance of Configuration class
         :return: bool
         """
         # compare all metrics
         dimension_wise_comparison = []
         for i in range(len(self.get_average_result())):
             dimension_wise_comparison.append(
-                self.get_average_result()[i] < compared_configuration.get_average_result()[i])
+                self.get_average_result()[i] < other.get_average_result()[i])
 
-        # get priorities or use the same values if unspecified
-        priorities = self.__class__.TaskConfiguration["ResultPriorities"] \
-            if "ResultPriorities" in self.__class__.TaskConfiguration else [0] * len(dimension_wise_comparison)
-
+        priorities = self.__class__.TaskConfiguration["ObjectivesPriorities"]
         # filter highest priorities
         highest_priority_indexes = [index for index, priority in enumerate(priorities) if priority == max(priorities)]
 
@@ -248,13 +254,13 @@ class Configuration:
         else:
             return False
 
-    def __gt__(self, compared_configuration):
+    def __gt__(self, other: Configuration):
         """
         Returns True, if 'self' > 'compared_configuration'. Otherwise - False
-        :param compared_configuration: instance of Configuration class
+        :param other: instance of Configuration class
         :return: bool
         """
-        return compared_configuration.__lt__(self)
+        return other.__lt__(self)
 
     def __is_valid_configuration(self, parameters):
         """
@@ -286,7 +292,7 @@ class Configuration:
         # calculating the average over all result items
         self._average_result = np.mean(results_tuples, axis=0).tolist()
         self._standard_deviation = np.std(results_tuples, axis=0).tolist()
-        self._task_amount = len(results_tuples)
+        self._task_number = len(results_tuples)
 
     def __repr__(self):
         """
@@ -296,7 +302,7 @@ class Configuration:
                "Avg.result={avg_res}, STD={std})".format(
             params=str(self.parameters),
             num_of_tasks=len(self._tasks),
-            num_of_outliers=len(self._tasks) - self._task_amount,
+            num_of_outliers=len(self._tasks) - self._task_number,
             avg_res=str(self.get_average_result()),
             std=str(self.get_standard_deviation()))
 
@@ -328,9 +334,9 @@ class Configuration:
                 return False
             assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
             assert task['worker'], "Worker is not specified: %s" % task
-            assert set(self.TaskConfiguration['ResultStructure']) <= set(task['result'].keys()), \
+            assert set(self.TaskConfiguration['Objectives']) <= set(task['result'].keys()), \
                 f"All required result fields are not obtained. " \
-                f"Expected: {self.TaskConfiguration['ResultStructure']}. Got: {task['result'].keys()}."
+                f"Expected: {self.TaskConfiguration['Objectives']}. Got: {task['result'].keys()}."
             return True
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))

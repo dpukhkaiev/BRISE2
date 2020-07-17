@@ -1,8 +1,5 @@
 {
   "DomainDescription":{
-    "HyperparameterNames"      : ["generations", "populationSize",
-      "treeMutateOperatorP", "treeMutateOperatorP1", "treeMutateOperatorP2", "treeMutateOperatorP3",
-      "lambda", "crossoverRate", "mu", "tournament"],
     "DataFile"          : "./Resources/GA/GAExperimentData.json"
   },
   "TaskConfiguration":{
@@ -22,11 +19,11 @@
       "timeoutValue": 10,
       "timeoutUnit": "SECONDS"
     },
-    "TaskParameters"   : ["generations", "populationSize", "treeMutateOperatorP", "treeMutateOperatorP1", 
-      "treeMutateOperatorP2", "treeMutateOperatorP3",
-      "lambda", "crossoverRate", "mu", "tournament"],
-    "ResultStructure"  : ["Validity"],
-    "ResultDataTypes"  : ["int"],
+    "Objectives"  : ["Validity"],
+    "ObjectivesDataTypes"  : ["int"],
+    "ObjectivesMinimization": [true],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
     "ExpectedValuesRange": [[0, Infinity]],
     "RepeaterDecisionFunction"  : "student_deviation",
     "MaxTasksPerConfiguration": 2,

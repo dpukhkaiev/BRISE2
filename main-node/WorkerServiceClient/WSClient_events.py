@@ -4,30 +4,27 @@ import pika.exceptions
 import threading
 import uuid
 import logging
-import csv
 
-from os.path import isfile
+from core_entities.configuration import Configuration
 
 
 class WSClient:
 
-    def __init__(self, task_configuration: dict, host: str, port: int, logfile: str):
+    def __init__(self, task_configuration: dict, host: str, port: int):
         """
         Worker Service client, that uses pika library to communicate with rabbitmq: send task and get results
         (communication based on events).
         :param task_configuration: Dictionary. Represents "TaskConfiguration" of BRISE configuration file.
         :param host: host address of rabbitmq service
         :param port: port of rabbitmq main-service
-        :param logfile: String. Path to file, where Worker Service Client will store results of each experiment.
         """
         # Properties that holds general task configuration (shared between task runs).
         self._task_name = task_configuration["TaskName"]
-        self._task_parameters = task_configuration["TaskParameters"]
-        self._result_structure = task_configuration["ResultStructure"]
+        self.parameter_names = []
+        self._objectives = task_configuration["Objectives"]
         self._scenario = task_configuration["Scenario"]
         self._time_for_one_task_running = task_configuration[
             "MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
-        self._log_file_path = logfile
         # Properties that holds current task data.
         self.measurement = {}
         # Create a connection and channel for sending configurations
@@ -59,16 +56,18 @@ class WSClient:
                 number_ready_task = len(measurement['tasks_results'])
                 for i, task_parameter in enumerate(measurement['tasks_to_send']):
                     if i >= number_ready_task:
+                        # TODO: Tasks should (1) be encapsulated as separate class, (2) and created by Configuration.
                         self.logger.info("Sending task: %s" % task_parameter)
                         task_description = dict()
                         task_description["id_measurement"] = id_measurement
+                        task_description["task_id"] = str(uuid.uuid4())
+                        config = Configuration.from_json(measurement["configuration"])
+                        task_description["experiment_id"] = config.experiment_id
                         task_description["task_name"] = self._task_name
                         task_description["time_for_run"] = self._time_for_one_task_running
-                        task_description["scenario"] = self._scenario
-                        task_description["result_structure"] = self._result_structure
-                        task_description["params"] = {}
-                        for index, parameter in enumerate(self._task_parameters):
-                            task_description["params"][self._task_parameters[index]] = task_parameter[index]
+                        task_description["Scenario"] = self._scenario
+                        task_description["result_structure"] = self._objectives
+                        task_description["parameters"] = dict(zip(self.parameter_names, task_parameter))
                         try:
                             channel.basic_publish(exchange='',
                                                   routing_key='task_queue',
@@ -79,47 +78,13 @@ class WSClient:
                             else:
                                 raise err
 
-    def _report_according_to_required_structure(self) -> list:
-        results_to_report = []
-
-        for key in self.measurement.keys():
-            for task_index, one_task_result in enumerate(self.measurement[key]["tasks_results"]):
-                current_task = []
-                current_task.extend(self.measurement[key]["tasks_to_send"][task_index])
-                for index, parameter in enumerate(self._result_structure):
-                    current_task.append(one_task_result["result"][parameter])
-                results_to_report.append(current_task)
-
-        return results_to_report
-
-    def dump_results_to_csv(self):
-        try:
-            file_exists = isfile(self._log_file_path)
-            if not file_exists:
-                # Create file and write header(legend).
-                with open(self._log_file_path, 'w') as f:
-                    legend = ''
-                    for column_name in self._task_parameters:
-                        legend += column_name + ", "
-                    for column_name in self._result_structure:
-                        legend += column_name + ", "
-                    f.write(legend[:legend.rfind(', ')] + '\n')
-            # Writing the results
-
-            with open(self._log_file_path, 'a', newline="") as csvfile:
-                writer = csv.writer(csvfile, delimiter=',')
-                for result in self._report_according_to_required_structure():
-                    writer.writerow(result)
-        except Exception as error:
-            self.logger.error("Failed to write the results: %s" % error, exc_info=True)
-
     ####################################################################################################################
     # Outgoing interface for running measurement(s)
-    def work(self, ch, method, properties, body):
+    def work(self, ch, method, properties, body) -> None:
         """
-        Prepare and send current measurement to task_queue
-        :param j_conf: configuration in JSON format
-        :param tasks: list of tasks
+        Callback method to request from Repeater for Configuration measurement.
+        Creates a new measurement, sends tasks to workers and controls the number of executed tasks.
+        When the required number of Tasks is performed, reports the results back to Repeater (see _send_measurement).
         """
         dictionary_dump = json.loads(body.decode())
         j_conf = dictionary_dump["configuration"]
@@ -152,22 +117,19 @@ class WSClient:
             current_number_of_worker = self.get_number_of_workers()
             if self._number_of_workers is None:
                 self._number_of_workers = current_number_of_worker
-                worker_capacity = self._number_of_workers
             differences = self.get_number_of_workers() - self._number_of_workers
             self._number_of_workers = current_number_of_worker
             if differences == 0:
-                worker_capacity =  1
+                worker_capacity = 1
             elif differences > 0:
-                worker_capacity =  differences + 1
+                worker_capacity = differences + 1
             else:
-                worker_capacity =  0
+                worker_capacity = 0
         dictionary_dump = {"worker_capacity": worker_capacity}
         body = json.dumps(dictionary_dump)
         with pika.BlockingConnection(pika.ConnectionParameters(self.event_host, self.event_port)) as connection:
             with connection.channel() as channel:
-                channel.basic_publish(exchange='',
-                                        routing_key='get_new_configuration_queue',
-                                        body=body)
+                channel.basic_publish(exchange='', routing_key='get_new_configuration_queue', body=body)
 
     def stop(self):
         self.listen_thread.stop()
@@ -238,7 +200,6 @@ class EventServiceConnection(threading.Thread):
                 # TODO: parallelization: Worker Service should not wait for entire bunch of Tasks to finish.We should decouple one from another.
                 if self.is_all_tasks_finish(task_result['id_measurement']):
                     try:
-                        self.ws_client.dump_results_to_csv()
                         channel.basic_publish(exchange='',
                                               routing_key='measurement_results_queue',
                                               body=json.dumps(

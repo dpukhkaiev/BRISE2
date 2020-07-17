@@ -44,8 +44,9 @@ class SearchSpace:
 
         # initialize search space from ConfigurationSpace object
         self.search_space_size = None
-        self.__hyperparameter_names = domain_description["HyperparameterNames"]
+        self.__hyperparameter_names = self._config_space.get_hyperparameter_names()
         self.__default_configuration = None
+        self.experiment_id = None
 
     def get_hyperparameter_names(self) -> List[str]:
         return deepcopy(self.__hyperparameter_names)
@@ -112,7 +113,9 @@ class SearchSpace:
             parameters = []
             for parameter_name in self.__hyperparameter_names:
                 parameters.append(CS_default_configuration.get(parameter_name))
-            return Configuration(parameters, Configuration.Type.DEFAULT)
+            config = Configuration(parameters, Configuration.Type.DEFAULT)
+            config.experiment_id = self.experiment_id
+            return config
         except Exception as e:
             self.logger.error("Unable to load default Configuration: %s" % e)
             return None
@@ -197,10 +200,20 @@ class SearchSpace:
         except ForbiddenValueError as error:
             self.logger.error(f"Tried to sample forbidden configuration: {error}")
             raise error
+
+        # todo: its a work-around, needed to enforce lambda to be at least as large as mu.
+        #  it should be fixed with help of conditions among parameter values in search space.
+        if cs_configuration.get("low level heuristic", "") == "jMetalPy.EvolutionStrategy":
+            if cs_configuration['py.ES|lambda_'] < cs_configuration['py.ES|mu']:
+                self.logger.warning(f"Hyperparameter 'mu' was altered from {cs_configuration['py.ES|mu']} to"
+                                        f" {cs_configuration['py.ES|lambda_']}!")
+                cs_configuration['py.ES|mu'] = cs_configuration['py.ES|lambda_']
         parameters = []
         for parameter_name in self.__hyperparameter_names:
             parameters.append(cs_configuration.get(parameter_name))
-        return Configuration(parameters, Configuration.Type.FROM_SELECTOR)
+        config = Configuration(parameters, Configuration.Type.FROM_SELECTOR)
+        config.experiment_id = self.experiment_id
+        return config
 
     def sample_configuration(self) -> Configuration:
         """
@@ -209,8 +222,20 @@ class SearchSpace:
         :return: Configuration
         """
         configuration = self._config_space.sample_configuration()
-        return Configuration([configuration.get(param_name) for param_name in self.__hyperparameter_names],
-                             Configuration.Type.FROM_SELECTOR)
+        # todo: its a work-around, needed to enforce lambda to be at least as large as mu.
+        #  it should be fixed with help of conditions among parameter values in search space.
+        if configuration.get("low level heuristic", "") == "jMetalPy.EvolutionStrategy":
+            if configuration['py.ES|lambda_'] < configuration['py.ES|mu']:
+                self.logger.warning(f"Hyperparameter 'mu' was altered from {configuration['py.ES|mu']} to"
+                                        f" {configuration['py.ES|lambda_']}!")
+                configuration['py.ES|mu'] = configuration['py.ES|lambda_']
+
+        config = Configuration(
+            [configuration.get(param_name) for param_name in self.__hyperparameter_names],
+            Configuration.Type.FROM_SELECTOR
+        )
+        config.experiment_id = self.experiment_id
+        return config
 
     def generate_searchspace_description(self):
         """
@@ -243,7 +268,7 @@ class SearchSpace:
         indexes = []
         for idx, param in enumerate(config.parameters):
             if param is None:
-                # TODO: Note that this is a temporal work-around for dependent Configuration Search Spaces,
+                # TODO (y.s.): Note that this is a temporal work-around for dependent Configuration Search Spaces,
                 #  it will be resolved in upcoming updates of BRISE.
                 # 'None' values appear when a dependency
                 # between parameters are violated and some of parameters are "disabled".

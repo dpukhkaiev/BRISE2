@@ -8,7 +8,6 @@ All other configurations are nested to these as key-value entities.
 <summary> Description of required experiment configurations </summary>
 
 - `General` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
-    - `isMinimizationExperiment` - `bool`. Minimization or maximization experiment
     - `EventService` - describes RabbitMQ settings.
         - `Address` - `string`. Address of RabbitMQ service.
         - `Port` - `int`. Port of RabbitMQ service for AMQP connection.
@@ -127,9 +126,21 @@ Value - `dictionary` with following key-value pairs.
 - `TaskConfiguration` - describes experiment- and target-system-specific parameters.
     - `TaskName` - `string`. Name of the target system to be identified by the Worker nodes.
     - `Scenario` - `dict`. Specific problem instance which is to solved by the target system.
-    - `TaskParamenters` - `List of strings`. List of parameters that form the search space.
-    - `ResultStructure` - `List of strings`. A list of metric that the target system reports back.
-    - `ResultDataTypes` - `List of strings`. Python data types of the target system output metrics.
+        - The following fields should be specified for Hyper-heuristic mode (TaskName = `tsp_hh_flat`):
+            - `Problem` - `string`. Name of optimization problem type. Supported `TSP`.
+            - `problem_initialization_parameters` - `Mapping`. Parametrizes the optimization problem:
+                - `instance` - `string`. Path to problem description file in worker node. For instance `scenarios/tsp/kroA100.tsp`.
+            - `Budget` - `Mapping`. Describes, when to terminate one task execution.
+                - `Type` - `string`. Type of termination criteria. Supported: `StoppingByTime`.
+                - `Amount` - `number`. Amount of budget, given for optimization. If Time-based budget is used, amount is specified in seconds.
+            - `Hyperparameters` - `string`. Specifies, which parameters of meta-heuristics to use. 
+            Available choices: `default` and `tuned` forces each run to use static meta-heuristic parameters, default and tuned in offline respectively.
+            Any other value of `Hyperparameters` implies the use of provided by `main-node` meta-heuristic parameters.  
+    - `Objectives` - `List of strings`. A list of metrics that the target system reports back.
+    - `ObjectivesDataTypes` - `List of strings`. Python data types of the target system output metrics.
+    - `ObjectivesMinimization` - `List of booleans`. Which reported metrics are minimized.
+    - `ObjectivesPriorities` - `List of integers`. Which reported metrics to use for controlling the optimization process (compare configurations).
+    - `ObjectivesPrioritiesModels` - `List of integers`. Priorities for the reported metrics to be used for surrogate model creation and optimization.
     - `ExpectedValuesRange` - `List`. A list of ranges containing the expected/meaningful results for each metric the target system returns.
     - `MaxTimeToRunTask` - `float`. Maximum time to run each task in seconds. In case of exceeding this threshold the task will be terminated.
 </details>
@@ -146,7 +157,6 @@ Value - `dictionary` with following key-value pairs.
 ```json
 {
   "General":{
-    "isMinimizationExperiment"  : true,
     "EventService": {
       "Address": "event-service",
       "Port" : 49153
@@ -245,7 +255,6 @@ Value - `dictionary` with following key-value pairs.
 ```json
 {
   "DomainDescription":{
-    "HyperparameterNames"      : ["frequency", "threads"],
     "DataFile"          : "./Resources/EnergyExperimentData.json"
   },
   "TaskConfiguration":{
@@ -253,9 +262,11 @@ Value - `dictionary` with following key-value pairs.
     "Scenario":{
       "ws_file": "Radix-500mio.csv"
     },
-    "TaskParameters"   : ["frequency", "threads"],
-    "ResultStructure"   : ["energy"],
-    "ResultDataTypes"  : ["float"],
+    "Objectives"   : ["energy"],
+    "ObjectivesDataTypes"  : ["float"],
+    "ObjectivesMinimization": [true],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
     "ExpectedValuesRange": [[0, 150000]],
     "MaxTimeToRunTask": 10
   }

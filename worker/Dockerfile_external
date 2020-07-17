@@ -30,5 +30,8 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
-# Installing Python Socket and Pika for communication within BRISE
-RUN pip install -U pika==1.1.0
+# Installing Python modules
+RUN pip install -U pika==1.1.0 pymongo==3.10.1
+
+# Installing jMetalPy for Hyperheuristics
+RUN pip install git+https://github.com/YevheniiSemendiak/jMetalPy.git@apsp

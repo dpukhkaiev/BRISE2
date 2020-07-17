@@ -2,8 +2,8 @@ import datetime
 import hashlib
 import pickle
 import json
-import csv
 import os
+import csv
 import logging
 import uuid 
 
@@ -48,7 +48,7 @@ class Experiment:
             experiment_hash=self.ed_id)
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
-        self.current_best_configurations = []
+        self.current_best_configurations: List[Configuration] = []
         self.bad_configurations_number = 0
         self.model_is_valid = False
 
@@ -112,8 +112,15 @@ class Experiment:
                               configurations=[default_configuration.parameters],
                               results=[default_configuration.get_average_result()])
                 self.measured_configurations.append(default_configuration)
-                self.database.write_one_record("Measured_configurations", default_configuration.get_configuration_record(self.unique_id))
-                self._calculate_current_best_configurations()
+                self.database.write_one_record(
+                    "Measured_configurations",
+                    default_configuration.get_configuration_record(self.unique_id)
+                )
+                self.database.write_one_record(
+                    collection_name="warm_startup_info",
+                    record={"Exp_unique_ID": self.unique_id, "wsi": default_configuration.warm_startup_info}
+                )
+                self.current_best_configurations = [default_configuration]
             else:
                 raise ValueError("The default Configuration was registered already.")
 
@@ -154,7 +161,7 @@ class Experiment:
                         return False
             else:
                 raise ValueError(
-                    f"Can not add Configuration with status {configuration_instance.status} to Experiment.")
+                    f"Can not add Configuration with status {configuration_instance.status.name} to Experiment.")
 
     def get_any_configuration_by_parameters(self, parameters: tuple) -> Union[None, Configuration]:
         """
@@ -169,6 +176,57 @@ class Experiment:
             if configuration_instance.parameters == parameters:
                 return configuration_instance
         return None
+
+    def get_current_status(self, serializable: bool):
+        """
+            Returns current state of Experiment, including already elapsed time, currently found solution Configuration,
+        default Configuration, Experiment description and all already evaluated Configurations.
+        :param serializable: Boolean.
+            Defines if returned structure should be serializable or not. If True - all Configuration objects will be
+        transformed to their string representation.
+        :return: Dict with following keys["Running time", "Best found Configuration",
+                                        "Default configuration", "Experiment description",
+                                        "Evaluated Configurations"]
+        """
+        current_status = {
+            "Running time":
+                str(self.get_running_time()) if serializable else self.get_running_time(),
+            "Best found Configuration":
+                self.get_current_solution().__getstate__() if serializable else self.get_current_solution(),
+            "Default configuration":
+                self.search_space.get_default_configuration().__getstate__() if serializable else self.search_space.get_default_configuration(),
+            "Experiment description":
+                self.description,
+            "Evaluated Configurations":
+                [conf.__getstate__() if serializable else conf for conf in self.measured_configurations]
+        }
+        return current_status
+
+    def summarize_results_to_file(self, report_format: str, folder_path: str):
+        """
+            Called before the BRISE proper termination. Aggregates current state of the Experiment and writes it as a
+            json or yaml file.
+        :param report_format: String. Format of output file, either 'yaml' or 'json'.
+        :param folder_path: String. Folder, where results should be stored.
+        :return: self
+        """
+        os.makedirs(folder_path, exist_ok=True)
+        output_file_name = folder_path + self.name
+        data = ""
+        if report_format.lower() == "yaml":
+            from yaml import safe_dump
+            output_file_name += '.yaml'
+            data = safe_dump(self.get_current_status(serializable=True), width=120, indent=4)
+        elif report_format.lower() == "json":
+            from json import dumps
+            output_file_name += '.json'
+            data = dumps(self.get_current_status(serializable=True), indent=4)
+        else:
+            self.logger.error("Wrong serialization format provided. Supported 'yaml' and 'json'.")
+        with open(output_file_name, 'w') as output_file:
+            output_file.write(data)
+            self.logger.info("Results of the Experiment have been writen to file: %s" % output_file_name)
+        return self
 
     def is_configuration_evaluated(self, configuration):
         """
@@ -196,63 +254,31 @@ class Experiment:
             all_features = []
             for configuration in self.measured_configurations:
                 all_features.append(configuration.parameters)
-            self.dump()  # Store instance of Experiment
-            self.summarize_results_to_file()
-            self.write_csv()
+            results_folder = self.description["General"]["results_storage"]
+            self.dump(folder_path=results_folder)  # Store instance of Experiment
+            self.write_csv(folder_path=results_folder)  # Store Experiment metrics
+            self.summarize_results_to_file(report_format="yaml", folder_path=results_folder)
             self.api.send('final', 'configuration',
-                        configurations=[self.get_current_solution().parameters],
-                        results=[[round(self.get_current_solution().get_average_result()[0], 2)]],
-                        measured_points=[all_features],
-                        performed_measurements=[performed_measurements])
+                          configurations=[self.get_current_solution().parameters],
+                          results=[self.get_current_solution().get_average_result()],
+                          measured_points=[all_features],
+                          performed_measurements=[performed_measurements])
             return self.current_best_configurations
         else:
             self.logger.error('No configuration was measured. Please, check your Experiment Description.')
-        
 
-    def get_current_status(self, serializable: bool = False):
-        """
-            Returns current state of Experiment, including already elapsed time, currently found solution Configuration,
-        default Configuration, Experiment description and all already evaluated Configurations.
+    def get_current_solution(self) -> Union[Configuration, None]:
+        if self.current_best_configurations:
+            return self.current_best_configurations[0]
+        else:
+            return None
 
-        :param serializable: Boolean.
-            Defines if returned structure should be serializable or not. If True - all Configuration objects will be
-        transformed to their string representation.
-        :return: Dict with following keys["Running time", "Best found Configuration",
-                                        "Default configuration", "Experiment description",
-                                        "Evaluated Configurations"]
-        """
-        current_status = {
-            "Running time": str(self.get_running_time()) if serializable else self.get_running_time(),
-            "Best found Configuration": self.get_current_solution().__getstate__() if serializable else self.get_current_solution(),
-            "Default configuration": self.search_space.get_default_configuration().__getstate__() if serializable else self.search_space.get_default_configuration(),
-            "Experiment description": self.description,
-            "Evaluated Configurations": [conf.__getstate__() if serializable else conf for conf in self.measured_configurations]
-        }
-        return current_status
-
-    def get_current_solution(self):
-        self._calculate_current_best_configurations()
-        return self.current_best_configurations[0]
-
-    def get_current_best_configurations(self):
-        self._calculate_current_best_configurations()
-        return self.current_best_configurations
-
-    def _is_valid_configuration_instance(self, configuration_instance):
+    def _is_valid_configuration_instance(self, configuration_instance: Configuration) -> bool:
         if isinstance(configuration_instance, Configuration):
             return True
         else:
             self.logger.error('Current object is not a Configuration instance, but %s' % type(configuration_instance))
             return False
-
-    def _calculate_current_best_configurations(self):
-
-        best_configuration = [self.measured_configurations[0]]
-        for configuration in self.measured_configurations:
-            if configuration.is_better_configuration(self.is_minimization(),
-                                                     best_configuration[0]):
-                best_configuration = [configuration]
-        self.current_best_configurations = best_configuration
 
     def _add_measured_configuration_to_experiment(self, configuration: Configuration) -> None:
         """
@@ -262,16 +288,26 @@ class Experiment:
         :return: None
         """
         self.measured_configurations.append(configuration)
-        self.database.write_one_record("Measured_configurations", configuration.get_configuration_record(self.unique_id))
-        if self.database.get_last_record_by_experiment_id("Experiment_state", self.unique_id) is None:
-            self.database.write_one_record("Experiment_state", self.get_experiment_state_record())
+        if configuration.is_better(self.get_objectives_minimization(), self.get_objectives_priorities(), self.current_best_configurations[0]):
+            # we do not need warm_startup_info anymore, since better configuration was found
+            self.current_best_configurations[0].warm_startup_info = {}
+            self.current_best_configurations = [configuration]
+            # TODO: do not transfer the solutions through main node.
+            #  current flow: worker (reports) -> WSC -> repeater -> experiment -> DB -> worker (loads to continue)
+            #  needed flow: worker -> DB -> worker.
+            #  for this we need to (1) keep track which is the best among available solution sets and
+            #                      (2) remove unneeded solutions from DB to prevent littering of storage
+            self.database.update_record(
+                collection_name="warm_startup_info",
+                query={"Exp_unique_ID": self.unique_id},
+                new_val={"wsi": configuration.warm_startup_info}
+            )
         else:
-            self.database.update_record("Experiment_state", {"Exp_unique_ID" : self.unique_id}, 
-                {"Number_of_measured_configs" : self.get_number_of_measured_configurations(),
-                "Number_of_bad_configs" : self.get_bad_configuration_number(),
-                "Current_solution" : self.get_current_solution().get_configuration_record(self.unique_id),
-                "is_model_valid" : self.get_model_state()})
+            # this configuration did not improve the previous solution, no need to keep track its solutions.
+            configuration.warm_startup_info = {}
 
+        self.database.write_one_record("Measured_configurations", configuration.get_configuration_record(self.unique_id))
+        self.send_state_to_db()
         self.api.send("new", "configuration",
                       configurations=[configuration.parameters],
                       results=[configuration.get_average_result()])
@@ -285,54 +321,42 @@ class Experiment:
         """
         self.evaluated_configurations.append(configuration)
 
-    def is_minimization(self):
-        return self.description["General"]["isMinimizationExperiment"]
+    def get_objectives_minimization(self) -> List[bool]:
+        return self.description["TaskConfiguration"]["ObjectivesMinimization"]
 
-    def dump(self, folder_path: str = 'Results/serialized/'):
-        """ save instance of experiment class
+    def get_objectives_priorities(self) -> List[int]:
+        return self.description["TaskConfiguration"]["ObjectivesPriorities"]
+
+    def get_models_objectives_priorities(self) -> List[int]:
+        return self.description["TaskConfiguration"]["ObjectivesPrioritiesModels"]
+
+    def dump(self, folder_path: str) -> None:
         """
-        # Used to upload Experiment dump through web API
-        os.environ["EXP_DUMP_NAME"] = self.name
-
+            Save dump of experiment object. Later it could be uploaded through the web API.
+        :param folder_path: str. Path to folder, where to store dump file.
+            User, which is running main.py should be authorized to write into a specified folder.
+        :return: None
+        """
+        if folder_path[-1] != "/" and folder_path[-1] != "\\":
+            folder_path = folder_path + "/"
         os.makedirs(folder_path, exist_ok=True)
-        file_name = '{}.pkl'.format(self.name)
-        # write pickle
-        with open(folder_path + file_name, 'wb') as output:
+        dump_path = folder_path + self.name + ".pkl"
+
+        with open(dump_path, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
-            self.logger.info("Saved experiment instance. Path: %s" % (folder_path + file_name))
-        # update database record with a dumped experiment
-        self.database.update_record("Experiment_description", {"Exp_unique_ID" : self.unique_id}, {"ExperimentObject" : pickle.dumps(self, pickle.HIGHEST_PROTOCOL)})
+            self.logger.info(f"Saved experiment instance. Path: {dump_path}")
+        os.environ["EXP_DUMP_NAME"] = folder_path + self.name
 
-    def summarize_results_to_file(self, report_format: str = 'yaml', path: str = 'Results/'):
-        """
-            Called before the BRISE proper termination. Aggregates current state of the Experiment and writes it as a
-            json or yaml file.
-        :param report_format: String. Format of output file, either 'yaml' or 'json'.
-        :param path: String. Folder, where results should be stored.
-        :return: self
-        """
-        if report_format.lower() == "yaml":
-            from yaml import safe_dump
-            output_file_name = path + self.name + '.yaml'
-            data = safe_dump(self.get_current_status(serializable=True), width=120, indent=4)
-        elif report_format.lower() == "json":
-            from json import dumps
-            output_file_name = path + self.name + '.json'
-            data = dumps(self.get_current_status(serializable=True), indent=4)
-        else:
-            raise TypeError("Wrong serialization format provided. Supported 'yaml' and 'json'.")
-        os.makedirs(path, exist_ok=True)
-        with open(output_file_name, 'w') as output_file:
-            output_file.write(data)
-            self.logger.info("Results of the Experiment have been writen to file: %s" % output_file_name)
+        self.database.update_record(
+            "Experiment_description",
+            {"Exp_unique_ID": self.unique_id},
+            {"ExperimentObject": pickle.dumps(self, pickle.HIGHEST_PROTOCOL)}
+        )
 
-        return self
-
-    def write_csv(self, path: str = 'Results/serialized/'):
+    def write_csv(self, folder_path: str) -> None:
         """save .csv file with main metrics of the experiment
-
         Args:
-            path (str, optional): Path to folder, where to store the csv report.
+            folder_path (str, optional): Path to folder, where to store the csv report.
         """
         if self.search_space.get_search_space_size() == float('inf'):
             search_space_coverage = "unknown (infinite search space)"
@@ -356,12 +380,12 @@ class Experiment:
             'repeater': self.description['Repeater']['Type']
         })
 
-        file_path = '{0}{1}.csv'.format(path, self.name)
+        file_path = '{0}{1}.csv'.format(folder_path, self.name)
 
         keys = list(data.keys())
         values = list(data.values())
 
-        with open(file_path, 'a') as csvFile:
+        with open(file_path, 'w') as csvFile:
             writer = csv.writer(csvFile)
             writer.writerow(keys)
             writer.writerow(values)
@@ -384,7 +408,7 @@ class Experiment:
         """
 
         all_tasks = []
-        result_key = self.description['TaskConfiguration']['ResultStructure'][0]
+        result_key = self.description['TaskConfiguration']['Objectives'][0]
         for configuration in self.measured_configurations:
             for task in configuration.get_tasks().values():
                 if 'result' in task:
@@ -412,12 +436,31 @@ class Experiment:
 
     def get_bad_configuration_number(self):
         return self.bad_configurations_number
-    
-    def update_model_state(self, model_state):
+
+    def update_model_state(self, model_state: bool):
         self.model_is_valid = model_state
 
-    def get_model_state(self):
+    def get_model_state(self) -> bool:
         return self.model_is_valid
+
+    def send_state_to_db(self) -> None:
+        """
+        Send current experiment state information, or create one if not exist.
+        :return: None
+        """
+        if self.database.get_last_record_by_experiment_id("Experiment_state", self.unique_id) is None:
+            self.database.write_one_record("Experiment_state", self.get_experiment_state_record())
+        else:
+            self.database.update_record(
+                "Experiment_state",
+                {"Exp_unique_ID": self.unique_id},
+                {
+                    "Number_of_measured_configs": self.get_number_of_measured_configurations(),
+                    "Number_of_bad_configs": self.get_bad_configuration_number(),
+                    "Current_solution": self.get_current_solution().get_configuration_record(self.unique_id),
+                    "is_model_valid": self.get_model_state()
+                }
+            )
 
     def get_experiment_description_record(self) -> Mapping:
         '''
@@ -427,7 +470,6 @@ class Experiment:
         record = {}
         record["Exp_unique_ID"] = self.unique_id
         record["Exp_ID"] = self.ed_id
-        record["isMinimizationExperiment"] = self.description["General"]["isMinimizationExperiment"]
         record["DomainDescription"] = self.description["DomainDescription"]
         record["TaskConfiguration"] = self.description["TaskConfiguration"]
         record["SelectionAlgorithm"] = self.description["SelectionAlgorithm"]
@@ -449,6 +491,9 @@ class Experiment:
         record["Exp_unique_ID"] = self.unique_id
         record["Number_of_measured_configs"] = self.get_number_of_measured_configurations()
         record["Number_of_bad_configs"] = self.get_bad_configuration_number()
-        record["Current_solution"] = self.get_current_solution().get_configuration_record(self.unique_id)
+        current_solution = self.get_current_solution()
+        if current_solution is not None:
+            current_solution = current_solution.get_configuration_record(self.unique_id)
+        record["Current_solution"] = current_solution
         record["is_model_valid"] = self.get_model_state()
         return record

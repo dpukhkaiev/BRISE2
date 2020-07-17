@@ -11,7 +11,7 @@ class TestInitialConfig:
         # Test #0. Load an Experiment setup from the valid Experiment description file
         # Expected result: both experiment description and search space are loaded. Experiment description can be used as a dictionary
         from core_entities.search_space import SearchSpace
-        input_file = "./Resources/EnergyExperiment.json"
+        input_file = "./Resources/EnergyExperiment/EnergyExperiment.json"
         expected_experiment = "energy_consumption"
         actual_experiment_description, actual_search_space = load_experiment_setup(input_file)
         assert actual_experiment_description["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -47,7 +47,7 @@ class TestInitialConfig:
         # Expected result: experiment description is valid (logged statement)
         import logging
         caplog.set_level(logging.INFO)
-        task_description = load_json_file("./Resources/EnergyExperiment.json")
+        task_description = load_json_file("./Resources/EnergyExperiment/EnergyExperiment.json")
         framework_settings = load_json_file('./Resources/SettingsBRISE.json')
         input_description = {**task_description, **framework_settings}
         expected_result = "Provided Experiment Description is valid."
@@ -71,7 +71,7 @@ class TestInitialConfig:
         # Expected result: experiment data is valid (logged statement)
         import logging
         caplog.set_level(logging.INFO)
-        input_data = load_json_file("./Resources/EnergyExperimentData.json")
+        input_data = load_json_file("./Resources/EnergyExperiment/EnergyExperimentData.json")
         expected_result = "Provided Experiment Data is valid."
         validate_experiment_data(input_data)
         for record in caplog.records:
@@ -81,7 +81,7 @@ class TestInitialConfig:
     def test_7_validate_invalid_experiment_data(self):
         # Test #7. Validate an experiment data, loaded from the invalid Experiment data file
         # Expected result: experiment data is invalid, error is raised
-        input_data = load_json_file("./Resources/EnergyExperiment.json")
+        input_data = load_json_file("./Resources/EnergyExperiment/EnergyExperiment.json")
         expected_result = "Provided Experiment Data has not passed the validation using schema in file"
         with pytest.raises(ValueError) as excinfo:
             validate_experiment_data(input_data)

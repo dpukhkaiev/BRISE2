@@ -1,8 +1,5 @@
 {
   "DomainDescription":{
-    "HyperparameterNames"      : ["subComponentUnassignedFactor", "softwareComponentUnassignedFactor" ,
-     "hardScoreStartingTemperaturePercentage", "softScoreStartingTemperaturePercentage",
-      "acceptedCountLimit", "millisecondsSpentLimit", "unimprovedMillisecondsSpentLimit"],
     "DataFile"          : "./Resources/SA/SAExperimentData.json"
   },
   "TaskConfiguration":{
@@ -21,12 +18,14 @@
       "numCpus": 1,
       "seed": 0
     },
-    "TaskParameters"   : ["subComponentUnassignedFactor", "softwareComponentUnassignedFactor",
-      "hardScoreStartingTemperaturePercentage", "softScoreStartingTemperaturePercentage",
-      "acceptedCountLimit", "millisecondsSpentLimit", "unimprovedMillisecondsSpentLimit"],
-    "ResultStructure"   : ["hardScoreImprovement", "softScoreImprovement"],
-    "ResultDataTypes"  : ["float", "float"],
-    "ExpectedValuesRange": [[0, 1],[-Infinity, Infinity]],
-    "ResultPriorities" : [1, 0]
+    "Objectives"   : ["hardScoreImprovement", "softScoreImprovement"],
+    "ObjectivesDataTypes"  : ["float", "float"],
+    "ObjectivesMinimization": [false, false],
+    "ObjectivesPriorities": [1, 0],
+    "ObjectivesPrioritiesModels": [1, 0],
+    "ExpectedValuesRange": [
+      [0, 1],
+      [-Infinity, Infinity]
+    ]
   }
 }

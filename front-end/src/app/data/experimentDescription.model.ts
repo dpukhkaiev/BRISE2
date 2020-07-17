@@ -7,16 +7,14 @@ export interface ExperimentDescription {
 
 interface DomainDescription {
     DataFile: String
-    HyperparameterNames: Array<String>
 }
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number
     MaxTimeToRunTask: number
     RepeaterDecisionFunction: String
-    ResultDataTypes: Array<String>
-    ResultStructure: Array<String>
+    Objectives: Array<String>
+    ObjectivesDataTypes: Array<String>
     TaskName: String
-    TaskParameters: Array<String>
     Scenario
 }
 interface ModelCreation {

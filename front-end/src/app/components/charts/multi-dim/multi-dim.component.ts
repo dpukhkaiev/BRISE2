@@ -20,6 +20,7 @@ export class MultiDimComponent implements OnInit {
   experimentDescription: ExperimentDescription
   searchspace: object
   resultParamsRange: any // Map. results parameters with possible ranges
+  parameter_names: any
 
   // Best point
   allPoints = new Set<PointExp>()
@@ -63,10 +64,10 @@ export class MultiDimComponent implements OnInit {
           this.resetRes()
           this.experimentDescription = obj['experiment_description']
           this.searchspace = obj['searchspace_description']
-          let resultParams = this.experimentDescription['TaskConfiguration']['TaskParameters']
+          this.parameter_names = Object.keys(this.searchspace["boundaries"])
           let rangeValues = Object.values(this.searchspace["boundaries"])
 
-          this.resultParamsRange = this.zip(resultParams, rangeValues)
+          this.resultParamsRange = this.zip(this.parameter_names, rangeValues)
           this.resultParamsRange.set('result', undefined) // range for results is undefined
         }
 
@@ -79,7 +80,7 @@ export class MultiDimComponent implements OnInit {
           configs.forEach(configuration => {
             if (configuration) {
               this.defaultPoint = configuration // In case if only one point default
-              let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
+              let point = this.zip(this.parameter_names, configuration['configurations'])
               point.set('result', configuration.results[0])
               this.allPoints.add(point)
               this.render()
@@ -98,12 +99,12 @@ export class MultiDimComponent implements OnInit {
           configs.forEach(configuration => {
         if (configuration) {
             let boundaries = Object.values(this.searchspace['boundaries'])
-            for (let i = 0; i < this.experimentDescription.DomainDescription.HyperparameterNames.length; ++i){
+            for (let i = 0; i < this.parameter_names.length; ++i){
               if (configuration['configurations'][i] == null){
                 configuration['configurations'][i] = boundaries[i][0]
               }
             }
-            let point = this.zip(this.experimentDescription['TaskConfiguration']['TaskParameters'], configuration['configurations'])
+            let point = this.zip(this.parameter_names, configuration['configurations'])
             point.set('result', configuration.results[0])
             this.allPoints.add(point)
             this.render()

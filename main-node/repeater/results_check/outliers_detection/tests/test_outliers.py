@@ -122,15 +122,15 @@ class TestOutliers:
                 expected_results.append('OK')
 
         # 4. Check for errors.
-        result_structure = experiment_description["TaskConfiguration"]["ResultStructure"]
+        objectives = experiment_description["TaskConfiguration"]["Objectives"]
         expected_values_range = experiment_description["TaskConfiguration"]["ExpectedValuesRange"]
-        expected_data_type = experiment_description["TaskConfiguration"]["ResultDataTypes"]
-        for index, parameter in enumerate(result_structure):
+        expected_data_type = experiment_description["TaskConfiguration"]["ObjectivesDataTypes"]
+        for index, parameter in enumerate(objectives):
             tasks_sample_error_checked = error_check(tasks_sample, parameter, expected_values_range[index], expected_data_type[index])
 
         # 5. Check for outliers.
         outlier_detectors = get_outlier_detectors(experiment_description["OutliersDetection"])
-        results_WO_outliers, outlier_detectors_used = outlier_detectors.outlier_detection(tasks_sample_error_checked, result_structure)
+        results_WO_outliers, outlier_detectors_used = outlier_detectors.outlier_detection(tasks_sample_error_checked, objectives)
         actual_results = []
         actual_results.append('energy')
         for task in results_WO_outliers:

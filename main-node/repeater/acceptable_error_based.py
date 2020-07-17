@@ -107,22 +107,25 @@ class AcceptableErrorBasedType(Repeater):
             thresholds = []
             if self.is_experiment_aware:
                 # We adapt thresholds
-                minimization_experiment = experiment.is_minimization()
+                objectives_minimization = experiment.get_objectives_minimization()
 
-                for b_t, max_t, r_max, avg_res, cur_solution_avg in \
-                        zip(self.base_acceptable_errors, self.max_acceptable_errors, self.ratios_max, average_result, current_solution):
-                    if minimization_experiment:
-                        if not cur_solution_avg:
+                for i in range(len(objectives_minimization)):
+                    if objectives_minimization[i]:
+                        if not current_solution[i]:
                             ratio = 1
                         else:
-                            ratio = avg_res / cur_solution_avg
+                            ratio = average_result[i] / current_solution[i]
                     else:
-                        if not avg_res:
+                        if not average_result[i]:
                             ratio = 1
                         else:
-                            ratio = cur_solution_avg / avg_res
+                            ratio = current_solution[i] / average_result[i]
 
-                    adopted_threshold = b_t + (max_t - b_t) / (1 + exp(- (10 / r_max) * (ratio - r_max/2)))
+                    adopted_threshold = \
+                        self.base_acceptable_errors[i] \
+                        + (self.max_acceptable_errors[i] - self.base_acceptable_errors[i]) \
+                        / (1 + exp(- (10 / self.ratios_max[i]) * (ratio - self.ratios_max[i] / 2)))
+
                     thresholds.append(adopted_threshold)
 
             else:

@@ -1,6 +1,5 @@
 {
   "DomainDescription":{
-    "HyperparameterNames"      : ["layer","training_cycles","learning_rate","momentum","decay","shuffle","normalize","error_epsilon","use_local_random_seed","local_random_seed" ],
     "DataFile"          : "./Resources/MLExperiments/NN/NNExperimentData.json"
   },
   "TaskConfiguration":{
@@ -8,9 +7,11 @@
     "Scenario":{
       "ws_file": ""
     },
-    "TaskParameters"   : ["layer","training_cycles","learning_rate","momentum","decay","shuffle","normalize","error_epsilon","use_local_random_seed","local_random_seed" ],
-    "ResultStructure"   : ["prec_rec"],
-    "ResultDataTypes"  : ["float"],
+    "Objectives"   : ["prec_rec"],
+    "ObjectivesDataTypes"  : ["float"],
+    "ObjectivesMinimization": [false],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
     "ExpectedValuesRange": [[0, 1]],
     "MaxTimeToRunTask": 600
   }

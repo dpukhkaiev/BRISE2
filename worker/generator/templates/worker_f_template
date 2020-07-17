@@ -1,10 +1,7 @@
-def {{task_name}}(task_parameters: dict, scenario: dict):
+def {{task_name}}(task: dict):
     try:
-        {%- for param in in_parameters %}
-        {{ param }} = str(param['{{param}}'])
-        {%- endfor %}
-        {% for scen in in_scenario %}
-        {{ scen }} = str(scenario['{{scen}}'])
+        {% for scen in task['Scenario'] %}
+        {{ scen }} = str(scen['{{scen}}'])
         {%- endfor %}
 
         #
@@ -22,6 +19,4 @@ def {{task_name}}(task_parameters: dict, scenario: dict):
              {%- endfor %}
         }
     except Exception as error:
-        logging.getLogger(__name__).error("An error occurred during performing '{{task_name}}' Task with parameters %s: %s" % (param, e))
-        
-        
+        logging.getLogger(__name__).error(f"An error occurred during performing Task '{{task_name}}' {task}: {error}.")

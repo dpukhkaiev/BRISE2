@@ -118,7 +118,10 @@ export class ImpResComponent implements OnInit {
             const descr = this.experimentDescription;
             this.bestRes && this.bestRes.forEach(function (resItem) {
               // TODO: Max or min from task
-              if (descr['General']['isMinimizationExperiment'] === true) {
+              let objPriorities = descr['TaskConfiguration']['ObjectivesPriorities']
+              let topObjectiveIdx = objPriorities.indexOf(Math.max(...objPriorities))
+              let isMinimization = descr['TaskConfiguration']['ObjectivesMinimization'][topObjectiveIdx]
+              if (isMinimization === true) {
                 if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
                   temp.results = resItem.results;
                   temp.configurations = resItem.configurations;
@@ -206,7 +209,7 @@ export class ImpResComponent implements OnInit {
         }
       },
       yaxis: {
-        title: this.experimentDescription['TaskConfiguration']['ResultStructure'][0],
+        title: this.experimentDescription['TaskConfiguration']['Objectives'][0],
         showgrid: false,
         zeroline: false,
         showline: true,

@@ -134,11 +134,11 @@ class ConsumerThread(Thread):
         result = {"status": None, "body": None, "file_name": None}
         dump_name = os.environ.get('EXP_DUMP_NAME')
         try:
-            if (dump_name == 'undefined'):
+            if dump_name == 'undefined':
                 result["status"] = "missing experiment file"
                 API().send("log", "error", message=result["body"])
             else:
-                filename = f"./Results/serialized/{dump_name}.{body['format']}"
+                filename = f"{dump_name}.{body['format']}"
                 with open(filename, "rb") as file:
                     result["status"] = "ok"
                     result["body"] = str(base64.b64encode(file.read()), "utf-8")

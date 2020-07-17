@@ -8,7 +8,8 @@ from tools.initial_config import load_experiment_setup
 
 os.environ["TEST_MODE"] = 'UNIT_TEST'
 database = MongoDB("test", 0, "test", "user", "pass")
-experiment_description_file = "./Resources/EnergyExperiment.json"
+experiment_description_file = "./Resources/EnergyExperiment/EnergyExperiment.json"
+
 
 class TestDatabase:
     # this test set is aimed to cover the functionality of database record formatting (by core entities) 
@@ -29,7 +30,6 @@ class TestDatabase:
         written_record = database.get_all_records("Experiment_description")[0]
         assert experiment.unique_id == written_record["Exp_unique_ID"]
         assert experiment.ed_id == written_record["Exp_ID"]
-        assert experiment.description["General"]["isMinimizationExperiment"] == written_record["isMinimizationExperiment"]
         assert experiment.description["DomainDescription"] == written_record["DomainDescription"]
         assert experiment.description["TaskConfiguration"] == written_record["TaskConfiguration"]
         assert experiment.description["SelectionAlgorithm"] == written_record["SelectionAlgorithm"]
@@ -44,7 +44,8 @@ class TestDatabase:
         # Expected result: record can be read from the database and contains all required ES fields. The Experiment id matches
         experiment, _ = self.initialize_exeriment()
         c1 = Configuration([2900.0, 32], Configuration.Type.DEFAULT)
-        experiment.measured_configurations.append(c1)
+        c1.status = c1.Status.MEASURED
+        experiment.put_default_configuration(c1)
         database.write_one_record("Experiment_state", experiment.get_experiment_state_record())
         written_record = database.get_all_records("Experiment_state")[0]
         assert experiment.unique_id == written_record["Exp_unique_ID"]
@@ -104,4 +105,3 @@ class TestDatabase:
         experiment_description, search_space = load_experiment_setup(experiment_description_file)
         experiment = Experiment(experiment_description, search_space)
         return experiment, search_space
-

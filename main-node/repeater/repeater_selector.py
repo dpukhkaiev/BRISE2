@@ -30,8 +30,8 @@ class RepeaterOrchestration():
         self.event_host = os.getenv("BRISE_EVENT_SERVICE_HOST")
         self.event_port = os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")
         self.repeater_parameters = self.experiment.description["Repeater"]["Parameters"]
-        self._result_structure = self.experiment.description["TaskConfiguration"]["ResultStructure"]
-        self._result_data_types = self.experiment.description["TaskConfiguration"]["ResultDataTypes"]
+        self._objectives = self.experiment.description["TaskConfiguration"]["Objectives"]
+        self._objectives_data_types = self.experiment.description["TaskConfiguration"]["ObjectivesDataTypes"]
         self._expected_values_range = self.experiment.description["TaskConfiguration"]["ExpectedValuesRange"]
         self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
                         os.getenv("BRISE_DATABASE_PORT"), 
@@ -117,14 +117,16 @@ class RepeaterOrchestration():
         if configuration.status != Configuration.Status.NEW and os.environ.get('TEST_MODE') != 'UNIT_TEST':
             tasks_to_send = result["tasks_to_send"]
             tasks_results = result["tasks_results"]
-            for index, parameter in enumerate(self._result_structure):
-                tasks_results = error_check(tasks_results, parameter, self._expected_values_range[index],
-                                                self._result_data_types[index])
+            for index, objective in enumerate(self._objectives):
+                tasks_results = error_check(tasks_results,
+                                            objective,
+                                            self._expected_values_range[index],
+                                            self._objectives_data_types[index])
             if self.experiment.description["OutliersDetection"]["isEnabled"]:
                 tasks_results = self.outlier_detectors.find_outliers_for_taskset(tasks_results,
-                                                                                                self._result_structure,
-                                                                                                [configuration],
-                                                                                                tasks_to_send)
+                                                                                 self._objectives,
+                                                                                 [configuration],
+                                                                                 tasks_to_send)
 
             # Sending data to API and adding Tasks to Configuration
             for parameters, task in zip(tasks_to_send, tasks_results):
@@ -147,10 +149,13 @@ class RepeaterOrchestration():
             if len(configuration.get_tasks()) == 0:
                 self.experiment.increment_bad_configuration_number()
                 configuration.disable_configuration()
-        current_measurement = {}
-        current_measurement[str(configuration.parameters)] = {'parameters': configuration.parameters,
-                                                                'needed_tasks_count': needed_tasks_count,
-                                                                'Finished': False}
+        current_measurement = {
+            str(configuration.parameters): {
+                'parameters': configuration.parameters,
+                'needed_tasks_count': needed_tasks_count,
+                'Finished': False
+            }
+        }
 
         if needed_tasks_count == 0:
             current_measurement[str(configuration.parameters)]['Finished'] = True
@@ -164,44 +169,39 @@ class RepeaterOrchestration():
                     self.performed_measurements += 1
                     if os.environ.get('TEST_MODE') != 'UNIT_TEST':
                         self.database.write_one_record("Repeater_measurements", self.get_repeater_measurements_record())
-        if (configuration.status == Configuration.Status.MEASURED or
-            configuration.status == Configuration.Status.BAD) and os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            with pika.BlockingConnection(
-                    pika.ConnectionParameters(host=self.event_host,
-                                                port=self.event_port)) as connection:
+
+        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
+            return configuration, needed_tasks_count
+
+        elif configuration.status == Configuration.Status.MEASURED or configuration.status == Configuration.Status.BAD:
+
+            conn_params = pika.ConnectionParameters(host=self.event_host, port=int(self.event_port))
+            with pika.BlockingConnection(conn_params) as connection:
                 with connection.channel() as channel:
                     try:
                         if configuration.type == Configuration.Type.DEFAULT:
                             self._type = self.get_repeater()
                             channel.basic_publish(exchange='',
-                                                    routing_key='default_configuration_results_queue',
-                                                    body=configuration.to_json())
+                                                  routing_key='default_configuration_results_queue',
+                                                  body=configuration.to_json())
                         elif configuration.type == Configuration.Type.PREDICTED or \
                                 configuration.type == Configuration.Type.FROM_SELECTOR:
                             channel.basic_publish(exchange='',
-                                                    routing_key='configurations_results_queue',
-                                                    body=configuration.to_json())
+                                                  routing_key='configurations_results_queue',
+                                                  body=configuration.to_json())
                     except pika.exceptions.ChannelWrongStateError as err:
                         if not channel.is_open:
                             self.logger.warning("Attempt to send a message after closing the connection")
                         else:
                             raise err
-        elif (configuration.status == Configuration.Status.EVALUATED or \
-            configuration.status == Configuration.Status.REPEATED_MEASURING) and \
-            os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            with pika.BlockingConnection(
-                    pika.ConnectionParameters(host=self.event_host,
-                                                port=self.event_port)) as connection:
+        elif configuration.status == Configuration.Status.EVALUATED or \
+                configuration.status == Configuration.Status.REPEATED_MEASURING:
+
+            conn_params = pika.ConnectionParameters(host=self.event_host, port=int(self.event_port))
+            with pika.BlockingConnection(conn_params) as connection:
                 with connection.channel() as channel:
-                    dictionary_dump = {"configuration": configuration.to_json(),
-                                        "tasks": tasks_to_send
-                                        }
-                    body = json.dumps(dictionary_dump)
-                    channel.basic_publish(exchange='',
-                                            routing_key='process_tasks_queue',
-                                            body=body)
-        elif os.environ.get('TEST_MODE') == 'UNIT_TEST':
-            return configuration, needed_tasks_count
+                    body = json.dumps({"configuration": configuration.to_json(), "tasks": tasks_to_send})
+                    channel.basic_publish(exchange='', routing_key='process_tasks_queue', body=body)
 
     def get_repeater_measurements_record(self) -> Mapping:
         '''

@@ -50,7 +50,8 @@ class BayesianOptimization(Model):
         self.top_n_percent = top_n_percent
 
         self.experiment = experiment
-        self.isMinimizationExperiment = experiment.is_minimization()
+        self.obj_minimization = experiment.get_objectives_minimization()
+        self.model_obj_prio = experiment.get_models_objectives_priorities()
 
         self.bw_factor = bandwidth_factor
         self.min_bandwidth = min_bandwidth
@@ -129,17 +130,10 @@ class BayesianOptimization(Model):
                 config.add_parameters_in_indexes(config.parameters, self.experiment.search_space.get_indexes(config))
 
         # TODO: works only for single objective optimization with multiple priorities. Doesn't work with classical MOO
-        priorities = self.experiment.description["TaskConfiguration"]["ResultPriorities"] \
-            if "ResultPriorities" in self.experiment.description["TaskConfiguration"] else [0] * \
-                                        self.experiment.description["TaskConfiguration"]["ResultStructure"].__len__()
-        top_priority_index = 0
-        for i in range(priorities.__len__()):
-            if priorities[top_priority_index] < priorities[i]:
-                top_priority_index = i
-
+        top_priority_index = self.model_obj_prio.index(max(self.model_obj_prio))
         all_features = []
         all_labels = []
-        # TODO: Feature encoding
+        # TODO (y.s.): Feature encoding
         for config in self.experiment.measured_configurations:
             all_features.append(config.get_parameters_in_indexes())
             all_labels.append(config.get_average_result()[top_priority_index])
@@ -151,10 +145,8 @@ class BayesianOptimization(Model):
 
         n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_features.shape[0])//100)
 
-        # Refit KDE for the current budget
-
-        #TODO: argsort works not as intended for MOO
-        if self.isMinimizationExperiment:
+        # TODO: argsort works not as intended for MOO
+        if self.obj_minimization[top_priority_index]:
             idx = np.argsort(train_labels, axis=0)
         else:
             idx = np.argsort(-train_labels, axis=0)
@@ -204,7 +196,8 @@ class BayesianOptimization(Model):
         :return Configuration instance
         """
         predicted_configuration = None
-        if self.isMinimizationExperiment:
+        top_prio = self.model_obj_prio.index(max(self.model_obj_prio))
+        if self.obj_minimization[top_prio]:
             predicted_result = np.inf
         else:
             predicted_result = -np.inf
@@ -222,26 +215,30 @@ class BayesianOptimization(Model):
                 kde_bad = self.model['bad']
 
                 for i in range(self.sampling_size):
-                    idx = np.random.randint(0, len(kde_good.data))
-                    datum = kde_good.data[idx]
-                    vector = []
+                    # TODO (y.s.): it will be removed or changed later, when the next PR is ready,
+                    #  since this sampling approach violates conditions among parameter values.
+                    #idx = np.random.randint(0, len(kde_good.data))
+                    #datum = kde_good.data[idx]
+                    #vector = []
 
-                    for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
-                    
-                        bw = max(bw, self.min_bandwidth)
-                        if t == 0:
-                            bw = self.bw_factor*bw
-                            try:
-                                vector.append(sps.truncnorm.rvs(-m/bw, (1-m)/bw, loc=m, scale=bw))
-                            except:
-                                self.logger.warning("Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s" % (datum, kde_good.bw, m))
-                                self.logger.warning("data in the KDE:\n%s" % kde_good.data)
-                        else:
-                        
-                            if np.random.rand() < (1-bw):
-                                vector.append(int(m))
-                            else:
-                                vector.append(np.random.randint(t))
+                    #for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
+                    #
+                    #    bw = max(bw, self.min_bandwidth)
+                    #    if t == 0:
+                    #        bw = self.bw_factor*bw
+                    #        try:
+                    #            vector.append(sps.truncnorm.rvs(-m/bw, (1-m)/bw, loc=m, scale=bw))
+                    #        except:
+                    #            self.logger.warning("Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s" % (datum, kde_good.bw, m))
+                    #            self.logger.warning("data in the KDE:\n%s" % kde_good.data)
+                    #    else:
+                    #
+                    #        if np.random.rand() < (1-bw):
+                    #            vector.append(int(m))
+                    #        else:
+                    #            vector.append(np.random.randint(t))
+                    rd_sampled_config = self.experiment.search_space.sample_configuration()
+                    vector = self.experiment.search_space.get_indexes(rd_sampled_config)
                     val = minimize_me(vector)
 
                     if not np.isfinite(val):
@@ -258,7 +255,8 @@ class BayesianOptimization(Model):
                             predicted_result_vector = vector
                             break
 
-                    if (val < predicted_result and self.isMinimizationExperiment) or (val > predicted_result and not self.isMinimizationExperiment):
+                    if (val < predicted_result and self.obj_minimization[top_prio]) or \
+                            (val > predicted_result and not self.obj_minimization[top_prio]):
                         predicted_result = val
                         predicted_result_vector = vector
 
@@ -305,6 +303,7 @@ class BayesianOptimization(Model):
                                                    predicted_result=[predicted_result])
                 return configuration
         predicted_configuration.add_predicted_result(parameters=predicted_configuration.parameters, predicted_result=[predicted_result])
+        predicted_configuration.experiment_id = self.experiment.unique_id
 
         return predicted_configuration
 

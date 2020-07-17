@@ -1,7 +1,6 @@
 {
   "General":{
     "NumberOfWorkers": 3,
-    "isMinimizationExperiment": true,
     "EventService": {
       "Address": "localhost",
       "AMQTPort": 49153,
