@@ -1,0 +1,83 @@
+{
+  "name": "low level heuristic",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "jMetalPy.GeneticAlgorithm",
+      "children": [
+        {
+          "name": "population_size",
+          "type": "IntegerHyperparameter",
+          "lower": 10,
+          "upper": 1000,
+          "default": 100
+        },
+        {
+          "name": "offspring_population_size",
+          "type": "IntegerHyperparameter",
+          "lower": 10,
+          "upper": 1000,
+          "default": 100
+        },
+        {
+          "name": "mutation_type",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "PermutationSwapMutation"
+            },
+            {
+              "category": "ScrambleMutation"
+            }
+          ],
+          "default": "PermutationSwapMutation",
+          "children": [
+            {
+              "name": "mutation_probability",
+              "type": "FloatHyperparameter",
+              "lower": 0,
+              "upper": 1
+            }
+          ]
+        },
+        {
+          "name": "crossover_type",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "PMXCrossover"
+            },
+            {
+              "category": "CXCrossover"
+            }
+          ],
+          "default": "PMXCrossover",
+          "children": [
+            {
+              "name": "crossover_probability",
+              "type": "FloatHyperparameter",
+              "lower": 0,
+              "upper": 1
+            }
+          ]
+        },
+        {
+          "name": "selection_type",
+          "type": "OrdinalHyperparameter",
+          "categories": [
+            {
+              "category": "RouletteWheelSelection"
+            },
+            {
+              "category": "BestSolutionSelection"
+            },
+            {
+              "category": "BinaryTournamentSelection"
+            }
+          ],
+          "default": "BinaryTournamentSelection"
+        }
+      ]
+    }
+  ]
+}

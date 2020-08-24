@@ -4,6 +4,9 @@
 
 #### Software Product Line for Parameter Tuning
 #### Use case: *Combined Selection and Parameter Control of Meta-heuristics* 
+##### Jupyter notebooks with experiment analyses
+* [Main benchmark](./benchmark/results/analyse_flat_search_space.ipynb)
+
 ##### [Experiment dumps](./benchmark/results/serialized)
 * [Main benchmark](./benchmark/results/serialized/full_benchmark)
 * [Parameter tuning](./benchmark/results/serialized/parameter_tuning)

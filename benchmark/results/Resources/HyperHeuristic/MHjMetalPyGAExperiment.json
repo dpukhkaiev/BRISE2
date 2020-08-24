@@ -1,0 +1,23 @@
+{
+  "DomainDescription":{
+    "DataFile": "./Resources/HyperHeuristic/MHjMetalPyGAData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "tsp_hh",
+    "Scenario": {
+      "Problem": "TSP",
+      "problem_initialization_parameters": {
+        "instance": "scenarios/tsp/kroA100.tsp"
+      },
+      "Budget": {
+        "Type": "StoppingByTime",
+        "Amount": 15
+      },
+      "Hyperparameters": "provided"
+    },
+    "ResultStructure"   : ["objective", "improvement"],
+    "ResultDataTypes": ["float", "float"],
+    "ResultPriorities": [1, 0],
+    "ExpectedValuesRange": [[0, 150000]]
+  }
+}

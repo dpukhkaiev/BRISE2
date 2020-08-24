@@ -1,0 +1,253 @@
+{
+  "hyperparameters": [
+    {
+      "name": "Metaheuristic",
+      "type": "categorical",
+      "choices": ["GeneticAlgorithm", "SimulatedAnnealing", "EvolutionStrategy"],
+      "default": "SimulatedAnnealing"
+    },
+    {
+      "name": "GA_population_size",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 1000,
+      "default": 100
+    },
+    {
+      "name": "GA_offspring_population_size",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 1000,
+      "default": 100
+    },
+    {
+      "name": "GA_mutation_type",
+      "type": "categorical",
+      "choices": ["PermutationSwapMutation", "ScrambleMutation"],
+      "default": "PermutationSwapMutation"
+    },
+    {
+              "name": "GA_mutation_probability_PSM",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+              "name": "GA_mutation_probability_SM",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "GA_crossover_type",
+      "type": "categorical",
+      "choices": ["PMXCrossover", "CXCrossover"],
+      "default": "PMXCrossover"
+    },
+    {
+              "name": "GA_crossover_probability_PMX",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+              "name": "GA_crossover_probability_CXC",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "GA_selection_type",
+      "type": "categorical",
+      "choices": ["RouletteWheelSelection", "BestSolutionSelection", "BinaryTournamentSelection"],
+      "default": "BestSolutionSelection"
+    },
+    {
+      "name": "SA_mutation_type",
+      "type": "categorical",
+      "choices": ["PermutationSwapMutation", "ScrambleMutation"],
+      "default": "PermutationSwapMutation"
+    },
+    {
+              "name": "SA_mutation_probability_PSM",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+              "name": "SA_mutation_probability_SM",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+      "name": "ES_mu",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 1000,
+      "default": 100
+    },
+    {
+      "name": "ES_lambda_",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 10,
+      "upper": 1000,
+      "default": 100
+    },
+    {
+      "name": "ES_elitist",
+      "type": "categorical",
+      "choices": ["true", "false"],
+      "default": "true"
+    },
+    {
+      "name": "ES_mutation_type",
+      "type": "categorical",
+      "choices": ["PermutationSwapMutation", "ScrambleMutation"],
+      "default": "PermutationSwapMutation"
+    },
+    {
+              "name": "ES_mutation_probability_PSM",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    },
+    {
+              "name": "ES_mutation_probability_SM",
+      "type": "uniform_float",
+      "log": false,
+              "lower": 0,
+              "upper": 1,
+      "default": 0.5
+    }
+  ],
+  "conditions": [
+    {
+      "child": "GA_population_size",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "GeneticAlgorithm"
+    },
+    {
+      "child": "GA_offspring_population_size",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "GeneticAlgorithm"
+    },
+    {
+      "child": "GA_mutation_type",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "GeneticAlgorithm"
+    },
+    {
+      "child": "GA_mutation_probability_PSM",
+      "parent": "GA_mutation_type",
+      "type": "EQ",
+      "value": "PermutationSwapMutation"
+    },
+    {
+      "child": "GA_mutation_probability_SM",
+      "parent": "GA_mutation_type",
+      "type": "EQ",
+      "value": "ScrambleMutation"
+    },
+    {
+      "child": "GA_crossover_type",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "GeneticAlgorithm"
+    },
+    {
+      "child": "GA_crossover_probability_PMX",
+      "parent": "GA_crossover_type",
+      "type": "EQ",
+      "value": "PMXCrossover"
+    },
+    {
+      "child": "GA_crossover_probability_CXC",
+      "parent": "GA_crossover_type",
+      "type": "EQ",
+      "value": "CXCrossover"
+    },
+    {
+      "child": "GA_selection_type",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "GeneticAlgorithm"
+    },
+    {
+      "child": "SA_mutation_type",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "SimulatedAnnealing"
+    },
+    {
+      "child": "SA_mutation_probability_PSM",
+      "parent": "SA_mutation_type",
+      "type": "EQ",
+      "value": "PermutationSwapMutation"
+    },
+    {
+      "child": "SA_mutation_probability_SM",
+      "parent": "SA_mutation_type",
+      "type": "EQ",
+      "value": "ScrambleMutation"
+    },
+    {
+      "child": "ES_mu",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "EvolutionStrategy"
+    },
+    {
+      "child": "ES_lambda_",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "EvolutionStrategy"
+    },
+    {
+      "child": "ES_elitist",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "EvolutionStrategy"
+    },
+    {
+      "child": "ES_mutation_type",
+      "parent": "Metaheuristic",
+      "type": "EQ",
+      "value": "EvolutionStrategy"
+    },
+    {
+      "child": "ES_mutation_probability_PSM",
+      "parent": "ES_mutation_type",
+      "type": "EQ",
+      "value": "PermutationSwapMutation"
+    },
+    {
+      "child": "ES_mutation_probability_SM",
+      "parent": "ES_mutation_type",
+      "type": "EQ",
+      "value": "ScrambleMutation"
+    }
+  ],
+  "forbiddens": []
+}

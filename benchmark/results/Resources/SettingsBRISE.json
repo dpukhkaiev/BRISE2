@@ -1,0 +1,106 @@
+{
+  "General":{
+    "isMinimizationExperiment": true,
+    "EventService": {
+      "Address": "event_service",
+      "Port" : 49153
+    },
+    "Main node":{
+      "COMMENT": "Configurations for API main node -> front end.",
+      "address": "0.0.0.0",
+      "port": 49152,
+      "Debug sockets": false
+    },
+    "COMMENT": "These configurations should also be moved to \"Main node\".",
+    "results_storage" : "./Results/"
+  },
+  "SelectionAlgorithm":{
+    "SelectionType"     : "SearchSpaceSelector"
+  },
+  "OutliersDetection":{
+    "isEnabled": false,
+    "Detectors": [
+      {
+        "Type": "Dixon",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 30
+        }
+      },
+      {
+        "Type": "Chauvenet",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "MAD",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Grubbs",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Quartiles",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      }
+    ]
+  },
+  "Repeater":{
+    "Type": "default",
+    "Parameters": {
+      "MaxFailedTasksPerConfiguration": 1,
+      "MaxTasksPerConfiguration": 1
+    }
+  },
+  "Predictor":{
+    "window size": 0.8,
+    "models": [
+      {
+        "Type": "brise.MultiArmedBandit",
+        "Parameters": {
+          "c": "std",
+          "objectives_minimization": {"improvement": false}
+        }
+      },
+      {
+        "Type": "brise.TreeParzenEstimator",
+        "Parameters": {
+          "top_n_percent": 30,
+          "random_fraction": 0,
+          "bandwidth_factor": 3,
+          "min_bandwidth": 0.001,
+          "objectives_minimization": {"improvement": false},
+          "SamplingSize": 96
+        }
+      }
+    ]
+  },
+  "StopConditionTriggerLogic":{
+    "Expression": "TimeBased",
+    "InspectionParameters":{
+      "RepetitionPeriod": 2,
+      "TimeUnit": "seconds"
+    }
+  },
+  "StopCondition":[
+    {
+      "Type": "TimeBased",
+      "Parameters":{
+        "MaxRunTime": 15,
+        "TimeUnit": "minutes"
+      }
+    }
+  ]
+}
