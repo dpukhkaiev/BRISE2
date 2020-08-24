@@ -1,11 +1,14 @@
 # BRISE 2.4.0
-##### Benchmark Reduction via Adaptive Instance Selection
-![BRISE-CI](https://github.com/dpukhkaiev/BRISE2/workflows/BRISE-CI/badge.svg?branch=master)
+#### Benchmark Reduction via Adaptive Instance Selection
 
-Software Product Line for Parameter Tuning\
-Initial use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
-different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy consumption minimization` 
-(optimization goal).  
+
+#### Software Product Line for Parameter Tuning
+#### Use case: *Combined Selection and Parameter Control of Meta-heuristics* 
+##### [Experiment dumps](./benchmark/results/serialized)
+* [Main benchmark](./benchmark/results/serialized/full_benchmark)
+* [Parameter tuning](./benchmark/results/serialized/parameter_tuning)
+* [Sparse search space](./benchmark/results/serialized/sparse_pc_and_hh_pc)
+* [Preliminary tuning of internal hyperparameters](./benchmark/results/serialized/hyperparameters)
 
 ## Getting started
 #### Requirements
