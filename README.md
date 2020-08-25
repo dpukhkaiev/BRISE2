@@ -16,7 +16,7 @@ different algorithms (data compression, sorting, encrpyption and database querie
 * [Bayesian optimization](./benchmark/results/serialized/repeater_bo)
 
 ##### Benchmark
-To reproduce the benchmark see the [README](./benchmark/README.md).
+To run the benchmark see the [README](./benchmark/README.md).
 
 ## Getting started
 #### Requirements

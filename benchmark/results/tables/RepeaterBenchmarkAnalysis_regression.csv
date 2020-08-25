@@ -1,4 +1,4 @@
-Strategy,Configurations measured,Tasks measured,Mean number of repetitons,Relative Solution Quality,Time Effort [days],Relative Time Effort
+Strategy,Configurations measured,Tasks measured,Mean number of repetitions,Relative Solution Quality,Time Effort [days],Relative Time Effort
 Quantity-based 1,8360,8360,1,0.89,0.58,0.13
 Quantity-based 2,6044,12088,2,0.9154,0.86,0.19
 Quantity-based 3,5795,17385,3,0.9301,1.47,0.32
