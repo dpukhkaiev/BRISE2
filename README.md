@@ -6,6 +6,10 @@
 #### Use case: *Combined Selection and Parameter Control of Meta-heuristics* 
 ##### Jupyter notebooks with experiment analyses
 * [Main benchmark](./benchmark/results/analyse_flat_search_space.ipynb)
+##### Plots
+* [Main benchmark](./benchmark/results/plots/full_benchmark)
+* [Parameter tuning](./benchmark/results/plots/parameter_tuning)
+* [Preliminary tuning of internal hyperparameters](./benchmark/results/plots/hyperparameters)
 
 ##### [Experiment dumps](./benchmark/results/serialized)
 * [Main benchmark](./benchmark/results/serialized/full_benchmark)
