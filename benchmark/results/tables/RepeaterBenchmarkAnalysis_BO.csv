@@ -1,0 +1,23 @@
+Strategy,Configurations measured,Tasks measured,Mean number of repetitons,Relative Solution Quality,Time Effort [days],Relative Time Effort
+Quantity-based 1,9971,9971,1,0.8708,0.70,0.11
+Quantity-based 2,7766,15532,2,0.9151,1.38,0.23
+Quantity-based 3,7460,22380,3,0.8976,2.16,0.35
+Quantity-based 4,7096,28384,4,0.9114,2.09,0.34
+Quantity-based 5,6986,34930,5,0.9215,2.57,0.42
+Quantity-based 6,7153,42918,6,0.9263,3.32,0.54
+Quantity-based 7,7934,55538,7,0.9264,5.95,0.97
+Quantity-based 8,7543,60344,8,0.9302,5.05,0.82
+Quantity-based 9,7212,64908,9,0.9313,5.20,0.85
+Quantity-based 10,7178,71780,10,0.9298,6.13,1.00
+Acceptable-error-based 50 BAE,6697,16048,2.4,0.8998,1.18,0.19
+Acceptable-error-based 15 BAE,6709,18368,2.7,0.8928,1.30,0.21
+Acceptable-error-based 5 BAE,6466,21975,3.4,0.9023,1.54,0.25
+Acceptable-error-based 1 BAE,6648,41998,6.3,0.9279,3.06,0.50
+Model-aware 50 BAE,6590,15602,2.4,0.8874,1.07,0.17
+Model-aware 15 BAE,6983,18018,2.6,0.8949,1.26,0.21
+Model-aware 5 BAE,6505,14050,2.2,0.8929,0.68,0.11
+Model-aware 1 BAE,6404,14512,2.3,0.9191,0.70,0.11
+Model-aware 3 RM,6505,14050,2.2,0.8929,0.68,0.11
+Model-aware 5 RM,6661,16178,2.4,0.9079,0.85,0.14
+Model-aware 7 RM,6822,18106,2.7,0.8881,0.94,0.15
+Model-aware 20 RM,6858,23066,3.4,0.9042,1.65,0.27

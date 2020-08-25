@@ -4,13 +4,19 @@ Software Product Line for Parameter Tuning\
 Use case: search of an optimal sweet-spot configuration (`CPU Frequency` and `number of threads`) for 
 different algorithms (data compression, sorting, encrpyption and database queries) w.r.t. `energy consumption minimization` 
 (optimization goal).  
-## Experiment results
-[Link](./benchmark/results/reports/)
+##### Experiment results
+[Link](./benchmark/results/tables)
 
-## Repetition management strategies implementation
-[Quantity-based](./main-node/repeater/default.py)
+##### Implementation of repetition management strategies:
+* [Quantity-based](./main-node/repeater/default.py)
+* [Acceptable-error-based (both variants)](./main-node/repeater/student_deviation.py)
 
-[Acceptable-error-based (both variants)](./main-node/repeater/student_deviation.py)
+##### [Experiment dumps](./benchmark/results/serialized)
+* [Regression](./benchmark/results/serialized/repeater_regression_full)
+* [Bayesian optimization](./benchmark/results/serialized/repeater_bo)
+
+##### Benchmark
+To reproduce the benchmark see the [README](./benchmark/README.md).
 
 ## Getting started
 #### Requirements
