@@ -17,6 +17,9 @@
 * [Sparse search space](./benchmark/results/serialized/sparse_pc_and_hh_pc)
 * [Preliminary tuning of internal hyperparameters](./benchmark/results/serialized/hyperparameters)
 
+##### Source code
+:construction: The source code and the benchmark setup are currently undergoing the merge process and will be available with the release 2.5.0.
+
 ## Getting started
 #### Requirements
 Software requirements:
