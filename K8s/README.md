@@ -123,6 +123,8 @@ To get access to the GUI of the dashboard, follow the next steps:
  - To login into the dashboard use a token authorization mechanism. To get the token run the next command:
  `$ kubectl -n kube-system describe secret $(sudo kubectl -n kube-system get secret | 
  (grep k8sadmin || echo "$_") | awk '{print $1}') | grep token: | awk '{print $2}'`
+ - In case the Database is unreacheable, e.g., after a new deployment, the respective user has to be created with the 
+ command: `$ mongo --eval 'var db = connect("mongodb://localhost/BRISE_db"); db.createRole({role: "user",privileges: [{actions: [ "find", "update", "insert" ],resource: { db: "BRISE_db", collection: "" }}],roles: [  ]});db.createUser({user: "BRISEdbuser",pwd: "5V5Scp1E2",roles: [ { role: "user", db: "BRISE_db" } ]})'` 
  
 
 ##### Cluster management information

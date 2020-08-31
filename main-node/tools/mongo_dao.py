@@ -13,18 +13,16 @@ class MongoDB(metaclass=Singleton):
     It contains main CRUD operations (Create, Read, Update and Delete), used by BRISE to operate with a database
     '''
     def __init__(self, mongo_host: str, mongo_port: int, database_name: str, user: str, passwd: str):
+        self.logger = logging.getLogger(__name__)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            username = urllib.parse.quote_plus(user)
-            password = urllib.parse.quote_plus(passwd)
-            self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port), username=username, password=password, authSource=database_name)
+            self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port), username=user, password=passwd, authSource=database_name)
             self.database = self.client[database_name]
+            self.logger.info(f"New DB connection: {database_name} {user}")
         else:
             # if test mode - initialize connection to a database mock
             from tools.mongo_db_mock import MongoDB_mock
             mock_database = MongoDB_mock()
             self.database = mock_database.collections
-
-        self.logger = logging.getLogger(__name__)
 
     def write_one_record(self, collection_name: str, record: Mapping) -> None:
         collection = self.database[collection_name]

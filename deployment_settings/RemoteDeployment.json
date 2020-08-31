@@ -1,0 +1,14 @@
+{
+  "Database": {
+    "Address": "172.22.1.167",
+    "Port": 27017,
+    "DatabaseName": "BRISE_db",
+    "DatabaseUser": "BRISEdbuser",
+    "DatabasePass": "5V5Scp1E2"
+  },
+  "EventService": {
+    "Address": "localhost",
+    "AMQTPort": 49153,
+    "GUIPort": 49154
+  }
+}

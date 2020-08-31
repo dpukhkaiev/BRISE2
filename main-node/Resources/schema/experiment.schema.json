@@ -10,63 +10,6 @@
                     "type": "integer",
                     "minimum": 0
                 },
-                "EventService": {
-                    "type": "object",
-                    "properties": {
-                        "Address": {
-                            "type": "string"
-                        },
-                        "AMQTPort": {
-                            "type": "integer",
-                            "minimum": 49152,
-                            "maximum": 65535
-                        },
-                        "GUIPort": {
-                            "type": "integer",
-                            "minimum": 49152,
-                            "maximum": 65535
-                        }
-                    },
-                    "additionalProperties": false,
-                    "required":[
-                        "Address",
-                        "AMQTPort",
-                        "GUIPort"
-                    ]
-                },
-                "Database": {
-                    "type": "object",
-                    "properties": {
-                        "Address": {
-                            "type": "string"
-                        },
-                        "Port": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 65535
-                        },
-                        "DatabaseName": {
-                            "type": "string"
-                        },
-                        "DatabaseUser": {
-                            "type": "string"
-                        },
-                        "DatabasePass": {
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false,
-                    "required":[
-                        "Address",
-                        "Port",
-                        "DatabaseName",
-                        "DatabaseUser",
-                        "DatabasePass"
-                    ]
-                },
-                "COMMENT": {
-                    "type": "string"
-                },
                 "results_storage": {
                     "type": "string"
                 }
@@ -74,8 +17,6 @@
             "additionalProperties": false,
             "required": [
                 "NumberOfWorkers",
-                "EventService",
-                "Database",
                 "results_storage"
             ]
         },

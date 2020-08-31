@@ -14,12 +14,7 @@ spec:
     spec:
       containers:
         - name: mongo-db
-          image: mongo:4.2.7
-          env:
-            - name: MONGO_INITDB_ROOT_USERNAME
-              value: admin
-            - name: MONGO_INITDB_ROOT_PASSWORD
-              value: 5V5Scp1E
+          image: mongo:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 27017

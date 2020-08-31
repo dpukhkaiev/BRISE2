@@ -56,18 +56,11 @@ class Experiment:
         self.evaluated_conf_lock = Lock()
 
         # initialize connection to the database
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
-                                    os.getenv("BRISE_DATABASE_PORT"), 
-                                    os.getenv("BRISE_DATABASE_NAME"),
-                                    os.getenv("BRISE_DATABASE_USER"),
-                                    os.getenv("BRISE_DATABASE_PASS"))
-        else:
-            self.database = MongoDB(self.description["General"]["Database"]["Address"],
-                                    self.description["General"]["Database"]["Port"],
-                                    self.description["General"]["Database"]["DatabaseName"],
-                                    self.description["General"]["Database"]["DatabaseUser"],
-                                    self.description["General"]["Database"]["DatabasePass"])
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), 
+                                os.getenv("BRISE_DATABASE_PORT"), 
+                                os.getenv("BRISE_DATABASE_NAME"),
+                                os.getenv("BRISE_DATABASE_USER"),
+                                os.getenv("BRISE_DATABASE_PASS"))
 
     def _get_description(self):
         return deepcopy(self._description)

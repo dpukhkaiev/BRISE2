@@ -8,38 +8,32 @@ services:
     environment:
       - EXP_DUMP_NAME=undefined
     restart: on-failure
+    network_mode: host
 
   event_service:
     build: ./event_service/
     stdin_open: true
     tty: true
     container_name: event-service
+    network_mode: host
     restart: on-failure
-
-  mongo-db:
-    image: mongo:4.4.0
-    container_name: mongo-db
-    restart: on-failure
-    environment:
-        MONGO_INITDB_DATABASE: BRISE_db
-    ports:
-        - 27017:27017
-    volumes:
-      - ./mongo-db/init.js:/docker-entrypoint-initdb.d/init.js
 
   worker_service:
     build: ./worker_service/
     stdin_open: true
     tty: true
     container_name: worker-service
+    network_mode: host
     restart: on-failure
 
   front-end:
     build: ./front-end/
     container_name: front-end
     tty: true
+    network_mode: host
     restart: on-failure
 
   worker:
     build: ./worker/
+    network_mode: host
     restart: on-failure
