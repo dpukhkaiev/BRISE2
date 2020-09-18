@@ -1,21 +1,41 @@
 {
-  "hyperparameters": [
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
     {
-      "name": "threads",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1,
-      "upper": 32,
-      "default": 32
-    },
-    {
-      "name": "frequency",
-      "type": "ordinal",
-      "sequence": [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
-        2900.0, 2901.0],
-      "default": 2900.0
+      "category": "energy",
+      "children": [
+        {
+          "name": "frequency",
+          "type": "OrdinalHyperparameter",
+          "categories": [
+            {"category": 1200.0},
+            {"category": 1300.0},
+            {"category": 1400.0},
+            {"category": 1600.0},
+            {"category": 1700.0},
+            {"category": 1800.0},
+            {"category": 1900.0},
+            {"category": 2000.0},
+            {"category": 2200.0},
+            {"category": 2300.0},
+            {"category": 2400.0},
+            {"category": 2500.0},
+            {"category": 2700.0},
+            {"category": 2800.0},
+            {"category": 2900.0},
+            {"category": 2901.0}
+          ],
+          "default": 2900.0
+        },
+        {
+          "name": "threads",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 32,
+          "default": 32
+        }
+      ]
     }
-  ],
-  "conditions": [],
-  "forbiddens": []
+  ]
 }

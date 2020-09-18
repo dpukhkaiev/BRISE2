@@ -1,60 +1,60 @@
 {
-  "hyperparameters": [
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
     {
-      "name": "subComponentUnassignedFactor",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1,
-      "upper": 10000,
-      "default": 1
-    },
-    {
-      "name": "softwareComponentUnassignedFactor",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1,
-      "upper": 10000,
-      "default": 5
-    },
-    {
-      "name": "hardScoreStartingTemperaturePercentage",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1,
-      "upper": 100,
-      "default": 100
-    },
-    {
-      "name": "softScoreStartingTemperaturePercentage",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1,
-      "upper": 100,
-      "default": 100
-    },
-    {
-      "name": "acceptedCountLimit",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1,
-      "upper": 50,
-      "default": 50
-    },
-    {
-      "name": "millisecondsSpentLimit",
-      "type": "categorical",
-      "choices": [10000],
-      "default": 10000
-    },
-    {
-      "name": "unimprovedMillisecondsSpentLimit",
-      "type": "categorical",
-      "choices": [10000],
-      "default": 10000
+      "category": "SA",
+      "children": [
+        {
+          "name": "subComponentUnassignedFactor",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 10000,
+          "default": 1
+        },
+        {
+          "name": "softwareComponentUnassignedFactor",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 10000,
+          "default": 5
+        },
+        {
+          "name": "hardScoreStartingTemperaturePercentage",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 100,
+          "default": 100
+        },
+        {
+          "name": "softScoreStartingTemperaturePercentage",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 100,
+          "default": 100
+        },
+        {
+          "name": "acceptedCountLimit",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 50,
+          "default": 50
+        },
+        {
+          "name": "millisecondsSpentLimit",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 10000}
+          ]
+        },
+        {
+          "name": "unimprovedMillisecondsSpentLimit",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 10000}
+          ]
+        }
+      ]
     }
-  ],
-  "conditions": [],
-  "forbiddens": [],
-  "python_module_version": "0.4.10",
-  "json_format_version": 0.1
+  ]
 }

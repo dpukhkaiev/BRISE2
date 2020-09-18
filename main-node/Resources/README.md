@@ -2,18 +2,17 @@
 ###### This folder contains examples of *json* configuration files.
 
 ### The framework settings configuration file entities explanation
-Frameworks main modules should be described in 6 general topics (top-level-keys in json file) of the settings [file](./SettingsBRISE.json).
+Framework's configuration should be described with 7 general facets (top-level-keys in json file) of the settings [file](./SettingsBRISE.json).
 All other configurations are nested to these as key-value entities.
 <details>
-<summary> Description of required experiment configurations </summary>
+<summary> Description of the required experiment configuration </summary>
 
-- `General` - describes what configurations the target system uses. Value - `dictionary` with following key-value pairs.
+- `General` - a system-related configuration. Value - `dictionary` with following key-value pairs.
     - `EventService` - describes RabbitMQ settings.
         - `Address` - `string`. Address of RabbitMQ service.
         - `Port` - `int`. Port of RabbitMQ service for AMQP connection.
 
-- `SelectionAlgorithm` - describes the way of search space (all possible configuration) exploration.
-    - `SelectionType` - `string`. An exploration algorithm specification. Variants: `SobolSequence`, `ConfigSpaceSelector` (Mersenne Twister).
+- `SelectionAlgorithm` - model-independent sampling strategy. Variants: `SobolSequence`, `MersenneTwister`.
 
 - `OutliersDetection` - the results of each Configuration run (Tasks) could differ significantly 
 from other observations (Tasks) and those bias Configuration measurement results.
@@ -73,15 +72,92 @@ The intent of the Repetition Manager is to ensure statistical significance of ea
     - To get more information on Repetition Manager, please consult with a corresponding [README](./../repeater/README.md)  
  
      
-- `ModelConfiguration` - section with the configuration related to the surrogate prediction model creating process.
-    - `SamplingSize` - `int`. A number of configurations that should be sampled from a continuous search space in 
-    order to give the model enough information for prediction. Obligatory for all prediction models.
-    - `ModelType` - `string`. Type of the surrogate prediction model. *Variants:* 
-        - `BO` - Bayesian Optimization model (using the Tree Parzen Estimator or TPE).
-        - `regression` - Polynomial regression model. For this prediction model the following additional parameters are obligatory:
-            - `minimalTestingSize` - `float`. A minimum possible fraction that specifies an amount of data for testing the created prediction model.
-            - `maximalTestingSize` - `float`. A fraction that specifies an amount of data for testing the created prediction model.
-            - `MinimumAccuracy` - `float`. A minimum accuracy that model should provide before making any predictions/testing.
+- `Predictor` - surrogate model creation process.
+    - `window size` - `float` or `int`. A number of already evaluated configurations that should be used to create the surrogate model: 
+    `float` to specify the window size as a percentage from configurations or integer to specify an exact value. 
+    - `models` - `array of objects`. Array of models, which will be used at each level of the search space.
+    Each model configuration requires two fields, `Type` and `Parameters`:
+        - `Type` - `string`. A name of the model to use on this level. Based on the name, BRISE will import required model. 
+        The name is structured from two parts, separated by `.`, for instance: `brise.TreeParzenEstimator`. 
+        The first part (e.g., *brise*, *sklearn*) specifies where to import model from. 
+        Allowed values are: 
+            - `brise` - model will be imported from [model](./../model) folder.
+            - `sklearn` - will be imported one of [Scikit-learn](https://scikit-learn.org/) linear models.
+        The second part is the name of the model. Allowed values depends on the source of the model:
+                - for `brise` the allowed values are: `TreeParzenEstimator`, `MultiArmedBandit` and `ModelMock` (randomly samples parameters).
+                - for `sklearn` see the list of models [here](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model).
+        - `Parameters` - `object`. Specifies parameter values for each model, depending on the model type.
+        Shared parameters:
+            - `SamplingSize` - `int`, defines the number of random configurations sampled to optimize the surrogate model.
+            - `DataPreprocessing` - `object`, defines which preprocessing methods to use for specific data type.
+
+            For brise-provided models please see corresponding constructor.
+            For Scikit-learn models parameters follow predefined structure and require following values:
+            - `CrossValidationSplits` - `int`, defines the number of re-shuffling and splitting iterations for cross-validation.
+            - `TestSize`- `float or int`,  if `float`, should be between 0.0 and 1.0 and represent the proportion 
+            of the dataset to include in the test split. If `int`, represents the absolute number of test samples.
+            - `MinimalScore` - `float` between 0.0 and 1.0 is the accuracy threshold of created model.
+            If the accuracy is below the threshold, model is not created.
+            - The parameters for underlying linear scikit-learn model is passed as key-value pairs into nested `UnderlyingModelParameters` object.
+       
+<details>
+<summary> Examples of predictor configurations. </summary>
+
+Using BRISE FRAMAB on 1st level and TPE on second:
+```json
+{
+"Predictor": {
+  "window size": 0.8,
+  "models": [
+    {
+      "Type": "brise.MultiArmedBandit",
+      "Parameters": { "c": "std" }
+    },
+    {
+      "Type": "brise.TreeParzenEstimator",
+      "Parameters": {
+        "top_n_percent": 30,
+        "random_fraction": 0,
+        "bandwidth_factor": 3,
+        "min_bandwidth": 0.001,
+        "SamplingSize": 96
+      }
+     }
+  ]
+}}
+```
+
+Using Scikit-learn Bayesian Ridge regression model:
+```json
+{
+  "Predictor": {
+    "window size": 0.8,
+    "models": [
+      {
+        "Type": "sklearn.BayesianRidge",
+        "Parameters": {
+          "SamplingSize": 96,
+          "MinimalScore": 0.5,
+          "CrossValidationSplits": 5,
+          "TestSize": 0.30,
+          "DataPreprocessing": {
+            "OrdinalHyperparameter": "sklearn.OrdinalEncoder",
+            "NominalHyperparameter": "brise.BinaryEncoder",
+            "IntegerHyperparameter": "sklearn.MinMaxScaler",
+            "FloatHyperparameter": "sklearn.MinMaxScaler"
+          },
+          "UnderlyingModelParameters": {
+            "n_iter": 200,
+            "tol": 1e-2,
+            "normalize": true
+          }
+        }
+      }
+   ]
+ }
+}
+```
+</details>
         
 - `StopConditionTriggerLogic` - The user could specify any logic of BRISE Experiment termination by composing the operands 
 `and`, `or`, brackets `(` `)` and names of Stop Conditions into a single expression.
@@ -118,7 +194,6 @@ Possible values of configurations for your system should be provided in Experime
 
 - `DomainDescription` - describes what configurations the target system uses. 
 Value - `dictionary` with following key-value pairs.
-    - `HyperparameterNames` - `list of strings`. The names of configurations.
     - `DataFile` - `string`. Path to json file with all possible values of all configurations.
     - `DefaultConfigurationHandler`. Optional parameter. If a default configuration is not specified or specified 
     incorrectly, random configuration is picked instead. This module can be extended to provide a specific logic.
@@ -129,7 +204,7 @@ Value - `dictionary` with following key-value pairs.
         - The following fields should be specified for Hyper-heuristic mode (TaskName = `tsp_hh_flat`):
             - `Problem` - `string`. Name of optimization problem type. Supported `TSP`.
             - `problem_initialization_parameters` - `Mapping`. Parametrizes the optimization problem:
-                - `instance` - `string`. Path to problem description file in worker node. For instance `scenarios/tsp/kroA100.tsp`.
+                - `instance` - `string`. Path to the problem description file in worker node. For instance `scenarios/tsp/kroA100.tsp`.
             - `Budget` - `Mapping`. Describes, when to terminate one task execution.
                 - `Type` - `string`. Type of termination criteria. Supported: `StoppingByTime`.
                 - `Amount` - `number`. Amount of budget, given for optimization. If Time-based budget is used, amount is specified in seconds.
@@ -157,30 +232,63 @@ Value - `dictionary` with following key-value pairs.
 ```json
 {
   "General":{
+    "NumberOfWorkers": 3,
     "EventService": {
-      "Address": "event-service",
-      "Port" : 49153
-    }
-  },
-  "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence"
-  },
-  "OutliersDetection":[
-    {
-      "Type": "Dixon",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 30
-      }
+      "Address": "localhost",
+      "AMQTPort": 49153,
+      "GUIPort": 49154
     },
-    {
-      "Type": "Chauvenet",
-      "Parameters": {
-        "MinActiveNumberOfTasks": 3,
-        "MaxActiveNumberOfTasks": 10000
+    "Database": {
+      "Address": "172.22.1.167",
+      "Port": 27017,
+      "DatabaseName": "BRISE_db",
+      "DatabaseUser": "BRISEdbuser",
+      "DatabasePass": "5V5Scp1E2"
+    },
+    "COMMENT": "These configurations should also be moved to \"Main node\".",
+    "results_storage": "./Results/"
+  },
+  "SelectionAlgorithm": "MersenneTwister",
+  "OutliersDetection":{
+    "isEnabled": true,
+    "Detectors": [
+      {
+        "Type": "Dixon",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 30
+        }
+      },
+      {
+        "Type": "Chauvenet",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Mad",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Grubbs",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
+      },
+      {
+        "Type": "Quartiles",
+        "Parameters": {
+          "MinActiveNumberOfTasks": 3,
+          "MaxActiveNumberOfTasks": 10000
+        }
       }
-    }
-  ],
+    ]
+  },
   "Repeater":{
     "Type": "AcceptableErrorBased",
     "Parameters": {
@@ -191,19 +299,30 @@ Value - `dictionary` with following key-value pairs.
       "ConfidenceLevels": [0.95],
       "DevicesScaleAccuracies": [0],
       "DevicesAccuracyClasses": [0],
-      "ExperimentAwareness":{
+      "ExperimentAwareness": {
         "isEnabled": true,
         "MaxAcceptableErrors": [50],
         "RatiosMax": [10]
       }
     }
   },
-  "ModelConfiguration":{
-    "SamplingSize": 96,
-    "ModelType"         : "BO"
+  "Predictor":{
+    "window size": 1.0,
+    "models": [
+      {
+        "Type": "brise.TreeParzenEstimator",
+        "Parameters": {
+          "top_n_percent": 30,
+          "random_fraction": 0,
+          "bandwidth_factor": 3,
+          "min_bandwidth": 0.001,
+          "SamplingSize": 96
+        }
+      }
+    ]
   },
   "StopConditionTriggerLogic":{
-    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and ValidationBased) or BadConfigurationBased or TimeBased",
+    "Expression": "(QuantityBased and Guaranteed and ImprovementBased) or BadConfigurationBased or TimeBased",
     "InspectionParameters":{
       "RepetitionPeriod": 1,
       "TimeUnit": "seconds"
@@ -211,40 +330,42 @@ Value - `dictionary` with following key-value pairs.
   },
   "StopCondition":[
     {
+      "Name": "QuantityBased",
       "Type": "QuantityBased",
       "Parameters": {
         "MaxConfigs": 15
       }
     },
     {
+      "Name": "ImprovementBased",
       "Type": "ImprovementBased",
       "Parameters": {
         "MaxConfigsWithoutImprovement": 5
       }
     },
     {
+      "Name": "Guaranteed",
       "Type": "Guaranteed",
       "Parameters": {      }
     },
     {
+      "Name": "BadConfigurationBased",
       "Type": "BadConfigurationBased",
       "Parameters": {
         "MaxBadConfigurations": 10
       }
     },
     {
+      "Name": "TimeBased",
       "Type": "TimeBased",
-      "Parameters":{
+      "Parameters": {
         "MaxRunTime": 10,
         "TimeUnit": "minutes"
       }
-    },
-    {
-      "Type": "ValidationBased",
-      "Parameters": {      }
     }
   ]
 }
+
 
 ```
 </details>
@@ -280,96 +401,32 @@ Value - `dictionary` with following key-value pairs.
 
 ```json
 {
-  "hyperparameters": [
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
     {
-      "name": "threads",
-      "type": "categorical",
-      "choices": [1, 2, 4, 8, 16, 32],
-      "default": 32
-    },
-    {
-      "name": "frequency",
-      "type": "categorical",
-      "choices": [1200.0, 1300.0, 1400.0, 1600.0, 1700.0, 1800.0, 1900.0, 2000.0, 2200.0, 2300.0, 2400.0, 2500.0, 2700.0, 2800.0,
-        2900.0, 2901.0],
-      "default": 2900.0
-    }
-  ],
-  "conditions": [],
-  "forbiddens": []
-}
-```
-
-</details>
-
-<details>
-<summary> Artificial example of Experiment data file (demonstration of all features) </summary>
-
-```json
-{
-  "hyperparameters": [
-    {
-      "name": "number_of_trees",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 2,
-      "upper": 500,
-      "default": 500
-    },
-    {
-      "name": "subset_ratio",
-      "type": "uniform_float",
-      "log": false,
-      "lower": 0.0,
-      "upper": 1.0,
-      "default": 0.3
-    },
-    {
-      "name": "use_local_random_seed",
-      "type": "categorical",
-      "choices": [
-        "true",
-        "false"
-      ],
-      "default": "false"
-    },
-    {
-      "name": "local_random_seed",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 1992,
-      "upper": 1998,
-      "default": 1992
-    }
-  ],
-  "conditions": [
-    {
-      "child": "local_random_seed",
-      "parent": "use_local_random_seed",
-      "type": "EQ",
-      "value": "true"
-    }
-  ],
-  "forbiddens": [
-    {
-      "name": "number_of_trees",
-      "type": "AND",
-      "clauses": [
+      "category": "SynteticProblems",
+      "children": [
         {
-          "name": "number_of_trees",
-          "type": "EQUALS",
-          "value": 2
+          "name": "x",
+          "type": "FloatHyperparameter",
+          "lower": -4.0,
+          "upper": 5.0,
+          "default": 1
         },
-        {
-          "name": "subset_ratio",
-          "type": "IN",
-          "values": [0.1, 0.2]
+         {
+          "name": "y",
+          "type": "FloatHyperparameter",
+          "lower": -4.0,
+          "upper": 5.0,
+          "default": 1
         }
       ]
     }
   ]
-}	
+}
 ```
+
 </details>
 
 #### Validate the configuration file:

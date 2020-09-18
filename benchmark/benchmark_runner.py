@@ -15,7 +15,7 @@ from threading import Thread
 
 import pika
 
-from core_entities.search_space import SearchSpace
+from core_entities.search_space import Hyperparameter
 from tools.initial_config import load_experiment_setup
 
 
@@ -77,13 +77,13 @@ class BRISEBenchmarkRunner:
 
     def execute_experiment(self,
                            experiment_description: dict,
-                           search_space: SearchSpace = None,
+                           search_space: Hyperparameter = None,
                            number_of_repetitions: int = 3):
         """
              Check how many dumps are available for particular Experiment Description.
 
          :param experiment_description: Dict. Experiment Description
-         :param search_space: SearchSpace. Initialized SearchSpace object.
+         :param search_space: Hyperparameter. Initialized Hyperparameter object.
          :param number_of_repetitions: int. number of times to execute the same Experiment.
 
          :return: int. Number of times experiment dump was found in a storage.
@@ -162,7 +162,7 @@ class BRISEBenchmarkRunner:
         :return: int, number of Experiments that were executed and experiment dumps are stored.
                 Actually you could return whatever you want, here this number is returned only for reporting purposes.
         """
-        self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/EnergyExperiment.json")
+        self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         self._experiment_timeout = 5 * 60
 
         quality_based_repeater_skeleton = {
@@ -402,7 +402,7 @@ class MainAPIClient:
         self.isBusy = status_report['MAIN_PROCESS']['main process']
         return status_report
 
-    def start_main(self, experiment_description: dict, search_space: SearchSpace):
+    def start_main(self, experiment_description: dict, search_space: Hyperparameter):
         data = pickle.dumps(
             {"experiment_description": experiment_description,
              "search_space": search_space}
@@ -425,12 +425,13 @@ class MainAPIClient:
         if response["status"] == "ok":
             # Parsing the name of stored dump in main-node
             file_name = response["file_name"]
+            file_name = file_name[file_name[:file_name.rfind(".")].rfind("/") + 1:]
             body = base64.b64decode(response["body"])
             # Unique name for a dump
             full_file_name = self.dump_storage + file_name
             backup_counter = 0
             while os.path.exists(full_file_name):
-                file_name = file_name[:file_name.rfind(".")] + "({0})".format(backup_counter) + file_name[
+                file_name = file_name[file_name[:file_name.rfind(".")].rfind("/") + 1:] + "({0})".format(backup_counter) + file_name[
                                                                                                 file_name.rfind("."):]
                 full_file_name = self.dump_storage + file_name
                 backup_counter += 1
@@ -444,14 +445,14 @@ class MainAPIClient:
         self.update_status()
 
     # --- General out-of-box methods ---
-    def perform_experiment(self, experiment_description: dict = None, search_space: SearchSpace = None,
+    def perform_experiment(self, experiment_description: dict = None, search_space: Hyperparameter = None,
                            wait_for_results: Union[bool, float] = 20 * 60):
         """
             Send the Experiment Description to the Main node and start the Experiment.
 
         :param experiment_description: Dict. Experiment Description that will be sent to the Main node.
 
-        :param search_space: SearchSpace object. Information about search space that will be sent to the Main node.
+        :param search_space: Hyperparameter object. Information about search space that will be sent to the Main node.
 
         :param wait_for_results: If ``False`` - client will only send an Experiment Description and return response with
                                 the Main node status.

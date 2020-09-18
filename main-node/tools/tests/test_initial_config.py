@@ -10,12 +10,12 @@ class TestInitialConfig:
     def test_0_load_valid_experiment_setup(self):
         # Test #0. Load an Experiment setup from the valid Experiment description file
         # Expected result: both experiment description and search space are loaded. Experiment description can be used as a dictionary
-        from core_entities.search_space import SearchSpace
+        from core_entities.search_space import Hyperparameter
         input_file = "./Resources/EnergyExperiment/EnergyExperiment.json"
         expected_experiment = "energy_consumption"
         actual_experiment_description, actual_search_space = load_experiment_setup(input_file)
         assert actual_experiment_description["TaskConfiguration"]["TaskName"] == expected_experiment
-        assert isinstance(actual_search_space, SearchSpace)
+        assert isinstance(actual_search_space, Hyperparameter)
 
     def test_1_load_invalid_experiment_setup(self):
         # Test #1. Try to load an Experiment setup from the invalid Experiment description file

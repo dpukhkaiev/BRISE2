@@ -1,13 +1,15 @@
 __doc__ = """
     Module to load configurations and experiment descriptions."""
 import logging
+from typing import Dict
 
 from tools.file_system_io import load_json_file
 from tools.json_validator import is_json_file_valid, get_duplicated_sc_names, get_missing_sc_entities
 from tools.front_API import API
-from core_entities.search_space import SearchSpace
+from core_entities.search_space import Hyperparameter, initialize_search_space
 
-def load_experiment_setup(exp_desc_file_path: str):
+
+def load_experiment_setup(exp_desc_file_path: str) -> [Dict, Hyperparameter]:
     """
     Method reads the Experiment Description from specified file and performs it validation according to specified
         schema. It also loads a search space for the specified experiment from correspondent data file
@@ -18,14 +20,17 @@ def load_experiment_setup(exp_desc_file_path: str):
     task_description = load_json_file(exp_desc_file_path)
     framework_settings = load_json_file('./Resources/SettingsBRISE.json')
 
+    # TODO: add versions of experiment description for compatibility checks
     experiment_description = {**task_description, **framework_settings}
     # Validate and load Search space
-    search_space_to_validate = load_json_file(experiment_description["DomainDescription"]["DataFile"])
-    validate_experiment_data(search_space_to_validate)
-
-    search_space = SearchSpace(experiment_description["DomainDescription"])
-    logging.getLogger(__name__).info("The Experiment Description was loaded from the file '%s'. Search space was loaded from the file '%s'." \
-        % (exp_desc_file_path, experiment_description["DomainDescription"]["DataFile"]))
+    search_space_description = load_json_file(experiment_description["DomainDescription"]["DataFile"])
+    # TODO: fix validation
+    validate_experiment_data(search_space_description)
+    search_space = initialize_search_space(search_space_description, experiment_description["SelectionAlgorithm"])
+    logging.getLogger(__name__).info(
+        f"The Experiment Description was loaded from {exp_desc_file_path}. "
+        f"Search space was loaded from {experiment_description['DomainDescription']['DataFile']}."
+    )
 
     return experiment_description, search_space
 
@@ -62,8 +67,9 @@ def validate_experiment_description(experiment_description: dict,
         msg = "Some errors caused during validation. Please, check the Experiment Description."
         raise ValueError(msg)
 
+
 def validate_experiment_data(experiment_data: dict,
-                                    schema_file_path: str = './Resources/schema/experiment_data.schema.json'):
+                             schema_file_path: str = './Resources/schema/experiment_data.schema.json'):
     """
     Performs validation and raises error if provided Experiment Data does not pass the validation
         according to the schema

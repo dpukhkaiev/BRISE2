@@ -3,7 +3,7 @@
     "DataFile"          : "./Resources/MLExperiments/NB/NBExperimentData.json"
   },
   "TaskConfiguration":{
-    "TaskName"          : "naiveBayes_mock",
+    "TaskName"          : "naiveBayes",
     "Scenario":{
       "ws_file": "NB_final_result.csv"
     },

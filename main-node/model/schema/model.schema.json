@@ -2,68 +2,36 @@
     "$id": "http://brise.com/model.schema.json",
     "$schema": "http://json-schema.org/draft-07/schema#",
     "description": "Model make a hypothesis about the solution of the experiment",
-
     "definitions": {
-        "BayesianOptimization": {
-            "title": "Bayesian optimization",
+        "Predictor": {
             "description": "Global optimization of black-box functions that doesn't require derivatives.",
             "type": "object",
             "properties": {
-                "SamplingSize": {
-                    "type": "integer",
-                    "minimum": 1
+                "window size": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "exclusiveMinimum": true
                 },
-                "ModelType": {
-                    "type": "string",
-                    "enum": ["BO"]
+                "models": {
+                    "type": "array",
+                    "items": {
+                        "allOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "Type": {"type": "string"},
+                                    "Parameters": {"type": "object"}
+                                },
+                                "additionalItems": false
+                            }
+                        ]
+                    }
                 }
             },
             "required": [
-                "SamplingSize",
-                "ModelType"
-            ],
-            "additionalProperties": false
-        },
-        "Regression": {
-            "title": "Regression sweet spot",
-            "type": "object",
-            "properties": {
-                "SamplingSize": {
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "minimalTestingSize": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
-                },
-                "maximalTestingSize": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
-                },
-                "MinimumAccuracy": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "exclusiveMaximum": true,
-                    "exclusiveMinimum": true
-                },
-                "ModelType": {
-                    "type": "string",
-                    "enum": ["regression"]
-                }
-            },
-            "required": [
-                "SamplingSize",
-                "minimalTestingSize",
-                "maximalTestingSize",
-                "MinimumAccuracy",
-                "ModelType"
+                "window size",
+                "models"
             ],
             "additionalProperties": false
         }

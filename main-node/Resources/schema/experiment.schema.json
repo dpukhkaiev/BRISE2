@@ -27,7 +27,8 @@
                     "type": "string"
                 },
                 "DefaultConfigurationHandler": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["Automodel", "Random"]
                 }
             },
             "required": [
@@ -35,12 +36,8 @@
             ]
         },
         "SelectionAlgorithm": {
-            "anyOf": [{
-                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/SobolSequence"
-            },
-            {
-                "$ref": "./selection/schema/sel_algorithm.schema.json#/definitions/ConfigSpaceSelector"
-            }]
+            "type": "string",
+            "enum": ["SobolSequence", "MersenneTwister"]
         },
         "TaskConfiguration": {
             "type": "object",
@@ -123,16 +120,8 @@
                 }
             ]
         },
-        "ModelConfiguration": {
-            "description": "Configuration related to the prediction model creation process.",
-            "anyOf": [
-                {
-                    "$ref": "./model/schema/model.schema.json#/definitions/BayesianOptimization"
-                },
-                {
-                    "$ref": "./model/schema/model.schema.json#/definitions/Regression"
-                }
-            ]
+        "Predictor": {
+            "$ref": "./model/schema/model.schema.json#/definitions/Predictor"
         },
         "StopConditionTriggerLogic": {
             "type": "object",
@@ -170,7 +159,7 @@
         "TaskConfiguration",
         "OutliersDetection",
         "Repeater",
-        "ModelConfiguration",
+        "Predictor",
         "StopCondition"
     ]
 }

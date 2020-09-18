@@ -2,31 +2,31 @@ __doc__ = """
 Main module for running BRISE configuration balancing."""
 
 import logging
-import pika
 import os
 import json
 import threading
 import pickle
 from enum import Enum
 from sys import argv
-
+from collections import OrderedDict
 from warnings import filterwarnings
+
+import pika
+logging.getLogger("pika").setLevel(logging.WARNING)
 
 filterwarnings("ignore")  # disable warnings for demonstration.
 
 from WorkerServiceClient.WSClient_events import WSClient
-from model.model_selection import get_model, Model
+from model.predictor import Predictor
 from repeater.repeater_selector import RepeaterOrchestration
 from tools.initial_config import load_experiment_setup, validate_experiment_description
 from tools.front_API import API
-from selection.selection_algorithms import get_selector, SelectionAlgorithm
 from logger.default_logger import BRISELogConfigurator
 from stop_condition.stop_condition_selector import launch_stop_condition_threads
 from core_entities.experiment import Experiment
-from core_entities.search_space import SearchSpace
+from core_entities.search_space import Hyperparameter, get_search_space_record
 from core_entities.configuration import Configuration
 from default_config_handler.default_config_handler_selector import get_default_config_handler
-from default_config_handler.default_config_handler import DefaultConfigurationHandler
 from default_config_handler.abstract_default_config_handler import AbstractDefaultConfigurationHandler
 from tools.mongo_dao import MongoDB
 
@@ -42,7 +42,7 @@ class MainThread(threading.Thread):
         SHUTTING_DOWN = 1
         IDLE = 2
 
-    def __init__(self, experiment_setup: [Experiment, SearchSpace] = None):
+    def __init__(self, experiment_setup: [Experiment, Hyperparameter] = None):
         """
         The function for initializing main thread
         :param experiment_setup: fully initialized experiment, r.g from a POST request
@@ -54,7 +54,6 @@ class MainThread(threading.Thread):
         self.experiment_setup = experiment_setup
 
         self.sub = API()  # front-end subscribers
-        logging.getLogger("pika").setLevel(logging.WARNING)
         if __name__ == "__main__":
             self.logger = BRISELogConfigurator().get_logger(__name__)
         else:
@@ -64,12 +63,10 @@ class MainThread(threading.Thread):
         self.experiment: Experiment = None
         self.connection: pika.BlockingConnection = None
         self.consume_channel = None
-        self.selector: SelectionAlgorithm = None
-        self.model: Model = None
+        self.predictor: Predictor = None
         self.wsc_client: WSClient = None
         self.repeater: RepeaterOrchestration = None
         self.database: MongoDB = None
-        self.default_config_handler: AbstractDefaultConfigurationHandler = None
 
     def run(self):
         """
@@ -124,22 +121,22 @@ class MainThread(threading.Thread):
 
         # write initial settings to the database
         self.database.write_one_record("Experiment_description", self.experiment.get_experiment_description_record())
-        self.database.write_one_record("Search_space", self.experiment.search_space.get_search_space_record(self.experiment.unique_id))
+        self.database.write_one_record(
+            "Search_space", get_search_space_record(self.experiment.search_space, self.experiment.unique_id)
+        )
         self.experiment.send_state_to_db()
 
         self.sub.send('experiment', 'description',
                       global_config=self.experiment.description["General"],
                       experiment_description=self.experiment.description,
-                      searchspace_description=self.experiment.search_space.generate_searchspace_description()
+                      searchspace_description=self.experiment.search_space.serialize()
                       )
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
         launch_stop_condition_threads(self.experiment.unique_id)
-        # Creating instance of selector algorithm, according to specified in experiment description type.
 
         # Instantiate client for Worker Service, establish connection.
-        self.selector = get_selector(experiment=self.experiment)
         self.wsc_client = WSClient(
             self.experiment.description["TaskConfiguration"],
             os.getenv("BRISE_EVENT_SERVICE_HOST"),
@@ -147,16 +144,16 @@ class MainThread(threading.Thread):
         )
         # TODO: change this to event-based communication.
         #  (https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r440165389)
-        self.wsc_client.parameter_names = self.experiment.search_space.get_hyperparameter_names()
 
         # Initialize Repeater - encapsulate Configuration evaluation process to avoid results fluctuations.
         # (achieved by multiple Configuration evaluations on Workers - Tasks)
         RepeaterOrchestration(self.experiment)
 
-        self.default_config_handler = get_default_config_handler(self.experiment)
-        temp_msg = "Measuring default Configuration."
-        self.logger.info(temp_msg)
-        self.sub.send('log', 'info', message=temp_msg)
+        # TODO: information, related to experiment, such as ED, UUID, etc. could be encapsulated into `context` entity.
+        self.predictor: Predictor = Predictor(
+            self.experiment.unique_id, self.experiment.description, self.experiment.search_space
+        )
+
         self.consume_channel.basic_consume(queue='default_configuration_results_queue', auto_ack=True,
                                            on_message_callback=self.get_default_configurations_results)
         self.consume_channel.basic_consume(queue='configurations_results_queue', auto_ack=True,
@@ -166,7 +163,12 @@ class MainThread(threading.Thread):
         self.consume_channel.basic_consume(queue="get_new_configuration_queue", auto_ack=True,
                                            on_message_callback=self.send_new_configurations_to_measure)
 
-        default_configuration = self.default_config_handler.get_default_config()
+        self.default_config_handler = get_default_config_handler(self.experiment)
+        temp_msg = "Measuring default Configuration."
+        self.logger.info(temp_msg)
+        self.sub.send('log', 'info', message=temp_msg)
+        default_parameters = self.experiment.search_space.generate_default()
+        default_configuration = Configuration(default_parameters, Configuration.Type.DEFAULT, self.experiment.unique_id)
         default_configuration.experiment_id = self.experiment.unique_id
         dictionary_dump = {"configuration": default_configuration.to_json()}
         body = json.dumps(dictionary_dump)
@@ -192,37 +194,32 @@ class MainThread(threading.Thread):
         """
         default_configuration = Configuration.from_json(body.decode())
         if default_configuration.status == Configuration.Status.BAD:
-            if type(self.default_config_handler) == DefaultConfigurationHandler:
+            new_default_values = self.default_config_handler.get_new_default_config()
+            if new_default_values:
+                config = Configuration(
+                        new_default_values, Configuration.Type.FROM_SELECTOR, self.experiment.unique_id
+                    )
+                temp_msg = f"New default configuration sampled."
+                self.logger.info(temp_msg)
+                self.sub.send('log', 'info', message=temp_msg)
+                self.consume_channel.basic_publish(exchange='',
+                                                routing_key='measure_new_configuration_queue',
+                                                body=json.dumps({"configuration": config.to_json()}))
+            else:
                 self.logger.error("The specified default configuration is broken.")
                 self.stop()
                 self.sub.send('log', 'info', message="The specified default configuration is broken.")
                 return
-            default_configuration = self.default_config_handler.get_default_config()
-            dictionary_dump = {"configuration": default_configuration.to_json()}
-            body = json.dumps(dictionary_dump)
-
-            self.consume_channel.basic_publish(exchange='',
-                                routing_key='measure_new_configuration_queue',
-                                body=body)
         if self.experiment.is_configuration_evaluated(default_configuration):
-            # set default configuration for the search space and update search space db record respectively
-            self.experiment.search_space.set_default_configuration(default_configuration)
-            self.database.update_record("Search_space", {"Exp_unique_ID" : self.experiment.unique_id}, 
-                {"Default_configuration" : self.experiment.search_space.get_default_configuration().get_configuration_record(self.experiment.unique_id)})
-            self.database.update_record("Search_space", {"Exp_unique_ID" : self.experiment.unique_id}, 
-                {"SearchspaceObject" : pickle.dumps(self.experiment.search_space)})
-            self.experiment.put_default_configuration(default_configuration)
+            self.experiment.default_configuration = default_configuration
+            self.database.update_record("Search_space", {"Exp_unique_ID": self.experiment.unique_id},
+                {"Default_configuration": default_configuration.get_configuration_record()})
+            self.database.update_record("Search_space", {"Exp_unique_ID": self.experiment.unique_id},
+                {"SearchspaceObject": pickle.dumps(self.experiment.search_space)})
 
             temp_msg = f"Evaluated Default Configuration: {default_configuration}"
             self.logger.info(temp_msg)
             self.sub.send('log', 'info', message=temp_msg)
-
-            self.model = get_model(experiment=self.experiment,
-                                   log_file_name="%s%s%s_model.txt" % (self.experiment.description["General"]['results_storage'],
-                                                                       self.experiment.get_name(),
-                                                                       self.experiment.description[
-                                                                           "ModelConfiguration"][
-                                                                           "ModelType"]))
 
             # starting main work: building model and choosing configuration for measuring
             self.consume_channel.basic_publish(exchange='',
@@ -250,43 +247,47 @@ class MainThread(threading.Thread):
 
     def send_new_configurations_to_measure(self, ch, method, properties, body):
         """
-        The function for building model and choosing configuration for measuring
-        """
-        # for dynamic parallelization
-        dictionary_dump = json.loads(body.decode())
-        needed_configs = dictionary_dump["worker_capacity"]
-        self.model.build_model()
-        self.experiment.update_model_state(self.model.validate_model())
-        if self.experiment.get_model_state():
-            predicted_configurations = self.model.predict_next_configurations(needed_configs)
-            for conf in predicted_configurations:
-                if conf.status == Configuration.Status.NEW and conf not in self.experiment.evaluated_configurations:
-                    temp_msg = f"Model predicted {conf} with quality {conf.predicted_result}"
-                    self.logger.info(temp_msg)
-                    self.sub.send('log', 'info', message=temp_msg)
-                    dictionary_dump = {"configuration": conf.to_json()}
-                    body = json.dumps(dictionary_dump)
-                    self.consume_channel.basic_publish(exchange='',
-                                            routing_key='measure_new_configuration_queue',
-                                            body=body)
-                    needed_configs -= 1
+        This callback function will be triggered on arrival of ONE measured Configuration.
+        When there is new measured Configuration, following steps should be done:
 
-        while needed_configs > 0:
-            if len(self.experiment.evaluated_configurations) < self.experiment.search_space.get_search_space_size():
-                config = self.selector.get_next_configuration()
-                if self.experiment.get_any_configuration_by_parameters(config.parameters) is None:
-                    temp_msg = f"Randomly sampled {config}."
-                    self.logger.info(temp_msg)
-                    self.sub.send('log', 'info', message=temp_msg)
-                    dictionary_dump = {"configuration": config.to_json()}
-                    body = json.dumps(dictionary_dump)
-                    self.consume_channel.basic_publish(exchange='',
-                                            routing_key='measure_new_configuration_queue',
-                                            body=body)
-                    needed_configs -= 1
+            -   update and validate models;
+
+            -   pick either by model, or by selection algorithm new Configuration(s) for evaluation;
+                Note: The amount of new Configurations are:
+                - 0 if number of available Worker nodes decreased;
+                - 1 if number of available Workers did not change;
+                - N + 1 if number of available Worker increased by N;
+
+            -   send new Configuration to Repeater for evaluation.
+        """
+
+        needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
+        for _ in range(needed_configs):
+            # TODO some of parameters could be predicted, other could be sampled, need to change Configuration.Type
+            config = self.predictor.predict(self.experiment.measured_configurations)
+            if config not in self.experiment.evaluated_configurations:
+                temp_msg = f"Model predicted {config}."
             else:
-                self.logger.warning("Whole Search Space is evaluated. Waiting for Stop Condition decision.")
-                break
+                while config in self.experiment.evaluated_configurations and not self._is_interrupted:
+                    if len(self.experiment.evaluated_configurations) >= self.experiment.search_space.get_size():
+                        msg = "Entire Search Space was evaluated. Shutting down."
+                        self.logger.warning(msg)
+                        self.consume_channel.basic_publish(exchange='', routing_key='stop_experiment_queue', body=msg)
+                        break
+
+                    new_parameter_values = OrderedDict()
+                    while not self.experiment.search_space.validate(new_parameter_values, is_recursive=True):
+                        self.experiment.search_space.generate(new_parameter_values)
+                    config = Configuration(
+                        new_parameter_values, Configuration.Type.FROM_SELECTOR, self.experiment.unique_id
+                    )
+                temp_msg = f"Fully randomly sampled {config}."
+
+            self.logger.info(temp_msg)
+            self.sub.send('log', 'info', message=temp_msg)
+            self.consume_channel.basic_publish(exchange='',
+                                               routing_key='measure_new_configuration_queue',
+                                               body=json.dumps({"configuration": config.to_json()}))
 
     def stop(self, ch = None, method = None, properties = None, body = None):
         """
@@ -296,7 +297,7 @@ class MainThread(threading.Thread):
             self._state = self.State.SHUTTING_DOWN
             self._is_interrupted = True
             self.consume_channel.basic_publish(exchange='brise_termination_sender', routing_key='', body='')
-            self.sub.send('log', 'info', message="Solution validation success!")
+            self.sub.send('log', 'info', message=f"Terminating experiment. Reason: {body}")
             optimal_configuration = self.experiment.get_final_report_and_result()
             self._state = self.State.IDLE
             return optimal_configuration

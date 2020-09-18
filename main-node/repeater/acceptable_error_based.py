@@ -46,16 +46,22 @@ class AcceptableErrorBasedType(Repeater):
         :return: int min_tasks_per_configuration if Configuration was not measured at all or 1 if Configuration was not measured precisely or 0 if it finished
         """
         tasks_data = current_configuration.get_tasks()
-        average_result = current_configuration.get_average_result()
-        current_solution = experiment.get_current_solution().get_average_result()
 
         if len(tasks_data) == 0:
             return 1
 
-        elif len(tasks_data) < self.min_tasks_per_configuration:
+        c_c_results = current_configuration.results
+        c_s_results = experiment.get_current_solution().results
+        c_c_results_l = []
+        c_s_results_l = []
+        for key in experiment.get_objectives():
+            c_c_results_l.append(c_c_results[key])
+            c_s_results_l.append(c_s_results[key])
+
+        if len(tasks_data) < self.min_tasks_per_configuration:
             if self.is_experiment_aware:
                 # TODO: issue #140
-                ratios = [cur_config_dim / cur_solution_dim for cur_config_dim, cur_solution_dim in zip(average_result, current_solution)]
+                ratios = [cur_config_dim / cur_solution_dim for cur_config_dim, cur_solution_dim in zip(c_c_results_l, c_s_results_l)]
                 if all([ratio >= ratio_max for ratio, ratio_max in zip(ratios, self.ratios_max)]):
                     return 0
             return self.min_tasks_per_configuration - len(tasks_data)
@@ -68,7 +74,7 @@ class AcceptableErrorBasedType(Repeater):
 
             # The number of Degrees of Freedom generally equals the number of observations (Tasks) minus
             # the number of estimated parameters.
-            degrees_of_freedom = len(tasks_data) - len(average_result)
+            degrees_of_freedom = len(tasks_data) - len(c_c_results_l)
 
             # Calculate the critical t-student value from the t distribution
             student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in self.confidence_levels]
@@ -77,7 +83,7 @@ class AcceptableErrorBasedType(Repeater):
             # singular measurements and confidence intervals for multiple measurements.
             # First - singular measurements errors:
             conf_intervals_sm = []
-            for c_l, d_s_a, d_a_c, avg in zip(self.confidence_levels, self.device_scale_accuracies, self.device_accuracy_classes, average_result):
+            for c_l, d_s_a, d_a_c, avg in zip(self.confidence_levels, self.device_scale_accuracies, self.device_accuracy_classes, c_c_results_l):
                 d = sqrt((c_l * d_s_a / 2)**2 + (d_a_c * avg/100)**2)
                 conf_intervals_sm.append(c_l * d)
 
@@ -93,7 +99,7 @@ class AcceptableErrorBasedType(Repeater):
 
             # Calculating relative error for each dimension
             relative_errors = []
-            for interval, avg_res in zip(absolute_errors, average_result):
+            for interval, avg_res in zip(absolute_errors, c_c_results_l):
                 if not avg_res:     # it is 0 or 0.0
                     # TODO: WorkAround for cases where avg = 0, need to review it here and in \ratio\ calculation
                     # if new use-cases appear with the same behaviour.
@@ -111,15 +117,15 @@ class AcceptableErrorBasedType(Repeater):
 
                 for i in range(len(objectives_minimization)):
                     if objectives_minimization[i]:
-                        if not current_solution[i]:
+                        if not c_s_results_l[i]:
                             ratio = 1
                         else:
-                            ratio = average_result[i] / current_solution[i]
+                            ratio = c_c_results_l[i] / c_s_results_l[i]
                     else:
-                        if not average_result[i]:
+                        if not c_c_results_l[i]:
                             ratio = 1
                         else:
-                            ratio = current_solution[i] / average_result[i]
+                            ratio = c_s_results_l[i] / c_c_results_l[i]
 
                     adopted_threshold = \
                         self.base_acceptable_errors[i] \

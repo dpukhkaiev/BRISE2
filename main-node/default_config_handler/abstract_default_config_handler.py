@@ -10,3 +10,6 @@ class AbstractDefaultConfigurationHandler(ABC):
 
     @abstractmethod
     def get_default_config(self) -> Configuration: pass
+
+    def get_new_default_config(self):
+        return self.get_default_config()

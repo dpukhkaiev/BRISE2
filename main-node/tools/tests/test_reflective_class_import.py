@@ -30,8 +30,8 @@ class TestReflectiveClassImport:
     def test_3_contraversial_import_by_of_name(self):
         # Test #3. Import class by a contraversial name (contains names of more than 1 class)
         # Expected result: class with the closest name is successfully imported
-        expected_result = "ConfigSpaceSelector"
-        actual_result = reflective_class_import(class_name="SobolSequenceConfigSpaceSelector", folder_path="selection")
+        expected_result = "MersenneTwister"
+        actual_result = reflective_class_import(class_name="SobolSequenceMersenneTwister", folder_path="selection")
         assert actual_result.__name__ == expected_result
 
     def test_4_import_by_lower_case_name(self):

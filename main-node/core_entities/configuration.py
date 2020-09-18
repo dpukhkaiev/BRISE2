@@ -5,9 +5,17 @@ import uuid
 import pickle
 from enum import Enum
 from copy import deepcopy
-from typing import Iterable, Mapping, List
+from collections import OrderedDict
+from typing import (
+    Mapping,
+    MutableMapping,
+    List,
+    Any,
+    Dict,
+    Tuple
+)
 
-import numpy as np
+import pandas as pd
 
 from tools.front_API import API
 
@@ -32,12 +40,10 @@ class Configuration:
     def set_task_config(cls, taskConfig):
         cls.TaskConfiguration = taskConfig
 
-    def __init__(self, parameters: Iterable, config_type: Type):
+    def __init__(self, parameters: Mapping, config_type: Type, experiment_id: str):
         """
-        :param parameters: Iterable object.
-            While iterating, should return parameter values in the same order as in HyperparameterNames of
-            Experiment Description. During initialization it will be converted into the tuple.
-            Example: list, e.g. ``[1200, 32]`` will be converted to (1200, 32),
+        :param hyperparameters: hyperparameters mapping name:value
+               shape - ``{"Frequency": 1200, "Threads": 32}``
         :param config_type: Configuration Type (see inner class Type).
 
         During initializing following fields are declared:
@@ -68,10 +74,10 @@ class Configuration:
         self.logger = logging.getLogger(__name__)
         # The unique configuration ID
         self.unique_id = str(uuid.uuid4())
-        self._parameters = parameters
-        self._parameters_in_indexes = []
+        self._parameters: MutableMapping = OrderedDict()
+        self.parameters = parameters
         self._tasks = {}
-        self._average_result = []
+        self._results: Mapping = OrderedDict()
         self.predicted_result = []
         self.type = config_type
         self.status = Configuration.Status.NEW
@@ -81,80 +87,94 @@ class Configuration:
         self.number_of_failed_tasks = 0
         self._task_number = 0
         self.warm_startup_info = {}
-        self.experiment_id = None
+        self.experiment_id = experiment_id
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         space = self.__dict__.copy()
         space['status'] = int(space['status'])
         space['type'] = int(space['type'])
+        space["_parameters"] = dict(space["_parameters"])
+        space["_results"] = dict(space["_results"])
         del space['logger']
         return deepcopy(space)
 
-    def __setstate__(self, space):
+    def __setstate__(self, space: Dict[str, Any]) -> None:
         self.__dict__ = space
         self.logger = logging.getLogger(__name__)
         self.status = Configuration.Status(space['status'])
         self.type = Configuration.Type(space['type'])
+        self._parameters = OrderedDict(space["_parameters"])
+        self._results = OrderedDict(space["_results"])
 
-    def __eq__(self, other):
-        if not isinstance(other, Configuration):
-            return False
-        # TODO: This is a temporal solution. More details at:
-        #  https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r446104461
-        return self.unique_id == other.unique_id or self.parameters == other.parameters
-
-    def _set_parameters(self, parameters):
-        if not self._parameters:
-            self._parameters = tuple(parameters)
-        else:
-            self.logger.error("Unable to update Experiment Description: Read-only property.")
-            raise AttributeError("Unable to update Experiment Description: Read-only property.")
-
-    def _get_parameters(self):
+    @property
+    def parameters(self) -> MutableMapping:
         return deepcopy(self._parameters)
 
-    def _del_parameters(self):
-        if self._parameters:
-            self.logger.error("Unable to delete Experiment Description: Read-only property.")
-            raise AttributeError("Unable to update Experiment Description: Read-only property.")
+    @parameters.setter
+    def parameters(self, parameters: MutableMapping):
+        if not isinstance(parameters, Mapping):
+            raise TypeError(f"Parameters should be of instance {type(self._parameters)}.")
+        elif not all((self._parameters[h] == parameters[h] for h in self._parameters)):
+            raise ValueError(f"Previously selected parameters should not be altered! "
+                             f"{self._parameters} != {parameters}")
+        # --- TODO: work-around for conditions (lambda should be > than mu), should be removed when conditions
+        #   are implemented
+        if parameters.get("low level heuristic", "") == "jMetalPy.EvolutionStrategy":
+            if 'lambda_' in parameters and parameters['lambda_'] < parameters['mu']:
+                self.logger.warning(f"Values for 'lambda_'({parameters['lambda_']}( and 'mu'({parameters['mu']}) "
+                                    f"parameters was swapped due to specifics of MH!")
+                parameters['lambda_'], parameters['mu'] = parameters['mu'], parameters['lambda_']
+        self._parameters = parameters
 
-    parameters = property(_get_parameters, _set_parameters, _del_parameters)
+    @property
+    def results(self) -> Mapping:
+        # TODO: deepcopy may be slow for frequent requests
+        #  consider reworking it with the implementation of frozendict.
+        #   The same should be done for parameters.
+        #  (https://stackoverflow.com/questions/24756712/deepcopy-is-extremely-slow)
+        #  (https://stackoverflow.com/a/2704866)
+        return deepcopy(self._results)
 
-    def add_predicted_result(self, parameters: list, predicted_result: list):
+    @results.setter
+    def results(self, results: Mapping):
+        if not isinstance(results, Mapping):
+            raise TypeError(f"Results should be of instance {type(self._results)}.")
+        else:
+            self._results = OrderedDict(results)
 
-        if self.__is_valid_configuration(parameters):
-            self.predicted_result = [float(x) for x in predicted_result]
+    def to_series(self, results: bool = True) -> pd.Series:
+        data = OrderedDict(self.parameters)
+        if results:
+            data.update(self.results)
+        return pd.Series(data, dtype='object')
 
-    def add_tasks(self, task):
+    def add_predicted_result(self, *args, **kwargs) -> None:
+        # the structure of predicted results should be revised to:
+        # 1. support tree-shaped search space
+        # 2. reflect the meaning of each model's prediction sense (regression surrogate prediction is real value, while
+        # TPE prediction is probability
+        raise NotImplemented()
+
+    def add_task(self, task: Mapping) -> None:
         """
         Add new measurements of concrete parameters
-        :param task: List of task results
+        :param task: mapping of task results
         """
         task_id = task["task id"]
         self.warm_startup_info = task["result"].pop("warm_startup_info", {})
         self._tasks[str(task_id)] = task
-        self.__assemble_tasks_results()
+        self._assemble_tasks_results()
 
-    def add_parameters_in_indexes(self, parameters, parameters_in_indexes):
-        if self.__is_valid_configuration(parameters):
-            self._parameters_in_indexes = parameters_in_indexes
-
-    def get_parameters_in_indexes(self):
-        return self._parameters_in_indexes.copy()
-
-    def get_tasks(self):
+    def get_tasks(self) -> Mapping:
         return self._tasks.copy()
 
-    def get_average_result(self):
-        return self._average_result.copy()
-
-    def get_required_results_with_marks_from_all_tasks(self):
+    def get_required_results_with_marks_from_all_tasks(self) -> Tuple[List[OrderedDict], List[str]]:
         from_all_tasks = []
         marks = []
         for task in self._tasks.values():
-            from_one_task = []
+            from_one_task = OrderedDict()
             for domain in self.__class__.TaskConfiguration["Objectives"]:
-                from_one_task.append(task['result'][domain])
+                from_one_task[domain] = (task['result'][domain])
             from_all_tasks.append(from_one_task)
             marks.append(task['ResultValidityCheckMark'])
         return from_all_tasks, marks
@@ -162,12 +182,11 @@ class Configuration:
     def get_standard_deviation(self):
         return self._standard_deviation.copy()
 
-    def to_json(self):
+    def to_json(self) -> str:
         # TODO: this method partially repeats the functionality of 'Configuration.get_configuration_record()'. Refactoring needed 
         dictionary_dump = {"configuration_id": self.unique_id,
-                           "parameters": self._parameters,
-                           "parameters_in_indexes": self._parameters_in_indexes,
-                           "average_result": self._average_result,
+                           "parameters": self.parameters,
+                           "results": self.results,
                            "tasks": self._tasks,
                            "predicted_result": self.predicted_result,
                            "standard_deviation": self._standard_deviation,
@@ -182,15 +201,14 @@ class Configuration:
         return json.dumps(dictionary_dump)
 
     @staticmethod
-    def from_json(json_string):
+    def from_json(json_string: str) -> Configuration:
         # TODO: communication should be reworked in a way that we avoid using this method 
         # (as it creates additional physical objects for a single logical configuration)
-        dictionary_dump = json.loads(json_string)
-        conf = Configuration(dictionary_dump["parameters"], dictionary_dump["type"])
+        dictionary_dump: dict = json.loads(json_string)
+        conf = Configuration(dictionary_dump["parameters"], dictionary_dump["type"], dictionary_dump["experiment_id"])
+        conf.results = dictionary_dump["results"]
         # Configuration id is rewritten here, which is undesirable behavior
         conf.unique_id = dictionary_dump["configuration_id"]
-        conf._parameters_in_indexes = dictionary_dump["parameters_in_indexes"]
-        conf._average_result = dictionary_dump["average_result"]
         conf._tasks = dictionary_dump["tasks"]
         conf.predicted_result = dictionary_dump["predicted_result"]
         conf._standard_deviation = dictionary_dump["standard_deviation"]
@@ -200,7 +218,6 @@ class Configuration:
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
         conf._task_number = dictionary_dump["_task_number"]
         conf.warm_startup_info = dictionary_dump["warm_startup_info"]
-        conf.experiment_id = dictionary_dump["experiment_id"]
         return conf
 
     def is_better(self, o_minimize: List[bool], o_prio: List[int], other: Configuration) -> bool:
@@ -213,7 +230,7 @@ class Configuration:
         :return: bool True - this configuration is better then 'other', otherwise False.
         """
         top_prio_index = o_prio.index(max(o_prio))
-        if self.get_average_result() != [] and other.get_average_result() != []:
+        if self.results and other.results:
             if o_minimize[top_prio_index] is True:
                 if self < other:
                     return True
@@ -227,34 +244,48 @@ class Configuration:
         else:
             self.logger.error(f"One (or both) of Configurations doesn't (don't) have the results: {self}, {other}.")
 
+    def __eq__(self, other: Configuration) -> bool:
+        if not isinstance(other, Configuration):
+            return False
+        # TODO: This is a temporal solution. More details at:
+        #  https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r446104461
+        return self.unique_id == other.unique_id or self.parameters == other.parameters
+
     def __lt__(self, other: Configuration) -> bool:
         """
         Returns True, if 'self' < 'compared_configuration'. Otherwise - False
         :param other: instance of Configuration class
         :return: bool
         """
+        objectives = self.__class__.TaskConfiguration["Objectives"]
+        assert all((objective in self.results.keys() for objective in objectives)), f"{self} does not contain all {objectives}."
+        assert all((objective in other.results.keys() for objective in objectives)), f"{other} does not contain all {objectives}."
+        assert self.results.keys() == other.results.keys(), f"Unable to compare Configurations since objectives do not match: {self}, {other}"
+
         # compare all metrics
-        dimension_wise_comparison = []
-        for i in range(len(self.get_average_result())):
-            dimension_wise_comparison.append(
-                self.get_average_result()[i] < other.get_average_result()[i])
+        objectives_comparison = dict()
+        for objective, result in self.results.items():
+            objectives_comparison[objective] = result < other.results[objective]
 
         priorities = self.__class__.TaskConfiguration["ObjectivesPriorities"]
-        # filter highest priorities
+        # get highest priority objectives
         highest_priority_indexes = [index for index, priority in enumerate(priorities) if priority == max(priorities)]
+        influencing_objectives = [objectives[index] for index in highest_priority_indexes]
 
         # get all comparisons for the highest priority
-        dimensions_with_highest_priorities = []
-        for i in highest_priority_indexes:
-            dimensions_with_highest_priorities.append(dimension_wise_comparison[i])
+        resulting_comparisons = dict((objctv, objectives_comparison[objctv]) for objctv in influencing_objectives)
 
-        # all comparisons are equal for the same priority == dominating solution
-        if all(elem == dimensions_with_highest_priorities[0] for elem in dimensions_with_highest_priorities):
-            return dimensions_with_highest_priorities[0]
+        # all comparisons are True for the same priority == dominating solution
+        if all(obj_comp is True for obj_comp in resulting_comparisons.values()):
+            return True
+        elif all(obj_comp is False for obj_comp in resulting_comparisons.values()):
+            return False
         else:
+            self.logger.warning(f"Got non-dominating Configuration comparison: "
+                                f"{self} VS {other} -> {resulting_comparisons}")
             return False
 
-    def __gt__(self, other: Configuration):
+    def __gt__(self, other: Configuration) -> bool:
         """
         Returns True, if 'self' > 'compared_configuration'. Otherwise - False
         :param other: instance of Configuration class
@@ -262,20 +293,7 @@ class Configuration:
         """
         return other.__lt__(self)
 
-    def __is_valid_configuration(self, parameters):
-        """
-         Is parameters equal to instance parameters
-        :param parameters: list
-        :return: bool
-        """
-        if parameters == self.parameters:
-            return True
-        else:
-            self.logger.error('New configuration %s does not match with current configuration %s'
-                              % (parameters, self.parameters))
-            return False
-
-    def __assemble_tasks_results(self):
+    def _assemble_tasks_results(self) -> None:
         """
         Updates the results of the Configuration measurement by aggregating the results from all available Tasks.
         The Average Results of the Configuration and the Standard Deviation between Tasks are calculated.
@@ -290,21 +308,22 @@ class Configuration:
                     marks[task_index] == 'Out of bounds':
                 del(results_tuples[task_index])
         # calculating the average over all result items
-        self._average_result = np.mean(results_tuples, axis=0).tolist()
-        self._standard_deviation = np.std(results_tuples, axis=0).tolist()
+        ok_tasks_results = pd.DataFrame(results_tuples, columns=self.TaskConfiguration["Objectives"])
+        self.results = OrderedDict(ok_tasks_results.mean())
+        self._standard_deviation = ok_tasks_results.std().to_list()
         self._task_number = len(results_tuples)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         String representation of Configuration object.
         """
-        return "Configuration(Params={params}, Tasks={num_of_tasks}, Outliers={num_of_outliers}, " \
-               "Avg.result={avg_res}, STD={std})".format(
-            params=str(self.parameters),
-            num_of_tasks=len(self._tasks),
-            num_of_outliers=len(self._tasks) - self._task_number,
-            avg_res=str(self.get_average_result()),
-            std=str(self.get_standard_deviation()))
+        return f"Configuration(" \
+               f"Params={str(dict(self.parameters))}, " \
+               f"Tasks={len(self._tasks)}, " \
+               f"Outliers={len(self._tasks) - self._task_number}, " \
+               f"Avg.result={str(dict(self.results))}, " \
+               f"STD={str(self.get_standard_deviation())}" \
+               ")"
 
     def disable_configuration(self):
         """
@@ -342,19 +361,18 @@ class Configuration:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
             return False
 
-    def get_configuration_record(self, experiment_id: str) -> Mapping:
+    def get_configuration_record(self) -> Mapping:
         '''
         The helper method that formats a configuration to be stored as a record in a Database
         :return: Mapping. Field names of the database collection with respective information
         '''
         record = {}
-        record["Exp_unique_ID"] = experiment_id
+        record["Exp_unique_ID"] = self.experiment_id
         record["Configuration_ID"] = self.unique_id
         record["Parameters"] = self.parameters
         record["Type"] = self.type
         record["Status"] = self.status
-        record["Parameters_in_indexes"] = self._parameters_in_indexes
-        record["Average_result"] = self._average_result
+        record["Results"] = self.results
         record["Predicted_result"] = self.predicted_result
         record["Standard_deviation"] = self._standard_deviation
         record["is_enabled"] = self.is_enabled

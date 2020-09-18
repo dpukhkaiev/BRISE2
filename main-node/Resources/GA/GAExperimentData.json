@@ -1,80 +1,81 @@
 {
-  "hyperparameters": [
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
     {
-      "name": "generations",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 25000,
-      "upper": 200000,
-      "default": 200000
-    },
-    {
-      "name": "populationSize",
-      "type": "uniform_int",
-      "log": false,
-      "lower": 100,
-      "upper": 50000,
-      "default": 1000
-    },
-    {
-      "name": "treeMutateOperatorP",
-      "type": "uniform_float",
-      "log": false,
-      "lower": 0.1,
-      "upper": 1.0,
-      "default": 0.9
-    },
-    {
-      "name": "treeMutateOperatorP1",
-      "type": "uniform_float",
-      "log": false,
-      "lower": 0.1,
-      "upper": 1.0,
-      "default": 0.7
-    },
-    {
-      "name": "treeMutateOperatorP2",
-      "type": "uniform_float",
-      "log": false,
-      "lower": 0.1,
-      "upper": 1.0,
-      "default": 0.3
-    },
-    {
-      "name": "treeMutateOperatorP3",
-      "type": "uniform_float",
-      "log": false,
-      "lower": 0.1,
-      "upper": 1.0,
-      "default": 0.4
-    },
-    {
-      "name": "lambda",
-      "type": "categorical",
-      "choices": [25],
-      "default": 25
-    },
-    {
-      "name": "crossoverRate",
-      "type": "categorical",
-      "choices": [0.95],
-      "default": 0.95
-    },
-    {
-      "name": "mu",
-      "type": "categorical",
-      "choices": [25],
-      "default": 25
-    },
-    {
-      "name": "tournament",
-      "type": "categorical",
-      "choices": [0],
-      "default": 0
+      "category": "GA",
+      "children": [
+        {
+          "name": "generations",
+          "type": "IntegerHyperparameter",
+          "lower": 25000,
+          "upper": 200000,
+          "default": 200000
+        },
+        {
+          "name": "populationSize",
+          "type": "IntegerHyperparameter",
+          "lower": 100,
+          "upper": 50000,
+          "default": 1000
+        },
+        {
+          "name": "treeMutateOperatorP",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.9
+        },
+        {
+          "name": "treeMutateOperatorP1",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.7
+        },
+        {
+          "name": "treeMutateOperatorP2",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.3
+        },
+        {
+          "name": "treeMutateOperatorP3",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.4
+        },
+        {
+          "name": "lambda",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 25}
+          ]
+        },
+        {
+          "name": "crossoverRate",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 0.95}
+          ]
+        },
+        {
+          "name": "mu",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 25}
+          ]
+        },
+        {
+          "name": "tournament",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 0}
+          ]
+        }
+      ]
     }
-  ],
-  "conditions": [],
-  "forbiddens": [],
-  "python_module_version": "0.4.10",
-  "json_format_version": 0.1
+  ]
 }

@@ -88,7 +88,7 @@ class RepeaterOrchestration():
                     current_configuration.status = Configuration.Status.EVALUATED
                     return 0
             else:
-                if current_configuration.get_average_result() is not []:
+                if current_configuration.results:
                     number_of_measurements = self._type.evaluate(current_configuration=current_configuration,
                                                                  experiment=self.experiment)
                     if number_of_measurements > 0:
@@ -132,7 +132,7 @@ class RepeaterOrchestration():
             for parameters, task in zip(tasks_to_send, tasks_results):
                 if configuration.parameters == parameters:
                     if configuration.is_valid_task(task):
-                        configuration.add_tasks(task)
+                        configuration.add_task(task)
                         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
                             self.database.write_one_record("Tasks", configuration.get_task_record(task))
                     else:
@@ -159,7 +159,7 @@ class RepeaterOrchestration():
 
         if needed_tasks_count == 0:
             current_measurement[str(configuration.parameters)]['Finished'] = True
-            current_measurement[str(configuration.parameters)]['Results'] = configuration.get_average_result()
+            current_measurement[str(configuration.parameters)]['Results'] = configuration.results
 
         tasks_to_send = []
         for point in current_measurement.keys():

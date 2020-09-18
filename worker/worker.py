@@ -72,6 +72,9 @@ def naiveBayes(task: dict):
         path2result = './scenarios/rapid_miner/NB_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
 
+        from worker_tools.params_to_string import params_to_string
+        task = params_to_string(task)
+
         RMprocess = insert_config_to_RM_process(algorithm, task['parameters'], path2process)
     except Exception as error:
         logger.error(f"An error occurred during performing NaiveBayes Task with parameters {task['parameters']}: {error}")
@@ -103,6 +106,9 @@ def randomForest(task: dict):
         path2result = './scenarios/rapid_miner/RF_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
 
+        from worker_tools.params_to_string import params_to_string
+        task = params_to_string(task)
+
         RMprocess = insert_config_to_RM_process(algorithm, task['parameters'], path2process)
     except Exception as error:
         logger.error("An error occurred during performing RandomForest Task with parameters %s: %s" % (task['parameters'], error))
@@ -126,7 +132,10 @@ def neuralNet(task: dict):
         path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/NeuralNetwork/MA_EXR_1_EX_3_NN_INV.rmp'
         path2result = './scenarios/rapid_miner/NN_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
-       
+
+        from worker_tools.params_to_string import params_to_string
+        task = params_to_string(task)
+
         RMprocess = insert_config_to_RM_process(algorithm, task['parameters'], path2process)
     except Exception as error:
         logger.error(f"An error occurred during performing NeuralNet Task with parameters {task['parameters']}: {error}")
@@ -150,6 +159,9 @@ def SVM(task: dict):
         path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/SVM/MA_EXR_1_EX_4_SVM_INV.rmp'
         path2result = './scenarios/rapid_miner/SVM_performance.csv'
         path2RM = '/home/w_user/rapidminer-studio/scripts/rapidminer-batch.sh'
+
+        from worker_tools.params_to_string import params_to_string
+        task = params_to_string(task)
 
         RMprocess = insert_config_to_RM_process(algorithm, task['parameters'], path2process)
     except Exception as error:
@@ -358,17 +370,3 @@ def tsp_hh(task: dict):
     llh_runner.build()
     llh_runner.execute()
     return llh_runner.report
-
-
-def tsp_hh_flat(task: dict):
-    # the purpose of this code is
-    # to replace the original key which contains | with the last part of the key, separated by | symbol.
-    # this method will be removed with adding a tree-shaped search space.
-    parameters = {k: v for k, v in task["parameters"].items() if v is not None}
-    parameter_names = list(parameters.keys())
-    for key in parameter_names:
-        if "|" in key:
-            val = parameters.pop(key)
-            parameters[key[key.rfind("|") + 1:]] = val
-    task["parameters"] = parameters
-    return tsp_hh(task)

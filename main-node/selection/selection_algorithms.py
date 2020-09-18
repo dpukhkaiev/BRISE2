@@ -1,15 +1,12 @@
-from selection.sobol import *
-from selection.cs_selector import *
+from selection.selection_algorithm_abs import SelectionAlgorithm
 from tools.reflective_class_import import reflective_class_import
-from core_entities.experiment import Experiment
 
 
-def get_selector(experiment: Experiment):
+def get_selector(selection_algorithm: dict) -> SelectionAlgorithm:
     """
     Returns instance of selection algorithm with provided data
-    :param experiment: the instance of Experiment class
+    :param selection_algorithm: a description of the chosen selection strategy.
     :return: selector object
     """
-    selector_type = experiment.description["SelectionAlgorithm"]["SelectionType"]
-    selector_class = reflective_class_import(class_name=selector_type, folder_path="selection")
-    return selector_class(experiment)
+    selector_class = reflective_class_import(class_name=selection_algorithm, folder_path="selection")
+    return selector_class()

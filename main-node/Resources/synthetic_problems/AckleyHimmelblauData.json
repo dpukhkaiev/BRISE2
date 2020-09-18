@@ -1,22 +1,25 @@
 {
-  "hyperparameters": [
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
     {
-      "name": "x",
-      "type": "uniform_float",
-      "log": false,
-      "lower": -4.0,
-      "upper": 5.0,
-      "default": 1
-    },
-    {
-      "name": "y",
-      "type": "uniform_float",
-      "log": false,
-      "lower": -4.0,
-      "upper": 5.0,
-      "default": 1
+      "category": "SynteticProblems",
+      "children": [
+        {
+          "name": "x",
+          "type": "FloatHyperparameter",
+          "lower": -4.0,
+          "upper": 5.0,
+          "default": 1
+        },
+         {
+          "name": "y",
+          "type": "FloatHyperparameter",
+          "lower": -4.0,
+          "upper": 5.0,
+          "default": 1
+        }
+      ]
     }
-  ],
-  "conditions": [],
-  "forbiddens": []
+  ]
 }

@@ -67,7 +67,7 @@ class WSClient:
                         task_description["time_for_run"] = self._time_for_one_task_running
                         task_description["Scenario"] = self._scenario
                         task_description["result_structure"] = self._objectives
-                        task_description["parameters"] = dict(zip(self.parameter_names, task_parameter))
+                        task_description["parameters"] = task_parameter
                         try:
                             channel.basic_publish(exchange='',
                                                   routing_key='task_queue',

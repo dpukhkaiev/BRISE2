@@ -5,7 +5,8 @@ import json
 import os
 import csv
 import logging
-import uuid 
+import uuid
+import numpy as np
 
 from threading import Lock
 from typing import Union, List
@@ -14,13 +15,13 @@ from collections.abc import Mapping
 
 from tools.front_API import API
 from core_entities.configuration import Configuration
-from core_entities.search_space import SearchSpace
+from core_entities.search_space import Hyperparameter
 from tools.mongo_dao import MongoDB
 
 
 class Experiment:
 
-    def __init__(self, description: dict, search_space: SearchSpace):
+    def __init__(self, description: dict, search_space: Hyperparameter):
         """
         Initialization of Experiment class
         Following fields are declared:
@@ -35,17 +36,16 @@ class Experiment:
         # TODO: merge lists into a single one (https://github.com/dpukhkaiev/BRISEv2/pull/112#discussion_r371761149)
         self.evaluated_configurations: List[Configuration] = []  # repeater already evaluates these configurations
         self.measured_configurations: List[Configuration] = [] # the results for these configurations are already gotten
-
-        self._description = description
-        self.search_space = search_space
+        self._default_configuration: Configuration = None
+        self._description: Mapping = description
+        # TODO: search space should be decoupled from experiment (many entities require **only** search space)
+        self.search_space: Hyperparameter = search_space
         self.end_time = self.start_time = datetime.datetime.now()
         # An ID that is used to differentiate Experiments by descriptions.
         self.ed_id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
         # A unique ID, different for every experiment (even with the same description)
         self.unique_id = str(uuid.uuid4())
-        self.name = "exp_{task_name}_{experiment_hash}".format(
-            task_name=self.description["TaskConfiguration"]["TaskName"],
-            experiment_hash=self.ed_id)
+        self.name: str = f"exp_{self.description['TaskConfiguration']['TaskName']}_{self.ed_id}"
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations: List[Configuration] = []
@@ -97,23 +97,29 @@ class Experiment:
         self.measured_conf_lock = Lock()
         self.evaluated_conf_lock = Lock()
 
-    def put_default_configuration(self, default_configuration: Configuration):
+    @property
+    def default_configuration(self) -> Configuration:
+        return self._default_configuration
+
+    @default_configuration.setter
+    def default_configuration(self, default_configuration: Configuration):
         if self._is_valid_configuration_instance(default_configuration):
-            if default_configuration not in self.measured_configurations:
-                self.search_space.set_default_configuration(default_configuration)
+            if not self._default_configuration:
+                self._default_configuration = default_configuration
                 self.api.send("default", "configuration",
                               configurations=[default_configuration.parameters],
-                              results=[default_configuration.get_average_result()])
+                              results=[default_configuration.results])
                 self.measured_configurations.append(default_configuration)
+                if not self.current_best_configurations:
+                    self.current_best_configurations = [default_configuration]
                 self.database.write_one_record(
                     "Measured_configurations",
-                    default_configuration.get_configuration_record(self.unique_id)
+                    default_configuration.get_configuration_record()
                 )
                 self.database.write_one_record(
                     collection_name="warm_startup_info",
                     record={"Exp_unique_ID": self.unique_id, "wsi": default_configuration.warm_startup_info}
                 )
-                self.current_best_configurations = [default_configuration]
             else:
                 raise ValueError("The default Configuration was registered already.")
 
@@ -186,8 +192,6 @@ class Experiment:
                 str(self.get_running_time()) if serializable else self.get_running_time(),
             "Best found Configuration":
                 self.get_current_solution().__getstate__() if serializable else self.get_current_solution(),
-            "Default configuration":
-                self.search_space.get_default_configuration().__getstate__() if serializable else self.search_space.get_default_configuration(),
             "Experiment description":
                 self.description,
             "Evaluated Configurations":
@@ -253,7 +257,7 @@ class Experiment:
             self.summarize_results_to_file(report_format="yaml", folder_path=results_folder)
             self.api.send('final', 'configuration',
                           configurations=[self.get_current_solution().parameters],
-                          results=[self.get_current_solution().get_average_result()],
+                          results=[self.get_current_solution().results],
                           measured_points=[all_features],
                           performed_measurements=[performed_measurements])
             return self.current_best_configurations
@@ -299,11 +303,11 @@ class Experiment:
             # this configuration did not improve the previous solution, no need to keep track its solutions.
             configuration.warm_startup_info = {}
 
-        self.database.write_one_record("Measured_configurations", configuration.get_configuration_record(self.unique_id))
+        self.database.write_one_record("Measured_configurations", configuration.get_configuration_record())
         self.send_state_to_db()
         self.api.send("new", "configuration",
                       configurations=[configuration.parameters],
-                      results=[configuration.get_average_result()])
+                      results=[configuration.results])
         self.logger.info("Adding to Experiment: %s" % configuration)
 
     def _add_evaluated_configuration_to_experiment(self, configuration: Configuration) -> None:
@@ -313,6 +317,9 @@ class Experiment:
         :return: None
         """
         self.evaluated_configurations.append(configuration)
+
+    def get_objectives(self) -> List[str]:
+        return self.description["TaskConfiguration"]["Objectives"]
 
     def get_objectives_minimization(self) -> List[bool]:
         return self.description["TaskConfiguration"]["ObjectivesMinimization"]
@@ -351,21 +358,21 @@ class Experiment:
         Args:
             folder_path (str, optional): Path to folder, where to store the csv report.
         """
-        if self.search_space.get_search_space_size() == float('inf'):
+        if self.search_space.get_size() == np.inf:
             search_space_coverage = "unknown (infinite search space)"
         else:
             search_space_coverage = str(
-                round((len(self.measured_configurations) / self.search_space.get_search_space_size()) * 100)
+                round((len(self.measured_configurations) / self.search_space.get_size()) * 100)
             ) + '%'
 
         data = dict({
-            'model': self.description['ModelConfiguration']['ModelType'],
+            'model': "_".join([model["Type"] for model in self.description["Predictor"]["models"]]),
             'default configuration': [' '.join(
-                str(v) for v in self.search_space.get_default_configuration().parameters)],
+                str(v) for v in self.default_configuration.parameters)],
             'solution configuration': [' '.join(
                 str(v) for v in self.get_current_solution().parameters)],
-            'default result': self.search_space.get_default_configuration().get_average_result()[0],
-            'solution result': self.get_current_solution().get_average_result()[0],
+            'default result': self.default_configuration.results,
+            'solution result': self.get_current_solution().results,
             'number of measured configurations': len(self.measured_configurations),
             'search space coverage': search_space_coverage,
             'number of repetitions': len(self.get_all_repetition_tasks()),
@@ -450,7 +457,7 @@ class Experiment:
                 {
                     "Number_of_measured_configs": self.get_number_of_measured_configurations(),
                     "Number_of_bad_configs": self.get_bad_configuration_number(),
-                    "Current_solution": self.get_current_solution().get_configuration_record(self.unique_id),
+                    "Current_solution": self.get_current_solution().get_configuration_record(),
                     "is_model_valid": self.get_model_state()
                 }
             )
@@ -461,16 +468,12 @@ class Experiment:
         :return: Mapping. Field names of the database collection with respective information
         '''
         record = {}
+        # add this specific experiment information
         record["Exp_unique_ID"] = self.unique_id
         record["Exp_ID"] = self.ed_id
-        record["DomainDescription"] = self.description["DomainDescription"]
-        record["TaskConfiguration"] = self.description["TaskConfiguration"]
-        record["SelectionAlgorithm"] = self.description["SelectionAlgorithm"]
-        record["OutliersDetection"] = self.description["OutliersDetection"]
-        record["Repeater"] = self.description["Repeater"]
-        record["ModelConfiguration"] = self.description["ModelConfiguration"]
-        record["StopCondition"] = self.description["StopCondition"]
-        record["StopConditionTriggerLogic"] = self.description["StopConditionTriggerLogic"]
+        record["DateStarted"] = str(datetime.datetime.now())
+        # store experiment description fields
+        record.update(self.description)
         # experiment description record will be updated at the end of the experiment
         record["ExperimentObject"] = None
         return record
@@ -486,7 +489,7 @@ class Experiment:
         record["Number_of_bad_configs"] = self.get_bad_configuration_number()
         current_solution = self.get_current_solution()
         if current_solution is not None:
-            current_solution = current_solution.get_configuration_record(self.unique_id)
+            current_solution = current_solution.get_configuration_record()
         record["Current_solution"] = current_solution
         record["is_model_valid"] = self.get_model_state()
         return record

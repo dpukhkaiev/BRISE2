@@ -26,7 +26,7 @@ class TestSelector:
         # 'inputs_test_0.py' is used, that loads EnergyExperiment and requests a single configuration from selector
         # As SobolSequence is determinated selector, we expect to get a specific configuration [2200.0, 8] as a first one for EnergyExperiment
         from selection.tests.inputs_test_0 import get_actual_result
-        expected_result = Configuration([2200.0, 8], Configuration.Type.FROM_SELECTOR)
+        expected_result = Configuration([2200.0, 8], Configuration.Type.FROM_SELECTOR, 123)
         used_selector, actual_result = get_actual_result("SobolSequence")
         assert actual_result == expected_result
         assert used_selector == "SobolSequence"

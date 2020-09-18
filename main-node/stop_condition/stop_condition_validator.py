@@ -66,7 +66,7 @@ class StopConditionValidator:
                     search_space_size = self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
                     if numb_of_measured_configurations >= search_space_size and not self.blocked:
                         self.blocked = True
-                        msg = "Entire Search Space was measured. Stopping the Experiment."
+                        msg = "Entire Search Space was measured."
                         self.logger.info(msg)
                         with pika.BlockingConnection(
                                 pika.ConnectionParameters(host=self.event_host,
@@ -74,7 +74,7 @@ class StopConditionValidator:
                             with connection.channel() as channel:
                                 channel.basic_publish(exchange='',
                                                       routing_key='stop_experiment_queue',
-                                                      body='')
+                                                      body=msg)
 
     def validate_conditions(self, ch, method, properties, body):
         """
@@ -92,7 +92,7 @@ class StopConditionValidator:
             result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
             if result and not self.blocked:
                 self.blocked = True
-                msg = "Stop Condition(s) was reached. Stopping the Experiment."
+                msg = "Stop Condition(s) was reached."
                 self.logger.info(msg)
                 dictionary_dump = {"experiment_id": self.experiment_id}
                 body = json.dumps(dictionary_dump)
@@ -102,7 +102,7 @@ class StopConditionValidator:
                     with connection.channel() as channel:
                         channel.basic_publish(exchange='',
                                                     routing_key='stop_experiment_queue',
-                                                    body=body)
+                                                    body=msg)
 
     def stop_thread(self, ch, method, properties, body):
         """

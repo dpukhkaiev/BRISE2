@@ -3,16 +3,17 @@ __doc__ = """
 import logging
 from abc import ABC, abstractmethod
 
-from core_entities.experiment import Experiment
-from core_entities.configuration import Configuration
-
 
 class SelectionAlgorithm(ABC):
 
-    def __init__(self, experiment: Experiment):
-        self.experiment = experiment
-        self.numOfGeneratedPoints = 0  # Counter of retrieved points from selector
+    def __init__(self):
+
         self.logger = logging.getLogger(__name__)
 
     @abstractmethod
-    def get_next_configuration(self): pass
+    def get_value(self, dimensionality: int, configuration_number: int, dimension: int): 
+        """
+        An abstract selection method.
+        Each selection algorithm should return float in range (0...1).
+        """
+        pass

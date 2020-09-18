@@ -129,7 +129,7 @@ class StopCondition(ABC):
             with connection.channel() as channel:
                 channel.basic_publish(exchange='',
                                         routing_key='stop_experiment_queue',
-                                        body="")
+                                        body="Stop condition is not able to initialize.")
 
 
 class EventServiceConnection(threading.Thread):

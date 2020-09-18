@@ -14,6 +14,7 @@ RUN usermod -aG sudo benchmark_user
 COPY ./main-node/core_entities /home/benchmark_user/core_entities/
 COPY ./main-node/tools /home/benchmark_user/tools/
 COPY ./main-node/logger /home/benchmark_user/logger/
+COPY ./main-node/selection /home/benchmark_user/selection/
 
 # Copying common information for benchmark
 COPY ./benchmark/ /home/benchmark_user/

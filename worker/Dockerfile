@@ -1,4 +1,4 @@
-FROM brisedev/worker-dev:apsp
+FROM brisedev/worker-dev:latest
 
 # create worker user
 RUN useradd -ms /bin/bash w_user && echo "w_user:w_user" | chpasswd && adduser w_user sudo

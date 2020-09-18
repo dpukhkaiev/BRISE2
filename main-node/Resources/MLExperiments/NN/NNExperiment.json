@@ -7,7 +7,7 @@
     "Scenario":{
       "ws_file": ""
     },
-    "Objectives"   : ["prec_rec"],
+    "Objectives"   : ["PREC_AT_99_REC"],
     "ObjectivesDataTypes"  : ["float"],
     "ObjectivesMinimization": [false],
     "ObjectivesPriorities": [1],

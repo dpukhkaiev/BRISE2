@@ -1,9 +1,9 @@
 {
   "DomainDescription":{
-    "DataFile"          : "./Resources/HyperHeuristic/jESDataConfigSpace.json"
+    "DataFile": "./Resources/HyperHeuristic/MHjMetalPyGAData.json"
   },
   "TaskConfiguration":{
-    "TaskName"          : "tsp_hh_flat",
+    "TaskName"          : "tsp_hh",
     "Scenario": {
       "Problem": "TSP",
       "problem_initialization_parameters": {

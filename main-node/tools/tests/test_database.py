@@ -1,10 +1,13 @@
 import pytest
 import os
+import pickle
 
 from tools.mongo_dao import MongoDB
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
+from core_entities.search_space import get_search_space_record
 from tools.initial_config import load_experiment_setup
+from collections import OrderedDict
 
 os.environ["TEST_MODE"] = 'UNIT_TEST'
 database = MongoDB("test", 0, "test", "user", "pass")
@@ -35,7 +38,7 @@ class TestDatabase:
         assert experiment.description["SelectionAlgorithm"] == written_record["SelectionAlgorithm"]
         assert experiment.description["OutliersDetection"] == written_record["OutliersDetection"]
         assert experiment.description["Repeater"] == written_record["Repeater"]
-        assert experiment.description["ModelConfiguration"] == written_record["ModelConfiguration"]
+        assert experiment.description["Predictor"] == written_record["Predictor"]
         assert experiment.description["StopCondition"] == written_record["StopCondition"]
         assert experiment.description["StopConditionTriggerLogic"] == written_record["StopConditionTriggerLogic"]
 
@@ -43,15 +46,15 @@ class TestDatabase:
         # Test #1. Format and write Experiment state (ES) record to the database
         # Expected result: record can be read from the database and contains all required ES fields. The Experiment id matches
         experiment, _ = self.initialize_exeriment()
-        c1 = Configuration([2900.0, 32], Configuration.Type.DEFAULT)
+        c1 = Configuration(OrderedDict({"frequency": 2900.0, "threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
         c1.status = c1.Status.MEASURED
-        experiment.put_default_configuration(c1)
+        experiment.default_configuration = c1
         database.write_one_record("Experiment_state", experiment.get_experiment_state_record())
         written_record = database.get_all_records("Experiment_state")[0]
         assert experiment.unique_id == written_record["Exp_unique_ID"]
         assert experiment.get_number_of_measured_configurations() == written_record["Number_of_measured_configs"]
         assert experiment.get_bad_configuration_number() == written_record["Number_of_bad_configs"]
-        assert experiment.get_current_solution().get_configuration_record(experiment.unique_id) == written_record["Current_solution"]
+        assert experiment.get_current_solution().get_configuration_record() == written_record["Current_solution"]
         assert experiment.get_model_state() == written_record["is_model_valid"]
 
     def test_2_write_search_space_record(self):
@@ -59,24 +62,26 @@ class TestDatabase:
         # Expected result: record can be read from the database and contains all required SS fields. 
         # The Experiment id matches. The id of the default configuration matches that one from Experiment
         experiment, search_space = self.initialize_exeriment()
-        database.write_one_record("Search_space", experiment.search_space.get_search_space_record(experiment.unique_id))
+        database.write_one_record(
+            "Search_space", get_search_space_record(experiment.search_space, experiment.unique_id)
+        )
         written_record = database.get_all_records("Search_space")[0]
         assert written_record["Exp_unique_ID"] == experiment.unique_id
-        assert written_record["Default_configuration"] == experiment.search_space.get_default_configuration()
-        assert written_record["Search_space_size"] == search_space.get_search_space_size()
+        assert written_record["SearchspaceObject"] == pickle.dumps(search_space)
+        assert written_record["Search_space_size"] == search_space.get_size()
 
     def test_3_write_measured_configurations_records(self):
         # Test #3. Format and write multiple Configuration records to the database
         # Expected result: records can be read from the database. 
         # They belong to the expected experiment and contain expected configuration IDs
         experiment, _ = self.initialize_exeriment()
-        c1 = Configuration([2900.0, 32], Configuration.Type.DEFAULT)
-        c2 = Configuration([2200.0, 8], Configuration.Type.FROM_SELECTOR)
+        c1 = Configuration(OrderedDict({"frequency": 2900.0, "threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
+        c2 = Configuration(OrderedDict({"frequency": 2200.0, "threads": 8}), Configuration.Type.FROM_SELECTOR, experiment.unique_id)
         experiment.measured_configurations.append(c1)
         experiment.measured_configurations.append(c2)
         records = []
         for config in experiment.measured_configurations:
-            records.append(config.get_configuration_record(experiment.unique_id))
+            records.append(config.get_configuration_record())
         database.write_many_records("Measured_configurations", records)
         written_records = database.get_all_records("Measured_configurations")
         configuration_ids = []
@@ -92,9 +97,9 @@ class TestDatabase:
         # Test #4. Format and write Task record to the database
         # Expected result: record can be read from the database. 
         # Task belongs to the expected configuration and has expected task ID
-        c1 = Configuration(["dummy"], Configuration.Type.DEFAULT)
+        c1 = Configuration(OrderedDict({"frequency": "dummy", "threads": "dummy"}), Configuration.Type.DEFAULT, "DummyID")
         task = {'task id': 'id', 'worker': 'worker', 'result': {'energy': 0.9}, 'ResultValidityCheckMark': 'OK'}
-        c1.add_tasks(task)
+        c1.add_task(task)
         database.write_one_record("Tasks", c1.get_task_record(task))
         written_record = database.get_all_records("Tasks")[0]
         assert c1.unique_id == written_record["Configuration_ID"]

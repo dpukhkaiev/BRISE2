@@ -4,7 +4,7 @@ import json
 from repeater.repeater_selector import RepeaterOrchestration
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
-from core_entities.search_space import SearchSpace
+from core_entities.search_space import Hyperparameter
 
 os.environ["TEST_MODE"] = 'UNIT_TEST'
 
@@ -52,7 +52,7 @@ def test_5(get_sample):
     assert needed_tasks_count == 0
 
 
-def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict, search_space: SearchSpace, measured_tasks: int, config_type: Configuration.Type, config_status: Configuration.Status):
+def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict, search_space: Hyperparameter, measured_tasks: int, config_type: Configuration.Type, config_status: Configuration.Status):
     """
     Test function for Repeater module.
     Main steps:
@@ -73,21 +73,23 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     """
     experiment = Experiment(experiment_description, search_space)
     Configuration.set_task_config(experiment.description["TaskConfiguration"])
-    configuration = Configuration(configurations_sample[1]["Params"], config_type)
+    configuration = Configuration(configurations_sample[1]["Params"], config_type, experiment.unique_id)
     configuration.status = config_status
     for i in range(0, measured_tasks):
-        configuration.add_tasks(tasks_sample[i])
+        configuration.add_task(tasks_sample[i])
     orchestrator = RepeaterOrchestration(experiment)
     if config_type == Configuration.Type.DEFAULT:
         orchestrator._type = orchestrator.get_repeater(True)
     else:
         orchestrator._type = orchestrator.get_repeater()
-        default_configuration = Configuration(configurations_sample[0]["Params"], Configuration.Type.DEFAULT)
+        default_configuration = Configuration(
+            configurations_sample[0]["Params"], Configuration.Type.DEFAULT, experiment.unique_id
+        )
         default_configuration.status = Configuration.Status.MEASURED
         default_configuration._task_number = configurations_sample[0]["Tasks"]
-        default_configuration._average_result = configurations_sample[0]["Avg.result"]
+        default_configuration.results = configurations_sample[0]["Results"]
         default_configuration._standard_deviation = configurations_sample[0]["STD"]
-        experiment.put_default_configuration(default_configuration)
+        experiment.default_configuration = default_configuration
     task = json.dumps({"configuration": configuration.to_json()})
 
     dummy_channel = None

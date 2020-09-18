@@ -3,9 +3,7 @@
     "NumberOfWorkers": 3,
     "results_storage": "./Results/"
   },
-  "SelectionAlgorithm":{
-    "SelectionType"     : "SobolSequence"
-  },
+  "SelectionAlgorithm": "MersenneTwister",
   "OutliersDetection":{
     "isEnabled": true,
     "Detectors": [
@@ -63,12 +61,23 @@
       }
     }
   },
-  "ModelConfiguration":{
-    "SamplingSize": 96,
-    "ModelType"         : "BO"
+  "Predictor":{
+    "window size": 1.0,
+    "models": [
+      {
+        "Type": "brise.TreeParzenEstimator",
+        "Parameters": {
+          "top_n_percent": 30,
+          "random_fraction": 0,
+          "bandwidth_factor": 3,
+          "min_bandwidth": 0.001,
+          "SamplingSize": 96
+        }
+      }
+    ]
   },
   "StopConditionTriggerLogic":{
-    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and ValidationBased) or BadConfigurationBased or TimeBased",
+    "Expression": "(QuantityBased and Guaranteed and ImprovementBased) or BadConfigurationBased or TimeBased",
     "InspectionParameters":{
       "RepetitionPeriod": 1,
       "TimeUnit": "seconds"
@@ -108,11 +117,6 @@
         "MaxRunTime": 10,
         "TimeUnit": "minutes"
       }
-    },
-    {
-      "Name": "ValidationBased",
-      "Type": "ValidationBased",
-      "Parameters": {      }
     }
   ]
 }

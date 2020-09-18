@@ -6,7 +6,7 @@ statsmodels==0.11.1
 jsonschema==3.2.0
 scipy==1.4.1
 pytest==5.4.2
-ConfigSpace[alldeps]==0.4.13
 pika==1.1.0
 pymongo==3.10.1
 numexpr==2.7.1
+pandas==1.0.4
