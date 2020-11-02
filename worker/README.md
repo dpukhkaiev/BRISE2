@@ -1,4 +1,4 @@
-### Worker node 
+# Worker node 
 
 > All code that performs clearing work. The main objective is to reduce staff resources
 
@@ -24,10 +24,10 @@ To use this function follow next steps:
 ```python
 from worker.generator.generator import generate_worker_function
 ```
-3. Find a path to your valid experiment description. For example `"main-node/Resources/GA/GAExperiment.json"`
+3. Find a path to your valid experiment description. For example `"main_node/Resources/GA/GAExperiment.json"`
 4. Call the function:
  ```python
- generate_worker_function("main-node/Resources/GA/GAExperiment.json")
+ generate_worker_function("main_node/Resources/GA/GAExperiment.json")
 ```
 5. Check result, and fill gaps in a generated skeleton.
 
@@ -47,7 +47,7 @@ To create your own `jar` file follow next steps:
 5. Check the name of `jar` file, it must be `jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar`.
 
 
-##### Worker with Genetic algorithm
+#### Worker with Genetic algorithm
 
 [worker.py](./worker.py) contains the function `genetic(param, scenario)`, which executes the `GeneticMain.java` 
 from Command Prompt using MQUAT binary in `jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar`:
@@ -75,3 +75,39 @@ genetic_NSGA2,5558,34620.200000000004,0,true,false
 ```
 
 [Link to MQUAT2 project](https://git-st.inf.tu-dresden.de/mquat/mquat2/tree/Genetic_Kosovnenko).
+
+#### Worker as Low-Level Meta-heuristic
+##### Summary:
+
+BRISE is able to run the optimization tasks by (1) *controlling the configuration* of solver inside of workers 
+and/or (2) *selecting the solving* algorithm. In both cases, the selection is guided by intermediate performance 
+of system. It defines Reinforcement Learning-based optimization problem-solving process.
+
+More (theoretical) details could be found [here](https://github.com/YevheniiSemendiak/tud_master_benchmarks).
+
+##### Details:
+Currently BRISE is able to run low-level meta-heuristics, implemented in two frameworks: 
+python-based [jMetalPy](https://github.com/jMetal/jMetalPy) and java-based [jMetal](https://github.com/jMetal/jMetalPy).
+
+To define the respective experiment description file, one should define the respective search space description and experiment description file.
+The search space description should contain a set of choices for solver as `low level heuristic` root categorical parameter.
+The parameter choices should be defined as the respective children's parameters. 
+
+The examples of experiment description files may be found at [main_node/Resources/HyperHeuristic](../main_node/Resources/HyperHeuristic) folder.
+
+##### Some tips for setting-up BRISE:
+1. Disable Repeater by setting it type to `QuantityBased` and setting its parameter `MaxTasksPerConfiguration` equal to 1.
+2. Set task execution time (budget) equal to approximately 10% of overall running time (if time-based BRISE stop condition is used). 
+
+##### The workflow of task execution in workers for this use-case is following:
+1. Task arrives to worker node and the respective worker method is executed in order to run low-level heuristic (worker.py#tsp_hh method).
+2. [LLH Runner](worker_tools/hh/llh_runner.py) is instantiated with respective LLH wrapper 
+(jMetalPy MHs are ran with help of [JMetalPyWrapper](worker_tools/hh/llh_wrapper_jmetalpy.py), 
+while jMetal Evolution Strategy (currently only one MH could be used from jMetal framework) execution is controlled by [JMetalWrapper](worker_tools/hh/llh_wrapper_jmetal.py))
+3. Wrapper constructs the requested LLH with provided parameters, 
+attaches the available solution for current optimization problem, 
+executes the LLH and reports the results, including the newly obtained solutions. 
+Please note, some execution steps in JMetalPy wrapper are cached to reduce the computation effort.
+4. THe results are forwarded by Runner to the main-node.
+
+###### Please note, to provide all required functional requirements, both frameworks were slightly modified. Modified code could be found [here](https://github.com/YevheniiSemendiak/jMetalPy/tree/apsp) and [here](https://github.com/YevheniiSemendiak/jMetal/tree/feature/warm_starup_brute_impl).

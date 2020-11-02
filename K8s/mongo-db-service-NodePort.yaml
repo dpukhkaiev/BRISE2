@@ -1,0 +1,15 @@
+# for custom clusters without loadbalancer service
+kind: Service
+apiVersion: v1
+metadata:
+  name: mongo-db
+spec:
+  selector:
+    app: mongo-db
+  ports:
+    - name: basic
+      protocol: TCP
+      port: 27017
+      targetPort: 27017
+      nodePort: 30156
+  type: NodePort

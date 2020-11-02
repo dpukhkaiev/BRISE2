@@ -1,0 +1,47 @@
+{
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "energy",
+      "children": [
+        {
+          "name": "frequency",
+          "type": "OrdinalHyperparameter",
+          "categories": [
+            {"category": 1200.0},
+            {"category": 1300.0},
+            {"category": 1400.0},
+            {"category": 1600.0},
+            {"category": 1700.0},
+            {"category": 1800.0},
+            {"category": 1900.0},
+            {"category": 2000.0},
+            {"category": 2200.0},
+            {"category": 2300.0},
+            {"category": 2400.0},
+            {"category": 2500.0},
+            {"category": 2700.0},
+            {"category": 2800.0},
+            {"category": 2900.0},
+            {"category": 2901.0}
+          ],
+          "default": 2900.0
+        },
+        {
+          "name": "threads",
+          "type": "OrdinalHyperparameter",
+          "categories": [
+            {"category": 1},
+            {"category": 2},
+            {"category": 4},
+            {"category": 8},
+            {"category": 16},
+            {"category": 32}
+          ],
+          "default": 32
+        }
+      ]
+    }
+  ]
+}

@@ -1,12 +1,14 @@
+import ctypes
+import json
+import logging
 import os
 import threading
-import logging
-import ctypes
-import pika
-import json
-import uuid
 
-from worker_tools.reflective_worker_method_import import get_worker_methods_as_dict
+import pika
+import pika.exceptions
+from worker_tools.reflective_worker_method_import import (
+    get_worker_methods_as_dict
+)
 
 logging.basicConfig()
 
@@ -58,46 +60,43 @@ class WorkerMainThread(threading.Thread):
         self.connection.close()
 
     def run_task(self, ch, method, properties, body):
-        task_description = json.loads(body.decode())
-        task_description["task_id"] = str(uuid.uuid4())
+        task: dict = json.loads(body)
         global CURRENT_TASK_ID
-        CURRENT_TASK_ID = task_description["task_id"]
-        self.logger.info(task_description)
-        # separate new task
-        if task_description:
-            new_task = task_description["task_name"]
+        CURRENT_TASK_ID = task["task_id"]
+        self.logger.info(f"Got task: {task['task_name']} ID: {task['task_id']}.")
 
-        if not new_task:
-            self.logger.error("No task")
+        if 'task_name' not in task.keys():
+            self.logger.error(f"No task name provided in {task}")
         else:
-            if not new_task in self.worker_methods:
+            if not task['task_name'] in self.worker_methods:
                 # if worker don't have method
-                self.logger.error('Task {} is not supported. Supported Tasks are: {}.'.\
-                    format(new_task, list(self.worker_methods.keys())))
+                self.logger.error(f'Task {task["task_name"]} is not supported. '
+                                  f'Supported Tasks are: {list(self.worker_methods.keys())}.')
             else:
                 # pointer to method execution
-                w_method = self.worker_methods[new_task]
-                self.channel.basic_publish(exchange='',
-                                           routing_key='taken_task_event_queue',
-                                           body=json.dumps(task_description))
-                result_from_worker = w_method(task_description["params"], task_description["scenario"])
-
-                # format a result according to result structure
-                if result_from_worker is None:
+                w_method = self.worker_methods[task["task_name"]]
+                self.channel.basic_publish(exchange='', routing_key='taken_task_event_queue', body=json.dumps(task))
+                # Execute task
+                try:
+                    result_from_worker = w_method(task)
+                    if result_from_worker is None:
+                        self.logger.warning(f"{w_method} did not return any results.")
+                        result_from_worker = {}
+                except Exception as e:
+                    self.logger.error(f"Task execution failed with: {e}", exc_info=True)
                     result_from_worker = {}
-                for key in task_description["result_structure"]:
+                # format a result according to result structure
+                for key in task["result_structure"]:
                     if key not in result_from_worker:
                         result_from_worker[key] = None
                 res = {
-                        'id_measurement': task_description["id_measurement"],
-                        'task_result':
-                            {
-                              'task id': task_description["task_id"],
-                              'worker': os.environ.get('workername', 'undefined'),
-                              'result': result_from_worker
-                            }
-                       }
-
+                    'id_measurement': task["id_measurement"],
+                    'task_result': {
+                        'task id': task["task_id"],
+                        'worker': f"{os.uname()[1]}",
+                        'result': result_from_worker
+                    }
+                }
                 self.channel.basic_publish(exchange='task_result_sender',
                                            routing_key='',
                                            body=json.dumps(res))
@@ -106,8 +105,12 @@ class WorkerMainThread(threading.Thread):
     def run(self):
         try:
             self.channel.start_consuming()
-        except Exception:  # in case of termination task
-            pass
+
+        except pika.exceptions.AMQPError:
+            pass  # in case of termination task
+
+        except Exception as e:
+            self.logger.error(f"Worker Thread was terminated by {e}.", exc_info=True)
 
 
 class WorkerTerminationThread(threading.Thread):
@@ -171,8 +174,9 @@ CURRENT_TASK_ID = ""
 
 # Basic functionality
 while True:
-    w_thread = WorkerMainThread("event_service", 49153)
-    t_thread = WorkerTerminationThread("event_service", 49153)
+    w_thread = WorkerMainThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
+    t_thread = WorkerTerminationThread(os.getenv("BRISE_EVENT_SERVICE_HOST"),
+                                       os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     try:
         w_thread.start()
         t_thread.start()

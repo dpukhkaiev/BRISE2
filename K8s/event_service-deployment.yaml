@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-service
+spec:
+  selector:
+    matchLabels:
+      app: event-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: event-service
+    spec:
+      containers:
+        - name: event-service
+          image: master-node:5000/local/event_service_image:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 49153
+              name: basic
+            - containerPort: 49154
+              name: gui
+            - containerPort: 49155
+              name: front
