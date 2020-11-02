@@ -1,11 +1,12 @@
-import logging
 import argparse
-from logger.default_logger import BRISELogConfigurator
-BRISELogConfigurator()  # Configuring logging
+import logging
 
-from benchmark_runner import BRISEBenchmarkRunner
 from benchmark_analyser import BRISEBenchmarkAnalyser
+from benchmark_runner import BRISEBenchmarkRunner
+from logger.default_logger import BRISELogConfigurator
 from shared_tools import chown_files_in_dir
+
+BRISELogConfigurator()  # Configuring logging
 
 
 def run_benchmark():
@@ -48,7 +49,8 @@ def run_analysis():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="The entry point of BRISE Benchmark service.")
-    parser.add_argument("mode", choices=["analyse", "benchmark"], help="Mode in which Benchmarking functionality should be runned.")
+    parser.add_argument("mode", choices=["analyse", "benchmark"],
+                        help="Mode in which Benchmarking functionality should be runned.")
     args = parser.parse_args()
 
     if args.mode == "analyse":

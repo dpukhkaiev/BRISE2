@@ -1,0 +1,81 @@
+{
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "GA",
+      "children": [
+        {
+          "name": "generations",
+          "type": "IntegerHyperparameter",
+          "lower": 25000,
+          "upper": 200000,
+          "default": 200000
+        },
+        {
+          "name": "populationSize",
+          "type": "IntegerHyperparameter",
+          "lower": 100,
+          "upper": 50000,
+          "default": 1000
+        },
+        {
+          "name": "treeMutateOperatorP",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.9
+        },
+        {
+          "name": "treeMutateOperatorP1",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.7
+        },
+        {
+          "name": "treeMutateOperatorP2",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.3
+        },
+        {
+          "name": "treeMutateOperatorP3",
+          "type": "FloatHyperparameter",
+          "lower": 0.1,
+          "upper": 1.0,
+          "default": 0.4
+        },
+        {
+          "name": "lambda_",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 25}
+          ]
+        },
+        {
+          "name": "crossoverRate",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 0.95}
+          ]
+        },
+        {
+          "name": "mu",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 25}
+          ]
+        },
+        {
+          "name": "tournament",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 0}
+          ]
+        }
+      ]
+    }
+  ]
+}

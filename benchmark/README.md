@@ -6,7 +6,7 @@ Designed for understanding, interpreting and assessment of the results of the ex
 ---
 ### Requirements
 To use `benchmark` mode:
- - Run [main-node](../main-node/README.md "Main node Readme."), at least one [worker](../worker/README.md), [worker-service](../worker_service/README.md "Worker service Readme."), [event-service](../event_service/README.md). The easiest way to do so is by using the next `../brise.sh` command:  
+ - Run [main-node](../main_node/README.md "Main node Readme."), at least one [worker](../worker/README.md), [worker-service](../worker_service/README.md "Worker service Readme."), [event-service](../event_service/README.md). The easiest way to do so is by using the next `../brise.sh` command:  
     `../brise.sh up -m docker-compose -s main-node worker worker_service event_service`
  - Define the Domain Name for the `event-service` on the host-machine as IP of a machine where the event service is running. In the case of running on the same machine set it the same as `localhost` in your environment.
  - NOTE: The benchmark looking for `event-service` on the 49153 port. For that reason be careful with changing AMQP port by using `../brise.sh`.
@@ -80,7 +80,3 @@ Benchmark currently can be extended and modified with the following dependencies
 | [Plotly](https://plot.ly/python/) | Python graphing library |
 | [Jinja2](http://jinja.pocoo.org/docs/2.10/) | Templating language for Python |
 | [Docker](https://docs.docker.com/) | Containerization |
-
-### Todos :construction:
-
- - Write plots for a large number of experiments

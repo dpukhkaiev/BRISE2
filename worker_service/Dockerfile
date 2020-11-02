@@ -1,4 +1,4 @@
-FROM brisedev/worker-service-dev:latest
+FROM brisedev/worker-service-dev:2.5.0
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app

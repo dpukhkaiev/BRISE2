@@ -24,10 +24,10 @@ To use this function follow next steps:
 ```python
 from worker.generator.generator import generate_worker_function
 ```
-3. Find a path to your valid experiment description. For example `"main-node/Resources/GA/GAExperiment.json"`
+3. Find a path to your valid experiment description. For example `"main_node/Resources/GA/GAExperiment.json"`
 4. Call the function:
  ```python
- generate_worker_function("main-node/Resources/GA/GAExperiment.json")
+ generate_worker_function("main_node/Resources/GA/GAExperiment.json")
 ```
 5. Check result, and fill gaps in a generated skeleton.
 
@@ -76,11 +76,6 @@ genetic_NSGA2,5558,34620.200000000004,0,true,false
 
 [Link to MQUAT2 project](https://git-st.inf.tu-dresden.de/mquat/mquat2/tree/Genetic_Kosovnenko).
 
-#### Worker for RapidMiner Machine Learning algorithms optimization
-
-By default BRISE is not connected to [RapidMiner](https://rapidminer.com) data science platform. However, a template for using RapidMiner with BRISE is prepared. Please, see this [guide](./RapidMiner_worker_setup_guide.md) to setup BRISE for RapidMiner use case.
-
-
 #### Worker as Low-Level Meta-heuristic
 ##### Summary:
 
@@ -98,7 +93,7 @@ To define the respective experiment description file, one should define the resp
 The search space description should contain a set of choices for solver as `low level heuristic` root categorical parameter.
 The parameter choices should be defined as the respective children's parameters. 
 
-The examples of experiment description files may be found at [main-node/Resources/HyperHeuristic](../main-node/Resources/HyperHeuristic) folder.
+The examples of experiment description files may be found at [main_node/Resources/HyperHeuristic](../main_node/Resources/HyperHeuristic) folder.
 
 ##### Some tips for setting-up BRISE:
 1. Disable Repeater by setting it type to `QuantityBased` and setting its parameter `MaxTasksPerConfiguration` equal to 1.

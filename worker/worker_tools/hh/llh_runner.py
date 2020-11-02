@@ -1,7 +1,8 @@
 from __future__ import annotations
-import os
+
 import abc
 import logging
+import os
 from typing import List, Mapping
 
 from worker_tools.mongo_dao import MongoDB
@@ -62,10 +63,10 @@ class LLHRunner:
         if self.status != LLHRunner.BUILT_SUCCESS:
             self.logger.error(f"LLH is not ready to be run. Status code: {self.status}.")
         else:
-            self.logger.debug(f"Executing the LLH.")
+            self.logger.debug("Executing the LLH.")
             self.report = self._llh_wrapper.run_and_report()
             self.status = LLHRunner.RUN_SUCCESS
-            self.logger.debug(f"LLH execution succeed.")
+            self.logger.debug("LLH execution succeed.")
 
 
 class ILLHWrapper(abc.ABC):

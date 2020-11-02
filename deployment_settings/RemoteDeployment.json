@@ -1,10 +1,10 @@
 {
   "Database": {
-    "Address": "172.22.1.167",
+    "Address": "yourIPAddress",
     "Port": 27017,
     "DatabaseName": "BRISE_db",
     "DatabaseUser": "BRISEdbuser",
-    "DatabasePass": "5V5Scp1E2"
+    "DatabasePass": "yourPassword"
   },
   "EventService": {
     "Address": "localhost",

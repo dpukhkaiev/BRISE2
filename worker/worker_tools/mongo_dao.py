@@ -1,9 +1,9 @@
-import pymongo
-import urllib.parse
 import logging
-
-from worker_tools.singleton import Singleton
+import urllib.parse
 from typing import Mapping, Union
+
+import pymongo
+from worker_tools.singleton import Singleton
 
 
 class MongoDB(metaclass=Singleton):

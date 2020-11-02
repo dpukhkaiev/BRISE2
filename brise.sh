@@ -227,7 +227,7 @@ if [[ -z ${1}  ]]; then
   help
 else
     dependency_check
-    N_workers=$( cat main-node/Resources/SettingsBRISE.json | jq -r '.General.NumberOfWorkers' )
+    N_workers=$( cat main_node/Resources/SettingsBRISE.json | jq -r '.General.NumberOfWorkers' )
     event_service_host=$( cat deployment_settings/RemoteDeployment.json | jq -r '.EventService.Address' )
     event_service_AMQP_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.EventService.AMQTPort' )
     event_service_GUI_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.EventService.GUIPort' )

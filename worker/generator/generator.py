@@ -1,8 +1,9 @@
 __doc__ = """
     Module to generate a skeleton of code from Experiment Description."""
-import os
 import json
 import logging
+import os
+
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -19,7 +20,6 @@ def generate_worker_function(experiment_description_path):
     except IOError as error:
         logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}", exc_info=True)
         raise error
-    # TODO: Usage of shared functionality - load_json_file
     try:
         with open(experiment_description_path) as json_file:
             data = json.load(json_file)

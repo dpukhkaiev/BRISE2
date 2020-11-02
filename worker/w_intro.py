@@ -1,12 +1,14 @@
+import ctypes
+import json
+import logging
 import os
 import threading
-import logging
-import ctypes
+
 import pika
 import pika.exceptions
-import json
-
-from worker_tools.reflective_worker_method_import import get_worker_methods_as_dict
+from worker_tools.reflective_worker_method_import import (
+    get_worker_methods_as_dict
+)
 
 logging.basicConfig()
 
@@ -91,7 +93,7 @@ class WorkerMainThread(threading.Thread):
                     'id_measurement': task["id_measurement"],
                     'task_result': {
                         'task id': task["task_id"],
-                        'worker': os.environ.get('workername', 'undefined'),
+                        'worker': f"{os.uname()[1]}",
                         'result': result_from_worker
                     }
                 }

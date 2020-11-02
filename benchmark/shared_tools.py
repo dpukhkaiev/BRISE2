@@ -1,7 +1,7 @@
-import random
 import logging
-import time
 import os
+import random
+import time
 from string import ascii_lowercase
 
 import plotly.io as pio
