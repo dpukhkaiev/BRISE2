@@ -1,0 +1,14 @@
+{
+  "Database": {
+    "Address": "mongo-db",
+    "Port": 27017,
+    "DatabaseName": "BRISE_db",
+    "DatabaseUser": "user",
+    "DatabasePass": "yourPassword"
+  },
+  "EventService": {
+    "Address": "event_service",
+    "AMQTPort": 49153,
+    "GUIPort": 49154
+  }
+}

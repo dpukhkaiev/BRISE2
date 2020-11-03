@@ -1,0 +1,25 @@
+{
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "SynteticProblems",
+      "children": [
+        {
+          "name": "x",
+          "type": "FloatHyperparameter",
+          "lower": -4.0,
+          "upper": 5.0,
+          "default": 1
+        },
+         {
+          "name": "y",
+          "type": "FloatHyperparameter",
+          "lower": -4.0,
+          "upper": 5.0,
+          "default": 1
+        }
+      ]
+    }
+  ]
+}

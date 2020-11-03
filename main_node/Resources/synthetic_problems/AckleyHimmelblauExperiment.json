@@ -1,0 +1,20 @@
+{
+  "DomainDescription":{
+    "DataFile": "./Resources/synthetic_problems/AckleyHimmelblauData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "synthetic_problems",
+    "Scenario":{
+      "function name": "ackley",
+      "COMMENT: supported function names are": ["ackley", "himmelblau"],
+      "deviation, %": 10
+    },
+    "Objectives"   : ["result"],
+    "ObjectivesDataTypes"  : ["float"],
+    "ObjectivesMinimization": [true],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
+    "ExpectedValuesRange": [[-100, 10000000]],
+    "MaxTimeToRunTask": 10
+  }
+}

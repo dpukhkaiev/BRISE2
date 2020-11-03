@@ -1,0 +1,33 @@
+{
+  "name": "low level heuristic",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "jMetalPy.SimulatedAnnealing",
+      "children": [
+        {
+          "name": "mutation_type",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "PermutationSwapMutation"
+            },
+            {
+              "category": "ScrambleMutation"
+            }
+          ],
+          "default": "PermutationSwapMutation",
+          "children": [
+            {
+              "name": "mutation_probability",
+              "type": "FloatHyperparameter",
+              "lower": 0,
+              "upper": 1,
+              "default": 0.5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

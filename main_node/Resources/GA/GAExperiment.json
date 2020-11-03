@@ -1,0 +1,32 @@
+{
+  "DomainDescription":{
+    "DataFile"          : "./Resources/GA/GAExperimentData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "genetic",
+    "Scenario":{
+      "numTopLevelComponents": 1,
+      "avgNumImplSubComponents": 0,
+      "implSubComponentStdDerivation": 0,
+      "avgNumCompSubComponents": 2,
+      "compSubComponentStdDerivation": 0,
+      "componentDepth": 4,
+      "numImplementations": 4,
+      "excessComputeResourceRatio": 50,
+      "numRequests": 4,
+      "numCpus": 1,
+      "seed": 0,
+      "timeoutValue": 10,
+      "timeoutUnit": "SECONDS"
+    },
+    "Objectives"  : ["Validity"],
+    "ObjectivesDataTypes"  : ["int"],
+    "ObjectivesMinimization": [true],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
+    "ExpectedValuesRange": [[0, Infinity]],
+    "RepeaterDecisionFunction"  : "student_deviation",
+    "MaxTasksPerConfiguration": 2,
+    "MaxTimeToRunTask": 300
+  }
+}

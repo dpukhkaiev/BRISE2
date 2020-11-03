@@ -2,12 +2,11 @@ import json
 
 from jinja2 import Environment, FileSystemLoader
 
+
 def exp_description_highlight(experiments):
     """ Return highlighted JSON syntax in accordance tabs with experiment instances
-    
     Args:
         experiments (List): The list of Experiment instances.
-    
     Returns:
         HTML: Markup component with related styles and scripts.
     """

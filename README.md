@@ -1,4 +1,4 @@
-# BRISE 2.4.0
+# BRISE 2.5.0
 ##### Benchmark Reduction via Adaptive Instance Selection
 ![BRISE-CI](https://github.com/dpukhkaiev/BRISE2/workflows/BRISE-CI/badge.svg?branch=master)
 
@@ -12,54 +12,68 @@ different algorithms (data compressing, integers sorting, etc.) w.r.t. `energy c
 Software requirements:
 - Docker (with Docker Engine 18.06.0+), Docker-compose (1.22.0+).
 - Python (v3.7+).
+- [jq](https://stedolan.github.io/jq/) (v1.5-1+)
+- Kubectl (v1.18.0+) only in case of using Kubernetes.
+
 
 Hardware requirements:
 - 5 GB HDD, 2 GB RAM, 2x 2.5 GHz CPU + Resources for running  `N` (amount of workers, 3 by default) instances of your system.
 
 #### Installing and running basic installation
-To get working instance of BRISE:
+To get a working instance of BRISE:
 - `git clone` this repository and
-- `docker-compose up --build` BRISE instance in root folder of copied repository.
+- `./brise.sh up -m docker-compose` in the root folder of copied repository to deploy the BRISE instance using *docker-compose*.
 
-This will create following docker containers:
-- [main-node](./main-node/README.md "Main node Readme.") - for exploring of configuration search space, 
-deciding which configuration should be evaluated (using Worker Service), 
-predicting and validating best configuration.
-- [worker-service](./worker_service/README.md "Worker service Readme.") - for parallelization and orchestration of configuration evaluation between worker nodes.
-- `N` [workers](./worker/README.md) - for evaluation of your system with concrete parameters.
-- [front-end](./front-end/README.md) - for controlling and visualisation of the Experiment process.
-- [event-service](./event_service/README.md) - [RabbitMQ](https://www.rabbitmq.com/) server instance, for event management
+Run  `./brise.sh help` to see possible options for starting it. For example, if you want to overwrite the standard addresses and ports used by the `event-service` or `database`, you may use the following command:
+`./brise.sh up -m docker-compose -eAMQP 49153  -eGUI 49154 -db_host localhost -db_port 27017`
+If no values are specified, the default ones will be taken from the [SettingsBRISE.json](./main_node/Resources/SettingsBRISE.json).
 
-#### Testing installation
+`NOTE. brise.sh is designed for UNIX operating system. Running the script under Windows Subsystem for Linux may 
+require additional actions, for example, using [dos2unix](https://linux.die.net/man/1/dos2unix) tools.` 
+
+The following Docker containers will be created:
+- [main-node](./main_node/README.md "Main node Readme.") - performs the main flow of an optimization experiment. Contains 
+extendable features to customize your optimization process.
+- [worker-service](./worker_service/README.md "Worker service Readme.") - parallelization and orchestration of configurations
+ between worker nodes.
+- `N` [workers](./worker/README.md) - evaluate the target system with concrete parameters.
+- [front-end](./front_end/README.md) - control and visualisation of the optimization process.
+- [event-service](./event_service/README.md) - [RabbitMQ](https://www.rabbitmq.com/) server instance for event management.
+- [mongo-db](./mongo_db/README.md) - [MongoDB](https://www.mongodb.com/) server instance for the BRISE database management.
+
+#### Testing the installation
 - Get into **main-node**:
     - `$ docker exec -it main-node /bin/bash`
-    - Run BRISE by `python3.7 main.py` inside container. In the end you will see final report for Energy Experiment. (Searching for best CPU Frequency and number of Threads.)
+    - Run BRISE by `python3.7 main.py` inside the container. In the end you will see a final report for Radixsort 
+    Energy Experiment (search for the best CPU frequency and number of threads of the Radixsort sorting 500 millions of 
+     integers w.r.t. energy consumption)
 
 ## Using BRISE 
-To apply this BRISE for your system, you need to:
+To apply BRISE for your target system, you will need to:
 1. Install BRISE.
-2. Describe Experiment for finding the Configuration for your system in `*.json` [Experiment Description file](./main-node/Resources/EnergyExperiment.json "Example of task description for energy consumption").
-3. Describe search space of all possible parameters in `*.json` [Experiment data file](./main-node/Resources/EnergyExperimentData.json "Example for energy consumption - possible CPU frequencies and number of thread").
-*These files should be inside main-node container (put it in main-node folder).*
-4. Adapt BRISE system to your particular optimization goal (if needed).
-Mostly it should be done in validation of predicted configurations by BRISE model (model validation).
+2. Describe your experiment in `*.json` 
+[Experiment Description file](./main_node/Resources/EnergyExperiment.json "Example of task description for the Energy Experiment").
+3. Describe your search space in `*.json` 
+[Experiment data file](./main_node/Resources/EnergyExperimentData.json "Example for the Energy Experiment").
+*These files should be inside of the main-node container (put it into `main_node/Resources/` folder).*
+4. Adapt BRISE to your particular optimization case (if needed) in [SettingsBRISE file](./main_node/Resources/SettingsBRISE.json).
 5. Launch BRISE and check the results.
 
 ## Dev instructions. Local environment 
 #### Main-node
-Main node have single entry point - **main.py** in a root of main-node folder, so you could easily run it locally,
+Main node have a single entry point - **main.py** in a root of the main-node folder, so you could easily run it locally,
 after satisfying needed requirements.   
 
-See **main-node** requirements in corresponding [requirements.txt](./main-node/requirements.txt) file.
+See **main-node** requirements in a corresponding [requirements.txt](./main_node/requirements.txt) file.
 
 #### Front-end
-There is already built version at the start of containers. Just go to [localhost](http://localhost/).
+There is an already built version running in the front-end container. Just go to [localhost](http://localhost/).
 
-If require to make own front-end build:
+If you would like to make own front-end build:
 1. Install Node.js version 6.9+
 2. Update NPM to version 3.0+
 3. `$ npm install @angular/cli -g`
-4. From front-end root `$ npm install`
+4. From the front_end folder run `$ npm install`
 5. Start front-server with `$ ng serve --host 0.0.0.0 --port 80`
 6. Go to [localhost:80](http://localhost:80)
 
