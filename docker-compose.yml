@@ -1,17 +1,10 @@
 # Launch & Build a bunch containers with workers and one service for them.
 version: "3.7"
 services: 
-  main_node:
-    build: ./main-node/
+  main-node:
+    build: ./main_node/
     tty: true
     container_name: main-node
-    networks:
-     - brise_network
-    ports:
-      - "49152:49152"
-    depends_on:
-      - "event_service"
-      - "worker_service"
     environment:
       - EXP_DUMP_NAME=undefined
     restart: on-failure
@@ -20,77 +13,39 @@ services:
     build: ./event_service/
     stdin_open: true
     tty: true
-    container_name: event_service
-    networks:
-      brise_network:
-        aliases:
-          - event_service
+    container_name: event-service
     ports:
-      - "49153:49153"
-      - "15672:15672"
-      - "15674:15674"
+        - 49153:49153
+        - 49154:49154
+        - 49155:49155
     restart: on-failure
+
+  mongo-db:
+    image: mongo:4.4.0
+    container_name: mongo-db
+    restart: on-failure
+    environment:
+        MONGO_INITDB_DATABASE: BRISE_db
+    ports:
+        - 27017:27017
+    volumes:
+      - ./mongo_db/init.js:/docker-entrypoint-initdb.d/init.js
 
   worker_service:
     build: ./worker_service/
     stdin_open: true
     tty: true
-    container_name: worker_service
-    networks:
-      brise_network:
-        aliases:
-          - worker_service
-    depends_on:
-      - "event_service"
+    container_name: worker-service
     restart: on-failure
 
   front-end:
-    build: ./front-end/
+    build: ./front_end/
     container_name: front-end
     tty: true
-    networks:
-     - brise_network
     ports:
-      - "80:80"
+        - 80:80
     restart: on-failure
 
-  worker_alpha:
+  worker:
     build: ./worker/
-    container_name: worker_alpha
-    environment:
-      - workername=alpha
-    networks:
-      - brise_network
-    depends_on:
-      - "event_service"
-      - "worker_service"
     restart: on-failure
-
-  worker_beta:
-    build: ./worker/
-    container_name: worker_beta
-    environment:
-      - workername=beta
-    networks:
-      - brise_network
-    depends_on:
-      - "event_service"
-      - "worker_service"
-    restart: on-failure
-
-  worker_gamma:
-    build: ./worker/
-    container_name: worker_gamma
-    environment:
-      - workername=gamma
-    networks:
-      - brise_network
-    depends_on:
-      - "event_service"
-      - "worker_service"
-    restart: on-failure
-
-networks:
-  brise_network:
-    driver: bridge
-    name: brise_network

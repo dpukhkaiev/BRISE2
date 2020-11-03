@@ -1,17 +1,16 @@
-from core_entities.experiment import Experiment
 import plotly.graph_objs as go
+from core_entities.experiment import Experiment
+
 
 def table(experiments):
     """ Key properties for comparing experiments.
-    
     Args:
         experiments (List): The list of Experiment instances.
-    
     Returns:
         Dictionary: Plotly dictionary
     """
 
-    #-- Extract
+    # Extract
     template = dict({
         'model': None,
         'default configuration': None,
@@ -40,18 +39,18 @@ def table(experiments):
         temp['solution configuration'] = ' '.join(str(v) for v in exp.get_current_solution().parameters)
         temp['result improvement'] = str(round(get_relative_improvement(exp), 1)) + '%'
         temp['number of measured configurations'] = len(exp.measured_configurations)
-        temp['search space coverage'] = str(round((len(exp.measured_configurations)/exp.description["ModelConfiguration"]["SamplingSize"])*100)) + '%',
+        temp['search space coverage'] = str(round((
+            len(exp.measured_configurations)/exp.description["ModelConfiguration"]["SamplingSize"])*100)) + '%',
         temp['number of repetitions'] = len(exp.get_all_repetition_tasks())
         temp['execution time'] = str((exp.end_time - exp.start_time).seconds) + ' s'
         temp['repeater'] = exp.description['Repeater']['Type']
 
         exp_data.append(temp)
-         
 
-    #-- Aggregate
+    # Aggregate
     header = ["<b> {name} </b>".format(name=e.get_name()) for e in experiments]
     header.insert(0, '<b> Description </b>')
-    h_colors = [ exp.color for exp in experiments]
+    h_colors = [exp.color for exp in experiments]
     h_colors.insert(0, '#a1c3d1')
 
     cells = [list(e.values()) for e in exp_data]
@@ -60,19 +59,19 @@ def table(experiments):
     trace = go.Table(
         header=dict(
             values=header,
-            font=dict(color = '#2e2f30', size = 12),
+            font=dict(color='#2e2f30', size=12),
             fill=dict(color=h_colors),
             align=['left'] * 5,
-            height = 40
+            height=40
         ),
         cells=dict(
-                values=cells,
-                line=dict(color='#7D7F80'),
-                fill=dict(color='#EDFAFF'),
-                align=['left'] * 5)
-        )
+            values=cells,
+            line=dict(color='#7D7F80'),
+            fill=dict(color='#EDFAFF'),
+            align=['left'] * 5)
+    )
 
-    #-- Composite
+    # Composite
     data = [trace]
 
     return dict(data=data)

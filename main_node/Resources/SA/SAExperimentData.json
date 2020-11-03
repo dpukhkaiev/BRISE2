@@ -1,0 +1,60 @@
+{
+  "name": "experiment",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "SA",
+      "children": [
+        {
+          "name": "subComponentUnassignedFactor",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 10000,
+          "default": 1
+        },
+        {
+          "name": "softwareComponentUnassignedFactor",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 10000,
+          "default": 5
+        },
+        {
+          "name": "hardScoreStartingTemperaturePercentage",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 100,
+          "default": 100
+        },
+        {
+          "name": "softScoreStartingTemperaturePercentage",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 100,
+          "default": 100
+        },
+        {
+          "name": "acceptedCountLimit",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 50,
+          "default": 50
+        },
+        {
+          "name": "millisecondsSpentLimit",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 10000}
+          ]
+        },
+        {
+          "name": "unimprovedMillisecondsSpentLimit",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {"category": 10000}
+          ]
+        }
+      ]
+    }
+  ]
+}

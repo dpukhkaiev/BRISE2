@@ -1,0 +1,18 @@
+{
+  "DomainDescription":{
+    "DataFile"          : "./Resources/EnergyExperiment/EnergyExperimentData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "energy_consumption",
+    "Scenario":{
+      "ws_file": "search_space_96/Radix-500mio_full.csv"
+    },
+    "Objectives"   : ["energy"],
+    "ObjectivesDataTypes"  : ["float"],
+    "ObjectivesMinimization": [true],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
+    "ExpectedValuesRange": [[0, 150000]],
+    "MaxTimeToRunTask": 10
+  }
+}

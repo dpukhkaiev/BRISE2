@@ -1,0 +1,60 @@
+{
+  "name": "low level heuristic",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "jMetalPy.EvolutionStrategy",
+      "children": [
+        {
+          "name": "mu",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 1000,
+          "default": 500
+        },
+        {
+          "name": "lambda_",
+          "type": "IntegerHyperparameter",
+          "lower": 1,
+          "upper": 1000,
+          "default": 500
+        },
+        {
+          "name": "elitist",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "True"
+            },
+            {
+              "category": "False"
+            }
+          ],
+          "default": "False"
+        },
+        {
+          "name": "mutation_type",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "PermutationSwapMutation"
+            },
+            {
+              "category": "ScrambleMutation"
+            }
+          ],
+          "default": "PermutationSwapMutation",
+          "children": [
+            {
+              "name": "mutation_probability",
+              "type": "FloatHyperparameter",
+              "lower": 0,
+              "upper": 1,
+              "default": 0.5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

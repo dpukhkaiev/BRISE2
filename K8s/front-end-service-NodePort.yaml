@@ -1,0 +1,15 @@
+# for custom clusters without loadbalancer service
+kind: Service
+apiVersion: v1
+metadata:
+  name: front-end
+spec:
+  selector:
+    app: front-end
+  ports:
+    - name: gui
+      protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30180
+  type: NodePort

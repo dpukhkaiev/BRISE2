@@ -1,26 +1,25 @@
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+
 def repeat_vs_avg(exp):
     """ Compare average results and measurements repeats for one experiment.
-    
     Args:
         exp (Experiment): Single Experiment instance.
-    
     Returns:
         Dictionary: Plotly dictionary
     """
-    #-- Extract
+    # Extract
     x_param = [str(conf.parameters) for conf in exp.measured_configurations]
-    y_repeat = [ len(conf.get_tasks()) for conf in exp.measured_configurations]
+    y_repeat = [len(conf.get_tasks()) for conf in exp.measured_configurations]
     y_avg_res = [conf.get_average_result()[0] for conf in exp.measured_configurations]
     y_deviation = [conf.get_standard_deviation()[0] for conf in exp.measured_configurations]
 
-    #-- Aggregate
+    # Aggregate
     trace_repeat = go.Bar(
         x=y_repeat,
         y=x_param,
-        marker=dict(color='lightgrey',line=dict(color='#160D0D',width=1)),
+        marker=dict(color='lightgrey', line=dict(color='#160D0D', width=1)),
         name='repeat',
         orientation='h'
     )
@@ -48,18 +47,18 @@ def repeat_vs_avg(exp):
         name='deviation',
     )
     layout = dict(
-                    title=exp.name,
-                    yaxis=dict(showticklabels=True,type='category',domain=[0, 0.85],automargin=True,),
-                    yaxis2=dict(showline=True,showticklabels=False,linecolor='rgba(102, 102, 102, 0.5)',linewidth=2,domain=[0, 0.85]),
-                    xaxis=dict(zeroline=False,showline=False,showticklabels=True,showgrid=True,domain=[0, 0.41],side='top'),
-                    xaxis2=dict(zeroline=False,showline=False,showticklabels=True,showgrid=True,domain=[0.47, 1],side='top'),
-                    legend=dict(x=0.029,y=1.042,font=dict(size=10) ),
-                    margin=dict(l=200, r=20,t=70,b=70),
-                    paper_bgcolor='rgb(248, 248, 255)',
-                    plot_bgcolor='rgb(248, 248, 255)',
+        title=exp.name,
+        yaxis=dict(showticklabels=True, type='category', domain=[0, 0.85], automargin=True,),
+        yaxis2=dict(showline=True, showticklabels=False, linecolor='rgba(102, 102, 102, 0.5)', linewidth=2, domain=[0, 0.85]),
+        xaxis=dict(zeroline=False, showline=False, showticklabels=True, showgrid=True, domain=[0, 0.41], side='top'),
+        xaxis2=dict(zeroline=False, showline=False, showticklabels=True, showgrid=True, domain=[0.47, 1], side='top'),
+        legend=dict(x=0.029, y=1.042, font=dict(size=10)),
+        margin=dict(l=200, r=20, t=70, b=70),
+        paper_bgcolor='rgb(248, 248, 255)',
+        plot_bgcolor='rgb(248, 248, 255)',
     )
 
-    #-- Composite
+    # Composite
     # Creating two subplots
     fig = make_subplots(rows=1, cols=2, specs=[[{}, {}]], shared_xaxes=False, shared_yaxes=True)
 

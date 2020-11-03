@@ -1,0 +1,25 @@
+# for custom clusters without loadbalancer service
+kind: Service
+apiVersion: v1
+metadata:
+  name: event-service
+spec:
+  selector:
+    app: event-service
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: 49153
+      targetPort: 49153
+      nodePort: 30153
+    - name: gui
+      protocol: TCP
+      port: 49154
+      targetPort: 49154
+      nodePort: 30154
+    - name: web-stomp
+      protocol: TCP
+      port: 49155
+      targetPort: 49155
+      nodePort: 30155
+  type: NodePort

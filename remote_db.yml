@@ -1,0 +1,39 @@
+# Launch & Build a bunch containers with workers and one service for them.
+version: "3.7"
+services: 
+  main-node:
+    build: ./main_node/
+    tty: true
+    container_name: main-node
+    environment:
+      - EXP_DUMP_NAME=undefined
+    restart: on-failure
+    network_mode: host
+
+  event_service:
+    build: ./event_service/
+    stdin_open: true
+    tty: true
+    container_name: event-service
+    network_mode: host
+    restart: on-failure
+
+  worker_service:
+    build: ./worker_service/
+    stdin_open: true
+    tty: true
+    container_name: worker-service
+    network_mode: host
+    restart: on-failure
+
+  front-end:
+    build: ./front_end/
+    container_name: front-end
+    tty: true
+    network_mode: host
+    restart: on-failure
+
+  worker:
+    build: ./worker/
+    network_mode: host
+    restart: on-failure

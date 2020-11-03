@@ -1,0 +1,31 @@
+{
+  "DomainDescription":{
+    "DataFile"          : "./Resources/SA/SAExperimentData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "simulatedAnnealing",
+    "Scenario":{
+      "ws_file": "result_v10_q15_d2_r1_5.csv",
+      "numTopLevelComponents": 1,
+      "avgNumImplSubComponents": 0,
+      "implSubComponentStdDerivation": 0,
+      "avgNumCompSubComponents": 2,
+      "compSubComponentStdDerivation": 0,
+      "componentDepth": 2,
+      "numImplementations": 10,
+      "excessComputeResourceRatio": 1.5,
+      "numRequests": 15,
+      "numCpus": 1,
+      "seed": 0
+    },
+    "Objectives"   : ["hardScoreImprovement", "softScoreImprovement"],
+    "ObjectivesDataTypes"  : ["float", "float"],
+    "ObjectivesMinimization": [false, false],
+    "ObjectivesPriorities": [1, 0],
+    "ObjectivesPrioritiesModels": [1, 0],
+    "ExpectedValuesRange": [
+      [0, 1],
+      [-Infinity, Infinity]
+    ]
+  }
+}

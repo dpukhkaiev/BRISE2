@@ -1,0 +1,49 @@
+{
+  "General":{
+    "NumberOfWorkers": 6,
+    "results_storage": "./Results/"
+  },
+  "SelectionAlgorithm": "MersenneTwister",
+  "OutliersDetection":{
+    "isEnabled": false
+  },
+  "Repeater":{
+    "Type": "QuantityBased",
+    "Parameters": {
+      "MaxFailedTasksPerConfiguration": 5,
+      "MaxTasksPerConfiguration": 1
+    }
+  },
+  "Predictor":{
+    "window size": 1.0,
+    "models": [
+      {
+        "Type": "brise.TreeParzenEstimator",
+        "Parameters": {
+          "top_n_percent": 30,
+          "random_fraction": 0,
+          "bandwidth_factor": 3,
+          "min_bandwidth": 0.001,
+          "SamplingSize": 96
+        }
+      }
+    ]
+  },
+  "StopConditionTriggerLogic":{
+    "Expression": "TimeBased",
+    "InspectionParameters":{
+      "RepetitionPeriod": 1,
+      "TimeUnit": "seconds"
+    }
+  },
+  "StopCondition":[
+    {
+      "Name": "TimeBased",
+      "Type": "TimeBased",
+      "Parameters": {
+        "MaxRunTime": 15,
+        "TimeUnit": "minutes"
+      }
+    }
+  ]
+}
