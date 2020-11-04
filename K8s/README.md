@@ -1,15 +1,16 @@
 ## Using Kubernetes 
-To deploy BRISE onto the Kubernetes cluster you can either use our cluster or create your own.
+To deploy BRISE onto the Kubernetes cluster you must first create it, please consult one of the tutorials: 
+[tutorial1](https://kubernetes.io/docs/tutorials/kubernetes-basics/) or 
+[tutorial2](https://www.tecmint.com/install-kubernetes-cluster-on-centos-7/) to configure your own cluster.
 
-Generally, you should use `brise.sh` with mode `k8s`, and pick which service you want to run. 
+Having a functioning K8s cluster, use`brise.sh` with mode `k8s` to setup BRISE-related services (manually). 
+In all scenarios you would require at least the `event-service` and `mongo-db.`
 
-Under the hood, the script builds images for specified services, pushes them to specified `docker-hub` 
+Under the hood, the script builds images for specified services, pushes them to the specified `docker-hub` 
 (should be local to protect private info) and builds relevant `k8s services` (the orchestrator decides where to 
 run each service).
 
-After that, you are able to use the services as you want (via the management portal or just by sending requests via `RabbitMQ`).
-
-`NOTE: Because of the DNS problem, during the initialization pods could fail several times.`
+After that, you are able to use the services (via the management portal or just by sending requests via `RabbitMQ`).
 
 Be aware that if you use `brise.sh` control script to deploy BRISE on K8s,
 the master-node of your cluster will need to connect to the **local** `Docker hub` where images of BRISE services 
@@ -23,28 +24,27 @@ Also, for K8s deployment, user should be authorized to execute `kubectl` command
 
 ![Variant 1](./img/use_case_1.png)
 
-- Login in the `master-node` via ssh: `ssh user@141.76.65.28`
+- Login in the `master-node` via the ssh: `ssh user@IPMaster`.
 - Delete existing services: `./brise.sh down -m k8s` 
 - Run `./brise.sh up -m k8s -e event-service -db_port 27017 -db_host mongodb://mongo-db`
 - Wait until all services will run stable.
 - Find the `main-node` pod full name, by using the dashboard or `kubectl get pods`. 
 - Run `python3.7 main.py ./relative/path/to/config/file.json` in the `main-node` pod. You can use the dashboard to 
 run the command or `kubectl exec -it main-node-xxxxx -- command`.
-*May fail a few times because of the DNS problem.*
 
 #### Workers, worker service, mongo-db and the event service in the remote cluster
 
 ![Variant 2](./img/use_case_2.png)
 
-- Login in the `master-node` via ssh: `ssh user@141.76.65.28`
+- Login in the `master-node` via ssh: `ssh user@IPMaster`
 - Delete existing services: `./brise.sh down -m k8s`
 - Run `./brise.sh up -m k8s -e event-service -db_port 27017 -db_host mongodb://mongo-db -s event_service worker_service worker mongo-db`
 - Wait until services will run stable.
 - Bind local ports to the cluster ports (on `master-node`) where event service runs AMQP and GUI service, and database runs:
  
-    `ssh -L 30153:master-node:30153 user@141.76.65.28` - to bind AMQP port
-    `ssh -L 30154:master-node:30154 user@141.76.65.28` - to bind GUI port
-    `ssh -L 30156:master-node:30156 user@141.76.65.28` - to bind database port
+    `ssh -L 30153:master-node:30153 user@IPMaster` - to bind AMQP port
+    `ssh -L 30154:master-node:30154 user@IPMaster` - to bind GUI port
+    `ssh -L 30156:master-node:30156 user@IPMaster` - to bind database port
 
 - Run the `main-node` service in a local Docker container and specify event service hostname (IP), ports for AMQP and GUI service and database-related information:
 
@@ -65,7 +65,7 @@ To do so, specify the next environment variables on your local machine:
 After that, you can run any services by using python commands.
 
 `NOTE. The host networking driver only works on Linux hosts and is not supported on Docker Desktop for Mac, Docker 
-Desktop for Windows, or Docker EE for Windows Server. To test this variant on a Windows machine, you can run 
+Desktop for Windows, or Docker EE for Windows Server. To test this variant on a Windows machine, you can run the 
 main-node locally as for debugging purposes.`
 
 #### Everything in the local(minikube) cluster
@@ -106,55 +106,25 @@ On your local machine:
 
 ##### Dashboard related information
 
-Kubernetes Dashboard is already installed in our cluster. To run it use `kubectl proxy` command, 
+Kubernetes Dashboard should be installed in your cluster. To run it use `kubectl proxy` command, 
 and the dashboard will be accessible on the `8001` port.
 
 To get access to the GUI of the dashboard, follow the next steps:
- - Connect to the master node of the cluster: `ssh user@141.76.65.28`
+ - Connect to the master node of the cluster: `ssh user@IPMaster`
  - Run the proxy service: `kubectl proxy`
  - Open the GUI link in your browser. Please note, the dashboard is accessible only locally on the `master-node` 
  on the next address: `http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/`.
  - If you would like to open the dashboard from a remote machine you have to forward the local 
  traffic from the master node. To do it use ssh port binding.
     1. The next command binds 9999 local port with  8001 `master-node` port: 
-        `ssh -L 9999:127.0.0.1:8001 user@141.76.65.28`.
+        `ssh -L 9999:127.0.0.1:8001 user@IPMaster`.
     2. After that the dashboard is accessible from your local machine on the next address:
 `http://127.0.0.1:9999/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/`
  - To login into the dashboard use a token authorization mechanism. To get the token run the next command:
  `$ kubectl -n kube-system describe secret $(sudo kubectl -n kube-system get secret | 
  (grep k8sadmin || echo "$_") | awk '{print $1}') | grep token: | awk '{print $2}'`
  - In case the Database is unreacheable, e.g., after a new deployment, the respective user has to be created with the 
- command: `$ mongo --eval 'var db = connect("mongodb://localhost/BRISE_db"); db.createRole({role: "user",privileges: [{actions: [ "find", "update", "insert" ],resource: { db: "BRISE_db", collection: "" }}],roles: [  ]});db.createUser({user: "BRISEdbuser",pwd: "5V5Scp1E2",roles: [ { role: "user", db: "BRISE_db" } ]})'` 
- 
-
-##### Cluster management information
-
-The cluster was built by following [the guide](https://www.tecmint.com/install-kubernetes-cluster-on-centos-7/).
-
-To fix some unpredictable network error sometimes it is useful to update IP tables. 
-Especially useful when nodes do not "see" each other. Run it on each node.:
-```
-sudo - s
-iptables -P FORWARD ACCEPT
-iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
-```
-
-To add a new sudo and k8s enabled user for a node, follow the next steps:
-
- - Create a new user:
-    1. `adduser user_name`
-    2. `passwd user_name`
-    3. `usermod -aG wheel user_name`
- - Test is sudo enabled?
-    `su - user_name`
-
-To enable k8s commands for a new user:
- - Under root run (need to be run only once, already done in the cluster):
-    1. `mkdir -p $HOME/.kube`
-    2. `cp -i /etc/kubernetes/admin.conf $HOME/.kube/config`
-    3. `chown $(id -u):$(id -g) $HOME/.kube/config`
- 
- - Under a new sudo enabled user run:
-    1. `mkdir -p $HOME/.kube`
-    2. `sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config`
-    3. `sudo chown $(id -u):$(id -g) $HOME/.kube/config`
+ command: `$ mongo --eval 'var db = connect("mongodb://localhost/BRISE_db"); 
+ db.createRole({role: "user",privileges: [{actions: [ "find", "update", "insert" ],
+ resource: { db: "BRISE_db", collection: "" }}],roles: [  ]});
+ db.createUser({user: "BRISEdbuser",pwd: "yourPassword",roles: [ { role: "user", db: "BRISE_db" } ]})'` 

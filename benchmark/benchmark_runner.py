@@ -1,20 +1,19 @@
-import os
-import uuid
-import json
+import base64
+import datetime
 import glob
+import hashlib
+import json
+import logging
+import os
 import pickle
 import shutil
-import base64
-import hashlib
-import logging
-import datetime
-from typing import Union
+import uuid
 from copy import deepcopy
 from functools import wraps
 from threading import Thread
+from typing import Union
 
 import pika
-
 from core_entities.search_space import Hyperparameter
 from tools.initial_config import load_experiment_setup
 
@@ -162,7 +161,8 @@ class BRISEBenchmarkRunner:
         :return: int, number of Experiments that were executed and experiment dumps are stored.
                 Actually you could return whatever you want, here this number is returned only for reporting purposes.
         """
-        self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         self._experiment_timeout = 5 * 60
 
         quality_based_repeater_skeleton = {
@@ -236,14 +236,16 @@ class BRISEBenchmarkRunner:
             experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
             for BaseAcceptableErrors in [1, 5, 10, 25, 50]:
                 experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
-                self.logger.info("Experiment-aware acceptable-error-based Repeater: Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
+                self.logger.info("Experiment-aware acceptable-error-based Repeater: \
+                    Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
                 self.execute_experiment(experiment_description)
 
             experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
             for MaxAcceptableErrors in [25, 50, 75]:
                 experiment_description['Repeater']['Parameters']['ExperimentAwareness']['MaxAcceptableErrors'] = [
                     MaxAcceptableErrors]
-                self.logger.info("Experiment-aware acceptable-error-based Repeater: Changing MaxAcceptableErrors to %s" % MaxAcceptableErrors)
+                self.logger.info("Experiment-aware acceptable-error-based Repeater: \
+                    Changing MaxAcceptableErrors to %s" % MaxAcceptableErrors)
                 self.execute_experiment(experiment_description)
 
             experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
@@ -258,31 +260,35 @@ class BRISEBenchmarkRunner:
         self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/SA/SAExperiment.json")
 
         scenarios = {
-          "trivial": { "variants": 1, "requests": 1, "depth": 1, "resources": 1.0 },
-          "small": { "variants": 2, "requests": 1, "depth": 2, "resources": 1.5 },
-          "small_hw": { "variants": 2, "requests": 1, "depth": 2, "resources": 5.0 },
-          "small_sw": { "variants": 2, "requests": 1, "depth": 5, "resources": 1.5 },
-          "medium": { "variants": 10, "requests": 15, "depth": 2, "resources": 1.5 },
-          "medium_hw": { "variants": 10, "requests": 15, "depth": 2, "resources": 5.0 },
-          "medium_sw": { "variants": 5, "requests": 10, "depth": 5, "resources": 1.5 },
-          "large": { "variants": 20, "requests": 20, "depth": 2, "resources": 1.5 },
-          "large_hw": { "variants": 20, "requests": 20, "depth": 2, "resources": 5.0 },
-          "large_sw": { "variants": 10, "requests": 20, "depth": 5, "resources": 1.5 },
-          "huge": { "variants": 50, "requests": 50, "depth": 2, "resources": 1.5 },
-          "huge_hw": { "variants": 50, "requests": 50, "depth": 2, "resources": 5.0 },
-          "huge_sw": {"variants": 20, "requests": 50, "depth": 5, "resources": 1.5 }
+            "trivial": {"variants": 1, "requests": 1, "depth": 1, "resources": 1.0},
+            "small": {"variants": 2, "requests": 1, "depth": 2, "resources": 1.5},
+            "small_hw": {"variants": 2, "requests": 1, "depth": 2, "resources": 5.0},
+            "small_sw": {"variants": 2, "requests": 1, "depth": 5, "resources": 1.5},
+            "medium": {"variants": 10, "requests": 15, "depth": 2, "resources": 1.5},
+            "medium_hw": {"variants": 10, "requests": 15, "depth": 2, "resources": 5.0},
+            "medium_sw": {"variants": 5, "requests": 10, "depth": 5, "resources": 1.5},
+            "large": {"variants": 20, "requests": 20, "depth": 2, "resources": 1.5},
+            "large_hw": {"variants": 20, "requests": 20, "depth": 2, "resources": 5.0},
+            "large_sw": {"variants": 10, "requests": 20, "depth": 5, "resources": 1.5},
+            "huge": {"variants": 50, "requests": 50, "depth": 2, "resources": 1.5},
+            "huge_hw": {"variants": 50, "requests": 50, "depth": 2, "resources": 5.0},
+            "huge_sw": {"variants": 20, "requests": 50, "depth": 5, "resources": 1.5}
         }
 
         for s in scenarios:
             self.logger.info("here")
             experiment_description = self.base_experiment_description
             experiment_description['TaskConfiguration']['Scenario']['ws_file'] = "result_v{}_q{}_d{}_r{}.csv".\
-                format(scenarios[s]["variants"], scenarios[s]["requests"], scenarios[s]["depth"], str(scenarios[s]["resources"]).replace('.', '_'))
+                format(scenarios[s]["variants"], scenarios[s]["requests"],
+                       scenarios[s]["depth"],
+                       str(scenarios[s]["resources"]).replace('.', '_')
+                       )
             experiment_description['TaskConfiguration']['Scenario']['numImplementations'] = scenarios[s]["variants"]
             experiment_description['TaskConfiguration']['Scenario']['numRequests'] = scenarios[s]["requests"]
             experiment_description['TaskConfiguration']['Scenario']['componentDepth'] = scenarios[s]["depth"]
             experiment_description['TaskConfiguration']['Scenario']['excessComputeResourceRatio'] = scenarios[s]["resources"]
-            self.logger.info("Benchmarking next Scenario file(ws_file): %s" % experiment_description['TaskConfiguration']['Scenario']['ws_file'])
+            self.logger.info(f"Benchmarking next Scenario file(ws_file): \
+                {experiment_description['TaskConfiguration']['Scenario']['ws_file']}")
             self.execute_experiment(experiment_description)
 
         return self.counter
@@ -378,7 +384,7 @@ class MainAPIClient:
             - status: to get the status of the main process
             - stop: to stop the main script
             - download_dump: to download dump file
-        :param param: body for a specific action. See details in specific action in main-node/api-supreme.py
+        :param param: body for a specific action. See details in specific action in main_node/api-supreme.py
         """
         self.response = None
         self.corr_id = str(uuid.uuid4())
@@ -431,8 +437,8 @@ class MainAPIClient:
             full_file_name = self.dump_storage + file_name
             backup_counter = 0
             while os.path.exists(full_file_name):
-                file_name = file_name[file_name[:file_name.rfind(".")].rfind("/") + 1:] + "({0})".format(backup_counter) + file_name[
-                                                                                                file_name.rfind("."):]
+                file_name = file_name[file_name[:file_name.rfind(".")].rfind("/") + 1:] \
+                    + "({0})".format(backup_counter) + file_name[file_name.rfind("."):]
                 full_file_name = self.dump_storage + file_name
                 backup_counter += 1
 

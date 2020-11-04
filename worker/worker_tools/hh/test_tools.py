@@ -5,18 +5,18 @@ def test_tsp_hh(task: dict) -> dict:
     """
     Stub for testing the hyper-heuristic LLH selection logic.
     To use this stub - import it into worker/worker.py module and set
-     in experiment's description.TaskConfiguration.TaskName "test_tsp_hh".
+    in experiment's description.TaskConfiguration.TaskName "test_tsp_hh".
 
-     The principle is following: depending on the heuristic name, specified in task and iteration counter (simulates
-     the RL process), stub returns improvement in a solution quality.
+    The principle is following: depending on the heuristic name, specified in task and iteration counter (simulates
+    the RL process), stub returns improvement in a solution quality.
 
-     For instance, currently it is specified that if the task is to run jMetalPy.SimulatedAnnealing, the improvement
-     would be in random range from 0.9 to 1.2 (some abstract points), but if jMetalPy.EvolutionStrategy is specified,
-     the improvement will be higher (1.3 ... 2.3). Thus, LLH selection strategy after a couple of tasks should
-     find out, that jMetalPy.EvolutionStrategy is better config than SimulatedAnnealing and use it more frequently.
+    For instance, currently it is specified that if the task is to run jMetalPy.SimulatedAnnealing, the improvement
+    would be in random range from 0.9 to 1.2 (some abstract points), but if jMetalPy.EvolutionStrategy is specified,
+    the improvement will be higher (1.3 ... 2.3). Thus, LLH selection strategy after a couple of tasks should
+    find out, that jMetalPy.EvolutionStrategy is better config than SimulatedAnnealing and use it more frequently.
 
-     Simultaneously, since SimulatedAnnealing and GeneticAlgorithm are of the same quality, ideally, they should be
-     selected with the same frequency, while jMetal.EvolutionStrategy just a little bit more frequently (or negligibly).
+    Simultaneously, since SimulatedAnnealing and GeneticAlgorithm are of the same quality, ideally, they should be
+    selected with the same frequency, while jMetal.EvolutionStrategy just a little bit more frequently (or negligibly).
     :param task:
     :return:
     """

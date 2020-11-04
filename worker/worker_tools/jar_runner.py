@@ -1,5 +1,5 @@
 import subprocess
-from typing import List, Tuple
+from typing import Tuple
 
 
 def jar_runner(jar_path, *call_args) -> Tuple[str, str, int]:

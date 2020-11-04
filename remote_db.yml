@@ -2,7 +2,7 @@
 version: "3.7"
 services: 
   main-node:
-    build: ./main-node/
+    build: ./main_node/
     tty: true
     container_name: main-node
     environment:
@@ -27,7 +27,7 @@ services:
     restart: on-failure
 
   front-end:
-    build: ./front-end/
+    build: ./front_end/
     container_name: front-end
     tty: true
     network_mode: host

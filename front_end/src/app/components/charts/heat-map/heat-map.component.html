@@ -1,0 +1,46 @@
+<mat-card>
+  <div class="heatmap">
+    <div class="results" *ngIf="isModelType('regression')">
+      <div class="select-box" *ngIf=y&&x [hidden]='result'>
+        <!-- select color -->
+        <mat-form-field>
+          <mat-select [(value)]="theme.color" (selectionChange)="render()" placeholder="Color">
+            <mat-option *ngFor="let col of colors" [value]="col">
+              {{col}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <!-- select type -->
+        <mat-form-field>
+          <mat-select [(value)]="theme.type" (selectionChange)="render()" placeholder="Type">
+            <mat-option *ngFor="let t of type" [value]="t">
+              {{t}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <!-- select smooth -->
+        <mat-form-field>
+          <mat-select [(value)]="theme.smooth" (selectionChange)="render()" placeholder="Smooth">
+            <mat-option *ngFor="let s of smooth" [value]="s">
+              {{s}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <!-- ================  Heat map  ================ -->
+      <div #map></div>
+      <!-- ============================================ -->
+    </div>
+    
+    <hm-reg class="regression"></hm-reg>
+  </div>
+  
+  <!--         Solution         -->
+  <mat-card *ngIf=solution class="chart-solution">
+    <mat-icon matListIcon>star</mat-icon>
+    <span>Solution: </span>
+    <h3>{{configWithNones}}</h3><br>
+    <span>Deviation from default: </span>
+    <h3>{{(sol[0]/(dc[0])-1)*100 | number:'2.0-0'}}%</h3>
+  </mat-card>
+</mat-card>

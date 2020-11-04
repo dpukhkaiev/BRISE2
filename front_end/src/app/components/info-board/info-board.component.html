@@ -1,0 +1,74 @@
+
+<mat-accordion>
+  <!-- Panel 1 -->
+  <mat-expansion-panel [disabled]="!news">
+    <mat-expansion-panel-header class="info">
+      <mat-panel-title>
+        Info messages
+      </mat-panel-title>
+      <mat-panel-description >
+         Basic information from the workflow of experiments ({{news ? news.size : "0"}})
+         <mat-icon>
+          input
+          </mat-icon>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <!-- Logs list  -->
+    <ng-template matExpansionPanelContent>
+      <mat-list dense role="list" *ngIf=news>
+        <mat-list-item role="listitem" *ngFor="let info of news">
+          <mat-icon mat-list-icon>done</mat-icon>
+          <p mat-line>{{info.message}}</p>
+          <mat-divider></mat-divider>
+          <p class="time" mat-line> {{info.time | date:'shortTime'}} </p>
+        </mat-list-item>
+      </mat-list>
+    </ng-template>
+  </mat-expansion-panel>
+
+  <!-- Panel 2 -->
+  <mat-expansion-panel [disabled]="!solution">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Solution
+      </mat-panel-title>
+      <mat-panel-description>
+         A solution that is found by BRISE ({{solution ? 'Done' : 'Please stand by..'}})
+         <mat-icon>star_rate</mat-icon>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <ng-template matExpansionPanelContent id="expansion_content">
+      <mat-list class="solution" *ngIf="solution">
+        <mat-list-item>
+          <mat-icon matListIcon>outlined_flag</mat-icon>
+          <span class="desc">Configuration: </span> <span>{{solution ? configWithNones : ""}}</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>grade</mat-icon>
+          <span class="desc">Result: </span> <span>{{solution ? result : ""}}</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>network_check</mat-icon>
+          <span class="desc">Quality gain: </span>
+          <span>{{solution ? (100 * (dc[0] - sol[0]) / dc[0] | number:'2.0-2') : ""}}
+            %</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon>blur_on</mat-icon>
+          <span class="desc">Performed measurements: </span>
+          <span>{{solution ? solution['performed_measurements'] : ""}}</span>
+        </mat-list-item>
+        <mat-list-item>
+          <mat-icon matListIcon *ngIf="searchspace['size'] != 'Infinity'">sentiment_satisfied_alt</mat-icon>
+          <span class="desc" *ngIf="searchspace['size'] != 'Infinity'">Saved efforts: </span> 
+          <span *ngIf="searchspace['size'] != 'Infinity'">
+            {{
+            (1 - solution['performed_measurements'] / (searchspace['size']
+              * experimentDescription['Repeater']['Parameters']['MaxTasksPerConfiguration'])) * 100 |number:'2.0-2'
+            }}%
+        </span>
+        </mat-list-item>
+      </mat-list>
+    </ng-template>
+  </mat-expansion-panel>
+</mat-accordion>

@@ -1,14 +1,12 @@
 import inspect
 from copy import copy
-from typing import Mapping, Type, List
 from functools import lru_cache
+from typing import List, Mapping, Type
 
 import jmetal
-from jmetal.core.algorithm import Algorithm
+import jmetal.util.termination_criterion as termination
 from jmetal.core.problem import Problem
 from jmetal.core.solution import PermutationSolution
-import jmetal.util.termination_criterion as termination
-
 from worker_tools.hh.llh_runner import ILLHWrapper
 
 
@@ -47,10 +45,9 @@ class JMetalPyWrapper(ILLHWrapper):
         if "selection_type" in init_args:
             selection_type = init_args.pop('selection_type')
             if selection_type == 'ReuletteWheelSelection':
-                # TODO: add decoupling of comparators.
                 from jmetal.util.comparator import MultiComparator
-                from jmetal.util.ranking import FastNonDominatedRanking
                 from jmetal.util.density_estimator import CrowdingDistance
+                from jmetal.util.ranking import FastNonDominatedRanking
                 init_args["selection"] = MultiComparator(
                     [FastNonDominatedRanking.get_comparator(), CrowdingDistance.get_comparator()])
             else:
@@ -80,7 +77,7 @@ class JMetalPyWrapper(ILLHWrapper):
         # making dict hashable enables using LRU cache
         problem_init_params = HashableDict(scenario['problem_initialization_parameters'])
         problem = JMetalPyWrapper._get_problem(problem_name=scenario['Problem'],
-                                                            init_params=problem_init_params)
+                                               init_params=problem_init_params)
         init_args["problem"] = problem
         # Attach initial solutions.
         self.load_initial_solutions(warm_startup_info, problem)
@@ -146,15 +143,19 @@ class JMetalPyWrapper(ILLHWrapper):
 
     @staticmethod
     @lru_cache(maxsize=10, typed=True)
-    def _get_algorithm_class(mh_name: str) -> jmetal.core.algorithm.Algorithm.__class__:
+    def _get_algorithm_class(mh_name: str) -> jmetal.algorithm.__class__:
         if mh_name == 'jMetalPy.GeneticAlgorithm':
-            from jmetal.algorithm.singleobjective.genetic_algorithm import GeneticAlgorithm as Alg
+            from jmetal.algorithm.singleobjective.genetic_algorithm import \
+                GeneticAlgorithm as Alg
         elif mh_name == 'jMetalPy.SimulatedAnnealing':
-            from jmetal.algorithm.singleobjective.simulated_annealing import SimulatedAnnealing as Alg
+            from jmetal.algorithm.singleobjective.simulated_annealing import \
+                SimulatedAnnealing as Alg
         elif mh_name == 'jMetalPy.EvolutionStrategy':
-            from jmetal.algorithm.singleobjective.evolution_strategy import EvolutionStrategy as Alg
+            from jmetal.algorithm.singleobjective.evolution_strategy import \
+                EvolutionStrategy as Alg
         elif mh_name == 'jMetalPy.LocalSearch':
-            from jmetal.algorithm.singleobjective.local_search import LocalSearch as Alg
+            from jmetal.algorithm.singleobjective.local_search import \
+                LocalSearch as Alg
         else:
             raise KeyError(f"Unknown algorithm {mh_name}.")
         return Alg
@@ -183,7 +184,9 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
 
         mh_name = hyperparameters["low level heuristic"].split(".")[1]
         if mh_name == "GeneticAlgorithm":
-            from jmetal.algorithm.singleobjective.genetic_algorithm import GeneticAlgorithm
+            from jmetal.algorithm.singleobjective.genetic_algorithm import (
+                GeneticAlgorithm
+            )
             from jmetal.operator.crossover import CXCrossover
             from jmetal.operator.selection import BinaryTournamentSelection
             self._llh_algorithm = GeneticAlgorithm(
@@ -198,7 +201,9 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
             )
 
         elif mh_name == "SimulatedAnnealing":
-            from jmetal.algorithm.singleobjective.simulated_annealing import SimulatedAnnealing
+            from jmetal.algorithm.singleobjective.simulated_annealing import (
+                SimulatedAnnealing
+            )
             self._llh_algorithm = SimulatedAnnealing(
                 problem=problem,
                 mutation=PermutationSwapMutation(0.8954537798654278),
@@ -207,7 +212,9 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
             )
 
         elif mh_name == "EvolutionStrategy":
-            from jmetal.algorithm.singleobjective.evolution_strategy import EvolutionStrategy
+            from jmetal.algorithm.singleobjective.evolution_strategy import (
+                EvolutionStrategy
+            )
             self._llh_algorithm = EvolutionStrategy(
                 problem=problem,
                 mu=5,
@@ -234,7 +241,9 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
 
         mh_name = hyperparameters["low level heuristic"].split(".")[1]
         if mh_name == "GeneticAlgorithm":
-            from jmetal.algorithm.singleobjective.genetic_algorithm import GeneticAlgorithm
+            from jmetal.algorithm.singleobjective.genetic_algorithm import (
+                GeneticAlgorithm
+            )
             from jmetal.operator.crossover import CXCrossover
             from jmetal.operator.selection import BinaryTournamentSelection
             self._llh_algorithm = GeneticAlgorithm(
@@ -249,7 +258,9 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
             )
 
         elif mh_name == "SimulatedAnnealing":
-            from jmetal.algorithm.singleobjective.simulated_annealing import SimulatedAnnealing
+            from jmetal.algorithm.singleobjective.simulated_annealing import (
+                SimulatedAnnealing
+            )
             self._llh_algorithm = SimulatedAnnealing(
                 problem=problem,
                 mutation=PermutationSwapMutation(0.5),
@@ -258,7 +269,9 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
             )
 
         elif mh_name == "EvolutionStrategy":
-            from jmetal.algorithm.singleobjective.evolution_strategy import EvolutionStrategy
+            from jmetal.algorithm.singleobjective.evolution_strategy import (
+                EvolutionStrategy
+            )
             self._llh_algorithm = EvolutionStrategy(
                 problem=problem,
                 mu=500,

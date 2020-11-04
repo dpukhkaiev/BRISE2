@@ -1,8 +1,9 @@
 __doc__ = """
     Module to generate a skeleton of code from Experiment Description."""
-import os
 import json
 import logging
+import os
+
 from jinja2 import Environment, FileSystemLoader
 
 

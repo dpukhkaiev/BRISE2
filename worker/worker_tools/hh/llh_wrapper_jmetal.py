@@ -20,7 +20,7 @@ class JMetalWrapper(ILLHWrapper):
         self._call_arguments.append(f"mutation_probability={hyperparameters.get('mutation_probability')}")
         self._call_arguments.append(f"elitist={hyperparameters.get('elitist')}")
         self._call_arguments.append(f"mu={hyperparameters.get('mu')}")
-        self._call_arguments.append(f"lambda={hyperparameters.get('lambda')}")
+        self._call_arguments.append(f"lambda={hyperparameters.get('lambda_')}")
 
         scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
         # Because of the framework implementation specifics, those TSP scenario files are 'embedded' into the jar file:
@@ -104,10 +104,10 @@ class JMetalWrapper(ILLHWrapper):
 
 class JMetalWrapperTuned(JMetalWrapper):
     def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
-        self._call_arguments.append(f"mutation_probability=0.9938884974393134")
-        self._call_arguments.append(f"elitist=True")
-        self._call_arguments.append(f"mu=5")
-        self._call_arguments.append(f"lambda=605")
+        self._call_arguments.append("mutation_probability=0.9938884974393134")
+        self._call_arguments.append("elitist=True")
+        self._call_arguments.append("mu=5")
+        self._call_arguments.append("lambda=605")
 
         scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
         self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
@@ -118,10 +118,10 @@ class JMetalWrapperTuned(JMetalWrapper):
 
 class JMetalWrapperDefault(JMetalWrapper):
     def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
-        self._call_arguments.append(f"mutation_probability=0.5")
-        self._call_arguments.append(f"elitist=False")
-        self._call_arguments.append(f"mu=500")
-        self._call_arguments.append(f"lambda=500")
+        self._call_arguments.append("mutation_probability=0.5")
+        self._call_arguments.append("elitist=False")
+        self._call_arguments.append("mu=500")
+        self._call_arguments.append("lambda=500")
 
         scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
         self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")

@@ -1,10 +1,10 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install -y -qq \
-    ca-certificates=20190110~16.04.1 \
-    wget=1.17.1-1ubuntu1.5 \
-    xvfb=2:1.18.4-0ubuntu0.8 \
-    software-properties-common=0.96.20.9 \
+    ca-certificates=20201027ubuntu0.18.04.1 \
+    wget=1.19.4-1ubuntu2.2 \
+    xvfb=2:1.19.6-1ubuntu4.7 \
+    software-properties-common=0.96.24.32.14 \
     && apt -qq clean \
     && apt -qq autoremove \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -33,5 +33,5 @@ ENV LANG C.UTF-8
 
 # Project dependencies
 COPY ./requirements.txt /home/benchmark_user/requirements.txt
-RUN python3.7 -m pip install -q Cython==0.29.19
+RUN python3.7 -m pip install -q Cython==0.29.21
 RUN python3.7 -m pip install -q -r /home/benchmark_user/requirements.txt

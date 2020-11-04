@@ -1,17 +1,17 @@
-FROM python:3.7
+FROM ubuntu:18.04
 
 # Updating the system
-RUN echo "deb http://ftp.us.debian.org/debian sid main" >> /etc/apt/sources.list \
-    && apt-get update && apt-get install -y -qq \
-    gcc-8-base=8.4.0-4 \
-    libmpx2=8.4.0-4 \
-    libgcc-8-dev=8.4.0-4 \
-    rsync=3.2.1-1 \
-    vim=2:8.2.0716-3 \
-    git=1:2.27.0-1 \
-    unzip=6.0-25 \
+RUN apt-get update && apt-get install -y -qq \
+    wget=1.19.4-1ubuntu2.2 \
+    rsync=3.1.2-2.1ubuntu1.1 \
+    vim=2:8.0.1453-1ubuntu1.4 \
+    git=1:2.17.1-1ubuntu0.7 \
+    unzip=6.0-21ubuntu1 \
+    python3.7 \
+    python3-pip \
+    python3.7-dev \
 # Installing Java (Open JDK) for Rapidminer and MQUAT problems
-    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk=8u252-b09-1 \
+    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk=8u272-b10-0ubuntu1~18.04
 # Installing R and related packages for Rapidminer
     && apt-get install -y -qq r-base=4.0.2-1 && \
     Rscript -e "install.packages('data.table', repos='http://cran.rstudio.com/')" && \
@@ -20,7 +20,6 @@ RUN echo "deb http://ftp.us.debian.org/debian sid main" >> /etc/apt/sources.list
     && apt-get -qq clean \
     && apt-get -qq autoremove \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 ENV JAVA_HOME="$(dirname $(dirname $(readlink -f $(which javac))))"
 
 # Installing dockerize tool
@@ -31,7 +30,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 # Installing Python modules
-RUN pip install -U pika==1.1.0 pymongo==3.10.1
+RUN python3.7 -m pip install -U pika==1.1.0 pymongo==3.11.0
 
 # Installing jMetalPy for Hyperheuristics
-RUN pip install git+https://github.com/YevheniiSemendiak/jMetalPy.git@apsp
+RUN python3.7 -m pip install git+https://github.com/YevheniiSemendiak/jMetalPy.git@apsp

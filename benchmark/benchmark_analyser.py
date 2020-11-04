@@ -1,30 +1,29 @@
+import logging
 import os
-import time
 import pickle
 import random
-import logging
-from typing import List
+import time
 from collections import Counter, OrderedDict
-from sortedcontainers import SortedDict
 from string import ascii_lowercase
+from typing import List
 
 import numpy as np
 import pandas as pd
-from jinja2 import Environment, FileSystemLoader
-from plotly.offline import plot
-
-# Tools
-from shared_tools import get_resource_as_string, chown_files_in_dir
-# from shared_tools import export_plot
-
-# Plots
-from plots.table import table
-from plots.repeat_vs_avg import repeat_vs_avg
-from plots.improvements import improvements
-from plots.box_statistic import box_statistic
-from plots.exp_config import exp_description_highlight
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
+from jinja2 import Environment, FileSystemLoader
+from plotly.offline import plot
+from plots.box_statistic import box_statistic
+from plots.exp_config import exp_description_highlight
+from plots.improvements import improvements
+from plots.repeat_vs_avg import repeat_vs_avg
+# Plots
+from plots.table import table
+# Tools
+from shared_tools import chown_files_in_dir, get_resource_as_string
+from sortedcontainers import SortedDict
+
+# from shared_tools import export_plot
 
 
 class BRISEBenchmarkAnalyser:
@@ -102,7 +101,6 @@ class BRISEBenchmarkAnalyser:
             'Student MA 10 RM': {'Experiments': []},
             'Student MA 25 RM': {'Experiments': []}
         })
-        sizes = []
         # Group experiments per rows
         for exp in experiments:
             # quantity-based
@@ -233,7 +231,7 @@ class BRISEBenchmarkAnalyser:
             csv_data = pd.read_csv('./scenarios/energy_consumption/search_space_96/' + file_name).groupby(["FR", "TR"]).mean()
             self.__cache["csv_data"][file_name] = csv_data
 
-        optimum_energy, optimum_configuration = csv_data.min()[goal_column], csv_data.idxmin()[goal_column]
+        optimum_energy, _ = csv_data.min()[goal_column], csv_data.idxmin()[goal_column]
 
         found_configuration = experiment.get_current_solution().parameters
         found_energy = csv_data.loc[tuple(found_configuration), goal_column]

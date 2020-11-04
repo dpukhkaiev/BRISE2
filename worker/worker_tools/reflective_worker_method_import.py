@@ -1,8 +1,8 @@
+import difflib
+import importlib
+import inspect
 import logging
 import os
-import inspect
-import importlib
-import difflib
 
 # TODO shared library from main-node.tools wish adaptation for worker
 

@@ -1,11 +1,12 @@
-import asyncio
-import logging
-import pika
-import json
-import datetime
-import threading
 import copy
+import datetime
+import json
+import logging
 import os
+import threading
+
+import pika
+
 logging.getLogger("pika").propagate = False
 
 
@@ -86,7 +87,7 @@ class WorkerServiceThread(threading.Thread):
         task_response = json.loads(body.decode())
         try:
             del (self.task_dict[task_response["task_result"]["task id"]])
-        except KeyError as ex:
+        except KeyError:
             self.logger.info("The old task was received")
 
     def run(self):
