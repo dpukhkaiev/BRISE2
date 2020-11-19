@@ -119,6 +119,8 @@ class Experiment:
                     collection_name="warm_startup_info",
                     record={"Exp_unique_ID": self.unique_id, "wsi": default_configuration.warm_startup_info}
                 )
+                if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+                    self.send_state_to_db()
             else:
                 raise ValueError("The default Configuration was registered already.")
 
@@ -130,7 +132,7 @@ class Experiment:
         False if not.
         """
         result = False
-        if configuration.is_enabled:
+        if configuration.status["enabled"]:
             if self._try_put(configuration):
                 # configuration will not be added to the Experiment if it is already there
                 result = True
@@ -143,17 +145,10 @@ class Experiment:
         :return bool flag, is _put add configuration to any lists or not
         """
         if self._is_valid_configuration_instance(configuration_instance):
-            if configuration_instance.status == Configuration.Status.MEASURED:
+            if configuration_instance.status['measured']:
                 with self.measured_conf_lock:
                     if configuration_instance not in self.measured_configurations:
                         self._add_measured_configuration_to_experiment(configuration_instance)
-                        return True
-                    else:
-                        return False
-            elif configuration_instance.status == Configuration.Status.EVALUATED:
-                with self.evaluated_conf_lock:
-                    if configuration_instance not in self.evaluated_configurations:
-                        self._add_evaluated_configuration_to_experiment(configuration_instance)
                         return True
                     else:
                         return False
@@ -312,7 +307,7 @@ class Experiment:
                       results=[configuration.results])
         self.logger.info("Adding to Experiment: %s" % configuration)
 
-    def _add_evaluated_configuration_to_experiment(self, configuration: Configuration) -> None:
+    def add_evaluated_configuration_to_experiment(self, configuration: Configuration) -> None:
         """
         Save configuration after passing all checks.
         :param configuration: Configuration object.

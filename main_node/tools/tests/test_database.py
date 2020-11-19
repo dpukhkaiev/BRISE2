@@ -46,7 +46,6 @@ class TestDatabase:
         # Expected result: record can be read from the database and contains all required ES fields. The Experiment id matches
         experiment, _ = self.initialize_exeriment()
         c1 = Configuration(OrderedDict({"frequency": 2900.0, "threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
-        c1.status = c1.Status.MEASURED
         experiment.default_configuration = c1
         database.write_one_record("Experiment_state", experiment.get_experiment_state_record())
         written_record = database.get_all_records("Experiment_state")[0]

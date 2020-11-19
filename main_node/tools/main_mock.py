@@ -115,7 +115,7 @@ def run(experiment_description=None, mock_data_file = None):
                 api.send('new', 'task', configurations=[config.get_parameters()], results=[config.get_tasks()[task]])
                 time.sleep(sleep_between_messages)
             experiment.add_configurations([config])
-        
+
         number_of_configurations_in_iteration = experiment.get_number_of_configurations_per_iteration()
         # Imitation of building the model, regression prediction:
         state["Model"].predict_next_configurations(number_of_configurations_in_iteration)

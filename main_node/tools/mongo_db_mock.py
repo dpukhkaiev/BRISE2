@@ -37,7 +37,7 @@ class Collection:
             ids.append(str(uuid.uuid4()))
         return MultipleInsertion(ids)
 
-    def find(self):
+    def find(self, dummy=None):
         return self.rows
 
 

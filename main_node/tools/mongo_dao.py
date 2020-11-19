@@ -62,12 +62,16 @@ class MongoDB(metaclass=Singleton):
     def get_last_record_by_experiment_id(self, collection_name: str, exp_id: str) -> Union[Mapping, None]:
         collection = self.database[collection_name]
         records = collection.find({"Exp_unique_ID": exp_id})
-        if records.count() > 0:
-            for record in records.skip(records.count() - 1):
-                return dict(record)
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            if records.count() > 0:
+                for record in records.skip(records.count() - 1):
+                    return dict(record)
+            else:
+                self.logger.warning("Unable to retrieve record by requested Experiment ID")
+                return None
         else:
-            self.logger.warning("Unable to retrieve record by requested Experiment ID")
-            return None
+            if len(records) > 0:
+                return dict(records[len(records) - 1])
 
     def update_record(self, collection_name: str, query: Mapping, new_val: Mapping) -> None:
         collection = self.database[collection_name]

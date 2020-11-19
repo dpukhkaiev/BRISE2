@@ -3,64 +3,65 @@ import os
 
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
-from core_entities.search_space import Hyperparameter
+from core_entities.search_space import Hyperparameter, get_search_space_record
 from repeater.repeater_selector import RepeaterOrchestration
+from tools.mongo_dao import MongoDB
 
 os.environ["TEST_MODE"] = 'UNIT_TEST'
-
+database = MongoDB("test", 0, "test", "user", "pass")
 
 def test_0(get_sample):
     # New Default Configuration
     configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 0,
-                                                     Configuration.Type.DEFAULT, Configuration.Status.NEW)
+                                                     Configuration.Type.DEFAULT, {'enabled': True, 'evaluated': False, 'measured': False})
 
-    assert configuration.status == Configuration.Status.EVALUATED
+    assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': False}
     assert needed_tasks_count > 0
 
 def test_1(get_sample):
     # Measured Default Configuration
     configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 10,
-                                                     Configuration.Type.DEFAULT, Configuration.Status.EVALUATED)
+                                                     Configuration.Type.DEFAULT, {'enabled': True, 'evaluated': True, 'measured': False})
 
-    assert configuration.status == Configuration.Status.MEASURED
+    assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
 def test_2(get_sample):
     # New Predicted Configuration
     configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 0,
-                                                     Configuration.Type.PREDICTED, Configuration.Status.NEW)
+                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': False, 'measured': False})
 
-    assert configuration.status == Configuration.Status.EVALUATED
+    assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': False}
     assert needed_tasks_count > 0
 
 def test_3(get_sample):
     # Measured Predicted configuration with low relative error in measurings.
     configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 2,
-                                                     Configuration.Type.PREDICTED, Configuration.Status.EVALUATED)
+                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': True, 'measured': False})
 
-    assert configuration.status == Configuration.Status.MEASURED
+    assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
 def test_4(get_sample):
     # Measured Predicted configuration with high relative error in measurings.
     configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 8,
-                                                     Configuration.Type.PREDICTED, Configuration.Status.EVALUATED)
+                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': True, 'measured': False})
 
-    assert configuration.status == Configuration.Status.REPEATED_MEASURING
+    assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': False}
     assert needed_tasks_count > 0
 
 def test_5(get_sample):
     # Measured Predicted configuration with number of measured tasks = threshold.
     configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 10,
-                                                     Configuration.Type.PREDICTED, Configuration.Status.EVALUATED)
+                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': True, 'measured': False})
 
-    assert configuration.status == Configuration.Status.MEASURED
+    assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
 
 def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict,
                  search_space: Hyperparameter, measured_tasks: int,
-                 config_type: Configuration.Type, config_status: Configuration.Status):
+                 config_type: Configuration.Type, config_status: dict):
     """
     Test function for Repeater module.
     Main steps:
@@ -85,7 +86,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     configuration.status = config_status
     for i in range(0, measured_tasks):
         configuration.add_task(tasks_sample[i])
-    orchestrator = RepeaterOrchestration(experiment)
+    orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
     if config_type == Configuration.Type.DEFAULT:
         orchestrator._type = orchestrator.get_repeater(True)
     else:
@@ -93,7 +94,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
         default_configuration = Configuration(
             configurations_sample[0]["Params"], Configuration.Type.DEFAULT, experiment.unique_id
         )
-        default_configuration.status = Configuration.Status.MEASURED
+        default_configuration.status = {'enabled': True, 'evaluated': True, 'measured': True}
         default_configuration._task_number = configurations_sample[0]["Tasks"]
         default_configuration.results = configurations_sample[0]["Results"]
         default_configuration._standard_deviation = configurations_sample[0]["STD"]

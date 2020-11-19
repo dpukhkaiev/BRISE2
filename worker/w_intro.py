@@ -17,7 +17,7 @@ class WorkerMainThread(threading.Thread):
     """
     This class runs main worker process in a separate thread,
     connected to the `task_queue` as a consumer and sends messages when a task starts  to `taken_task_event_queue`
-    and sends a result of task via  `task_result_sender` to `task_result_queue` and `finished_task_event_queue`
+    and sends a result of task to `task_result_exchange` and `finished_task_event_queue`
     """
     def __init__(self, host, port):
         """
@@ -75,7 +75,10 @@ class WorkerMainThread(threading.Thread):
             else:
                 # pointer to method execution
                 w_method = self.worker_methods[task["task_name"]]
-                self.channel.basic_publish(exchange='', routing_key='taken_task_event_queue', body=json.dumps(task))
+
+                # TODO Worker service reorganization
+                #self.channel.basic_publish(exchange='', routing_key='taken_task_event_queue', body=json.dumps(task))
+
                 # Execute task
                 try:
                     result_from_worker = w_method(task)
@@ -97,8 +100,11 @@ class WorkerMainThread(threading.Thread):
                         'result': result_from_worker
                     }
                 }
-                self.channel.basic_publish(exchange='task_result_sender',
-                                           routing_key='',
+                self.channel.basic_publish(exchange='task_result_exchange',
+                                           routing_key=task["experiment_id"],
+                                           body=json.dumps(res))
+                self.channel.basic_publish(exchange='',
+                                           routing_key='finished_task_event_queue',
                                            body=json.dumps(res))
                 ch.basic_ack(delivery_tag=method.delivery_tag)  # acknowledge that task was finished
 

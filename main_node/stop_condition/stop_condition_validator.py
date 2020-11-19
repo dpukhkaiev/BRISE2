@@ -7,8 +7,8 @@ import threading
 import time
 
 import numexpr as ne
-import pika
 from tools.mongo_dao import MongoDB
+from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
 
 class StopConditionValidator:
@@ -18,8 +18,6 @@ class StopConditionValidator:
     and then execute it with numexpr (math-only functions analogue of eval)
     """
     def __init__(self, experiment_id: str, experiment_description: dict):
-        self.event_host = os.getenv("BRISE_EVENT_SERVICE_HOST")
-        self.event_port = os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")
         self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                 os.getenv("BRISE_DATABASE_PORT"),
                                 os.getenv("BRISE_DATABASE_NAME"),
@@ -28,7 +26,7 @@ class StopConditionValidator:
 
         self.experiment_id = experiment_id
         self.logger = logging.getLogger(__name__)
-        self.blocked = False
+        self.active = True
         self.expression = experiment_description["StopConditionTriggerLogic"]["Expression"]
         self.stop_condition_states = {}
         for sc_index in range(0, len(experiment_description["StopCondition"])):
@@ -38,10 +36,11 @@ class StopConditionValidator:
         self.repetition_interval = datetime.timedelta(**{
             experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
             experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
-        self.listen_thread = EventServiceConnection(self)
-        self.listen_thread.start()
-        self.thread = threading.Thread(target=self.self_evaluation, args=())
-        self.thread.start()
+        self.connection_thread = EventServiceConnection(self)
+        self.connection_thread.start()
+        self.processing_thread = threading.Thread(target=self.self_evaluation, args=())
+        self.channel = self.connection_thread.channel
+        self.processing_thread.start()
 
     def self_evaluation(self):
         """
@@ -49,7 +48,7 @@ class StopConditionValidator:
         """
         counter = 0
         listen_interval = self.repetition_interval/10
-        while not self.blocked:
+        while self.active:
             time.sleep(listen_interval)
             counter = counter + 1
             if counter % 10 == 0:
@@ -63,17 +62,13 @@ class StopConditionValidator:
                 if numb_of_measured_configurations > 0:
                     search_space_size = \
                         self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
-                    if numb_of_measured_configurations >= search_space_size and not self.blocked:
-                        self.blocked = True
+                    if numb_of_measured_configurations >= search_space_size and self.active:
+                        self.active = False
                         msg = "Entire Search Space was measured."
                         self.logger.info(msg)
-                        with pika.BlockingConnection(
-                                pika.ConnectionParameters(host=self.event_host,
-                                                          port=self.event_port)) as connection:
-                            with connection.channel() as channel:
-                                channel.basic_publish(exchange='',
-                                                      routing_key='stop_experiment_queue',
-                                                      body=msg)
+                        publish(exchange='stop_experiment_exchange',
+                                routing_key=self.experiment_id,
+                                body=msg)
 
     def validate_conditions(self, ch, method, properties, body):
         """
@@ -89,19 +84,15 @@ class StopConditionValidator:
         if dictionary_dump["experiment_id"] == self.experiment_id:
             self.stop_condition_states[dictionary_dump["stop_condition_type"]] = dictionary_dump["decision"]
             result = ne.evaluate(self.expression, local_dict=self.stop_condition_states)
-            if result and not self.blocked:
-                self.blocked = True
+            if result and self.active:
+                self.active = False
                 msg = "Stop Condition(s) was reached."
                 self.logger.info(msg)
                 dictionary_dump = {"experiment_id": self.experiment_id}
                 body = json.dumps(dictionary_dump)
-                with pika.BlockingConnection(
-                        pika.ConnectionParameters(host=self.event_host,
-                                                  port=self.event_port)) as connection:
-                    with connection.channel() as channel:
-                        channel.basic_publish(exchange='',
-                                              routing_key='stop_experiment_queue',
-                                              body=msg)
+                publish(exchange='stop_experiment_exchange',
+                        routing_key=self.experiment_id,
+                        body=msg)
 
     def stop_thread(self, ch, method, properties, body):
         """
@@ -111,13 +102,13 @@ class StopConditionValidator:
         :param properties: pika.spec.BasicProperties
         :param body: empty
         """
-        self.listen_thread.stop()
-        self.blocked = True
+        self.connection_thread.stop()
+        self.active = False
 
-class EventServiceConnection(threading.Thread):
+class EventServiceConnection(RabbitMQConnection):
     """
     This class is responsible for listening 2 queues.
-    1. `check_stop_condition_expression_queue` queue for triggering StopConditionTriggerLogic expression evaluation logic.
+    1. `check_stop_condition_expression_exchange` queue for triggering StopConditionTriggerLogic expression evaluation logic.
     2. `stop_components` for shutting down Stop Condition Validator (in case of BRISE Experiment termination).
     """
 
@@ -126,35 +117,19 @@ class EventServiceConnection(threading.Thread):
         The function for initializing consumer thread
         :param stop_condition_validator: instance of StopConditionValidator class
         """
-        super(EventServiceConnection, self).__init__()
         self.stop_condition_validator: StopConditionValidator = stop_condition_validator
-        self._host = stop_condition_validator.event_host
-        self._port = stop_condition_validator.event_port
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
-        self.consume_channel = self.connection.channel()
-        self.termination_result = self.consume_channel.queue_declare(queue='', exclusive=True)
+        self.experiment_id = self.stop_condition_validator.experiment_id
+        super().__init__(stop_condition_validator)
+
+    def bind_and_consume(self):
+        self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
         self.termination_queue_name = self.termination_result.method.queue
-        self.consume_channel.queue_bind(exchange='brise_termination_sender', queue=self.termination_queue_name)
-        self._is_interrupted = False
-        self.consume_channel.basic_consume(queue='check_stop_condition_expression_queue', auto_ack=True,
-                                           on_message_callback=self.stop_condition_validator.validate_conditions)
-        self.consume_channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                           on_message_callback=self.stop_condition_validator.stop_thread)
+        self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                queue=self.termination_queue_name,
+                                routing_key=self.experiment_id)
 
-    def stop(self):
-        """
-        The function for stopping consumer thread
-        """
-        self._is_interrupted = True
-
-    def run(self):
-        """
-        Point of entry to tasks results consumers functionality,
-        listening of queue with task result
-        """
-        try:
-            while not self._is_interrupted:
-                self.consume_channel.connection.process_data_events(time_limit=1)  # 1 second
-        finally:
-            if self.connection.is_open:
-                self.connection.close()
+        self.channel.basic_consume(queue='check_stop_condition_expression_exchange' + self.experiment_id,
+                                   auto_ack=True,
+                                   on_message_callback=self.stop_condition_validator.validate_conditions)
+        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                   on_message_callback=self.stop_condition_validator.stop_thread)

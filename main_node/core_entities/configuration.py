@@ -20,13 +20,6 @@ class Configuration:
         FROM_SELECTOR = 2
         TEST = 3
 
-    class Status(int, Enum):
-        NEW = 0
-        EVALUATED = 1
-        REPEATED_MEASURING = 2
-        MEASURED = 3
-        BAD = 4
-
     TaskConfiguration = {}
 
     @classmethod
@@ -73,18 +66,18 @@ class Configuration:
         self._results: Mapping = OrderedDict()
         self.predicted_result = []
         self.type = config_type
-        self.status = Configuration.Status.NEW
         # Meta information
         self._standard_deviation = []
-        self.is_enabled = True
         self.number_of_failed_tasks = 0
         self._task_number = 0
         self.warm_startup_info = {}
         self.experiment_id = experiment_id
+        # Configuration status flags
+        self.status = {'enabled': True, 'evaluated': False, 'measured': False}
 
     def __getstate__(self) -> Dict[str, Any]:
         space = self.__dict__.copy()
-        space['status'] = int(space['status'])
+        space['status'] = dict(space['status'])
         space['type'] = int(space['type'])
         space["_parameters"] = dict(space["_parameters"])
         space["_results"] = dict(space["_results"])
@@ -94,7 +87,7 @@ class Configuration:
     def __setstate__(self, space: Dict[str, Any]) -> None:
         self.__dict__ = space
         self.logger = logging.getLogger(__name__)
-        self.status = Configuration.Status(space['status'])
+        self.status = OrderedDict(space['status'])
         self.type = Configuration.Type(space['type'])
         self._parameters = OrderedDict(space["_parameters"])
         self._results = OrderedDict(space["_results"])
@@ -185,7 +178,6 @@ class Configuration:
                            "standard_deviation": self._standard_deviation,
                            "type": self.type,
                            "status": self.status,
-                           "is_enabled": self.is_enabled,
                            "number_of_failed_tasks": self.number_of_failed_tasks,
                            "_task_number": self._task_number,
                            "warm_startup_info": self.warm_startup_info,
@@ -205,8 +197,7 @@ class Configuration:
         conf.predicted_result = dictionary_dump["predicted_result"]
         conf._standard_deviation = dictionary_dump["standard_deviation"]
         conf.type = Configuration.Type(dictionary_dump["type"])
-        conf.status = Configuration.Status(dictionary_dump["status"])
-        conf.is_enabled = dictionary_dump["is_enabled"]
+        conf.status = dictionary_dump["status"]
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
         conf._task_number = dictionary_dump["_task_number"]
         conf.warm_startup_info = dictionary_dump["warm_startup_info"]
@@ -321,8 +312,8 @@ class Configuration:
         """
         Disable configuration. This configuration won't be used in experiment.
         """
-        if self.is_enabled:
-            self.is_enabled = False
+        if self.status["enabled"]:
+            self.status["enabled"] = False
             temp_msg = f"Configuration {self} was disabled. It will not be added to the Experiment."
             self.logger.warning(temp_msg)
             API().send('log', 'warning', message=temp_msg)
@@ -367,7 +358,6 @@ class Configuration:
         record["Results"] = self.results
         record["Predicted_result"] = self.predicted_result
         record["Standard_deviation"] = self._standard_deviation
-        record["is_enabled"] = self.is_enabled
         record["Number_of_failed_tasks"] = self.number_of_failed_tasks
         record["ConfigurationObject"] = pickle.dumps(self)
         return record

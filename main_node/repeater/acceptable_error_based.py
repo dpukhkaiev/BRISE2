@@ -1,7 +1,7 @@
+import os
 from math import exp, sqrt
 
 from core_entities.configuration import Configuration
-from core_entities.experiment import Experiment
 from repeater.repeater import Repeater
 from scipy.stats import t
 
@@ -12,50 +12,61 @@ class AcceptableErrorBasedType(Repeater):
     the quality of each Configuration (better Configuration - better quality)
     and deviation of all Tasks are taken into account.
     """
-    def __init__(self, experiment: Experiment, repeater_configuration: dict):
+    def __init__(self, experiment_description: dict, experiment_id: str, experiment=None):
         """
-        :param repeater_configuration: RepeaterConfiguration part of experiment description
+        :param experiment_description: experiment description in json format
+        :param experiment_id: ID of experiment, processed by this module
+        :param experiment: Experiment class instance, (!)used only in tests
         """
-        super().__init__(experiment)
-        self.max_tasks_per_configuration = repeater_configuration["Parameters"]["MaxTasksPerConfiguration"]
+        super().__init__(experiment_description, experiment_id)
+        self.objectives_minimization = experiment_description["TaskConfiguration"]["ObjectivesMinimization"]
+        self.objectives = experiment_description["TaskConfiguration"]["Objectives"]
+        self.max_tasks_per_configuration = self.repeater_configuration["Parameters"]["MaxTasksPerConfiguration"]
 
-        if self.max_tasks_per_configuration < repeater_configuration["Parameters"]["MinTasksPerConfiguration"]:
+        if self.max_tasks_per_configuration < self.repeater_configuration["Parameters"]["MinTasksPerConfiguration"]:
             raise ValueError("Invalid configuration of Repeater provided: MinTasksPerConfiguration(%s) "
                              "is greater than ManTasksPerConfiguration(%s)!" %
-                             (self.max_tasks_per_configuration, repeater_configuration["Parameters"]["MinTasksPerConfiguration"]))
-        self.min_tasks_per_configuration = repeater_configuration["Parameters"]["MinTasksPerConfiguration"]
+                             (self.max_tasks_per_configuration, self.repeater_configuration["Parameters"]["MinTasksPerConfiguration"]))
+        self.min_tasks_per_configuration = self.repeater_configuration["Parameters"]["MinTasksPerConfiguration"]
 
-        self.base_acceptable_errors = repeater_configuration["Parameters"]["BaseAcceptableErrors"]
-        self.confidence_levels = repeater_configuration["Parameters"]["ConfidenceLevels"]
-        self.device_scale_accuracies = repeater_configuration["Parameters"]["DevicesScaleAccuracies"]
-        self.device_accuracy_classes = repeater_configuration["Parameters"]["DevicesAccuracyClasses"]
-        self.is_experiment_aware = repeater_configuration["Parameters"]["ExperimentAwareness"]["isEnabled"]
+        self.base_acceptable_errors = self.repeater_configuration["Parameters"]["BaseAcceptableErrors"]
+        self.confidence_levels = self.repeater_configuration["Parameters"]["ConfidenceLevels"]
+        self.device_scale_accuracies = self.repeater_configuration["Parameters"]["DevicesScaleAccuracies"]
+        self.device_accuracy_classes = self.repeater_configuration["Parameters"]["DevicesAccuracyClasses"]
+        self.is_experiment_aware = self.repeater_configuration["Parameters"]["ExperimentAwareness"]["isEnabled"]
 
         if self.is_experiment_aware:
-            self.ratios_max = repeater_configuration["Parameters"]["ExperimentAwareness"]["RatiosMax"]
-            self.max_acceptable_errors = repeater_configuration["Parameters"]["ExperimentAwareness"]["MaxAcceptableErrors"]
+            self.ratios_max = self.repeater_configuration["Parameters"]["ExperimentAwareness"]["RatiosMax"]
+            self.max_acceptable_errors = self.repeater_configuration["Parameters"]["ExperimentAwareness"]["MaxAcceptableErrors"]
             if not all(b_e <= m_e for b_e, m_e in zip(self.base_acceptable_errors, self.max_acceptable_errors)):
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
-    def evaluate(self, current_configuration: Configuration, experiment: Experiment):
+        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
+            self.experiment = experiment
+
+    def evaluate(self, current_configuration: Configuration):
         """
         Return number of measurements to finish Configuration or 0 if it finished.
         In other case - compute result as average between all experiments.
         :param current_configuration: instance of Configuration class
-        :param experiment: instance of 'experiment' is required for experiment-awareness.
         :return: int min_tasks_per_configuration if Configuration was not measured at all
                  or 1 if Configuration was not measured precisely or 0 if it finished
         """
         tasks_data = current_configuration.get_tasks()
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            db_current_solution_record = self.database.get_last_record_by_experiment_id("Experiment_state",
+                                                                                        self.experiment_id)["Current_solution"]
+            c_s_results = db_current_solution_record["Results"]
+        else:
+            c_s_results = self.experiment.get_current_solution().results
 
         if len(tasks_data) == 0:
             return 1
 
         c_c_results = current_configuration.results
-        c_s_results = experiment.get_current_solution().results
         c_c_results_l = []
         c_s_results_l = []
-        for key in experiment.get_objectives():
+        for key in self.objectives:
             c_c_results_l.append(c_c_results[key])
             c_s_results_l.append(c_s_results[key])
 
@@ -116,10 +127,9 @@ class AcceptableErrorBasedType(Repeater):
             thresholds = []
             if self.is_experiment_aware:
                 # We adapt thresholds
-                objectives_minimization = experiment.get_objectives_minimization()
 
-                for i in range(len(objectives_minimization)):
-                    if objectives_minimization[i]:
+                for i in range(len(self.objectives_minimization)):
+                    if self.objectives_minimization[i]:
                         if not c_s_results_l[i]:
                             ratio = 1
                         else:
