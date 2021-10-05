@@ -182,7 +182,8 @@ class RepeaterOrchestration():
                         routing_key=self.experiment_id,
                         body=configuration.to_json())
             elif configuration.type == Configuration.Type.PREDICTED or \
-                    configuration.type == Configuration.Type.FROM_SELECTOR:
+                    configuration.type == Configuration.Type.FROM_SELECTOR or \
+                    configuration.type == Configuration.Type.TRANSFERRED:
                 publish(exchange='configurations_results_exchange',
                         routing_key=self.experiment_id,
                         body=configuration.to_json())

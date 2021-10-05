@@ -1,19 +1,22 @@
 {
   "DomainDescription":{
-    "DataFile": "./Resources/HyperHeuristic/MHjMetalESData.json"
+    "DataFile": "./Resources/HyperHeuristic/HH_TSP/HHData_permutation.json"
   },
   "TaskConfiguration":{
-    "TaskName"          : "tsp_hh",
+    "TaskName"          : "hh",
     "Scenario": {
       "Problem": "TSP",
+      "instance": "rat783",
+      "problem_type": "permutation_problem",
       "problem_initialization_parameters": {
-        "instance": "scenarios/tsp/kroA100.tsp"
+        "instance": "scenarios/tsp/rat783.tsp"
       },
       "Budget": {
         "Type": "StoppingByTime",
-        "Amount": 15
+        "Amount": 900
       },
-      "Hyperparameters": "provided"
+      "Hyperparameters": "provided",
+      "isWarmStartupEnabled": false
     },
     "Objectives"   : ["objective", "improvement"],
     "ObjectivesDataTypes": ["float", "float"],

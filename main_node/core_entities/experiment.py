@@ -50,6 +50,7 @@ class Experiment:
         self.current_best_configurations: List[Configuration] = []
         self.bad_configurations_number = 0
         self.model_is_valid = False
+        self.improvement_curve = []
 
         self.measured_conf_lock = Lock()
         self.evaluated_conf_lock = Lock()
@@ -299,7 +300,10 @@ class Experiment:
         else:
             # this configuration did not improve the previous solution, no need to keep track its solutions.
             configuration.warm_startup_info = {}
-
+        # TODO: improvement curve is defined only for a single objective (with the highest priority).
+        # Need to re-design the solution for multi-objectiveness
+        self.improvement_curve.append(self.get_current_solution().results[
+            self.get_objectives()[self.get_objectives_priorities().index(max(self.get_objectives_priorities()))]])
         self.database.write_one_record("Measured_configurations", configuration.get_configuration_record())
         self.send_state_to_db()
         self.api.send("new", "configuration",
@@ -349,6 +353,24 @@ class Experiment:
             {"Exp_unique_ID": self.unique_id},
             {"ExperimentObject": pickle.dumps(self, pickle.HIGHEST_PROTOCOL)}
         )
+        # save information needed for Transfer Learning
+        if self.database.get_last_record_by_experiment_id("TransferLearningInfo", self.unique_id) is None:
+            self.database.write_one_record("TransferLearningInfo",
+                                           {"Exp_unique_ID": self.unique_id,
+                                            "Scenario": self.description["TaskConfiguration"]["Scenario"],
+                                            "Samples": [{"type": config.type, "parameters": config.parameters,
+                                                        "result": config.results, "prediction_info": config.prediction_info}
+                                                        for config in self.measured_configurations],
+                                            "Improvement_curve": self.improvement_curve})
+        else:
+            self.database.update_record(
+                "TransferLearningInfo",
+                {"Exp_unique_ID": self.unique_id},
+                {"Scenario": self.description["TaskConfiguration"]["Scenario"],
+                 "Samples": [{"type": config.type, "parameters": config.parameters,
+                             "result": config.results, "prediction_info": config.prediction_info}
+                             for config in self.measured_configurations],
+                 "Improvement_curve": self.improvement_curve})
 
     def write_csv(self, folder_path: str) -> None:
         """save .csv file with main metrics of the experiment

@@ -77,7 +77,7 @@ class WorkerMainThread(threading.Thread):
                 w_method = self.worker_methods[task["task_name"]]
 
                 # TODO Worker service reorganization
-                #self.channel.basic_publish(exchange='', routing_key='taken_task_event_queue', body=json.dumps(task))
+                # self.channel.basic_publish(exchange='', routing_key='taken_task_event_queue', body=json.dumps(task))
 
                 # Execute task
                 try:

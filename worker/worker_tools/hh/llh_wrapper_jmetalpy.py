@@ -6,7 +6,9 @@ from typing import List, Mapping, Type
 import jmetal
 import jmetal.util.termination_criterion as termination
 from jmetal.core.problem import Problem
-from jmetal.core.solution import PermutationSolution
+from jmetal.core.algorithm import Algorithm
+from jmetal.core.solution import PermutationSolution, FloatSolution, BinarySolution
+
 from worker_tools.hh.llh_runner import ILLHWrapper
 
 
@@ -20,15 +22,27 @@ class HashableDict(dict):
 
 class JMetalPyWrapper(ILLHWrapper):
 
-    def __init__(self):
+    def __init__(self, problem_type=None):
         super().__init__()
-        self._initial_solutions: List[PermutationSolution] = []
+        # add choice
+        self.problem_type = problem_type
+        self._is_warm_startup_enabled = False
+        if self.problem_type == "permutation_problem" or self.problem_type is None:
+            self._initial_solutions: List[PermutationSolution] = []
+        elif self.problem_type == "float_problem":
+            self._initial_solutions: List[FloatSolution] = []
+        elif self.problem_type == "binary_problem":
+            self._initial_solutions: List[BinarySolution] = []
+        else:
+            raise NotImplementedError("Your type of problem can not be solved by heuristics yet!")
         self._solution_generator = None
 
     def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
 
         # Constructing meta-heuristics initialization arguments (components + simple hyperparameters)
         init_args = dict(copy(hyperparameters))
+
+        self._is_warm_startup_enabled = scenario["isWarmStartupEnabled"]
 
         if "crossover_type" in init_args:
             import jmetal.operator.crossover as crossover
@@ -107,7 +121,7 @@ class JMetalPyWrapper(ILLHWrapper):
             "objective": current_objective,
             "improvement": improvement,
             "warm_startup_info": {
-                "paths": [s.variables for s in self._llh_algorithm.solutions]
+                "solutions": [s.variables for s in self._llh_algorithm.solutions]
             }
         }
         return result
@@ -115,20 +129,30 @@ class JMetalPyWrapper(ILLHWrapper):
     # Helper methods
     def load_initial_solutions(self, warm_startup_info: Mapping, problem: Problem) -> None:
         self.warm_startup_info = warm_startup_info
-        if warm_startup_info and 'paths' in self.warm_startup_info.keys() and len(self.warm_startup_info['paths']) > 0:
+        if warm_startup_info and 'solutions' in self.warm_startup_info.keys() and len(self.warm_startup_info['solutions']) > 0:
             from jmetal.util.generator import InjectorGenerator
-            one_sol_variables = self.warm_startup_info['paths'][0]
-            solution = PermutationSolution(number_of_variables=problem.number_of_variables,
+            one_sol_variables = self.warm_startup_info['solutions'][0]
+            if self.problem_type == "permutation_problem" or self.problem_type is None:
+                solution = PermutationSolution(number_of_variables=problem.number_of_variables,
+                                           number_of_objectives=problem.number_of_objectives)
+            elif self.problem_type == "float_problem":
+                solution = FloatSolution(lower_bound=problem.lower_bound, 
+                upper_bound=problem.upper_bound, number_of_objectives=problem.number_of_objectives)
+            elif self.problem_type == "binary_problem":
+                solution = BinarySolution(number_of_variables=problem.number_of_variables,
                                            number_of_objectives=problem.number_of_objectives)
             solution.variables = one_sol_variables
             self._initial_solutions.append(problem.evaluate(solution))
 
-            for one_sol_variables in self.warm_startup_info['paths'][1:]:
+            for one_sol_variables in self.warm_startup_info['solutions'][1:]:
                 solution = copy(solution)
                 solution.variables = one_sol_variables
                 self._initial_solutions.append(problem.evaluate(solution))
-            generator = InjectorGenerator(solutions=self._initial_solutions)
-
+            if self._is_warm_startup_enabled:
+                generator = InjectorGenerator(solutions=self._initial_solutions)
+            else:
+                from jmetal.util.generator import RandomGenerator
+                generator = RandomGenerator()
         else:
             from jmetal.util.generator import RandomGenerator
             generator = RandomGenerator()
@@ -143,7 +167,7 @@ class JMetalPyWrapper(ILLHWrapper):
 
     @staticmethod
     @lru_cache(maxsize=10, typed=True)
-    def _get_algorithm_class(mh_name: str) -> jmetal.algorithm.__class__:
+    def _get_algorithm_class(mh_name: str) -> jmetal.core.algorithm.Algorithm.__class__:
         if mh_name == 'jMetalPy.GeneticAlgorithm':
             from jmetal.algorithm.singleobjective.genetic_algorithm import \
                 GeneticAlgorithm as Alg

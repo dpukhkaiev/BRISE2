@@ -1,11 +1,12 @@
 {
   "DomainDescription":{
-    "DataFile": "./Resources/HyperHeuristic/MHjMetalPyESData.json"
+    "DataFile": "./Resources/HyperHeuristic/MHjMetalPySAData.json"
   },
   "TaskConfiguration":{
     "TaskName"          : "tsp_hh",
     "Scenario": {
       "Problem": "TSP",
+      "problem_type": "permutation_problem",
       "problem_initialization_parameters": {
         "instance": "scenarios/tsp/kroA100.tsp"
       },
@@ -13,7 +14,8 @@
         "Type": "StoppingByTime",
         "Amount": 15
       },
-      "Hyperparameters": "provided"
+      "Hyperparameters": "provided",
+      "isWarmStartupEnabled": true
     },
     "Objectives"   : ["objective", "improvement"],
     "ObjectivesDataTypes": ["float", "float"],

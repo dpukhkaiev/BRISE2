@@ -4,7 +4,7 @@
     "Port": 27017,
     "DatabaseName": "BRISE_db",
     "DatabaseUser": "BRISEdbuser",
-    "DatabasePass": "5V5Scp1E"
+    "DatabasePass": "5V5Scp1E2"
   },
   "EventService": {
     "Address": "localhost",

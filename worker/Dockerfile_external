@@ -1,4 +1,6 @@
 FROM ubuntu:18.04
+ENV TZ=Europe/Berlin
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Updating the system
 RUN apt-get update && apt-get install -y -qq \
@@ -11,9 +13,9 @@ RUN apt-get update && apt-get install -y -qq \
     python3-pip \
     python3.7-dev \
 # Installing Java (Open JDK) for Rapidminer and MQUAT problems
-    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk=8u272-b10-0ubuntu1~18.04
+    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk=8u275-b01-0ubuntu1~18.04\
 # Installing R and related packages for Rapidminer
-    && apt-get install -y -qq r-base=4.0.2-1 && \
+    && apt-get install -y -qq r-base && \
     Rscript -e "install.packages('data.table', repos='http://cran.rstudio.com/')" && \
     Rscript -e "install.packages('ROCR', repos='http://cran.rstudio.com/')" && \
     Rscript -e "install.packages('PRROC', repos='http://cran.rstudio.com/')" \
@@ -30,7 +32,7 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 # Installing Python modules
-RUN python3.7 -m pip install -U pika==1.1.0 pymongo==3.11.0
+RUN python3.7 -m pip install -U pika==1.1.0 pymongo==3.11.3 openml
 
 # Installing jMetalPy for Hyperheuristics
-RUN python3.7 -m pip install git+https://github.com/YevheniiSemendiak/jMetalPy.git@apsp
+RUN python3.7 -m pip install git+https://github.com/NatalieGvozdetska/jMetalPy.git@diploma_aggregate

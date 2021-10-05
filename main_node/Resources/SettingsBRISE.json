@@ -1,122 +1,158 @@
 {
-  "General":{
-    "NumberOfWorkers": 3,
-    "results_storage": "./Results/"
-  },
-  "SelectionAlgorithm": "MersenneTwister",
-  "OutliersDetection":{
-    "isEnabled": true,
-    "Detectors": [
+    "General":{
+      "NumberOfWorkers": 3,
+      "results_storage": "./Results/"
+    },
+    "SelectionAlgorithm": "SobolSequence",
+    "OutliersDetection":{
+      "isEnabled": true,
+      "Detectors": [
+        {
+          "Type": "Dixon",
+          "Parameters": {
+            "MinActiveNumberOfTasks": 3,
+            "MaxActiveNumberOfTasks": 30
+          }
+        },
+        {
+          "Type": "Chauvenet",
+          "Parameters": {
+            "MinActiveNumberOfTasks": 3,
+            "MaxActiveNumberOfTasks": 10000
+          }
+        },
+        {
+          "Type": "Mad",
+          "Parameters": {
+            "MinActiveNumberOfTasks": 3,
+            "MaxActiveNumberOfTasks": 10000
+          }
+        },
+        {
+          "Type": "Grubbs",
+          "Parameters": {
+            "MinActiveNumberOfTasks": 3,
+            "MaxActiveNumberOfTasks": 10000
+          }
+        },
+        {
+          "Type": "Quartiles",
+          "Parameters": {
+            "MinActiveNumberOfTasks": 3,
+            "MaxActiveNumberOfTasks": 10000
+          }
+        }
+      ]
+    },
+    "Repeater":{
+      "Type": "AcceptableErrorBased",
+      "Parameters": {
+        "MaxFailedTasksPerConfiguration": 5,
+        "MaxTasksPerConfiguration": 10,
+        "MinTasksPerConfiguration": 2,
+        "BaseAcceptableErrors": [5, 5],
+        "ConfidenceLevels": [0.95, 0.95],
+        "DevicesScaleAccuracies": [0, 0],
+        "DevicesAccuracyClasses": [0, 0],
+        "ExperimentAwareness": {
+          "isEnabled": true,
+          "MaxAcceptableErrors": [50, 50],
+          "RatiosMax": [10, 10]
+        }
+      }
+    },
+    "Predictor":{
+      "window size": 1.0,
+      "models": [
+        {
+          "Type": "brise.TreeParzenEstimator",
+          "Parameters": {
+            "top_n_percent": 30,
+            "random_fraction": 0,
+            "bandwidth_factor": 3,
+            "min_bandwidth": 0.001,
+            "SamplingSize": 96
+          }
+        }
+      ]
+    },
+    "TransferLearning":{
+      "isEnabled": true,
+      "TransferExpediencyDetermination": {
+        "ComparatorType": "NormDifferenceComparator",
+        "MinNumberOfSamples": 10,
+        "NumberOfSimilarExperiments": "use_clustering",
+        "ClusteringAlgorithm": "MeanShiftClustering"
+      },
+      "MultiTaskLearning": {
+        "Standard":{
+          "Filters":{
+              "FewShot": {}
+          },
+          "OldNewConfigsRatio" : 2.416424349152367,
+          "COMMENT": "coefficient multiplied by the number of measured configurations in current experiment",
+          "TransferBestConfigsOnly": true,
+          "TransferFromMostSimilarExperimentsFirst": false
+        }
+      },
+      "ModelsRecommendation": {
+        "DynamicModelsRecommendation":{
+          "RecommendationGranularity": 15,
+          "COMMENT": "Min: 1 (recommend every iteration). Max: inf (recommendation for the whole experiment)",
+          "TimeToBuildModelThreshold": 0.2091163669213884,
+          "TimeUnit": "seconds",
+          "ThresholdType": "soft",
+          "PerformanceMetric": "AverageRelativeImprovement"
+        },
+        "FewShot": {}
+      }
+    },
+    "StopConditionTriggerLogic":{
+      "Expression": "(QuantityBased and Guaranteed and ImprovementBased) or BadConfigurationBased or TimeBased or FewShotLearningBased",
+      "InspectionParameters":{
+        "RepetitionPeriod": 1,
+        "TimeUnit": "seconds"
+      }
+    },
+    "StopCondition":[
       {
-        "Type": "Dixon",
+        "Name": "QuantityBased",
+        "Type": "QuantityBased",
         "Parameters": {
-          "MinActiveNumberOfTasks": 3,
-          "MaxActiveNumberOfTasks": 30
+          "MaxConfigs": 15
         }
       },
       {
-        "Type": "Chauvenet",
+        "Name": "ImprovementBased",
+        "Type": "ImprovementBased",
         "Parameters": {
-          "MinActiveNumberOfTasks": 3,
-          "MaxActiveNumberOfTasks": 10000
+          "MaxConfigsWithoutImprovement": 5
         }
       },
       {
-        "Type": "Mad",
+        "Name": "Guaranteed",
+        "Type": "Guaranteed",
+        "Parameters": {      }
+      },
+      {
+        "Name": "BadConfigurationBased",
+        "Type": "BadConfigurationBased",
         "Parameters": {
-          "MinActiveNumberOfTasks": 3,
-          "MaxActiveNumberOfTasks": 10000
+          "MaxBadConfigurations": 10
         }
       },
       {
-        "Type": "Grubbs",
+        "Name": "TimeBased",
+        "Type": "TimeBased",
         "Parameters": {
-          "MinActiveNumberOfTasks": 3,
-          "MaxActiveNumberOfTasks": 10000
+          "MaxRunTime": 10,
+          "TimeUnit": "minutes"
         }
       },
       {
-        "Type": "Quartiles",
-        "Parameters": {
-          "MinActiveNumberOfTasks": 3,
-          "MaxActiveNumberOfTasks": 10000
-        }
+        "Name": "FewShotLearningBased",
+        "Type": "FewShotLearningBased",
+        "Parameters": {      }
       }
     ]
-  },
-  "Repeater":{
-    "Type": "AcceptableErrorBased",
-    "Parameters": {
-      "MaxFailedTasksPerConfiguration": 5,
-      "MaxTasksPerConfiguration": 10,
-      "MinTasksPerConfiguration": 2,
-      "BaseAcceptableErrors": [5],
-      "ConfidenceLevels": [0.95],
-      "DevicesScaleAccuracies": [0],
-      "DevicesAccuracyClasses": [0],
-      "ExperimentAwareness": {
-        "isEnabled": true,
-        "MaxAcceptableErrors": [50],
-        "RatiosMax": [10]
-      }
-    }
-  },
-  "Predictor":{
-    "window size": 1.0,
-    "models": [
-      {
-        "Type": "brise.TreeParzenEstimator",
-        "Parameters": {
-          "top_n_percent": 30,
-          "random_fraction": 0,
-          "bandwidth_factor": 3,
-          "min_bandwidth": 0.001,
-          "SamplingSize": 96
-        }
-      }
-    ]
-  },
-  "StopConditionTriggerLogic":{
-    "Expression": "(QuantityBased and Guaranteed and ImprovementBased) or BadConfigurationBased or TimeBased",
-    "InspectionParameters":{
-      "RepetitionPeriod": 1,
-      "TimeUnit": "seconds"
-    }
-  },
-  "StopCondition":[
-    {
-      "Name": "QuantityBased",
-      "Type": "QuantityBased",
-      "Parameters": {
-        "MaxConfigs": 15
-      }
-    },
-    {
-      "Name": "ImprovementBased",
-      "Type": "ImprovementBased",
-      "Parameters": {
-        "MaxConfigsWithoutImprovement": 5
-      }
-    },
-    {
-      "Name": "Guaranteed",
-      "Type": "Guaranteed",
-      "Parameters": {      }
-    },
-    {
-      "Name": "BadConfigurationBased",
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
-      }
-    },
-    {
-      "Name": "TimeBased",
-      "Type": "TimeBased",
-      "Parameters": {
-        "MaxRunTime": 10,
-        "TimeUnit": "minutes"
-      }
-    }
-  ]
 }

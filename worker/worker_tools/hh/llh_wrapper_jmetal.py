@@ -8,7 +8,7 @@ from worker_tools.jar_runner import jar_runner
 
 class JMetalWrapper(ILLHWrapper):
 
-    def __init__(self):
+    def __init__(self, problem_type=None):
         super().__init__()
         self._call_arguments = []
 
@@ -21,8 +21,8 @@ class JMetalWrapper(ILLHWrapper):
         self._call_arguments.append(f"elitist={hyperparameters.get('elitist')}")
         self._call_arguments.append(f"mu={hyperparameters.get('mu')}")
         self._call_arguments.append(f"lambda={hyperparameters.get('lambda_')}")
+        self._call_arguments.append(f"problem={scenario['Problem']}")
 
-        scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
         # Because of the framework implementation specifics, those TSP scenario files are 'embedded' into the jar file:
         # d15112.tsp
         # eil51.tsp
@@ -39,9 +39,17 @@ class JMetalWrapper(ILLHWrapper):
         # rat783.tsp
         # If one needs to add a new scenario, the jar file should be modified. TSP instances should be put into
         # tspInstances directory
-        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
+        if scenario["Problem"] == "TSP":
+            scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
+            self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
+        elif scenario["Problem"] == "Sphere" or scenario["Problem"] == "Rastrigin":
+            self._call_arguments.append(f"numberOfVariables=" + str(scenario["problem_initialization_parameters"]["number_of_variables"]))
+        else:
+            raise NotImplementedError("jMetal.EvolutionStrategy is not yet supported for the specified problem!")
 
         self._attach_termination(scenario["Budget"])
+        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isWarmStartupEnabled']}")
+
         self._attach_initial_solutions(warm_startup_info)
 
     def run_and_report(self) -> Mapping:
@@ -58,17 +66,17 @@ class JMetalWrapper(ILLHWrapper):
         else:
             # The output from jMetal heuristics is the regular output of solving process,
             # finalized with the desired report:
-            # 1. final solutions paths
+            # 1. final solutions
             # 2. the best solution objective value
             # 3. the improvement made (if no initial_solutions were, the improvement is 0)
-            pointer = output.index("Paths START")
-            solution_paths = []
+            pointer = output.index("Solutions START")
+            solutions = []
             while True:
                 pointer += 1
-                if output[pointer] == "Paths END":
+                if output[pointer] == "Solutions END":
                     break
                 else:
-                    solution_paths.append(json.loads(output[pointer]))
+                    solutions.append(json.loads(output[pointer]))
             pointer += 2    # "Paths END" -> "Path length:" -> length value
             current_objective = float(output[pointer])
             pointer += 2    # length value -> "Improvement:" -> improvement value
@@ -77,7 +85,7 @@ class JMetalWrapper(ILLHWrapper):
                 "objective": current_objective,
                 "improvement": improvement,
                 "warm_startup_info": {
-                    "paths": solution_paths
+                    "solutions": solutions
                 }
             }
 
@@ -88,10 +96,10 @@ class JMetalWrapper(ILLHWrapper):
         return result
 
     def _attach_initial_solutions(self, warm_startup_info: Mapping) -> None:
-        if warm_startup_info and 'paths' in warm_startup_info.keys():
+        if warm_startup_info and 'solutions' in warm_startup_info.keys():
             with open(self._initial_solutions_file_name, 'w') as f:
-                for path in warm_startup_info['paths']:
-                    f.write(json.dumps(path))
+                for solution in warm_startup_info['solutions']:
+                    f.write(json.dumps(solution))
                     f.write("\n")
             self._call_arguments.append(f"initial_solutions={self._initial_solutions_file_name}")
 

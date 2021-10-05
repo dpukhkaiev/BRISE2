@@ -123,6 +123,7 @@
         "Predictor": {
             "$ref": "./model/schema/model.schema.json#/definitions/Predictor"
         },
+
         "StopConditionTriggerLogic": {
             "type": "object",
             "properties": {

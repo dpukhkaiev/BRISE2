@@ -51,7 +51,7 @@ def naiveBayes_mock(task: dict):
         logging.getLogger(__name__).error(f"An error occurred during performing 'taskNB' (NaiveBayes mock) "
                                           f"Task with parameters {task['parameters']}: {error}")
     return {
-        'PREC_AT_99_REC':'NaN'
+        'PREC_AT_99_REC': 'NaN'
     }
 
 
@@ -92,7 +92,7 @@ def randomForest(task: dict):
     try:
         # use RapidMiner Automodel to define default config, if it is specified:
         automodel_default = True if "defined_by_automodel" in task['parameters'].values() else False
-        if automodel_default == True:
+        if automodel_default is True:
             algorithm = 'AUTO_MODEL'
             RMrepository = '//ServerRepository/Automodel/'
             path2process = '/home/w_user/.RapidMiner/repositories/ServerRepository/Automodel/Autommod.rmp'
@@ -373,3 +373,70 @@ def tsp_hh(task: dict):
     llh_runner.build()
     llh_runner.execute()
     return llh_runner.report
+
+def hh(task: dict):
+    from worker_tools.hh.llh_runner import LLHRunner
+
+    framework = task["parameters"]["low level heuristic"].split(".")[0]
+
+    if framework == "jMetalPy":
+        if task["Scenario"]["Hyperparameters"] == 'default':
+            from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapperDefault as LLH_Wrapper
+        elif task["Scenario"]["Hyperparameters"] == 'tuned':
+            from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapperTuned as LLH_Wrapper
+        else:
+            # use provided hyperparameters
+            from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapper as LLH_Wrapper
+
+    elif framework == "jMetal":
+        if task["Scenario"]["Hyperparameters"] == 'default':
+            from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapperDefault as LLH_Wrapper
+        elif task["Scenario"]["Hyperparameters"] == 'tuned':
+            from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapperTuned as LLH_Wrapper
+        else:
+            from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapper as LLH_Wrapper
+    else:
+        raise TypeError(f"Unknown framework: {framework}")
+
+    llh_runner = LLHRunner(task, LLH_Wrapper(problem_type=task["Scenario"]["problem_type"]))
+    llh_runner.build()
+    llh_runner.execute()
+    return llh_runner.report
+
+def openml_RF_sklearn(task: dict):
+    import openml
+    import numpy as np
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.model_selection import cross_validate
+
+    # import a dataset from openml
+    dataset = openml.datasets.get_dataset(task["Scenario"]["DatasetID"])
+    X, y, _, _ = dataset.get_data(dataset_format="array", target=dataset.default_target_attribute)
+
+    # Build sklearn RF pipeline
+    clf = make_pipeline(StandardScaler(), RandomForestClassifier(criterion=task["parameters"]["criterion"],
+                                                                 max_depth=task["parameters"]["max_depth"],
+                                                                 max_features=task["parameters"]["max_features"],
+                                                                 min_samples_leaf=task["parameters"]["min_samples_leaf"],
+                                                                 min_samples_split=task["parameters"]["min_samples_split"],
+                                                                 n_estimators=task["parameters"]["n_estimators"]))
+
+    # evaluate classifier with cross_validation
+    scores = cross_validate(clf, X, y,
+                            scoring=["f1_macro", "f1_weighted", "roc_auc"],
+                            cv=5,
+                            n_jobs=-1)
+    fit_time = np.mean(scores["fit_time"])
+    test_f1_macro = np.mean(scores["test_f1_macro"])
+    test_f1_weighted = np.mean(scores["test_f1_weighted"])
+    test_roc_auc = np.mean(scores["test_roc_auc"])
+
+    result = {
+        "fit_time": fit_time,
+        "test_f1_macro": test_f1_macro,
+        "test_f1_weighted": test_f1_weighted,
+        "test_roc_auc": test_roc_auc
+    }
+    return result

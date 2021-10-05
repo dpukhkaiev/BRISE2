@@ -189,6 +189,24 @@
                             "Type",
                             "Parameters"
                         ]
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "Type": {
+                                    "type": "string",
+                                    "enum": ["FewShotLearningBased"]
+                                },
+                                "Parameters":{
+                                    "type": "object",
+                                    "properties":{  },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "required": [
+                                "Type",
+                                "Parameters"
+                            ]
                         }
                     ]}
                 ]

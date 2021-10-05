@@ -152,6 +152,20 @@ This Stop Condition is satisfied, when the model created during BRISE runtime is
   ]
 ```
 
+#### Few-shot-learning Based Stop Condition
+
+This Stop Condition is fired, when at least one entity was transferred to the current experiment via the transfer learning module.
+```json
+"StopCondition":[
+    {  
+      "Name": "FewShotLearningBased",
+      "Type": "FewShotLearningBased",
+      "Parameters": {      }
+    }
+  ]
+```
+
+
 #### An example of Stop Condition modules settings:
 
 ```json

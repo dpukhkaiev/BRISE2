@@ -70,7 +70,7 @@ class LLHRunner:
 
 
 class ILLHWrapper(abc.ABC):
-    def __init__(self):
+    def __init__(self, problem_type=None):
         self.logger = logging.getLogger(__name__)
         self.warm_startup_info = {}
         self._llh_algorithm = None

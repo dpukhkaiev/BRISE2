@@ -24,6 +24,7 @@ from repeater.repeater_selector import RepeaterOrchestration
 from stop_condition.stop_condition_selector import (
     launch_stop_condition_threads
 )
+from transfer_learning.transfer_learning_module import TransferLearningModule
 from tools.front_API import API
 from tools.initial_config import (
     load_experiment_setup,
@@ -72,6 +73,7 @@ class MainThread(threading.Thread):
         self.wsc_client: WSClient = None
         self.repeater: RepeaterOrchestration = None
         self.database: MongoDB = None
+        self.is_transfer_enabled = False
 
     def run(self):
         """
@@ -170,6 +172,11 @@ class MainThread(threading.Thread):
         self.predictor: Predictor = Predictor(
             self.experiment_id, self.experiment.description, self.experiment.search_space
         )
+
+        # Initialize Transfer Learning module
+        if self.experiment.description["TransferLearning"]["isEnabled"]:
+            self.is_transfer_enabled = True
+            self.tl_module = TransferLearningModule(self.experiment.description, self.experiment_id)
 
         self.default_config_handler = get_default_config_handler(self.experiment)
         temp_msg = "Measuring default Configuration."
@@ -276,7 +283,47 @@ class MainThread(threading.Thread):
         needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
         for _ in range(needed_configs):
             # TODO some of parameters could be predicted, other could be sampled, need to change Configuration.Type
-            config = self.predictor.predict(self.experiment.measured_configurations)
+            # TODO: check the logic. Now, if TL is disabled, prediction takes place sa usual.
+            # If enabled - n points are sampled deterministically. Possible consequences - only exps. with used TL can be further used for TL
+            if not self.is_transfer_enabled:
+                config = self.predictor.predict(self.experiment.measured_configurations)
+            else:
+                if len(self.experiment.measured_configurations) > \
+                        self.experiment.description["TransferLearning"]["TransferExpediencyDetermination"]["MinNumberOfSamples"]:
+                    transferred_knowledge = self.tl_module.get_transferred_knowledge()
+                    recommended_models = transferred_knowledge["Recommended_models"]
+                    transferred_models = transferred_knowledge["Models_to_transfer"]
+                    transferred_best_configuration = transferred_knowledge["Best_configuration_to_transfer"]
+                    transferred_configurations = transferred_knowledge["Configurations_to_transfer"]
+                    if recommended_models is not None and recommended_models != self.predictor.predictor_config["models"]:
+                        self.predictor.predictor_config["models"] = recommended_models
+                        self.predictor.models_dumps = [None] * len(recommended_models)
+                        self.logger.info("New combination of surrogate models is recommended for this iteration: %s" % recommended_models)
+                    if transferred_best_configuration is not None:
+                        config = transferred_best_configuration
+                        self.logger.info(f"Trying to measure best configuration from former experiment, if it was not measured yet: {config}")
+                    else:
+                        if transferred_models is not None and len(transferred_models) > 0:
+                            config = self.predictor.predict(self.experiment.measured_configurations,
+                        transferred_models=transferred_models)
+                            config.type = Configuration.Type.TRANSFERRED
+                            self.logger.info("A combination of old surrogates will be used on this iteration: %s" % transferred_models)
+                        else:
+                            config = self.predictor.predict(self.experiment.measured_configurations,
+                        transferred_configurations=transferred_configurations)
+                        if transferred_configurations is not None:
+                            if len(transferred_configurations) > 0:
+                                config.type = Configuration.Type.TRANSFERRED
+                        elif recommended_models is not None:
+                                config.type = Configuration.Type.TRANSFERRED
+                else:
+                    new_parameter_values = OrderedDict()
+                    while not self.experiment.search_space.validate(new_parameter_values, is_recursive=True):
+                        self.experiment.search_space.generate(new_parameter_values)
+                    config = Configuration(
+                        new_parameter_values, Configuration.Type.FROM_SELECTOR, self.experiment_id
+                    )
+
             if config not in self.experiment.evaluated_configurations:
                 temp_msg = f"Model predicted {config}."
             else:

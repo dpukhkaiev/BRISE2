@@ -19,6 +19,7 @@ class Configuration:
         PREDICTED = 1
         FROM_SELECTOR = 2
         TEST = 3
+        TRANSFERRED = 4
 
     TaskConfiguration = {}
 
@@ -26,11 +27,14 @@ class Configuration:
     def set_task_config(cls, taskConfig):
         cls.TaskConfiguration = taskConfig
 
-    def __init__(self, parameters: Mapping, config_type: Type, experiment_id: str):
+    def __init__(self, parameters: Mapping, config_type: Type, experiment_id: str, prediction_info: List = None):
         """
-        :param hyperparameters: hyperparameters mapping name:value
+        :param parameters: parameters mapping name:value
                shape - ``{"Frequency": 1200, "Threads": 32}``
         :param config_type: Configuration Type (see inner class Type).
+        :param prediction_info: List. Optional parameter storing information about how the configuration was predicted
+               shape - ``[{ "Model" : model_1, "time_to_build" : time_1 }, { "Model" : model_2, "time_to_build" : time_2 }, ...]``
+        (how it appeared in the experiment). Needed for Transfer learning functionality
 
         During initializing following fields are declared:
 
@@ -65,6 +69,7 @@ class Configuration:
         self._tasks = {}
         self._results: Mapping = OrderedDict()
         self.predicted_result = []
+        self.prediction_info = prediction_info
         self.type = config_type
         # Meta information
         self._standard_deviation = []
@@ -175,6 +180,7 @@ class Configuration:
                            "results": self.results,
                            "tasks": self._tasks,
                            "predicted_result": self.predicted_result,
+                           "prediction_info": self.prediction_info,
                            "standard_deviation": self._standard_deviation,
                            "type": self.type,
                            "status": self.status,
@@ -195,6 +201,7 @@ class Configuration:
         conf.unique_id = dictionary_dump["configuration_id"]
         conf._tasks = dictionary_dump["tasks"]
         conf.predicted_result = dictionary_dump["predicted_result"]
+        conf.prediction_info = dictionary_dump["prediction_info"]
         conf._standard_deviation = dictionary_dump["standard_deviation"]
         conf.type = Configuration.Type(dictionary_dump["type"])
         conf.status = dictionary_dump["status"]
