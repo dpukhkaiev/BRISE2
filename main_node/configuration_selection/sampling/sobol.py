@@ -2,7 +2,7 @@ __doc__ = """
     Describes logic of selection algorithm based on Sobol sequences in Sobol space."""
 
 import sobol_seq
-from selection.selection_algorithm_abs import SelectionAlgorithm
+from configuration_selection.sampling.selection_algorithm_abs import SelectionAlgorithm
 
 
 class SobolSequence(SelectionAlgorithm):

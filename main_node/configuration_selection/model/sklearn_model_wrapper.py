@@ -4,9 +4,9 @@ from typing import Mapping
 
 import numpy as np
 import pandas as pd
-from model.model_abs import Model
+from configuration_selection.model.model_abs import Model
 from preprocessing.pipelines import build_preprocessing_pipelines
-from selection.description_selection import description_selection
+from configuration_selection.sampling.description_selection import description_selection
 from sklearn.linear_model.base import LinearModel
 from sklearn.model_selection import LeaveOneOut, ShuffleSplit, cross_val_score
 from sklearn.pipeline import Pipeline

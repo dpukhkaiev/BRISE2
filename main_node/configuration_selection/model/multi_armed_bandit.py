@@ -5,7 +5,7 @@ from typing import Mapping
 import numpy as np
 import pandas as pd
 from core_entities.search_space import CategoricalHyperparameter
-from model.model_abs import Model
+from configuration_selection.model.model_abs import Model
 
 
 class MultiArmedBandit(Model):

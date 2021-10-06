@@ -1,8 +1,8 @@
 from typing import Mapping
 
 import pandas as pd
-from model.model_abs import Model
-from selection.description_selection import description_selection
+from configuration_selection.model.model_abs import Model
+from configuration_selection.sampling.description_selection import description_selection
 
 
 class ModelMock(Model):

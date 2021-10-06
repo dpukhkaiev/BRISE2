@@ -1,6 +1,6 @@
 import random
 
-from selection.selection_algorithm_abs import SelectionAlgorithm
+from configuration_selection.sampling.selection_algorithm_abs import SelectionAlgorithm
 
 
 class MersenneTwister(SelectionAlgorithm):

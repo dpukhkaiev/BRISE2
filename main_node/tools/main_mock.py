@@ -65,7 +65,7 @@ def run(experiment_description=None, mock_data_file = None):
     # --- Fixing dump issues (APIs and Logging objects were cut off).
     # Removing all tasks from configurations to fix repetitions.
     for state in mock_data["Models and configurations"]:
-        state["Model"].logger = logging.getLogger("model")
+        state["Model"].logger = logging.getLogger("configuration_selection/model")
         state["Model"].sub = API()
         for config in state["Configurations"]:
             config.logger = logging.getLogger("core_entities.configuration.py")

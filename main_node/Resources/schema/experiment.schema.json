@@ -121,7 +121,7 @@
             ]
         },
         "Predictor": {
-            "$ref": "./model/schema/model.schema.json#/definitions/Predictor"
+            "$ref": "./configuration_selection/model/schema/model.schema.json#/definitions/Predictor"
         },
 
         "StopConditionTriggerLogic": {

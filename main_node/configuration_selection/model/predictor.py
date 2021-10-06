@@ -9,9 +9,9 @@ from typing import List, Mapping
 import pandas as pd
 from core_entities.configuration import Configuration
 from core_entities.search_space import Hyperparameter
-from model.model_selection import get_model
+from configuration_selection.model.model_selection import get_model
 from tools.mongo_dao import MongoDB
-from model.model_abs import Model
+from configuration_selection.model.model_abs import Model
 
 
 class Predictor:

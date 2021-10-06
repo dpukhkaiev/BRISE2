@@ -42,7 +42,7 @@ class RabbitMQConnection(threading.Thread):
             while not self._is_interrupted:
                 self.channel.connection.process_data_events(time_limit=1)  # 1 second
         finally:
-            self.logger.info(f"{self.module} is shooting down.")
+            self.logger.info(f"{self.module} is shutting down.")
             if self.connection.is_open:
                 self.connection.close()
 

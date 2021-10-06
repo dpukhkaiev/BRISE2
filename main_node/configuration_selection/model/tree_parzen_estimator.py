@@ -39,9 +39,9 @@ from core_entities.search_space import (
     NumericHyperparameter,
     OrdinalHyperparameter
 )
-from model.model_abs import Model
+from configuration_selection.model.model_abs import Model
 from preprocessing.pipelines import build_preprocessing_pipelines
-from selection.description_selection import description_selection
+from configuration_selection.sampling.description_selection import description_selection
 from sklearn.pipeline import Pipeline
 
 

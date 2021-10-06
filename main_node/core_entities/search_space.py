@@ -6,8 +6,8 @@ from collections import OrderedDict
 from typing import Dict, Iterable, List, MutableMapping, Union
 
 import numpy as np
-from selection.selection_algorithm_abs import SelectionAlgorithm
-from selection.selection_algorithms import get_selector
+from configuration_selection.sampling.selection_algorithm_abs import SelectionAlgorithm
+from configuration_selection.sampling.selection_algorithms import get_selector
 
 _CATEGORY = Union[str, int, float, bool]
 

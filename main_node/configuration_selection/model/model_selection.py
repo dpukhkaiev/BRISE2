@@ -1,6 +1,6 @@
 from typing import Mapping, Union
 
-from model.model_abs import Model
+from configuration_selection.model.model_abs import Model
 
 
 def get_model(model_description: Mapping[str, Union[str, Mapping]]) -> Model:
@@ -10,7 +10,7 @@ def get_model(model_description: Mapping[str, Union[str, Mapping]]) -> Model:
     if "sklearn" in model_type:
         import inspect
 
-        from model.sklearn_model_wrapper import SklearnModelWrapper
+        from configuration_selection.model.sklearn_model_wrapper import SklearnModelWrapper
         from sklearn import linear_model
 
         models = inspect.getmembers(linear_model, lambda member: inspect.isclass(member))
@@ -24,7 +24,7 @@ def get_model(model_description: Mapping[str, Union[str, Mapping]]) -> Model:
         from tools.reflective_class_import import reflective_class_import
 
         model_name = model_type.split(".")[1]
-        model_class = reflective_class_import(model_name, "model")
+        model_class = reflective_class_import(model_name, "configuration_selection/model")
         model = model_class(model_description["Parameters"])
 
     # Instantiating the Class
