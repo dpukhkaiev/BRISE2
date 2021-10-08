@@ -43,7 +43,7 @@ class LLHRunner:
         :return: None
         """
         self.logger.debug("Fetching warm startup info.")
-        wsi_record = self.dao.get_last_record_by_experiment_id("warm_startup_info", self._task["experiment_id"])
+        wsi_record = self.dao.get_last_record_by_experiment_id("Warm_startup_info", self._task["experiment_id"])
         if not wsi_record:
             wsi = None
             self.logger.warning(f"Solving optimization problem from scratch, since no starting solutions available for "

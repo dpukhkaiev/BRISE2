@@ -9,7 +9,7 @@ class FewShotLearningBased(StopCondition):
         self.start_threads()
 
     def is_finish(self):
-        measured_configurations = self.database.get_records_by_experiment_id("Measured_configurations", self.experiment_id)
+        measured_configurations = self.database.get_records_by_experiment_id("Configuration", self.experiment_id)
         for configuration in measured_configurations:
             if configuration["Type"] == Configuration.Type.TRANSFERRED:
                 self.logger.debug("Configuration with type TRANSFERRED was measured: {configuration}")

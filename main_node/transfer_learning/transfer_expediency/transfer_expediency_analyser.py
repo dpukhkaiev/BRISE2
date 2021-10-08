@@ -50,7 +50,7 @@ class TransferExpediencyAnalyser:
             self.experiment_description["TransferLearning"]["TransferExpediencyDetermination"]["MinNumberOfSamples"] or \
                 len(self.similar_experiments) > 0:
             return self.similar_experiments
-        all_source_experiments = self.database.get_all_records("TransferLearningInfo")
+        all_source_experiments = self.database.get_all_records("Transfer_learning_info")
         source_experiments = list(filter(lambda exp: exp["Exp_unique_ID"] != self.experiment_id, all_source_experiments))
         comparator = self.get_comparator()
         sorted_similar_experiments = comparator.get_similar_experiments(source_experiments)

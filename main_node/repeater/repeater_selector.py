@@ -133,7 +133,7 @@ class RepeaterOrchestration():
                     if configuration.is_valid_task(task):
                         configuration.add_task(task)
                         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                            self.database.write_one_record("Tasks", configuration.get_task_record(task))
+                            self.database.write_one_record("Task", configuration.get_task_record(task))
                     else:
                         configuration.increase_failed_tasks_number()
 
@@ -170,7 +170,13 @@ class RepeaterOrchestration():
                     tasks_to_send.append(current_measurement[point]['parameters'])
                     self.performed_measurements += 1
                     if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                        self.database.write_one_record("Repeater_measurements", self.get_repeater_measurements_record())
+                        self.database.update_record(
+                            "Experiment_state",
+                            {"Exp_unique_ID": self.experiment_id},
+                            {
+                                "Number_of_measured_tasks": self.performed_measurements
+                            }
+                        )
 
         if os.environ.get('TEST_MODE') == 'UNIT_TEST':
             return configuration, needed_tasks_count
@@ -192,16 +198,6 @@ class RepeaterOrchestration():
             publish(exchange='process_tasks_exchange',
                     routing_key=self.experiment_id,
                     body=body)
-
-    def get_repeater_measurements_record(self) -> Mapping:
-        '''
-        The helper method that formats current repeater measurements' to be stored as a record in a Database
-        :return: Mapping. Field names of the database collection with respective information
-        '''
-        record = {}
-        record["Exp_unique_ID"] = self.experiment_id
-        record["Performed_measurements"] = self.performed_measurements
-        return record
 
 
 class EventServiceConnection(RabbitMQConnection):

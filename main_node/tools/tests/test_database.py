@@ -80,8 +80,8 @@ class TestDatabase:
         records = []
         for config in experiment.measured_configurations:
             records.append(config.get_configuration_record())
-        database.write_many_records("Measured_configurations", records)
-        written_records = database.get_all_records("Measured_configurations")
+        database.write_many_records("Configuration", records)
+        written_records = database.get_all_records("Configuration")
         configuration_ids = []
         experiment_ids = []
         for record in written_records:
@@ -98,8 +98,8 @@ class TestDatabase:
         c1 = Configuration(OrderedDict({"frequency": "dummy", "threads": "dummy"}), Configuration.Type.DEFAULT, "DummyID")
         task = {'task id': 'id', 'worker': 'worker', 'result': {'energy': 0.9}, 'ResultValidityCheckMark': 'OK'}
         c1.add_task(task)
-        database.write_one_record("Tasks", c1.get_task_record(task))
-        written_record = database.get_all_records("Tasks")[0]
+        database.write_one_record("Task", c1.get_task_record(task))
+        written_record = database.get_all_records("Task")[0]
         assert c1.unique_id == written_record["Configuration_ID"]
         assert task['task id'] == written_record["Task_ID"]
         assert task == written_record["Task"]

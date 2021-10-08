@@ -7,10 +7,10 @@ class MongoDB_mock:
         self.collections_names = [
             "Experiment_description",
             "Search_space",
-            "Measured_configurations",
+            "Configuration",
             "Experiment_state",
-            "Tasks",
-            "warm_startup_info"
+            "Task",
+            "Warm_startup_info"
         ]
         self.collections = {}
         for collection in self.collections_names:

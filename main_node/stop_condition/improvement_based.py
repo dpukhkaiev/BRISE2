@@ -9,7 +9,7 @@ class ImprovementBasedType(StopCondition):
         self.start_threads()
 
     def is_finish(self):
-        measured_configurations = self.database.get_records_by_experiment_id("Measured_configurations", self.experiment_id)
+        measured_configurations = self.database.get_records_by_experiment_id("Configuration", self.experiment_id)
         current_solution = \
             self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)["Current_solution"]
         solution_index = next((index for (index, d)

@@ -26,7 +26,7 @@ run options of the `./brise.sh up` command).
 
 An overview of the information stored in the database is shown in the following diagram:
 
-![Database instances and relations](./img/BRISE_db_scheme.png)
+![Database instances and relations](./img/BRISE_DB_schema.png)
 
 #### BRISE database clean up
 

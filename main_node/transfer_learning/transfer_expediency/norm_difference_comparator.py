@@ -14,7 +14,7 @@ class NormDifferenceComparator(Comparator):
         source_labels = []
         target_labels = []
         try:
-            measured_configurations = self.database.get_records_by_experiment_id("Measured_configurations", self.experiment_id)
+            measured_configurations = self.database.get_records_by_experiment_id("Configuration", self.experiment_id)
             for config in source_experiment["Samples"]:
                 for measured_config in measured_configurations:
                     if config["parameters"] == measured_config["Parameters"]:

@@ -113,11 +113,11 @@ class Experiment:
                 if not self.current_best_configurations:
                     self.current_best_configurations = [default_configuration]
                 self.database.write_one_record(
-                    "Measured_configurations",
+                    "Configuration",
                     default_configuration.get_configuration_record()
                 )
                 self.database.write_one_record(
-                    collection_name="warm_startup_info",
+                    collection_name="Warm_startup_info",
                     record={"Exp_unique_ID": self.unique_id, "wsi": default_configuration.warm_startup_info}
                 )
                 if os.environ.get('TEST_MODE') != 'UNIT_TEST':
@@ -233,7 +233,7 @@ class Experiment:
         self.end_time = datetime.datetime.now()
         if self.measured_configurations:
             performed_measurements = \
-                self.database.get_last_record_by_experiment_id("Repeater_measurements", self.unique_id)["Performed_measurements"]
+                self.database.get_last_record_by_experiment_id("Experiment_state", self.unique_id)["Number_of_measured_tasks"]
             self.logger.info("\n\nFinal report:")
 
             self.logger.info("ALL MEASURED CONFIGURATIONS:\n")
@@ -293,7 +293,7 @@ class Experiment:
             #  for this we need to (1) keep track which is the best among available solution sets and
             #                      (2) remove unneeded solutions from DB to prevent littering of storage
             self.database.update_record(
-                collection_name="warm_startup_info",
+                collection_name="Warm_startup_info",
                 query={"Exp_unique_ID": self.unique_id},
                 new_val={"wsi": configuration.warm_startup_info}
             )
@@ -304,7 +304,7 @@ class Experiment:
         # Need to re-design the solution for multi-objectiveness
         self.improvement_curve.append(self.get_current_solution().results[
             self.get_objectives()[self.get_objectives_priorities().index(max(self.get_objectives_priorities()))]])
-        self.database.write_one_record("Measured_configurations", configuration.get_configuration_record())
+        self.database.write_one_record("Configuration", configuration.get_configuration_record())
         self.send_state_to_db()
         self.api.send("new", "configuration",
                       configurations=[configuration.parameters],
@@ -354,8 +354,8 @@ class Experiment:
             {"ExperimentObject": pickle.dumps(self, pickle.HIGHEST_PROTOCOL)}
         )
         # save information needed for Transfer Learning
-        if self.database.get_last_record_by_experiment_id("TransferLearningInfo", self.unique_id) is None:
-            self.database.write_one_record("TransferLearningInfo",
+        if self.database.get_last_record_by_experiment_id("Transfer_learning_info", self.unique_id) is None:
+            self.database.write_one_record("Transfer_learning_info",
                                            {"Exp_unique_ID": self.unique_id,
                                             "Scenario": self.description["TaskConfiguration"]["Scenario"],
                                             "Samples": [{"type": config.type, "parameters": config.parameters,
@@ -364,7 +364,7 @@ class Experiment:
                                             "Improvement_curve": self.improvement_curve})
         else:
             self.database.update_record(
-                "TransferLearningInfo",
+                "Transfer_learning_info",
                 {"Exp_unique_ID": self.unique_id},
                 {"Scenario": self.description["TaskConfiguration"]["Scenario"],
                  "Samples": [{"type": config.type, "parameters": config.parameters,
@@ -510,4 +510,5 @@ class Experiment:
             current_solution = current_solution.get_configuration_record()
         record["Current_solution"] = current_solution
         record["is_model_valid"] = self.get_model_state()
+        record["Number_of_measured_tasks"] = 0
         return record

@@ -184,12 +184,12 @@ class Predictor:
                            os.getenv("BRISE_DATABASE_NAME"),
                            os.getenv("BRISE_DATABASE_USER"),
                            os.getenv("BRISE_DATABASE_PASS"))
-        if database.get_last_record_by_experiment_id("TransferLearningInfo", self.experiment_id) is None:
-            database.write_one_record("TransferLearningInfo",
+        if database.get_last_record_by_experiment_id("Transfer_learning_info", self.experiment_id) is None:
+            database.write_one_record("Transfer_learning_info",
                                       {"Exp_unique_ID": self.experiment_id,
                                        "Models_dumps": self.models_dumps})
         else:
             database.update_record(
-                "TransferLearningInfo",
+                "Transfer_learning_info",
                 {"Exp_unique_ID": self.experiment_id},
                 {"Models_dumps": self.models_dumps})

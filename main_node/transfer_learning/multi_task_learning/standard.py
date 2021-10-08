@@ -36,7 +36,7 @@ class Standard(MultiTaskLearning):
             counter = 0
             k = self.amount_of_configs_to_transfer
             self.transferred_configurations = []
-            measured_configurations = self.database.get_records_by_experiment_id("Measured_configurations", self.experiment_id)
+            measured_configurations = self.database.get_records_by_experiment_id("Configuration", self.experiment_id)
             while len(self.transferred_configurations) < len(measured_configurations) * k:
                 if counter >= len(self.transferrable_configurations):
                     break
