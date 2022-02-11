@@ -28,7 +28,7 @@
     "core-js": "^2.5.7",
     "file-saver": "^2.0.2",
     "hammerjs": "^2.0.8",
-    "node-sass": "^4.9.3",
+    "node-sass": "^7.0.0",
     "plotly.js": "^1.40.0",
     "rxjs": "^6.2.2",
     "rxjs-compat": "^6.2.2",
