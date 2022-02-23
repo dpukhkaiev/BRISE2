@@ -1,0 +1,114 @@
+{
+  "name": "Strategy",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "cpr",
+      "children": [
+        {
+          "name": "duration",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": -0.2
+        },
+        {
+          "name": "setup_needed",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": -0.2
+        },
+        {
+          "name": "direct_successor_count",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "direct_successor_sum_max_processing_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "direct_successor_sum_min_processing_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "project_finish_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "project_start_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "resources",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "setup_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "total_successor_count",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "total_successor_sum_max_processing_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "total_successor_sum_min_processing_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "waiting_job_count",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        },
+        {
+          "name": "waiting_time",
+          "type": "FloatHyperparameter",
+          "lower": -1,
+          "upper": 1,
+          "default": 0.5
+        }
+      ]
+    },
+    {"category": "fifo"},
+    {"category": "lifo"},
+    {"category": "mwkr"},
+    {"category": "random"},
+    {"category": "spt"}
+  ]
+}

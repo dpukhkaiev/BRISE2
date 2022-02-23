@@ -1,6 +1,135 @@
 import logging
 
 
+def hpps_java_so_simulator(task: dict):
+    import subprocess
+    import sys
+    import os
+    import json
+
+    logger = logging.getLogger(__name__)
+
+    strategy = task["parameters"]["Strategy"]
+
+    if strategy == "cpr":
+        duration = task["parameters"]["duration"]
+        setup_needed = task["parameters"]["setup_needed"]
+        direct_successor_count = task["parameters"]["direct_successor_count"]
+        direct_successor_sum_max_processing_time = task["parameters"]["direct_successor_sum_max_processing_time"]
+        direct_successor_sum_min_processing_time = task["parameters"]["direct_successor_sum_min_processing_time"]
+        project_finish_time = task["parameters"]["project_finish_time"]
+        project_start_time = task["parameters"]["project_start_time"]
+        resources = task["parameters"]["resources"]
+        setup_time = task["parameters"]["setup_time"]
+        total_successor_count = task["parameters"]["total_successor_count"]
+        total_successor_sum_max_processing_time = task["parameters"]["total_successor_sum_max_processing_time"]
+        total_successor_sum_min_processing_time = task["parameters"]["total_successor_sum_min_processing_time"]
+        waiting_job_count = task["parameters"]["waiting_job_count"]
+        waiting_time = task["parameters"]["waiting_time"]
+
+        data = []
+        data.append({
+            "name" : "duration",
+            "value": duration
+        })
+        data.append({
+            "name" : "setup_needed",
+            "value": setup_needed
+        })
+        data.append({
+            "name" : "direct_successor_count",
+            "value": direct_successor_count
+        })
+        data.append({
+            "name": "direct_successor_sum_max_processing_time",
+            "value": direct_successor_sum_max_processing_time
+        })
+        data.append({
+            "name": "direct_successor_sum_min_processing_time",
+            "value": direct_successor_sum_min_processing_time
+        })
+        data.append({
+            "name": "project_finish_time",
+            "value": project_finish_time
+        })
+        data.append({
+            "name": "project_start_time",
+            "value": project_start_time
+        })
+        data.append({
+            "name": "resources",
+            "value": resources
+        })
+        data.append({
+            "name": "setup_time",
+            "value": setup_time
+        })
+        data.append({
+            "name": "total_successor_count",
+            "value": total_successor_count
+        })
+        data.append({
+            "name": "total_successor_sum_max_processing_time",
+            "value": total_successor_sum_max_processing_time
+        })
+        data.append({
+            "name": "total_successor_sum_min_processing_time",
+            "value": total_successor_sum_min_processing_time
+        })
+        data.append({
+            "name": "waiting_job_count",
+            "value": waiting_job_count
+        })
+        data.append({
+            "name": "waiting_time",
+            "value": waiting_time
+        })
+        with open('scenarios/hpps/cpr.json', 'w') as outfile:
+           json.dump(data, outfile)
+
+        command = "java -jar binaries/hpps/hybridpps.jar scenarios/hpps/{} -c scenarios/hpps/cpr.json".\
+            format(task["Scenario"]["problem_initialization_parameters"]["instance"])
+    else:
+        command = "java -jar binaries/hpps/hybridpps.jar scenarios/hpps/{0} -s {1}".\
+            format(task["Scenario"]["problem_initialization_parameters"]["instance"], task["parameters"]["Strategy"])
+
+    try:
+        retcode = subprocess.call(command, shell=True)
+        if retcode < 0:
+            logger.info("Java code was terminated by signal", -retcode, file=sys.stderr)
+        else:
+            logger.info("Java code returned", retcode, file=sys.stderr)
+    except OSError as e:
+        logger.error("Execution failed:", e, file=sys.stderr)
+
+    import re
+    find_date = re.compile(r".*-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+).*")
+    latest_result = ""
+    latest_date = []
+    for file in os.listdir("."):
+        split_date = find_date.findall(file)
+        if len(split_date) == 0:
+            continue
+        else:
+            if latest_result == "":
+                latest_result = file
+                latest_date = split_date
+            else:
+                if latest_date < split_date:
+                    latest_result = file
+                    latest_date = split_date
+
+    avg_makespan = 0
+    with open(latest_result) as file:
+        data = json.load(file)
+        results = data[0]["strategies"][0]["results"]
+        from functools import reduce
+
+        avg_makespan = reduce(lambda a, b: a + b, results) / len(results)
+
+    return {"makespan": avg_makespan}
+
+
 def energy_consumption(task: dict):
     from random import choice
 

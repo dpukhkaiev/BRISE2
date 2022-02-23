@@ -1,0 +1,21 @@
+{
+  "DomainDescription":{
+    "DataFile"          : "./Resources/HPPSJavaSOSimulator/HPPSData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "hpps_java_so_simulator",
+    "Scenario": {
+      "Problem": "sRCPSP",
+      "problem_initialization_parameters": {
+        "instance": "5P50J2M2R.json"
+      }
+    },
+    "Objectives"   : ["makespan"],
+    "ObjectivesDataTypes"  : ["float"],
+    "ObjectivesMinimization": [true],
+    "ObjectivesPriorities": [1],
+    "ObjectivesPrioritiesModels": [1],
+    "ExpectedValuesRange": [[0, 10e10]],
+    "MaxTimeToRunTask": 20
+  }
+}

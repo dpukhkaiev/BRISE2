@@ -48,7 +48,7 @@
     "Type": "AcceptableErrorBased",
     "Parameters": {
       "MaxFailedTasksPerConfiguration": 5,
-      "MaxTasksPerConfiguration": 10,
+      "MaxTasksPerConfiguration": 5,
       "MinTasksPerConfiguration": 2,
       "BaseAcceptableErrors": [5],
       "ConfidenceLevels": [0.95],
@@ -71,7 +71,7 @@
           "random_fraction": 0,
           "bandwidth_factor": 3,
           "min_bandwidth": 0.001,
-          "SamplingSize": 96
+          "SamplingSize": 1000
         }
       }
     ]

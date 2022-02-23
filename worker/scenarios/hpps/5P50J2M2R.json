@@ -1,0 +1,48 @@
+{
+  "name": "5P50J2M2R",
+  "seed": 0,
+  "unrolling": {"count": 100, "precision": 2},
+  "type_representatives": [
+    {"name": "TR1", "setupMin": 1, "setupMax": 4},
+    {"name": "TR2", "setupMin": 2, "setupMax": 2}
+  ],
+  "system_default": {
+    "objective": {"type": "project delay", "function": "average"},
+    "cv": 0.2,
+    "default_job_extension": {"tr": "TR1", "mode": {"duration": {"type": "normal"}}}
+  },
+  "projects": [
+    {
+      "project": "0",
+      "filename": "50J2M2R1.DAT",
+      "project_default": {
+        "objective": {"type": "project delay", "function": "mean"},
+        "cv": 0.3,
+        "default_job_extension": {"tr": "TR2"}
+      },
+      "job_extensions": [
+        {"job": "2", "tr": "TR2", "modes": [{"mode": "1", "duration": {"type": "normal", "cv": 0.4}}]},
+        {"job": "4", "tr": "TR1"}
+      ],
+      "resource_extensions": [
+        {"resource": "R1", "capacity": {"type": "normal", "cv": 0.2}}
+      ]
+    },
+    {
+      "project": "1",
+      "filename": "50J2M2R2.DAT"
+    },
+    {
+      "project": "2",
+      "filename": "50J2M2R3.DAT"
+    },
+    {
+      "project": "3",
+      "filename": "50J2M2R4.DAT"
+    },
+    {
+      "project": "4",
+      "filename": "50J2M2R5.DAT"
+    }
+  ]
+}
