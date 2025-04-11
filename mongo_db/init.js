@@ -16,7 +16,7 @@ db.createRole(
 db.createUser(
     {
         user: "user",
-        pwd: "5V5Scp1E",
+        pwd: "yourPassword",
         roles: [ { role: "user", db: "BRISE_db" } ]
     }
 )
