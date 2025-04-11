@@ -1,0 +1,168 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "moo_benchmarks",
+            "MaxTimeToRunTask": 1,
+            "TimeUnit": "seconds",
+            "Scenario": {
+                "BenchmarkSuite": {
+                    "WFG": {
+                        "PositionRelatedParameters": 1
+                    }
+                },
+                "ProblemID": 5
+            },
+            "Objectives": {
+                "f1": {
+                    "Name": "f1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
+                },
+                "f2": {
+                    "Name": "f2",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
+                }
+            }
+        },
+        "SearchSpace": {
+            "x1": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "x2": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 1,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Portfolio": {}
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 5,
+                            "PopulationSize": 126,
+                            "Algorithms": {
+                                "MOEAD": {
+                                    "MultiObjective": true
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.7
+                                }
+                            },
+                            "QualityThreshold": 0.7,
+                            "Type": "quality_validator"
+                        }
+                    },
+                    "InternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "KFold": {
+                                    "NumberOfFolds": 4
+                                }
+                            },
+                            "QualityThreshold": 0.65,
+                            "Type": "quality_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "random_multi_point"
+                    }
+                },
+                "Surrogate_0": {
+                    "Instance": {
+                        "LinearRegression": {
+                            "MultiObjective": false,
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.LinearRegression"
+                        }
+                    }
+                },
+                "Surrogate_1": {
+                    "Instance": {
+                        "MultiLayerPerceptronRegressor": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "hidden_layer_sizes": [
+                                    100
+                                ],
+                                "activation": "tanh",
+                                "solver": "sgd",
+                                "alpha": 0.0001
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.neural_network.MLPRegressor"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 1,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 60,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
+}

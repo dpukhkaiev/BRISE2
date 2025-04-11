@@ -1,24 +1,33 @@
 import json
 import logging
+import os
 import threading
 import uuid
 
-import pika
-import pika.exceptions
 from core_entities.configuration import Configuration
+from tools.mongo_dao import MongoDB
+from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
 
 class WSClient:
 
-    def __init__(self, task_configuration: dict, host: str, port: int):
+    def __init__(self, experiment_id: str):
         """
-        Worker Service client, that uses pika library to communicate with rabbitmq: send task and get results
-        (communication based on events).
-        :param task_configuration: Dictionary. Represents "TaskConfiguration" of BRISE configuration file.
-        :param host: host address of rabbitmq service
-        :param port: port of rabbitmq main-service
+        :param experiment_id: ID of experiment, required to get experiment description from DB
         """
         # Properties that holds general task configuration (shared between task runs).
+        self.logger = logging.getLogger(__name__)
+        self.experiment_id = experiment_id
+        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+                           os.getenv("BRISE_DATABASE_PORT"),
+                           os.getenv("BRISE_DATABASE_NAME"),
+                           os.getenv("BRISE_DATABASE_USER"),
+                           os.getenv("BRISE_DATABASE_PASS"))
+
+        experiment_description = None
+        while experiment_description is None:
+            experiment_description = database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
+        task_configuration = experiment_description["Context"]["TaskConfiguration"]
         self._task_name = task_configuration["TaskName"]
         self.parameter_names = []
         self._objectives = task_configuration["Objectives"]
@@ -30,55 +39,45 @@ class WSClient:
         # Create a connection and channel for sending configurations
         self.number_of_workers_lock = threading.Lock()
         self._number_of_workers = None
-        self.logger = logging.getLogger(__name__)
-        self.event_host = host
-        self.event_port = port
-        self.listen_thread = None
+        self.connection_thread = None
         self.init_connection()
 
     def init_connection(self):
         """
         The function creates a connection to a rabbitmq instance
-        :param host: host address of rabbitmq service
-        :param port: port of rabbitmq main-service
-        :return:
         """
-        self.logger.info(f"Connecting to the Worker Service at {self.event_host}:{self.event_port} ...")
         # Create listeners thread
-        self.listen_thread = EventServiceConnection(self.event_host, self.event_port, self)
-        self.listen_thread.start()
+        self.connection_thread = self._EventServiceConnection(self)
+        self.channel = self.connection_thread.channel
+        self.connection_thread.start()
 
     ####################################################################################################################
     # Supporting methods.
     def _send_measurement(self, id_measurement, measurement):
-        with pika.BlockingConnection(pika.ConnectionParameters(self.event_host, self.event_port)) as connection:
-            with connection.channel() as channel:
-                number_ready_task = len(measurement['tasks_results'])
-                for i, task_parameter in enumerate(measurement['tasks_to_send']):
-                    if i >= number_ready_task:
-                        self.logger.info("Sending task: %s" % task_parameter)
-                        task_description = dict()
-                        task_description["id_measurement"] = id_measurement
-                        task_description["task_id"] = str(uuid.uuid4())
-                        config = Configuration.from_json(measurement["configuration"])
-                        task_description["experiment_id"] = config.experiment_id
-                        task_description["task_name"] = self._task_name
-                        task_description["time_for_run"] = self._time_for_one_task_running
-                        task_description["Scenario"] = self._scenario
-                        task_description["result_structure"] = self._objectives
-                        task_description["parameters"] = task_parameter
-                        try:
-                            channel.basic_publish(exchange='',
-                                                  routing_key='task_queue',
-                                                  body=json.dumps(task_description))
-                        except pika.exceptions.ChannelWrongStateError as err:
-                            if not channel.is_open:
-                                self.logger.warning("Attempt to send a message after closing the connection")
-                            else:
-                                raise err
+        """
+        Method to compose task description to JSON format and send it to Workers.
+        :param id_measurement: ID of measurement to send
+        :param measurement: measurement description
+        """
+        number_ready_task = len(measurement['tasks_results'])
+        for i, task_parameter in enumerate(measurement['tasks_to_send']):
+            if i >= number_ready_task:
+                self.logger.info("Sending task: %s" % task_parameter)
+                task_description = dict()
+                task_description["experiment_id"] = self.experiment_id
+                task_description["id_measurement"] = id_measurement
+                task_description["task_id"] = str(uuid.uuid4())
+                config = Configuration.from_json(measurement["configuration"])
+                task_description["experiment_id"] = config.experiment_id
+                task_description["task_name"] = self._task_name
+                task_description["time_for_run"] = self._time_for_one_task_running
+                task_description["Scenario"] = self._scenario
+                task_description["result_structure"] = self._objectives
+                task_description["parameters"] = task_parameter
+                publish(exchange='',
+                        routing_key='task_queue',
+                        body=json.dumps(task_description))
 
-    ####################################################################################################################
-    # Outgoing interface for running measurement(s)
     def work(self, ch, method, properties, body) -> None:
         """
         Callback method to request from Repeater for Configuration measurement.
@@ -96,15 +95,11 @@ class WSClient:
         self._send_measurement(measurement_id, self.measurement[measurement_id])
 
     def get_number_of_workers(self) -> int:
-        with pika.BlockingConnection(pika.ConnectionParameters(self.event_host, self.event_port)) as connection:
-            with connection.channel() as channel:
-                result = channel.queue_declare(
-                    queue="task_queue",
-                    durable=True,
-                    exclusive=False,
-                    auto_delete=False,
-                    passive=True
-                )
+        result = self.channel.queue_declare(
+            queue="task_queue",
+            durable=True,
+            passive=True
+        )
         return result.method.consumer_count  # number of consumer for task_queue is number of workers
 
     def get_number_of_needed_configurations(self, ch=None, method=None, properties=None, body=None):
@@ -126,50 +121,9 @@ class WSClient:
                 worker_capacity = 0
         dictionary_dump = {"worker_capacity": worker_capacity}
         body = json.dumps(dictionary_dump)
-        with pika.BlockingConnection(pika.ConnectionParameters(self.event_host, self.event_port)) as connection:
-            with connection.channel() as channel:
-                channel.basic_publish(exchange='', routing_key='get_new_configuration_queue', body=body)
-
-    def stop(self):
-        self.listen_thread.stop()
-        self.listen_thread.join()
-
-
-class EventServiceConnection(threading.Thread):
-    """
-    This class runs WorkerService functionality in a separate thread,
-    connected to the `task_result_queue` as consumer and sends tasks results into `measurement_results_queue`.
-    """
-
-    def __init__(self, host, port, ws_client):
-        """
-        The function for initializing consumer thread
-        :param host: ip address of rabbitmq service
-        :param port: port of rabbitmq main-service
-        :param ws_client: WSClient instances
-        """
-        super(EventServiceConnection, self).__init__()
-        self.logger = logging.getLogger(__name__)
-        self.ws_client = ws_client
-        self._host = host
-        self._port = port
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
-
-        self.consume_channel = self.connection.channel()
-        self.termination_result = self.consume_channel.queue_declare(queue='', exclusive=True)
-        self.termination_queue_name = self.termination_result.method.queue
-        self.consume_channel.queue_bind(exchange='brise_termination_sender', queue=self.termination_queue_name)
-        self.consume_channel.basic_consume(queue='task_result_queue', auto_ack=True,
-                                           on_message_callback=self.get_task_results)
-        self.consume_channel.basic_consume(queue='process_tasks_queue', auto_ack=True,
-                                           on_message_callback=self.ws_client.work)
-        self.consume_channel.basic_consume(queue='get_worker_capacity_queue', auto_ack=True,
-                                           on_message_callback=self.ws_client.get_number_of_needed_configurations)
-        self.consume_channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                           on_message_callback=self.stop)
-
-        self._is_interrupted = False
-        self.sender_lock = threading.Lock()  # only one thread can use a channel for sending message
+        publish(exchange='get_new_configuration_exchange',
+                routing_key=self.experiment_id,
+                body=body)
 
     def is_all_tasks_finish(self, id_measurement):
         """
@@ -177,8 +131,8 @@ class EventServiceConnection(threading.Thread):
         :param id_measurement: id specific measurement
         :return: True or False
         """
-        if len(self.ws_client.measurement[id_measurement]['tasks_results']) == len(
-                self.ws_client.measurement[id_measurement]['tasks_to_send']):
+        if len(self.measurement[id_measurement]['tasks_results']) == len(
+                self.measurement[id_measurement]['tasks_to_send']):
             return True
         else:
             return False
@@ -193,45 +147,49 @@ class EventServiceConnection(threading.Thread):
         """
         task_result = json.loads(body.decode())
         try:
-            self.ws_client.measurement[task_result['id_measurement']]['tasks_results'].append(
+            self.measurement[task_result['id_measurement']]['tasks_results'].append(
                 task_result['task_result'])
-            with self.connection.channel() as channel:
-                if self.is_all_tasks_finish(task_result['id_measurement']):
-                    try:
-                        channel.basic_publish(exchange='',
-                                              routing_key='measurement_results_queue',
-                                              body=json.dumps(
-                                                  self.ws_client.measurement[task_result['id_measurement']]))
-                    except pika.exceptions.ChannelWrongStateError as err:
-                        if not channel.is_open:
-                            self.logger.warning("Attempt to send a message after closing the connection")
-                        else:
-                            raise err
-                    self.logger.debug("Results for {task_param} : {task_res}".format(
-                        task_param=str(self.ws_client.measurement[task_result['id_measurement']]['tasks_to_send']),
-                        task_res=str(self.ws_client.measurement[task_result['id_measurement']]['tasks_results'])))
-                    del self.ws_client.measurement[task_result['id_measurement']]
+            # We should decouple one from another.
+            if self.is_all_tasks_finish(task_result['id_measurement']):
+                publish(exchange='measurement_results_exchange',
+                        routing_key=self.experiment_id,
+                        body=json.dumps(self.measurement[task_result['id_measurement']]))
+
+                self.logger.debug("Results for {task_param} : {task_res}".format(
+                    task_param=str(self.measurement[task_result['id_measurement']]['tasks_to_send']),
+                    task_res=str(self.measurement[task_result['id_measurement']]['tasks_results'])))
+                del self.measurement[task_result['id_measurement']]
         except KeyError:
             self.logger.info("The old task was received")  # in case of restart main without cleaning all queues
 
-    def stop(self, ch=None, method=None, properties=None, body=None):
+    class _EventServiceConnection(RabbitMQConnection):
         """
-        The function for stop WS_client thread
+        This class runs WorkerService functionality in a separate thread,
+        connected to the `task_result_exchange` as consumer and sends tasks results into `measurement_results_exchange`.
         """
-        self._is_interrupted = True
 
-    def run(self):
-        """
-        Point of entry to tasks results consumers functionality,
-        listening of queue with task result
-        """
-        try:
-            while self.consume_channel._consumer_infos:
-                self.consume_channel.connection.process_data_events(time_limit=1)  # 1 second
-                if self._is_interrupted:
-                    if self.connection.is_open:
-                        self.connection.close()
-                    break
-        finally:
-            if self.connection.is_open:
-                self.connection.close()
+        def __init__(self, ws_client):
+            """
+            The function for initializing consumer thread
+            :param ws_client: WSClient instances
+            """
+            self.ws_client = ws_client
+            self.experiment_id = self.ws_client.experiment_id
+            super().__init__(ws_client)
+
+        def bind_and_consume(self):
+            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_queue_name = self.termination_result.method.queue
+            self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                    queue=self.termination_queue_name,
+                                    routing_key=self.experiment_id)
+            self.channel.basic_consume(queue='task_result_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.ws_client.get_task_results)
+            self.channel.basic_consume(queue='process_tasks_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.ws_client.work)
+            self.channel.basic_consume(queue='get_worker_capacity_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.ws_client.get_number_of_needed_configurations)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                       on_message_callback=self.stop)
+
+            self.sender_lock = threading.Lock()  # only one thread can use a channel for sending message

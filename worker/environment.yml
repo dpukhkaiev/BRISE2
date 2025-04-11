@@ -1,0 +1,13 @@
+name: brise-260
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.12
+  - setuptools
+  - pika
+  - pymongo
+  - openml
+  - conda-forge::pygmo
+  - pip:
+      - git+https://github.com/dpukhkaiev/jMetalPy.git@diploma_aggregate

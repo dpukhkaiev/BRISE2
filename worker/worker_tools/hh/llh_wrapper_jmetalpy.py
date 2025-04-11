@@ -6,7 +6,9 @@ from typing import List, Mapping, Type
 import jmetal
 import jmetal.util.termination_criterion as termination
 from jmetal.core.problem import Problem
-from jmetal.core.solution import PermutationSolution
+from jmetal.core.algorithm import Algorithm
+from jmetal.core.solution import PermutationSolution, FloatSolution, BinarySolution
+
 from worker_tools.hh.llh_runner import ILLHWrapper
 
 
@@ -20,30 +22,42 @@ class HashableDict(dict):
 
 class JMetalPyWrapper(ILLHWrapper):
 
-    def __init__(self):
+    def __init__(self, problem_type=None):
         super().__init__()
-        self._initial_solutions: List[PermutationSolution] = []
+        # add choice
+        self.problem_type = problem_type
+        self._is_parameter_control_enabled = False
+        if self.problem_type == "permutation_problem" or self.problem_type is None:
+            self._initial_solutions: List[PermutationSolution] = []
+        elif self.problem_type == "float_problem":
+            self._initial_solutions: List[FloatSolution] = []
+        elif self.problem_type == "binary_problem":
+            self._initial_solutions: List[BinarySolution] = []
+        else:
+            raise NotImplementedError("Your type of problem can not be solved by heuristics yet!")
         self._solution_generator = None
 
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
 
         # Constructing meta-heuristics initialization arguments (components + simple hyperparameters)
         init_args = dict(copy(hyperparameters))
 
+        self._is_parameter_control_enabled = scenario["isParameterControlEnabled"]
+
         if "crossover_type" in init_args:
             import jmetal.operator.crossover as crossover
-            crossover_class = JMetalPyWrapper._get_class_from_module(name=init_args.pop("crossover_type"),
+            crossover_class = JMetalPyWrapper._get_class_from_module(name=init_args.pop("crossover_type").split(".")[-1],
                                                                      module=crossover)
             init_args["crossover"] = crossover_class(init_args.pop("crossover_probability"))
 
         if "mutation_type" in init_args:
             import jmetal.operator.mutation as mutation
-            mutation_class = JMetalPyWrapper._get_class_from_module(name=init_args.pop("mutation_type"),
+            mutation_class = JMetalPyWrapper._get_class_from_module(name=init_args.pop("mutation_type").split(".")[-1],
                                                                     module=mutation)
             init_args["mutation"] = mutation_class(init_args.pop("mutation_probability"))
 
         if "selection_type" in init_args:
-            selection_type = init_args.pop('selection_type')
+            selection_type = init_args.pop('selection_type').split(".")[-1]
             if selection_type == 'ReuletteWheelSelection':
                 from jmetal.util.comparator import MultiComparator
                 from jmetal.util.density_estimator import CrowdingDistance
@@ -65,7 +79,7 @@ class JMetalPyWrapper(ILLHWrapper):
 
         # elitist should be bool
         if "elitist" in init_args:
-            init_args['elitist'] = True if init_args.pop('elitist') == "True" else False
+            init_args['elitist'] = True if init_args.pop('elitist').split(".")[-1] == "True" else False
 
         if "population_size" in init_args:
             init_args["population_size"] = init_args.pop("population_size")
@@ -75,15 +89,15 @@ class JMetalPyWrapper(ILLHWrapper):
         init_args["termination_criterion"] = termination_class(scenario["Budget"]["Amount"])
 
         # making dict hashable enables using LRU cache
-        problem_init_params = HashableDict(scenario['problem_initialization_parameters'])
+        problem_init_params = HashableDict(scenario['InitializationParameters'])
         problem = JMetalPyWrapper._get_problem(problem_name=scenario['Problem'],
                                                init_params=problem_init_params)
         init_args["problem"] = problem
         # Attach initial solutions.
-        self.load_initial_solutions(warm_startup_info, problem)
+        self.load_initial_solutions(parameter_control_info, problem)
 
-        llh_name = init_args.pop("low level heuristic")
-        if llh_name == "jMetalPy.SimulatedAnnealing":
+        llh_name = init_args.pop("LLH").split(".")[-1]
+        if llh_name == "jMetalPySimulatedAnnealing":
             init_args["solution_generator"] = self._solution_generator
         else:
             init_args['population_generator'] = self._solution_generator
@@ -106,29 +120,41 @@ class JMetalPyWrapper(ILLHWrapper):
         result = {
             "objective": current_objective,
             "improvement": improvement,
-            "warm_startup_info": {
-                "paths": [s.variables for s in self._llh_algorithm.solutions]
+            "parameter_control_info": {
+                "solutions": [s.variables for s in self._llh_algorithm.solutions]
             }
         }
         return result
 
     # Helper methods
-    def load_initial_solutions(self, warm_startup_info: Mapping, problem: Problem) -> None:
-        self.warm_startup_info = warm_startup_info
-        if warm_startup_info and 'paths' in self.warm_startup_info.keys() and len(self.warm_startup_info['paths']) > 0:
+    def load_initial_solutions(self, parameter_control_info: Mapping, problem: Problem) -> None:
+        self.parameter_control_info = parameter_control_info
+        if (parameter_control_info and 'solutions' in self.parameter_control_info.keys() and len(
+                self.parameter_control_info['solutions']) > 0):
             from jmetal.util.generator import InjectorGenerator
-            one_sol_variables = self.warm_startup_info['paths'][0]
-            solution = PermutationSolution(number_of_variables=problem.number_of_variables,
-                                           number_of_objectives=problem.number_of_objectives)
+            one_sol_variables = self.parameter_control_info['solutions'][0]
+            if self.problem_type == "permutation_problem" or self.problem_type is None:
+                solution = PermutationSolution(number_of_variables=problem.number_of_variables,
+                                               number_of_objectives=problem.number_of_objectives)
+            elif self.problem_type == "float_problem":
+                solution = FloatSolution(lower_bound=problem.lower_bound,
+                                         upper_bound=problem.upper_bound,
+                                         number_of_objectives=problem.number_of_objectives)
+            elif self.problem_type == "binary_problem":
+                solution = BinarySolution(number_of_variables=problem.number_of_variables,
+                                          number_of_objectives=problem.number_of_objectives)
             solution.variables = one_sol_variables
             self._initial_solutions.append(problem.evaluate(solution))
 
-            for one_sol_variables in self.warm_startup_info['paths'][1:]:
+            for one_sol_variables in self.parameter_control_info['solutions'][1:]:
                 solution = copy(solution)
                 solution.variables = one_sol_variables
                 self._initial_solutions.append(problem.evaluate(solution))
-            generator = InjectorGenerator(solutions=self._initial_solutions)
-
+            if self._is_parameter_control_enabled:
+                generator = InjectorGenerator(solutions=self._initial_solutions)
+            else:
+                from jmetal.util.generator import RandomGenerator
+                generator = RandomGenerator()
         else:
             from jmetal.util.generator import RandomGenerator
             generator = RandomGenerator()
@@ -143,21 +169,22 @@ class JMetalPyWrapper(ILLHWrapper):
 
     @staticmethod
     @lru_cache(maxsize=10, typed=True)
-    def _get_algorithm_class(mh_name: str) -> jmetal.algorithm.__class__:
-        if mh_name == 'jMetalPy.GeneticAlgorithm':
+    def _get_algorithm_class(mh_name: str) -> Algorithm.__class__:
+        relative_mh_name = mh_name.split(".")[-1]
+        if relative_mh_name == 'jMetalPyGeneticAlgorithm':
             from jmetal.algorithm.singleobjective.genetic_algorithm import \
                 GeneticAlgorithm as Alg
-        elif mh_name == 'jMetalPy.SimulatedAnnealing':
+        elif relative_mh_name == 'jMetalPySimulatedAnnealing':
             from jmetal.algorithm.singleobjective.simulated_annealing import \
                 SimulatedAnnealing as Alg
-        elif mh_name == 'jMetalPy.EvolutionStrategy':
+        elif relative_mh_name == 'jMetalPyEvolutionStrategy':
             from jmetal.algorithm.singleobjective.evolution_strategy import \
                 EvolutionStrategy as Alg
-        elif mh_name == 'jMetalPy.LocalSearch':
+        elif relative_mh_name == 'jMetalPyLocalSearch':
             from jmetal.algorithm.singleobjective.local_search import \
                 LocalSearch as Alg
         else:
-            raise KeyError(f"Unknown algorithm {mh_name}.")
+            raise KeyError(f"Unknown algorithm {relative_mh_name}.")
         return Alg
 
     @staticmethod
@@ -165,24 +192,24 @@ class JMetalPyWrapper(ILLHWrapper):
     def _get_class_from_module(name: str, module: object) -> Type:
         classes = inspect.getmembers(module, lambda member: inspect.isclass(member))
         try:
-            index = [name_and_class[0] for name_and_class in classes].index(name)
+            index = [name_and_class[0] for name_and_class in classes].index(name.split(".")[-1])
         except IndexError:
             raise IndexError(f"Unable to locate desired Operator {name} in provided Module {module.__name__}")
         return classes[index][1]
 
 
 class JMetalPyWrapperTuned(JMetalPyWrapper):
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
-        problem_init_params = HashableDict(scenario['problem_initialization_parameters'])
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
+        problem_init_params = HashableDict(scenario['InitializationParameters'])
         problem = self._get_problem(scenario['Problem'], problem_init_params)
-        self.load_initial_solutions(warm_startup_info, problem)
+        self.load_initial_solutions(parameter_control_info, problem)
 
         from jmetal.operator.mutation import PermutationSwapMutation
 
         termination_criterion_cls = self._get_class_from_module(name=scenario["Budget"]["Type"], module=termination)
         termination_criterion = termination_criterion_cls(scenario["Budget"]["Amount"])
 
-        mh_name = hyperparameters["low level heuristic"].split(".")[1]
+        mh_name = hyperparameters["LLH"].split(".")[-1]
         if mh_name == "GeneticAlgorithm":
             from jmetal.algorithm.singleobjective.genetic_algorithm import (
                 GeneticAlgorithm
@@ -229,17 +256,17 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
 
 
 class JMetalPyWrapperDefault(JMetalPyWrapper):
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
-        problem_init_params = HashableDict(scenario['problem_initialization_parameters'])
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
+        problem_init_params = HashableDict(scenario['InitializationParameters'])
         problem = self._get_problem(scenario['Problem'], problem_init_params)
-        self.load_initial_solutions(warm_startup_info, problem)
+        self.load_initial_solutions(parameter_control_info, problem)
 
         from jmetal.operator.mutation import PermutationSwapMutation
 
         termination_criterion_cls = self._get_class_from_module(name=scenario["Budget"]["Type"], module=termination)
         termination_criterion = termination_criterion_cls(scenario["Budget"]["Amount"])
 
-        mh_name = hyperparameters["low level heuristic"].split(".")[1]
+        mh_name = hyperparameters["LLH"].split(".")[-1]
         if mh_name == "GeneticAlgorithm":
             from jmetal.algorithm.singleobjective.genetic_algorithm import (
                 GeneticAlgorithm

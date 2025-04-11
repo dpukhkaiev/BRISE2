@@ -7,10 +7,10 @@ class MongoDB_mock:
         self.collections_names = [
             "Experiment_description",
             "Search_space",
-            "Measured_configurations",
+            "Configuration",
             "Experiment_state",
-            "Tasks",
-            "warm_startup_info"
+            "Task",
+            "Parameter_control_info"
         ]
         self.collections = {}
         for collection in self.collections_names:
@@ -37,7 +37,7 @@ class Collection:
             ids.append(str(uuid.uuid4()))
         return MultipleInsertion(ids)
 
-    def find(self):
+    def find(self, dummy=None):
         return self.rows
 
 

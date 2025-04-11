@@ -5,7 +5,7 @@
 #### Dependancy
 Software requirements:
 - Docker
-- Python 3.6
+- Python 3.12
 - [RabbitMQ service](https://www.rabbitmq.com/)
 
 - [Service](../worker_service/README.md)
@@ -110,4 +110,4 @@ executes the LLH and reports the results, including the newly obtained solutions
 Please note, some execution steps in JMetalPy wrapper are cached to reduce the computation effort.
 4. THe results are forwarded by Runner to the main-node.
 
-###### Please note, to provide all required functional requirements, both frameworks were slightly modified. Modified code could be found [here](https://github.com/YevheniiSemendiak/jMetalPy/tree/apsp) and [here](https://github.com/YevheniiSemendiak/jMetal/tree/feature/warm_starup_brute_impl).
+###### Please note, to provide all required functional requirements, both frameworks were slightly modified. Modified code could be found [here](https://github.com/dpukhkaiev/jMetalPy.git@diploma_aggregate) and [here](https://github.com/dpukhkaiev/jMetal/tree/feature/warm_starup_brute_impl).

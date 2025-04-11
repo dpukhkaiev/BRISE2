@@ -1,7 +1,6 @@
 import argparse
 import logging
 
-from benchmark_analyser import BRISEBenchmarkAnalyser
 from benchmark_runner import BRISEBenchmarkRunner
 from logger.default_logger import BRISELogConfigurator
 from shared_tools import chown_files_in_dir
@@ -18,8 +17,8 @@ def run_benchmark():
         runner = BRISEBenchmarkRunner(host_event_service, port_event_service, results_storage)
         try:
             # ---    Add User defined benchmark scenarios execution below  ---#
-            # --- Possible variants: benchmark_repeater, benchmark_SA ---#
-            runner.benchmark_repeater()
+            # --- Possible variants: benchmark_test, fill_db ---#
+            runner.fill_db()
 
             # --- Helper method to move outdated experiments from `./results` folder ---#
             runner.move_redundant_experiments(location=runner.results_storage + "repeater_outdated/")
@@ -36,24 +35,11 @@ def run_benchmark():
         logging.error("Unable to create BRISEBenchmarkRunner instance: %s" % exception, exc_info=True)
 
 
-def run_analysis():
-    path_to_experiment_dumps = "./results/serialized/"
-    output_folder = './results/reports/'
-    benchmark_analyser = BRISEBenchmarkAnalyser(path_to_experiment_dumps, output_folder)
-
-    # ---   Add custom benchmark analysis below --- #
-    # benchmark_analyser.build_detailed_report()
-    benchmark_analyser.analyse_repeater_results()
-    # ---   Add custom benchmark analysis above --- #
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="The entry point of BRISE Benchmark service.")
-    parser.add_argument("mode", choices=["analyse", "benchmark"],
-                        help="Mode in which Benchmarking functionality should be runned.")
+    parser.add_argument("--mode", choices=["analyse", "benchmark"],
+                        help="Mode in which Benchmarking functionality should be run.")
     args = parser.parse_args()
 
-    if args.mode == "analyse":
-        run_analysis()
-    else:   # args.mode == "benchmark"
-        run_benchmark()
+    run_benchmark()

@@ -1,0 +1,186 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "X1": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 42,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 50,
+                                "random_fraction": 0.5,
+                                "min_bandwidth": 0.5
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 100,
+                            "Algorithms": {
+                                "GACO": {}
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 10,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 30,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "TransferLearning": {
+        "TransferExpediencyDetermination": {
+            "SamplingLandmarkBased": {
+                "MinNumberOfSamples": 10,
+                "Type": "sampling_landmark_based",
+                "Comparator": {
+                    "NormDifference": {
+                        "Type": "norm_difference_comparator"
+                    }
+                },
+                "ExperimentsQuantity": {
+                    "FixedQuantity": {
+                        "NumberOfSimilarExperiments": 1
+                    }
+                }
+            }
+        },
+        "ModelRecommendation": {
+            "DynamicModelsRecommendation": {
+                "RecommendationGranularity": {
+                    "Infinite": {
+                        "Value": Infinity
+                    }
+                },
+                "PerformanceMetric": {
+                    "AverageRelativeImprovement": {}
+                },
+                "Type": "dynamic_model_recommendation",
+                "ThresholdType": "Hard",
+                "TimeToBuildModelThreshold": 0.5,
+                "TimeUnit": "seconds"
+            }
+        },
+        "MultiTaskLearning": {
+            "Filters": {
+                "OnlyBestConfigurations": {
+                    "Type": "only_best"
+                }
+            }
+        }
+    },
+    "DefaultConfigurationHandler": {
+        "RandomDCH": {
+            "Type": "random_default_config_handler"
+        }
+    }
+}

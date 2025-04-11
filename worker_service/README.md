@@ -1,11 +1,11 @@
 ### Service worker
 
-###### This folder contains modules that encapsulates  managing of workers 
+###### This folder contains a module that encapsulates workers management
 
-#### Dependancy
+#### Dependencies
 Software requirements:
 - Docker
-- Python 3.6
+- Python 3.7
 - [RabbitMQ service](https://www.rabbitmq.com/)
 
 

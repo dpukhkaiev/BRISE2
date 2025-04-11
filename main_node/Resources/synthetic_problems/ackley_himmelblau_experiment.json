@@ -1,0 +1,127 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "synthetic_problems",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {
+                "function_name": "ackley",
+                "deviation": 10.0
+            },
+            "Objectives": {
+                "result": {
+                    "Name": "result",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
+                }
+            }
+        },
+        "SearchSpace": {
+            "x": {
+                "Lower": -4.0,
+                "Upper": 5.0,
+                "Default": 1,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "y": {
+                "Lower": -4.0,
+                "Upper": 5.0,
+                "Default": 1,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "MersenneTwister": {
+                "Seed": 1,
+                "Type": "mersenne_twister"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "Surrogate": {
+                    "Instance": {
+                        "GaussianProcessRegressor": {
+                            "MultiObjective": true,
+                            "Parameters": {
+                                "n_restarts_optimizer": 2
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 100,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": {}
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.7
+                                }
+                            },
+                            "QualityThreshold": 0.5,
+                            "Type": "quality_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 1,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 30,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
+}

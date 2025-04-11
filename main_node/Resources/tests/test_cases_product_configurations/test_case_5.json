@@ -1,0 +1,243 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y2": {
+                    "Name": "Y2",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "X1": {
+                "Lower": 1.0,
+                "Upper": 5.0,
+                "Default": 1.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": -100.0,
+                "Upper": 1000.0,
+                "Default": -8.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "MersenneTwister": {
+                "Seed": 9,
+                "Type": "mersenne_twister"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "DynamicCompositional": {}
+                    }
+                },
+                "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 100,
+                            "Algorithms": {
+                                "MOEAD": {}
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.7
+                                }
+                            },
+                            "QualityThreshold": -100,
+                            "Type": "quality_validator"
+                        }
+                    },
+                    "InternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "KFold": {
+                                    "NumberOfFolds": 2
+                                }
+                            },
+                            "QualityThreshold": -100,
+                            "Type": "quality_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                },
+                "Surrogate_0": {
+                    "Instance": {
+                        "ModelMock": {
+                            "MultiObjective": true,
+                            "Type": "model_mock"
+                        }
+                    }
+                },
+                "Surrogate_1": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MultiLayerPerceptronRegressor": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "hidden_layer_sizes": 10,
+                                "activation": "tanh",
+                                "solver": "sgd",
+                                "alpha": 0.0001
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.neural_network.MLPRegressor"
+                        }
+                    }
+                },
+                "Surrogate_2": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "GradientBoostingRegressor": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "n_estimators": 4
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                        }
+                    }
+                },
+                "Surrogate_3": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "BayesianRidgeRegression": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "max_iter": 10,
+                                "tol": 1.0
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.BayesianRidge"
+                        }
+                    }
+                },
+                "Surrogate_4": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "LinearRegression": {
+                            "MultiObjective": false,
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.LinearRegression"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "AcceptableErrorBased": {
+                "MinTasksPerConfiguration": 2,
+                "MaxTasksPerConfiguration": 17,
+                "BaseAcceptableError": 5.0,
+                "ConfidenceLevel": 0.95,
+                "Type": "acceptable_error_based",
+                "ExperimentAware": {
+                    "MaxAcceptableError": 50.0,
+                    "RatioMax": 50.0,
+                    "MinTasksPerUnderperformingConfiguration": 1
+                }
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 30,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "DefaultConfigurationHandler": {
+        "RandomDCH": {
+            "Type": "random_default_config_handler"
+        }
+    }
+}

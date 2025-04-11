@@ -1,18 +1,23 @@
-import logging
+import os
 from abc import ABC, abstractmethod
 
 from core_entities.configuration import Configuration
-from core_entities.experiment import Experiment
+from tools.mongo_dao import MongoDB
 
 
 class Repeater(ABC):
-    def __init__(self, experiment: Experiment):
+    def __init__(self, experiment_description, experiment_id):
 
-        self.logger = logging.getLogger(__name__)
-        self.experiment = experiment
+        self.repeater_configuration = experiment_description["RepetitionManager"]
+        self.experiment_id = experiment_id
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+                                os.getenv("BRISE_DATABASE_PORT"),
+                                os.getenv("BRISE_DATABASE_NAME"),
+                                os.getenv("BRISE_DATABASE_USER"),
+                                os.getenv("BRISE_DATABASE_PASS"))
 
     @abstractmethod
-    def evaluate(self, current_configuration: Configuration, experiment: Experiment):
+    def evaluate(self, current_configuration: Configuration):
         """
         Main logic of Repeater should be overridden in this method.
         Later, this method will be called in `evaluation_by_type` method.

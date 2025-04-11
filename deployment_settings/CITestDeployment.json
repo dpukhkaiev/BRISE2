@@ -1,0 +1,7 @@
+{
+  "BRISE_DATABASE_HOST": "mongo-db-test",
+  "BRISE_DATABASE_PORT": 27017,
+  "BRISE_DATABASE_NAME": "test_db",
+  "BRISE_DATABASE_USER": "user",
+  "BRISE_DATABASE_PASS": "test111"
+}

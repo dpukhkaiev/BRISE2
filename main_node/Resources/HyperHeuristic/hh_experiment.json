@@ -1,0 +1,368 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "tsp_hh",
+            "MaxTimeToRunTask": 20,
+            "TimeUnit": "seconds",
+            "Scenario": {
+                "Problem": "TSP",
+                "ProblemType": "permutation_problem",
+                "InitializationParameters": {
+                    "instance": "scenarios/tsp/kroA100.tsp"
+                },
+                "Budget": {
+                    "Type": "StoppingByTime",
+                    "Amount": 5
+                },
+                "Hyperparameters": "provided",
+                "isParameterControlEnabled": true
+            },
+            "Objectives": {
+                "improvement": {
+                    "Name": "improvement",
+                    "DataType": "float",
+                    "Minimization": false,
+                    "MinExpectedValue": -100,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "LLH": {
+                "jMetalPySimulatedAnnealing": {
+                    "mutation_type": {
+                        "PermutationSwapMutation": {
+                            "mutation_probability": {
+                                "Lower": 0,
+                                "Upper": 1,
+                                "Default": 0.5,
+                                "Type": "FloatHyperparameter",
+                                "Level": 2
+                            },
+                            "Type": "Category"
+                        },
+                        "ScrambleMutation": {
+                            "mutation_probability": {
+                                "Lower": 0,
+                                "Upper": 1,
+                                "Default": 0.5,
+                                "Type": "FloatHyperparameter",
+                                "Level": 2
+                            },
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.LLH.jMetalPySimulatedAnnealing.mutation_type.PermutationSwapMutation",
+                            "Context.SearchSpace.LLH.jMetalPySimulatedAnnealing.mutation_type.ScrambleMutation"
+                        ],
+                        "Default": "Context.SearchSpace.LLH.jMetalPySimulatedAnnealing.mutation_type.PermutationSwapMutation",
+                        "Type": "NominalHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "jMetalPyEvolutionStrategy": {
+                    "mu": {
+                        "Lower": 1,
+                        "Upper": 1000,
+                        "Default": 500,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "lambda_": {
+                        "Lower": 1,
+                        "Upper": 1000,
+                        "Default": 500,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "elitist": {
+                        "true": {
+                            "Type": "Category"
+                        },
+                        "false": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy.elitist.true",
+                            "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy.elitist.false"
+                        ],
+                        "Default": "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy.elitist.false",
+                        "Type": "NominalHyperparameter",
+                        "Level": 1
+                    },
+                    "mutation_type": {
+                        "PermutationSwapMutation": {
+                            "mutation_probability": {
+                                "Lower": 0,
+                                "Upper": 1,
+                                "Default": 0.5,
+                                "Type": "FloatHyperparameter",
+                                "Level": 2
+                            },
+                            "Type": "Category"
+                        },
+                        "ScrambleMutation": {
+                            "mutation_probability": {
+                                "Lower": 0,
+                                "Upper": 1,
+                                "Default": 0.5,
+                                "Type": "FloatHyperparameter",
+                                "Level": 2
+                            },
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy.mutation_type.PermutationSwapMutation",
+                            "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy.mutation_type.ScrambleMutation"
+                        ],
+                        "Default": "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy.mutation_type.PermutationSwapMutation",
+                        "Type": "NominalHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "jMetalEvolutionStrategy": {
+                    "mu": {
+                        "Lower": 1,
+                        "Upper": 1000,
+                        "Default": 500,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "lambda_": {
+                        "Lower": 1,
+                        "Upper": 1000,
+                        "Default": 500,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "elitist": {
+                        "true": {
+                            "Type": "Category"
+                        },
+                        "false": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.LLH.jMetalEvolutionStrategy.elitist.true",
+                            "Context.SearchSpace.LLH.jMetalEvolutionStrategy.elitist.false"
+                        ],
+                        "Default": "Context.SearchSpace.LLH.jMetalEvolutionStrategy.elitist.false",
+                        "Type": "NominalHyperparameter",
+                        "Level": 1
+                    },
+                    "mutation_probability": {
+                        "Lower": 0,
+                        "Upper": 1,
+                        "Default": 0.5,
+                        "Type": "FloatHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.LLH.jMetalPySimulatedAnnealing",
+                    "Context.SearchSpace.LLH.jMetalPyEvolutionStrategy",
+                    "Context.SearchSpace.LLH.jMetalEvolutionStrategy"
+                ],
+                "Default": "Context.SearchSpace.LLH.jMetalEvolutionStrategy",
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Hierarchical": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 42,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model_0": {
+                "Surrogate": {
+                    "Instance": {
+                        "MultiArmedBandit": {
+                            "MultiObjective": false,
+                            "CType": "std",
+                            "CFloat": 10.0,
+                            "Parameters": {
+                                "c": "std"
+                            },
+                            "Type": "multi_armed_bandit"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 1000,
+                            "MultiObjective": true,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            },
+            "Model_1": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 33,
+                                "random_fraction": 0.2,
+                                "min_bandwidth": 50.0
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 100,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": {}
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            },
+            "Model_2": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 33,
+                                "random_fraction": 0.2,
+                                "min_bandwidth": 50.0
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 100,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": {}
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 1,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 60,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
+}

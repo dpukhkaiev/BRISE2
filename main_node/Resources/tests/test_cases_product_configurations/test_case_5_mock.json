@@ -1,0 +1,193 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 5,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y2": {
+                    "Name": "Y2",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y3": {
+                    "Name": "Y3",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y4": {
+                    "Name": "Y4",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y5": {
+                    "Name": "Y5",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+       "SearchSpace": {
+            "X1": {
+                "Lower": 1.0,
+                "Upper": 5.0,
+                "Default": 1.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": -100.0,
+                "Upper": 1000.0,
+                "Default": -8.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 5,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 0.9,
+            "Model_0": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Pure": {}
+                    }
+                },
+                "Surrogate": {
+                    "Instance": {
+                        "ModelMock": {
+                            "MultiObjective": true,
+                            "Type": "model_mock"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 10,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.7
+                                }
+                            },
+                            "QualityThreshold": 0.0,
+                            "Type": "quality_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 5,
+                        "Type": "random_multi_point"
+                    }
+                }
+            },
+            "Model_1": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Pure": {}
+                    }
+                },
+                "Surrogate": {
+                    "Instance": {
+                        "ModelMock": {
+                            "MultiObjective": true,
+                            "Type": "model_mock"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 10,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.65
+                                }
+                            },
+                            "QualityThreshold": 0.3,
+                            "Type": "quality_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 5,
+                        "Type": "random_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 2,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 5,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "QuantityBasedSC": {
+                "Parameters": {
+                    "MaxConfigs": 20
+                },
+                "Type": "quantity_based",
+                "Name": "g"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "g",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "DefaultConfigurationHandler": {
+        "RandomDCH": {
+            "Type": "random_default_config_handler"
+        }
+    }
+}

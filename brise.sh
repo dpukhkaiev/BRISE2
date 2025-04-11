@@ -5,11 +5,11 @@ NORMAL="\\033[0;39m"
 RED="\\033[1;31m"
 BLUE="\\033[1;34m"
 
-N_workers=1
+N_workers=3
 command=
 mode=
 event_service_host=
-services=("main-node" "event_service" "worker_service" "front-end" "worker")
+services=("main-node" "event_service" "worker_service" "front-end" "worker" "waffle")
 database=BRISE_db
 
 
@@ -35,25 +35,26 @@ help() {
   echo "                * docker-compose:  Running services locally by docker-compose using bridge networking mode."
   echo "                * docker-compose-remote:  Running services locally by docker-compose except for remote DB. Host networking is used."
   echo "                * k8s:  Building new images based on local services description files and running them under Kubernetes control."
+  echo "                * test:  Running selected services locally by docker-compose using bridge networking mode."
   echo "        Optional parameters: "
   echo "        --event_service_host or -e: A parameter that overrides the hostname/IP of an event service."
-  echo "                                    By default equal the 'General.EventService.Address' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'EventService.Address' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --event_service_AMQP_port or -eAMQP: A parameter that overrides the AMQP port of an event service."
-  echo "                                    By default equal the 'General.EventService.AMQTPort' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'EventService.AMQTPort' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --event_service_GUI_port or -eGUI: A parameter that overrides the GUI port of an event service."
-  echo "                                    By default equal the 'General.EventService.GUIPort' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'EventService.GUIPort' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --database_host or -db_host: A parameter that overrides the hostname/IP of a BRISE database."
-  echo "                                    By default equal the 'General.Database.Address' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.Address' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --database_port or -db_port: A parameter that overrides the port of a BRISE database."
-  echo "                                    By default equal the 'General.Database.Port' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.Port' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --database_name or -db_name: A parameter that overrides the name of a BRISE database."
-  echo "                                    By default equal the 'General.Database.DatabaseName' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.DatabaseName' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --database_user or -db_user: A parameter that overrides the username of a BRISE database."
-  echo "                                    By default equal the 'General.Database.DatabaseUser' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.DatabaseUser' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --database_pass or -db_pass: A parameter that overrides the password of a BRISE database user."
-  echo "                                    By default equal the 'General.Database.DatabasePass' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.DatabasePass' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --workers or -w: A parameter that overrides the number of workers."
-  echo "                                    By default equal the 'General.NumberOfWorkers' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'NumberOfWorkers' in 'main_node/Resources/SettingsBRISE.json'"
   echo "        --k8s_docker_hub_name or -k8s_d_n: A parameter to specify the docker hub name that is used by Kubernetes for deployment."
   echo "                                    By default equals to 'master-node'. "
   echo "        --k8s_docker_hub_port or -k8s_d_p: A parameter to specify the local docker hub port that is used by Kubernetes."
@@ -83,8 +84,8 @@ help() {
 up() {
   if [[ "${mode}" == "docker-compose" ]]; then
         log "Building and deploying BRISE to docker-compose."
-        services=("main-node" "event_service" "worker_service" "front-end" "worker" "mongo-db")
-        docker-compose build --build-arg BRISE_EVENT_SERVICE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.Address' ) \
+        services=("main-node" "event_service" "worker_service" "worker" "waffle" "mongo-db")
+        docker compose build --build-arg BRISE_EVENT_SERVICE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.Address' ) \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.AMQTPort' )\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.GUIPort' )\
                              --build-arg BRISE_DATABASE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.Database.Address' ) \
@@ -94,10 +95,10 @@ up() {
                              --build-arg BRISE_DATABASE_PASS=$( cat deployment_settings/LocalDeployment.json | jq -r '.Database.DatabasePass' ) \
                               ${services[*]}
         log "Starting ${services[*]}"
-        docker-compose up -d --scale worker=${N_workers} ${services[*]}
+        docker compose up -d --scale worker=${N_workers} ${services[*]}
   elif [[ "${mode}" == "docker-compose-remote" ]]; then
         log "Building and deploying BRISE to docker-compose."
-        docker-compose build --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}" \
+        docker compose build --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}" \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\
                              --build-arg BRISE_DATABASE_HOST="${database_host}" \
@@ -107,7 +108,7 @@ up() {
                              --build-arg BRISE_DATABASE_PASS="${database_pass}" \
                               ${services[*]}
         log "Starting ${services[*]}"
-        docker-compose -f remote_db.yml up -d --scale worker=${N_workers} ${services[*]}
+        docker compose -f remote_db.yml up -d --scale worker=${N_workers} ${services[*]}
   elif  [[ "${mode}" == "k8s" ]]; then
         log "Building and starting BRISE K8s deployment based on local service description files."
         for service in "${services[@]}"; do
@@ -140,6 +141,17 @@ up() {
                   kubectl create -f ./K8s/mongo-db-service-NodePort.yaml
              fi
         done
+  elif [[ "${mode}" == "test" ]]; then
+        log "Building and deploying TEST-BRISE to docker-compose."
+        services=("mongo-db-test")
+        docker compose build --build-arg BRISE_DATABASE_HOST=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.Address' ) \
+                             --build-arg BRISE_DATABASE_PORT=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.Port' ) \
+                             --build-arg BRISE_DATABASE_NAME=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.DatabaseName' ) \
+                             --build-arg BRISE_DATABASE_USER=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.DatabaseUser' ) \
+                             --build-arg BRISE_DATABASE_PASS=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.DatabasePass' ) \
+                              ${services[*]}
+        log "Starting ${services[*]}"
+        docker compose up -d ${services[*]}
   else
         error "Wrong mode."
         help
@@ -147,9 +159,9 @@ up() {
 }
 
 down() {
-  if [[ "${mode}" == "docker-compose" ]] || [[ "${mode}" == "docker-compose-remote" ]]; then
+  if [[ "${mode}" == "docker-compose" ]] || [[ "${mode}" == "docker-compose-remote" ]] || [[ "${mode}" == "test" ]]; then
         log "Stopping docker-compose deployment of BRISE services: ${services[*]}."
-        docker-compose down
+        docker compose down
    elif  [[ "${mode}" == "k8s" ]]; then
         log "Stopping K8s deployment of BRISE services: ${services[*]}."
         for service in "${services[@]}"; do
@@ -192,8 +204,8 @@ dependency_check(){
         exit
         fi
     fi
-    if [[ "${mode}" == "docker-compose" ]] || [[ "${mode}" == "docker-compose-remote" ]]; then
-        if ! command -v docker-compose >/dev/null 2>&1 ; then
+    if [[ "${mode}" == "docker-compose" ]] || [[ "${mode}" == "docker-compose-remote" ]]|| [[ "${mode}" == "test" ]]; then
+        if ! command -v docker compose >/dev/null 2>&1 ; then
         error "Please install the required package docker-compose"
         exit
         fi
@@ -208,7 +220,7 @@ clean_database() {
         container_prev_state=1
     else
         container_prev_state=0
-        docker-compose up -d --build mongo-db
+        docker compose up -d --build mongo-db
     fi
 
     while true; do
@@ -219,7 +231,7 @@ clean_database() {
     docker exec -it -i mongo-db mongo $database --eval "db.dropDatabase();"
 
     if [[ $container_prev_state == 0 ]]; then
-        docker-compose stop mongo-db
+        docker compose stop mongo-db
     fi
 }
 
@@ -227,7 +239,6 @@ if [[ -z ${1}  ]]; then
   help
 else
     dependency_check
-    N_workers=$( cat main_node/Resources/SettingsBRISE.json | jq -r '.General.NumberOfWorkers' )
     event_service_host=$( cat deployment_settings/RemoteDeployment.json | jq -r '.EventService.Address' )
     event_service_AMQP_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.EventService.AMQTPort' )
     event_service_GUI_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.EventService.GUIPort' )
@@ -247,7 +258,7 @@ else
             -m | --mode )
                 shift
                 mode=$1
-                if [[ "${mode}" != "docker-compose" ]] && [[ "${mode}" != "docker-compose-remote" ]] && [[ "${mode}" != "k8s" ]]; then
+                if [[ "${mode}" != "docker-compose" ]] && [[ "${mode}" != "docker-compose-remote" ]] && [[ "${mode}" != "k8s" ]] && [[ "${mode}" != "test" ]]; then
                     error "Wrong parameter --mode (-m)"
                     help
                     exit 1

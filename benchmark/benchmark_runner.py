@@ -13,8 +13,9 @@ from functools import wraps
 from threading import Thread
 from typing import Union
 
+import numpy as np
 import pika
-from core_entities.search_space import Hyperparameter
+from core_entities.search_space import SearchSpace
 from tools.initial_config import load_experiment_setup
 
 
@@ -25,12 +26,12 @@ class BRISEBenchmarkRunner:
 
     def __init__(self, host_event_service: str, port_event_service: int, results_storage: str):
         """
-            Initializes benchmarking client.
+        Initializes benchmarking client.
         :param host_event_service: str. URL of event service. For example "http://main-node:49152"
         :param port_event_service: str. access port of event service
         :param results_storage: str. Folder where to store benchmark results (dump files of experiments).
         """
-        os.sys.argv.pop()  # Because load_experiment_description will consider 'benchmark' as Experiment Description).
+        os.sys.argv.pop()  # Because load_experiment_description will consider 'benchmark' as Experiment Description.
         self._base_experiment_description = None
         self._base_search_space = None
         self._experiment_timeout = float('inf')
@@ -54,9 +55,9 @@ class BRISEBenchmarkRunner:
 
     def _benchmarkable(benchmarking_function):
         """
-            Decorator that enables a pre calculation of a number of experiments in implemented benchmark scenario
-            without actually running them. It is not essential for benchmarking, but could be useful.
-            NOTE: This method should be used ONLY as a decorator for other BRISEBenchmark object methods!
+        Decorator that enables a pre-calculation of a number of experiments in implemented benchmark scenario
+        without actually running them. It is not essential for benchmarking, but could be useful.
+        NOTE: This method should be used ONLY as a decorator for other BRISEBenchmark object methods!
         :return: original function, wrapped by wrapper.
         """
         @wraps(benchmarking_function)
@@ -68,7 +69,7 @@ class BRISEBenchmarkRunner:
             benchmarking_function(self, *args, *kwargs)
             self.logger.setLevel(logging_level)
             logging.info(
-                "Benchmark is going to run %s unique Experiments (please, take into account also the repetitions)."
+                "Benchmark is going to run %s unique Experiments (please, take into account the repetitions as well)."
                 % len(self.experiments_to_be_performed))
             self.is_calculating_number_of_experiments = False
             benchmarking_function(self, *args, *kwargs)
@@ -76,10 +77,10 @@ class BRISEBenchmarkRunner:
 
     def execute_experiment(self,
                            experiment_description: dict,
-                           search_space: Hyperparameter = None,
+                           search_space: SearchSpace = None,
                            number_of_repetitions: int = 3):
         """
-             Check how many dumps are available for particular Experiment Description.
+         Check how many dumps are available for particular Experiment Description.
 
          :param experiment_description: Dict. Experiment Description
          :param search_space: Hyperparameter. Initialized Hyperparameter object.
@@ -110,7 +111,7 @@ class BRISEBenchmarkRunner:
 
     def move_redundant_experiments(self, location: str):
         """
-            Move all experiment dumps that are not part of current benchmark to separate 'location' folder.
+        Move all experiment dumps that are not part of current benchmark to separate 'location' folder.
         :param location: (str). Folder path where redundant experiment dumps will be stored.
         """
         os.makedirs(location, exist_ok=True)
@@ -127,30 +128,17 @@ class BRISEBenchmarkRunner:
             shutil.move(file, location + os.path.basename(file))
 
     @_benchmarkable
-    def benchmark_repeater(self):
+    def benchmark_test(self):
         """
-            This is an EXAMPLE of the benchmark scenario.
-
-            NOTE: This benchmark based on Energy Consupmtion Experiments, those to run this benchmark,
-             one should add files Experiment scenario files:
-                - 'scenarios/energy_consumption/search_space_96' for Search Space with 96 points,
-                - 'scenarios/energy_consumption/search_space_512' for Search Space with 512 points respectively.
-
-            HINT: Add following COPY commands to Dockerfile of benchmark container under the line
-            # -     add your information here   -
-            ```
-            COPY ./worker/scenarios/energy_consumption/search_space_96/*full.csv /home/benchmark_user/scenarios/energy_consumption/search_space_96/
-            COPY ./worker/scenarios/energy_consumption/search_space_512/*full.csv /home/benchmark_user/scenarios/energy_consumption/search_space_512/
-            ```
-
-            While benchmarking BRISE, one would like to see the influence of changing some particular parameters on the
+        This is an EXAMPLE of a benchmark scenario, utilized for testing purposes.
+        While benchmarking BRISE, one would like to see the influence of changing its product configuration on the
             overall process of running BRISE, on the results quality and on the effort.
 
-            In this particular example, the Repeater benchmark described in following way:
-                1. Using base Experiment Description for Energy Consumption.
-                2. Change ONE parameter of Repeater in a time.
-                    2.1. For each Repeater type (Default, Student and Student with enabled experiment-awareness).
-                    2.2. For each Target System Scenario (ws_file).
+            In this particular example, the benchmark described in following way:
+                1. Using base Experiment Description from the test suite.
+                2. Changing ONE feature at a time.
+                    2.1. For each Transfer Learning type.
+                    2.2. For each Target System Scenario (test_#).
                 3. Execute BRISE with this changed Experiment Description 3 times and save Experiment dump after
                     each execution.
 
@@ -158,138 +146,458 @@ class BRISEBenchmarkRunner:
             highlighted by
             # ---    Add User defined benchmark scenarios execution below
 
-        :return: int, number of Experiments that were executed and experiment dumps are stored.
-                Actually you could return whatever you want, here this number is returned only for reporting purposes.
-        """
+            :return: int, number of Experiments that were executed and experiment dumps are stored.
+            """
         self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
+            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_0.json")
         self._experiment_timeout = 5 * 60
-
-        quality_based_repeater_skeleton = {
-            "Repeater": {
-                "Type": "QuantityBased",
-                "Parameters": {
-                    "MaxFailedTasksPerConfiguration": 5,
-                    "MaxTasksPerConfiguration": 10
+        basic_skeleton = {
+            "TransferLearning": {
+                "TransferExpediencyDetermination": {
+                    "SamplingLandmarkBased": {
+                        "MinNumberOfSamples": 10,
+                        "Type": "sampling_landmark_based",
+                        "Comparator": {
+                            "NormDifference": {
+                                "Type": "norm_difference_comparator"
+                            }
+                        },
+                        "ExperimentsQuantity": {
+                            "FixedQuantity": {
+                                "NumberOfSimilarExperiments": 1
+                            }
+                        }
+                    }
+                },
+                "ModelRecommendation": {
+                    "DynamicModelsRecommendation": {
+                        "RecommendationGranularity": {
+                            "Infinite": {
+                                "Value": np.inf
+                            }
+                        },
+                        "PerformanceMetric": {
+                            "AverageRelativeImprovement": {}
+                        },
+                        "Type": "dynamic_model_recommendation",
+                        "ThresholdType": "Hard",
+                        "TimeToBuildModelThreshold": 0.5,
+                        "TimeUnit": "seconds"
+                    }
+                },
+                "MultiTaskLearning": {
+                    "Filters": {
+                        "OnlyBestConfigurations": {
+                            "Type": "only_best"
+                        }
+                    }
                 }
             }
         }
-
-        acceptable_error_based_repeater_skeleton = {
-            "Repeater": {
-                "Type": "AcceptableErrorBased",
-                "Parameters": {
-                    "ExperimentAwareness": {
-                        "MaxAcceptableErrors": [50],
-                        "RatiosMax": [3],
-                        "isEnabled": True
-                    },
-                    "MaxFailedTasksPerConfiguration": 5,
-                    "MaxTasksPerConfiguration": 10,
-                    "MinTasksPerConfiguration": 2,
-                    "DevicesScaleAccuracies": [0],
-                    "BaseAcceptableErrors": [5],
-                    "DevicesAccuracyClasses": [0],
-                    "ConfidenceLevels": [0.95]
+        clustering_skeleton = {
+            "TransferLearning": {
+                "TransferExpediencyDetermination": {
+                    "SamplingLandmarkBased": {
+                        "MinNumberOfSamples": 10,
+                        "Type": "sampling_landmark_based",
+                        "Comparator": {
+                            "NormDifference": {
+                                "Type": "norm_difference_comparator"
+                            }
+                        },
+                        "ExperimentsQuantity": {
+                            "AdaptiveQuantity": {
+                                "Clustering": {
+                                    "MeanShift": {
+                                        "Type": "mean_shift_clustering",
+                                        "BandwidthType": "Fixed",
+                                        "bandwidth": 0.3,
+                                        "quantile": 0.3
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "ModelRecommendation": {
+                    "DynamicModelsRecommendation": {
+                        "RecommendationGranularity": {
+                            "Infinite": {
+                                "Value": np.inf
+                            }
+                        },
+                        "PerformanceMetric": {
+                            "AverageRelativeImprovement": {}
+                        },
+                        "Type": "dynamic_model_recommendation",
+                        "ThresholdType": "Hard",
+                        "TimeToBuildModelThreshold": 0.5,
+                        "TimeUnit": "seconds"
+                    }
+                },
+                "MultiTaskLearning": {
+                    "Filters": {
+                        "OnlyBestConfigurations": {
+                            "Type": "only_best"
+                        }
+                    }
                 }
             }
         }
+        no_tl_skeleton = {
+            "TransferLearning": {
+                "TransferExpediencyDetermination": {
+                    "SamplingLandmarkBased": {
+                        "MinNumberOfSamples": 1,
+                        "Type": "sampling_landmark_based",
+                        "Comparator": {
+                            "NormDifference": {
+                                "Type": "norm_difference_comparator"
+                            }
+                        },
+                        "ExperimentsQuantity": {
+                            "FixedQuantity": {
+                                "NumberOfSimilarExperiments": 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        mr_skeleton = {
+            "TransferLearning": {
+                "TransferExpediencyDetermination": {
+                    "SamplingLandmarkBased": {
+                        "MinNumberOfSamples": 10,
+                        "Type": "sampling_landmark_based",
+                        "Comparator": {
+                            "NormDifference": {
+                                "Type": "norm_difference_comparator"
+                            }
+                        },
+                        "ExperimentsQuantity": {
+                            "FixedQuantity": {
+                                "NumberOfSimilarExperiments": 1
+                            }
+                        }
+                    }
+                },
+                "ModelRecommendation": {
+                    "DynamicModelsRecommendation": {
+                        "RecommendationGranularity": {
+                            "Infinite": {
+                                "Value": np.inf
+                            }
+                        },
+                        "PerformanceMetric": {
+                            "AverageRelativeImprovement": {}
+                        },
+                        "Type": "dynamic_model_recommendation",
+                        "ThresholdType": "Hard",
+                        "TimeToBuildModelThreshold": 0.5,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
+        }
+        mr_skeleton_finite_granularity = {
+            "TransferLearning": {
+                "TransferExpediencyDetermination": {
+                    "SamplingLandmarkBased": {
+                        "MinNumberOfSamples": 10,
+                        "Type": "sampling_landmark_based",
+                        "Comparator": {
+                            "NormDifference": {
+                                "Type": "norm_difference_comparator"
+                            }
+                        },
+                        "ExperimentsQuantity": {
+                            "FixedQuantity": {
+                                "NumberOfSimilarExperiments": 1
+                            }
+                        }
+                    }
+                },
+                "ModelRecommendation": {
+                    "DynamicModelsRecommendation": {
+                        "RecommendationGranularity": {
+                            "Finite": {
+                                "Value": 1
+                            }
+                        },
+                        "PerformanceMetric": {
+                            "AverageRelativeImprovement": {}
+                        },
+                        "Type": "dynamic_model_recommendation",
+                        "ThresholdType": "Hard",
+                        "TimeToBuildModelThreshold": 0.5,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
+        }
+        mtl_skeleton = {
+            "TransferLearning": {
+                "TransferExpediencyDetermination": {
+                    "SamplingLandmarkBased": {
+                        "MinNumberOfSamples": 10,
+                        "Type": "sampling_landmark_based",
+                        "Comparator": {
+                            "NormDifference": {
+                                "Type": "norm_difference_comparator"
+                            }
+                        },
+                        "ExperimentsQuantity": {
+                            "FixedQuantity": {
+                                "NumberOfSimilarExperiments": 1
+                            }
+                        }
+                    }
+                },
+                "MultiTaskLearning": {
+                    "Filters": {
+                        "OnlyBestConfigurations": {
+                            "Type": "only_best"
+                        },
+                        "OldNewRatio": {
+                            "Type": "old_new_ratio",
+                            "OldNewConfigsRatio": 0.5
+                        }
+                    }
+                }
+            }
+        }
+        experiment_description = self.base_experiment_description
 
-        csv_files = os.listdir('scenarios/energy_consumption/search_space_96')
+        # benchmarking basic tl setting
+        for num_samples in range(1, 10):
+            experiment_description['TransferLearning']['TransferExpediencyDetermination']["SamplingLandmarkBased"][
+                "MinNumberOfSamples"] = num_samples
+            self.execute_experiment(experiment_description)
 
-        # There exist also a scenario with search space of 512 points,
-        # but one need to use also EnergyExperimentData(512points).json instead of regular EnergyExperimentData.json
-        # csv_files = ["scenarios/energy_consumption/search_space_512/pigz_cr_audio1.wav_compress_full.csv"]
+        # benchmarking no tl setting
+        experiment_description.update(deepcopy(no_tl_skeleton))
+        self.execute_experiment(experiment_description)
 
-        for idx, ws_file in enumerate(csv_files):
-            experiment_description = self.base_experiment_description
-            experiment_description['TaskConfiguration']['Scenario']['ws_file'] = "search_space_96/" + ws_file
-            self.logger.info(f"Benchmarking next Scenario file(ws_file): "
-                             f"search_space_96/{ws_file} ({idx} out of {len(csv_files)}).")
+        # benchmarking mr
+        for time_to_build_threshold in [0.1, 0.2, 0.3, 0.4, 0.5, 1.0]:
+            experiment_description.update(deepcopy(mr_skeleton))
+            experiment_description['TransferLearning']['ModelRecommendation']['DynamicModelsRecommendation'][
+                'TimeToBuildModelThreshold'] = time_to_build_threshold
+            self.execute_experiment(experiment_description)
 
-            # benchmarking a quantity-based repeater
-            for max_repeat in range(1, 11):
-                experiment_description.update(deepcopy(quality_based_repeater_skeleton))
-                experiment_description['Repeater']['Parameters']["MaxTasksPerConfiguration"] = max_repeat
-                self.execute_experiment(experiment_description)
+        for recommendation_granularity in [1, 5, 10, 20, 30, 50]:
+            experiment_description.update(deepcopy(mr_skeleton_finite_granularity))
+            experiment_description['TransferLearning']['ModelRecommendation']['DynamicModelsRecommendation'][
+                'RecommendationGranularity']['Finite']['Value'] = recommendation_granularity
+            self.execute_experiment(experiment_description)
 
-            # benchmarking a quantity-based repeater with an extended number of repetitions
-            for max_repeat in [20, 30, 40, 50]:
-                experiment_description.update(deepcopy(quality_based_repeater_skeleton))
-                experiment_description['Repeater']['Parameters']["MaxTasksPerConfiguration"] = max_repeat
-                self.execute_experiment(experiment_description)
-
-            # benchmarking an acceptable-error-based repeater with disabled experiment-awareness
-            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
-            experiment_description['Repeater']['Parameters']['ExperimentAwareness']["isEnabled"] = False
-            # different MaxTasksPerConfiguration
-            for MaxTasksPerConfiguration in [10, 50]:
-                experiment_description['Repeater']['Parameters']['MaxTasksPerConfiguration'] = MaxTasksPerConfiguration
-                for BaseAcceptableErrors in [1, 5, 10, 25, 50]:
-                    experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
-                    self.logger.info("Acceptable-error-based Repeater, MaxTasksPerConfiguration %s: "
-                                     "Changing BaseAcceptableErrors to %s"
-                                     % (MaxTasksPerConfiguration, BaseAcceptableErrors))
-                    self.execute_experiment(experiment_description)
-
-            # benchmarking an acceptable-error-based repeater with enabled experiment-awareness
-            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
-            for BaseAcceptableErrors in [1, 5, 10, 25, 50]:
-                experiment_description['Repeater']['Parameters']['BaseAcceptableErrors'] = [BaseAcceptableErrors]
-                self.logger.info("Experiment-aware acceptable-error-based Repeater: \
-                    Changing BaseAcceptableErrors to %s" % BaseAcceptableErrors)
-                self.execute_experiment(experiment_description)
-
-            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
-            for MaxAcceptableErrors in [25, 50, 75]:
-                experiment_description['Repeater']['Parameters']['ExperimentAwareness']['MaxAcceptableErrors'] = [
-                    MaxAcceptableErrors]
-                self.logger.info("Experiment-aware acceptable-error-based Repeater: \
-                    Changing MaxAcceptableErrors to %s" % MaxAcceptableErrors)
-                self.execute_experiment(experiment_description)
-
-            experiment_description.update(deepcopy(acceptable_error_based_repeater_skeleton))
-            for RatiosMax in [2, 3, 5, 10, 25]:
-                experiment_description['Repeater']['Parameters']['ExperimentAwareness']['RatiosMax'] = [RatiosMax]
-                self.logger.info("Experiment-aware acceptable-error-based Repeater: Changing RatiosMax to %s" % RatiosMax)
-                self.execute_experiment(experiment_description)
+        # benchmarking mtl
+        for old_new_configs_ratio in [0.1, 0.2, 0.3, 0.4, 0.5, 1.0]:
+            experiment_description.update(deepcopy(mtl_skeleton))
+            experiment_description['TransferLearning']['MultiTaskLearning']['Filters']['OldNewRatio'][
+                'OldNewConfigsRatio'] = old_new_configs_ratio
+            self.execute_experiment(experiment_description)
 
         return self.counter
 
-    def benchmark_SA(self):
-        self._base_experiment_description, self._base_search_space = load_experiment_setup("./Resources/SA/SAExperiment.json")
-
-        scenarios = {
-            "trivial": {"variants": 1, "requests": 1, "depth": 1, "resources": 1.0},
-            "small": {"variants": 2, "requests": 1, "depth": 2, "resources": 1.5},
-            "small_hw": {"variants": 2, "requests": 1, "depth": 2, "resources": 5.0},
-            "small_sw": {"variants": 2, "requests": 1, "depth": 5, "resources": 1.5},
-            "medium": {"variants": 10, "requests": 15, "depth": 2, "resources": 1.5},
-            "medium_hw": {"variants": 10, "requests": 15, "depth": 2, "resources": 5.0},
-            "medium_sw": {"variants": 5, "requests": 10, "depth": 5, "resources": 1.5},
-            "large": {"variants": 20, "requests": 20, "depth": 2, "resources": 1.5},
-            "large_hw": {"variants": 20, "requests": 20, "depth": 2, "resources": 5.0},
-            "large_sw": {"variants": 10, "requests": 20, "depth": 5, "resources": 1.5},
-            "huge": {"variants": 50, "requests": 50, "depth": 2, "resources": 1.5},
-            "huge_hw": {"variants": 50, "requests": 50, "depth": 2, "resources": 5.0},
-            "huge_sw": {"variants": 20, "requests": 50, "depth": 5, "resources": 1.5}
+    @_benchmarkable
+    def fill_db(self):
+        self._experiment_timeout = 5 * 60
+        time_based_sc_skeleton = {
+            "StopCondition": {
+                "Instance": {
+                    "TimeBasedSC": {
+                        "Parameters": {
+                            "MaxRunTime": 1,
+                            "TimeUnit": "minutes"
+                        },
+                        "Type": "time_based",
+                        "Name": "t"
+                    }
+                },
+                "StopConditionTriggerLogic": {
+                    "Expression": "t",
+                    "InspectionParameters": {
+                        "RepetitionPeriod": 1,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
         }
+        flat_2float_model_skeleton = {
+            "ConfigurationSelection": {
+                "SamplingStrategy": {
+                    "Sobol": {
+                        "Seed": 1,
+                        "Type": "sobol"
+                    }
+                },
+                "Predictor": {
+                    "WindowSize": 1.0,
+                    "Model": {
+                        "Surrogate": {
+                            "ConfigurationTransformers": {
+                                "FloatTransformer": {
+                                    "SklearnFloatMinMaxScaler": {
+                                        "Type": "sklearn_float_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "GaussianProcessRegressor": {
+                                    "MultiObjective": "True",
+                                    "Parameters": {
+                                        "n_restarts_optimizer": 4
+                                    },
+                                    "Type": "sklearn_model_wrapper",
+                                    "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
+                                }
+                            }
+                        },
+                        "Optimizer": {
+                            "ConfigurationTransformers": {
+                                "FloatTransformer": {
+                                    "SklearnFloatMinMaxScaler": {
+                                        "Type": "sklearn_float_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "MOEA": {
+                                    "Generations": 10,
+                                    "PopulationSize": 100,
+                                    "Algorithms": {
+                                        "GACO": {}
+                                    },
+                                    "Type": "moea"
+                                }
+                            }
+                        },
+                        "Validator": {
+                            "ExternalValidator": {
+                                "MockValidator": {
+                                    "Type": "mock_validator"
+                                }
+                            }
+                        },
+                        "CandidateSelector": {
+                            "BestMultiPointProposal": {
+                                "NumberOfPoints": 1,
+                                "Type": "best_multi_point"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        flat_float_nom_model_skeleton = {
+            "ConfigurationSelection": {
+                "SamplingStrategy": {
+                    "Sobol": {
+                        "Seed": 1,
+                        "Type": "sobol"
+                    }
+                },
+                "Predictor": {
+                    "WindowSize": 1.0,
+                    "Model": {
+                        "Surrogate": {
+                            "ConfigurationTransformers": {
+                                "NominalTransformer": {
+                                    "SklearnBinaryTransformer": {
+                                        "Type": "sklearn_binary_transformer",
+                                        "Class": "sklearn.OrdinalEncoder"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "GaussianProcessRegressor": {
+                                    "MultiObjective": "True",
+                                    "Parameters": {
+                                        "n_restarts_optimizer": 4
+                                    },
+                                    "Type": "sklearn_model_wrapper",
+                                    "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
+                                }
+                            }
+                        },
+                        "Optimizer": {
+                            "ConfigurationTransformers": {
+                                "NominalTransformer": {
+                                    "SklearnBinaryTransformer": {
+                                        "Type": "sklearn_binary_transformer",
+                                        "Class": "sklearn.OrdinalEncoder"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "MOEA": {
+                                    "Generations": 10,
+                                    "PopulationSize": 100,
+                                    "Algorithms": {
+                                        "GACO": {}
+                                    },
+                                    "Type": "moea"
+                                }
+                            }
+                        },
+                        "Validator": {
+                            "ExternalValidator": {
+                                "MockValidator": {
+                                    "Type": "mock_validator"
+                                }
+                            }
+                        },
+                        "CandidateSelector": {
+                            "BestMultiPointProposal": {
+                                "NumberOfPoints": 1,
+                                "Type": "best_multi_point"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        # test case with 2 float parameters
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_0.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(time_based_sc_skeleton))
+        experiment_description.update(deepcopy(flat_2float_model_skeleton))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
 
-        for s in scenarios:
-            self.logger.info("here")
-            experiment_description = self.base_experiment_description
-            experiment_description['TaskConfiguration']['Scenario']['ws_file'] = "result_v{}_q{}_d{}_r{}.csv".\
-                format(scenarios[s]["variants"], scenarios[s]["requests"],
-                       scenarios[s]["depth"],
-                       str(scenarios[s]["resources"]).replace('.', '_')
-                       )
-            experiment_description['TaskConfiguration']['Scenario']['numImplementations'] = scenarios[s]["variants"]
-            experiment_description['TaskConfiguration']['Scenario']['numRequests'] = scenarios[s]["requests"]
-            experiment_description['TaskConfiguration']['Scenario']['componentDepth'] = scenarios[s]["depth"]
-            experiment_description['TaskConfiguration']['Scenario']['excessComputeResourceRatio'] = scenarios[s]["resources"]
-            self.logger.info(f"Benchmarking next Scenario file(ws_file): \
-                {experiment_description['TaskConfiguration']['Scenario']['ws_file']}")
-            self.execute_experiment(experiment_description)
+        # test case with float nom parameters
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_4.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(time_based_sc_skeleton))
+        experiment_description.update(deepcopy(flat_float_nom_model_skeleton))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        # test case with float nom parameters and random DCH
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_9.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(time_based_sc_skeleton))
+        experiment_description.update(deepcopy(flat_float_nom_model_skeleton))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        # test case with all parameter types and random DCH
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_2.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(time_based_sc_skeleton))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        # test case with all parameter types
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_2_wo_dch.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(time_based_sc_skeleton))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
 
         return self.counter
 
@@ -297,9 +605,9 @@ class BRISEBenchmarkRunner:
 class MainAPIClient:
     class ConsumerThread(Thread):
         """
-           This class runs in a separate thread and handles final event from the main node,'
+           This class runs in a separate thread and handles the final event from the main node,'
             connected to the `benchmark_final_queue` as a consumer,
-            downloads a latest dump file and changes main_client.isBusy to False
+            downloads the last dump file and changes main_client.isBusy to False
            """
 
         def __init__(self, host: str, port: int, main_client, *args, **kwargs):
@@ -408,9 +716,9 @@ class MainAPIClient:
         self.isBusy = status_report['MAIN_PROCESS']['main process']
         return status_report
 
-    def start_main(self, experiment_description: dict, search_space: Hyperparameter):
+    def start_main(self, experiment_description: dict, search_space: SearchSpace):
         data = pickle.dumps(
-            {"experiment_description": experiment_description,
+            {"metric_description": experiment_description,
              "search_space": search_space}
         )
         response = self.call("start", param=data)
@@ -450,15 +758,15 @@ class MainAPIClient:
 
         self.update_status()
 
-    # --- General out-of-box methods ---
-    def perform_experiment(self, experiment_description: dict = None, search_space: Hyperparameter = None,
+    # --- General methods ---
+    def perform_experiment(self, experiment_description: dict = None, search_space: SearchSpace = None,
                            wait_for_results: Union[bool, float] = 20 * 60):
         """
-            Send the Experiment Description to the Main node and start the Experiment.
+        Send the Experiment Description to the Main node and start the Experiment.
 
         :param experiment_description: Dict. Experiment Description that will be sent to the Main node.
 
-        :param search_space: Hyperparameter object. Information about search space that will be sent to the Main node.
+        :param search_space: SearchSpace object. Information about search space that will be sent to the Main node.
 
         :param wait_for_results: If ``False`` - client will only send an Experiment Description and return response with
                                 the Main node status.
@@ -468,8 +776,8 @@ class MainAPIClient:
                                 If numeric value were specified - client will wait specified amount of time (in
                                 seconds), after elapsing - ``main_stop`` command will be sent to terminate the Main node.
 
-        :return: (bool) Falase if unable to execute experiment or exectuion failed (becasuse of the Timeout).
-                        True if experiment was executed properly or in case of async execution - experimen was accepted.
+        :return: (bool) False if unable to execute experiment or execution failed (because of the Timeout).
+                        True if experiment was executed properly or in case of async execution - experiment was accepted.
         """
         self.update_status()
         if self.isBusy:

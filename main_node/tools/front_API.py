@@ -73,10 +73,10 @@ class API(metaclass=Singleton):
         """
 
         try:
-            assert type(message_type) == str, \
+            assert type(message_type) is str, \
                 "Wrong API message type object! Got: %s, should be string." % type(message_type)
 
-            assert type(message_subtype) == str, \
+            assert type(message_subtype) is str, \
                 "Wrong API message subtype object! Got: %s, should be string." % type(message_subtype)
 
             assert message_type.upper() in API.SUPPORTED_MESSAGES.keys(), \
@@ -185,9 +185,7 @@ class APIMessageBuilder:
         """
             Takes all key-value parameters
             and checks if "global_config", "experiment_description" and "searchspace_description" are presents.
-            Currently it just provides validation of input (needed fields are present).
-
-            !!! In future, if new subtypes of the"EXPERIMENT" type will appear - this method should be refined.
+            Currently, it just provides validation of input (needed fields are present).
 
         :param kwargs: "global_config", "experiment_description" and "searchspace_description" as mandatory fields.
         :return: Dictionary.

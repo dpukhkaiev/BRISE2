@@ -42,16 +42,18 @@ class LLHRunner:
 
         :return: None
         """
-        self.logger.debug("Fetching warm startup info.")
-        wsi_record = self.dao.get_last_record_by_experiment_id("warm_startup_info", self._task["experiment_id"])
-        if not wsi_record:
-            wsi = None
+        self.logger.debug("Fetching parameter control info.")
+        parameter_control_info_record = (
+            self.dao.get_last_record_by_experiment_id("Parameter_control_info", self._task["experiment_id"]))
+
+        if not parameter_control_info_record:
+            parameter_control_info = None
             self.logger.warning(f"Solving optimization problem from scratch, since no starting solutions available for "
                                 f"experiment with ID: {self._task['experiment_id']}.")
         else:
-            wsi = wsi_record["wsi"]
+            parameter_control_info = parameter_control_info_record["parameter_control_info"]
         self.logger.debug("Constructing the LLH algorithm.")
-        self._llh_wrapper.construct(self._task['parameters'], self._task['Scenario'], wsi)
+        self._llh_wrapper.construct(self._task['parameters'], self._task['Scenario'], parameter_control_info)
         self.logger.debug("The LLH algorithm construction succeed.")
         self.status = LLHRunner.BUILT_SUCCESS
 
@@ -70,13 +72,13 @@ class LLHRunner:
 
 
 class ILLHWrapper(abc.ABC):
-    def __init__(self):
+    def __init__(self, problem_type=None):
         self.logger = logging.getLogger(__name__)
-        self.warm_startup_info = {}
+        self.parameter_control_info = {}
         self._llh_algorithm = None
 
     @abc.abstractmethod
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod

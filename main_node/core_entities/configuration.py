@@ -19,25 +19,22 @@ class Configuration:
         PREDICTED = 1
         FROM_SELECTOR = 2
         TEST = 3
-
-    class Status(int, Enum):
-        NEW = 0
-        EVALUATED = 1
-        REPEATED_MEASURING = 2
-        MEASURED = 3
-        BAD = 4
+        TRANSFERRED = 4
 
     TaskConfiguration = {}
 
     @classmethod
-    def set_task_config(cls, taskConfig):
-        cls.TaskConfiguration = taskConfig
+    def set_task_config(cls, task_configuration):
+        cls.TaskConfiguration = task_configuration
 
-    def __init__(self, parameters: Mapping, config_type: Type, experiment_id: str):
+    def __init__(self, parameters: Mapping, config_type: Type, experiment_id: str, prediction_info: Dict = None):
         """
-        :param hyperparameters: hyperparameters mapping name:value
+        :param parameters: parameters mapping name:value
                shape - ``{"Frequency": 1200, "Threads": 32}``
         :param config_type: Configuration Type (see inner class Type).
+        :param prediction_info: List. Optional parameter storing information about how the configuration was predicted
+               shape - ``[{ "Model" : model_1, "time_to_build" : time_1 }, { "Model" : model_2, "time_to_build" : time_2 }, ...]``
+        (how it appeared in the experiment). Needed for Transfer learning functionality
 
         During initializing following fields are declared:
 
@@ -72,19 +69,20 @@ class Configuration:
         self._tasks = {}
         self._results: Mapping = OrderedDict()
         self.predicted_result = []
+        self.prediction_info = prediction_info
         self.type = config_type
-        self.status = Configuration.Status.NEW
         # Meta information
         self._standard_deviation = []
-        self.is_enabled = True
         self.number_of_failed_tasks = 0
         self._task_number = 0
-        self.warm_startup_info = {}
+        self.parameter_control_info = {}  # additional information used in parameter control experiments, e.g., initial solution for a warm startup of an optimizer within the worker node
         self.experiment_id = experiment_id
+        # Configuration status flags
+        self.status = {'enabled': True, 'evaluated': False, 'measured': False}
 
     def __getstate__(self) -> Dict[str, Any]:
         space = self.__dict__.copy()
-        space['status'] = int(space['status'])
+        space['status'] = dict(space['status'])
         space['type'] = int(space['type'])
         space["_parameters"] = dict(space["_parameters"])
         space["_results"] = dict(space["_results"])
@@ -94,7 +92,7 @@ class Configuration:
     def __setstate__(self, space: Dict[str, Any]) -> None:
         self.__dict__ = space
         self.logger = logging.getLogger(__name__)
-        self.status = Configuration.Status(space['status'])
+        self.status = OrderedDict(space['status'])
         self.type = Configuration.Type(space['type'])
         self._parameters = OrderedDict(space["_parameters"])
         self._results = OrderedDict(space["_results"])
@@ -107,9 +105,7 @@ class Configuration:
     def parameters(self, parameters: MutableMapping):
         if not isinstance(parameters, Mapping):
             raise TypeError(f"Parameters should be of instance {type(self._parameters)}.")
-        elif not all((self._parameters[h] == parameters[h] for h in self._parameters)):
-            raise ValueError(f"Previously selected parameters should not be altered! "
-                             f"{self._parameters} != {parameters}")
+
         if parameters.get("low level heuristic", "") == "jMetalPy.EvolutionStrategy":
             if 'lambda_' in parameters and parameters['lambda_'] < parameters['mu']:
                 self.logger.warning(f"Values for 'lambda_'({parameters['lambda_']}( and 'mu'({parameters['mu']}) "
@@ -147,7 +143,7 @@ class Configuration:
         :param task: mapping of task results
         """
         task_id = task["task id"]
-        self.warm_startup_info = task["result"].pop("warm_startup_info", {})
+        self.parameter_control_info = task["result"].pop("parameter_control_info", {})
         self._tasks[str(task_id)] = task
         self._assemble_tasks_results()
 
@@ -174,13 +170,13 @@ class Configuration:
                            "results": self.results,
                            "tasks": self._tasks,
                            "predicted_result": self.predicted_result,
+                           "prediction_info": self.prediction_info,
                            "standard_deviation": self._standard_deviation,
                            "type": self.type,
                            "status": self.status,
-                           "is_enabled": self.is_enabled,
                            "number_of_failed_tasks": self.number_of_failed_tasks,
                            "_task_number": self._task_number,
-                           "warm_startup_info": self.warm_startup_info,
+                           "parameter_control_info": self.parameter_control_info,
                            "experiment_id": self.experiment_id
                            }
         return json.dumps(dictionary_dump)
@@ -193,36 +189,33 @@ class Configuration:
         conf.unique_id = dictionary_dump["configuration_id"]
         conf._tasks = dictionary_dump["tasks"]
         conf.predicted_result = dictionary_dump["predicted_result"]
+        conf.prediction_info = dictionary_dump["prediction_info"]
         conf._standard_deviation = dictionary_dump["standard_deviation"]
         conf.type = Configuration.Type(dictionary_dump["type"])
-        conf.status = Configuration.Status(dictionary_dump["status"])
-        conf.is_enabled = dictionary_dump["is_enabled"]
+        conf.status = dictionary_dump["status"]
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
         conf._task_number = dictionary_dump["_task_number"]
-        conf.warm_startup_info = dictionary_dump["warm_startup_info"]
+        conf.parameter_control_info = dictionary_dump["parameter_control_info"]
         return conf
 
-    def is_better(self, o_minimize: List[bool], o_prio: List[int], other: Configuration) -> bool:
+    def is_better(self, o_minimize: List[bool], other: Configuration) -> bool:
         """
         Comparison of Configurations on their Objective values.
 
         :param o_minimize: list of boolean values. Indicates the direction of optimization for each objective.
-        :param o_prio: list of integers. Indicates the priorities among objectives for comparison.
         :param other: configuration instance, against which the comparison is performed.
-        :return: bool True - this configuration is better then 'other', otherwise False.
+        :return: bool True - this configuration is better than other, otherwise False.
         """
-        top_prio_index = o_prio.index(max(o_prio))
+
         if self.results and other.results:
-            if o_minimize[top_prio_index] is True:
-                if self < other:
-                    return True
-                else:
-                    return False
-            elif o_minimize[top_prio_index] is False:
-                if self > other:
-                    return True
-                else:
-                    return False
+            for o in o_minimize:
+                if o is True:
+                    if self > other or self == other:
+                        return False
+                elif o is False:
+                    if self < other or self == other:
+                        return False
+            return True
         else:
             self.logger.error(f"One (or both) of Configurations doesn't (don't) have the results: {self}, {other}.")
 
@@ -247,22 +240,14 @@ class Configuration:
         for objective, result in self.results.items():
             objectives_comparison[objective] = result < other.results[objective]
 
-        priorities = self.__class__.TaskConfiguration["ObjectivesPriorities"]
-        # get highest priority objectives
-        highest_priority_indexes = [index for index, priority in enumerate(priorities) if priority == max(priorities)]
-        influencing_objectives = [objectives[index] for index in highest_priority_indexes]
-
-        # get all comparisons for the highest priority
-        resulting_comparisons = dict((objctv, objectives_comparison[objctv]) for objctv in influencing_objectives)
-
         # all comparisons are True for the same priority == dominating solution
-        if all(obj_comp is True for obj_comp in resulting_comparisons.values()):
+        if all(obj_comp is True for obj_comp in objectives_comparison.values()):
             return True
-        elif all(obj_comp is False for obj_comp in resulting_comparisons.values()):
+        elif all(obj_comp is False for obj_comp in objectives_comparison.values()):
             return False
         else:
             self.logger.warning(f"Got non-dominating Configuration comparison: "
-                                f"{self} VS {other} -> {resulting_comparisons}")
+                                f"{self} VS {other} -> {objectives_comparison}")
             return False
 
     def __gt__(self, other: Configuration) -> bool:
@@ -276,7 +261,7 @@ class Configuration:
     def _assemble_tasks_results(self) -> None:
         """
         Updates the results of the Configuration measurement by aggregating the results from all available Tasks.
-        The Average Results of the Configuration and the Standard Deviation between Tasks are calculated.
+        The Average Results of the Configuration and the BaseMTL Deviation between Tasks are calculated.
         """
         # list of a result list from all tasks
         results_tuples, marks = self.get_required_results_with_marks_from_all_tasks()
@@ -286,7 +271,7 @@ class Configuration:
             if marks[task_index] == 'Bad value' or \
                     marks[task_index] == 'Outlier' or \
                     marks[task_index] == 'Out of bounds':
-                del(results_tuples[task_index])
+                del (results_tuples[task_index])
         # calculating the average over all result items
         ok_tasks_results = pd.DataFrame(results_tuples, columns=self.TaskConfiguration["Objectives"])
         self.results = OrderedDict(ok_tasks_results.mean())
@@ -298,19 +283,19 @@ class Configuration:
         String representation of Configuration object.
         """
         return f"Configuration(" \
-               f"Params={str(dict(self.parameters))}, " \
-               f"Tasks={len(self._tasks)}, " \
-               f"Outliers={len(self._tasks) - self._task_number}, " \
-               f"Avg.result={str(dict(self.results))}, " \
-               f"STD={str(self.get_standard_deviation())}" \
+               f"Params: {str(dict(self.parameters))}, " \
+               f"Tasks: {len(self._tasks)}, " \
+               f"Outliers: {len(self._tasks) - self._task_number}, " \
+               f"Results: {str(dict(self.results))}, " \
+               f"STD: {str(self.get_standard_deviation())}" \
                ")"
 
     def disable_configuration(self):
         """
         Disable configuration. This configuration won't be used in experiment.
         """
-        if self.is_enabled:
-            self.is_enabled = False
+        if self.status["enabled"]:
+            self.status["enabled"] = False
             temp_msg = f"Configuration {self} was disabled. It will not be added to the Experiment."
             self.logger.warning(temp_msg)
             API().send('log', 'warning', message=temp_msg)
@@ -342,10 +327,10 @@ class Configuration:
             return False
 
     def get_configuration_record(self) -> Mapping:
-        '''
+        """
         The helper method that formats a configuration to be stored as a record in a Database
         :return: Mapping. Field names of the database collection with respective information
-        '''
+        """
         record = {}
         record["Exp_unique_ID"] = self.experiment_id
         record["Configuration_ID"] = self.unique_id
@@ -355,16 +340,15 @@ class Configuration:
         record["Results"] = self.results
         record["Predicted_result"] = self.predicted_result
         record["Standard_deviation"] = self._standard_deviation
-        record["is_enabled"] = self.is_enabled
         record["Number_of_failed_tasks"] = self.number_of_failed_tasks
         record["ConfigurationObject"] = pickle.dumps(self)
         return record
 
     def get_task_record(self, task: dict) -> Mapping:
-        '''
+        """
         The helper method that formats a task description to be stored as a record in a Database
         :return: Mapping. Field names of the database collection with respective information
-        '''
+        """
         record = {}
         record["Configuration_ID"] = self.unique_id
         record["Task_ID"] = task['task id']

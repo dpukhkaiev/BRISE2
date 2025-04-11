@@ -1,0 +1,842 @@
+// ----------------------Abstract features-----------------------
+
+abstract Hyperparameter {
+  Type -> predefined
+  Level -> integer
+  [if gcard.Context.SearchSpace.Structure == Flat then Level == 0]
+}
+
+abstract Category {
+  Type -> predefined
+  [Type = "Category"]
+}
+
+abstract CategoricalHyperparameter : Hyperparameter {
+  Categories -> predefined
+  Default -> string
+  [Default in Categories]
+  [Categories = (filter childs.self where Type == "Category")]
+}
+
+abstract NominalHyperparameter: CategoricalHyperparameter {
+  [Type = "NominalHyperparameter"]
+}
+abstract OrdinalHyperparameter: CategoricalHyperparameter {
+  [Type = "OrdinalHyperparameter"]
+}
+
+abstract NumericHyperparameter: Hyperparameter
+
+abstract FloatHyperparameter: NumericHyperparameter {
+  Lower -> float
+  Upper -> float
+  Default -> float
+  [Default >= Lower]
+  [Default <= Upper]
+  [Type = "FloatHyperparameter"]
+  [fcard.StopCondition.Instance.AdaptiveSC = 0]
+}
+abstract IntegerHyperparameter: NumericHyperparameter {
+  Lower -> integer
+  Upper -> integer
+  Default -> integer
+  [Default >= Lower]
+  [Default <= Upper]
+  [Type = "IntegerHyperparameter"]
+}
+
+abstract Objective {
+    Name -> predefined
+    DataType -> predefined
+    Minimization -> predefined
+    MinExpectedValue -> predefined
+    MaxExpectedValue -> predefined
+}
+abstract SC {
+  Type -> predefined
+  Name -> string
+}
+// ------------------------Context Model------------------------
+Context {
+  TaskConfiguration {
+    TaskName -> predefined
+    [TaskName = "test"]
+    MaxTimeToRunTask -> integer
+    TimeUnit -> string
+    [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+    Scenario
+    Objectives {
+      // objectives
+      Y1 : Objective {
+        [Name = "Y1"]
+        [DataType = "float"]
+        [Minimization = true]
+        [MinExpectedValue = 0]
+        [MaxExpectedValue = 100]
+      }
+      Y2 : Objective {
+        [Name = "Y2"]
+        [DataType = "float"]
+        [Minimization = true]
+        [MinExpectedValue = 0]
+        [MaxExpectedValue = 100]
+      }
+
+      [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.TransferExpediencyDetermination.SamplingLandmarkBased.Comparator.NormDifference]
+      [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.TransferExpediencyDetermination.SamplingLandmarkBased.Comparator.RGPE]
+      [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.ModelRecommendation.DynamicModelsRecommendation]
+      [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.MultiTaskLearning.Filters.FewShotMultiTask]
+      [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.MultiTaskLearning.Filters.OnlyBestConfigurations]
+    }
+    [if size childs.self.Objectives > 1 then fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 1 else fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 0]
+  }
+
+  SearchSpace {
+    // parameters
+    X1 : FloatHyperparameter
+    X2 : FloatHyperparameter
+    xor Structure {
+      Flat
+      Hierarchical
+    }
+    [fcard.ConfigurationSelection.Predictor.Model = size unique Level at self]
+  }
+}
+
+ConfigurationSelection {
+// --------------------------Sampling----------------------------
+
+  xor SamplingStrategy {
+    Sobol {
+      Seed -> integer
+      [Seed >= 0]
+      Type -> predefined
+      [Type = "sobol"]
+    }
+    MersenneTwister {
+      Seed -> integer
+      [Seed >= 0]
+      Type -> predefined
+      [Type = "mersenne_twister"]
+    }
+  }
+// --------------------------Predictor---------------------------
+  Predictor {
+    WindowSize -> float
+    [WindowSize > 0]
+    [WindowSize <= 1]
+    Model {
+      MultiObjectiveHandling ? {
+        xor SurrogateType {
+          Scalar  {
+            [self requires parent.parent.parent.Surrogate.ValueTransformers]
+            [self requires parent.parent.parent.Surrogate.ValueTransformers.ValueScalarizator]
+            [fcard.parent.parent.parent.Surrogate = 1]
+            [fcard.parent.parent.parent.Surrogate.ValueTransformers = 1]
+            [fcard.parent.parent.parent.Optimizer = 1]
+            [fcard.parent.parent.parent.Validator.InternalValidator = 0]
+          }
+          Pure {
+            [self excludes parent.parent.parent.Surrogate.ValueTransformers.ValueScalarizator]
+            [self excludes parent.parent.parent.Surrogate.Instance.LinearRegression]
+            [self excludes parent.parent.parent.Surrogate.Instance.SupportVectorRegression]
+            [self excludes parent.parent.parent.Surrogate.Instance.GradientBoostingRegressor]
+            [self excludes parent.parent.parent.Surrogate.Instance.BayesianRidgeRegression]
+            [self excludes parent.parent.parent.Surrogate.Instance.MultiArmedBandit]
+            [self excludes parent.parent.parent.Surrogate.Instance.TreeParzenEstimator]
+            [self excludes parent.parent.parent.Surrogate.Instance.MultiLayerPerceptronRegressor]
+            [fcard.parent.parent.parent.Surrogate = 1]
+            [fcard.parent.parent.parent.Optimizer = 1]
+            [fcard.parent.parent.parent.Validator.InternalValidator = 0]
+          }
+          Compositional {
+            [fcard.parent.parent.parent.Surrogate = size childs.Context.TaskConfiguration.Objectives]
+            [fcard.parent.parent.parent.Optimizer = size childs.Context.TaskConfiguration.Objectives]
+            [fcard.parent.parent.parent.Validator.InternalValidator = 0]
+          }
+          DynamicCompositional {
+            [self excludes parent.parent.parent.Surrogate.Instance.TreeParzenEstimator]
+            [fcard.parent.parent.parent.Optimizer = 1]
+            [fcard.parent.parent.parent.Validator.InternalValidator = 1]
+          }
+          Portfolio {
+            [self excludes parent.parent.parent.CandidateSelector.BestMultiPointProposal]
+            [self excludes parent.parent.parent.Surrogate.ValueTransformers.ValueScalarizator]
+            [self excludes parent.parent.parent.Surrogate.Instance.TreeParzenEstimator]
+            [fcard.parent.parent.parent.Optimizer = 1]
+            [fcard.parent.parent.parent.Validator.InternalValidator = 1]
+          }
+        }
+      }
+// --------------------------Surrogate---------------------------
+      Surrogate * {
+        or ConfigurationTransformers ? {
+          xor OrdinalTransformer {
+            SklearnOrdinalEncoder {
+              Type -> predefined
+              [Type = "sklearn_ordinal_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.OrdinalEncoder"]
+            }
+          }
+          xor NominalTransformer {
+            BinaryEncoder {
+              Type -> predefined
+              [Type = "binary_transformer"]
+
+              Class -> predefined
+              [Class = "brise.BinaryEncoder"]
+            }
+            SklearnBinaryEncoder {
+              Type -> predefined
+              [Type = "sklearn_binary_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.OrdinalEncoder"]
+            }
+          }
+          xor IntegerTransformer {
+            SklearnIntMinMaxScaler {
+              Type -> predefined
+              [Type = "sklearn_integer_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.MinMaxScaler"]
+            }
+          }
+          xor FloatTransformer {
+            SklearnFloatMinMaxScaler {
+              Type -> predefined
+              [Type = "sklearn_float_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.MinMaxScaler"]
+            }
+          }
+        }
+        or ValueTransformers ? {
+          xor ValueScalarizator {
+              WeightedSum {
+                Weights -> floatArray
+                [size Weights == size childs.Context.TaskConfiguration.Objectives]
+                Type -> predefined
+                [Type = "weighted_sum"]
+            }
+            [self excludes parent.parent.parent.Optimizer.ValueTransformers.ValueScalarizator]
+          }
+        }
+        xor Instance {
+          LinearRegression {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            Type -> predefined
+            [Type = "sklearn_model_wrapper"]
+
+            Class -> predefined
+            [Class = "sklearn.linear_model.LinearRegression"]
+          }
+          SupportVectorRegression {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            GammaType -> string
+            GammaFloat -> float
+
+            Parameters {
+              kernel -> string
+              C -> float
+              gamma -> string
+              epsilon -> float
+
+              [kernel in {"linear", "poly", "rbf", "sigmoid", "precomputed"}]
+              [C > 0]
+              [epsilon >= 0]
+            }
+            [GammaType in {"scale", "auto", "float"}]
+            [if GammaType == "scale" then self.Parameters.gamma == "scale"]
+            [if GammaType == "auto" then self.Parameters.gamma == "auto"]
+            [if GammaType == "float" then self.Parameters.gamma == self.GammaFloat]
+            [GammaFloat >= 0]
+
+            Type -> predefined
+            [Type = "sklearn_model_wrapper"]
+            Class -> predefined
+            [Class = "sklearn.svm.SVR"]
+          }
+          GradientBoostingRegressor {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            Parameters {
+              n_estimators -> integer
+              [n_estimators > 0]
+            }
+            Type -> predefined
+            [Type = "sklearn_model_wrapper"]
+            Class -> predefined
+            [Class = "sklearn.ensemble.GradientBoostingRegressor"]
+          }
+          BayesianRidgeRegression {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            Parameters {
+              max_iter -> integer
+              tol -> float
+
+              [max_iter > 0]
+              [tol > 0]
+            }
+            Type -> predefined
+            [Type = "sklearn_model_wrapper"]
+            Class -> predefined
+            [Class = "sklearn.linear_model.BayesianRidge"]
+          }
+          MultiArmedBandit {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            CType -> string
+            CFloat -> float
+            Parameters {
+              c -> string
+            }
+            [CType in {"std", "float"}]
+            [if CType == "float" then self.Parameters.c == self.CFloat]
+            [if CType == "std" then self.Parameters.c == "std"]
+            [CFloat > 0]
+            [self requires parent.parent.parent.Validator.ExternalValidator.MockValidator]
+            [self excludes parent.parent.parent.Validator.InternalValidator]
+            [fcard.parent.parent.ConfigurationTransformers == 0]
+            Type -> predefined
+            [Type = "multi_armed_bandit"]
+          }
+          TreeParzenEstimator  {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            Parameters {
+              top_n_percent -> integer
+              random_fraction -> float
+              bandwidth_factor -> float
+              min_bandwidth -> float
+
+              [top_n_percent >= 1]
+              [top_n_percent <= 99]
+              [random_fraction >= 0]
+              [random_fraction <= 1]
+              [bandwidth_factor >= 1]
+              [min_bandwidth >= 0]
+            }
+            [self requires parent.parent.parent.Optimizer.ValueTransformers]
+            [self requires parent.parent.parent.Optimizer.ValueTransformers.AcquisitionFunction.TPE_EI]
+            [self requires parent.parent.parent.Validator.MockValidator]
+            [self requires parent.parent.ConfigurationTransformers.OrdinalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.OrdinalTransformer.SklearnOrdinalEncoder]
+            [self requires parent.parent.ConfigurationTransformers.NominalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.NominalTransformer.SklearnBinaryEncoder]
+            [self requires parent.parent.ConfigurationTransformers.IntegerTransformer]
+            [self requires parent.parent.ConfigurationTransformers.IntegerTransformer.SklearnIntMinMaxScaler]
+            [self requires parent.parent.ConfigurationTransformers.FloatTransformer]
+            [self requires parent.parent.ConfigurationTransformers.FloatTransformer.SklearnFloatMinMaxScaler]
+            Type -> predefined
+            [Type = "tree_parzen_estimator"]
+          }
+          GaussianProcessRegressor {
+            MultiObjective -> predefined
+            [MultiObjective = True]
+
+            Parameters {
+              n_restarts_optimizer -> integer
+
+              [n_restarts_optimizer >= 0]
+            }
+            Type -> predefined
+            [Type = "sklearn_model_wrapper"]
+            Class -> predefined
+            [Class = "sklearn.gaussian_process.GaussianProcessRegressor"]
+          }
+          MultiLayerPerceptronRegressor {
+            MultiObjective -> predefined
+            [MultiObjective = False]
+
+            Parameters {
+              hidden_layer_sizes -> integerArray
+              activation -> string
+              solver -> string
+              alpha -> float
+              [activation in {"identity", "logistic", "tanh", "relu"}]
+              [solver in {"lbfgs", "sgd", "adam"}]
+              [if activation == "identity" then solver in {"lbfgs", "adam"}]
+            }
+            Type -> predefined
+            [Type = "sklearn_model_wrapper"]
+            Class -> predefined
+            [Class = "sklearn.neural_network.MLPRegressor"]
+          }
+          ModelMock {
+            MultiObjective -> predefined
+            [MultiObjective = True]
+
+            Type -> predefined
+            [Type = "model_mock"]
+          }
+        }
+      }
+// --------------------------Optimizer---------------------------
+      Optimizer * {
+        or ConfigurationTransformers ? {
+          xor OrdinalTransformer {
+            SklearnOrdinalEncoder {
+              Type -> predefined
+              [Type = "sklearn_ordinal_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.OrdinalEncoder"]
+            }
+          }
+          xor NominalTransformer {
+            BinaryEncoder {
+              Type -> predefined
+              [Type = "binary_transformer"]
+
+              Class -> predefined
+              [Class = "brise.BinaryEncoder"]
+            }
+            SklearnBinaryEncoder {
+              Type -> predefined
+              [Type = "sklearn_binary_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.OrdinalEncoder"]
+            }
+          }
+          xor IntegerTransformer {
+            SklearnIntMinMaxScaler {
+              Type -> predefined
+              [Type = "sklearn_integer_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.MinMaxScaler"]
+            }
+          }
+          xor FloatTransformer {
+            SklearnFloatMinMaxScaler {
+              Type -> predefined
+              [Type = "sklearn_float_transformer"]
+
+              Class -> predefined
+              [Class = "sklearn.MinMaxScaler"]
+            }
+          }
+        }
+        or ValueTransformers ? {
+          xor ValueScalarizator {
+            WeightedSum {
+              Weights -> floatArray
+              [size Weights == size childs.Context.TaskConfiguration.Objectives]
+              Type -> predefined
+              [Type = "weighted_sum"]
+            }
+          }
+          xor AcquisitionFunction {
+            TPE_EI {
+              Type -> predefined
+              [Type = "tpe_ei"]
+            }
+          }
+        }
+        xor Instance {
+          RandomSearch {
+            SamplingSize -> integer
+            [SamplingSize > 0]
+            MultiObjective -> predefined
+            [MultiObjective = True]
+            Type -> predefined
+            [Type = "random_search"]
+          }
+          MOEA {
+            Generations -> integer
+            [Generations > 0]
+            PopulationSize -> integer
+            [PopulationSize > 0]
+            or Algorithms {
+              MOEAD { //
+                MultiObjective -> predefined
+                [MultiObjective = True]
+                [parent.parent.PopulationSize in {35, 70, 126, 210, 330, 495, 715, 1001}]
+              }
+              NSGA2 { //
+                MultiObjective -> predefined
+                [MultiObjective = True]
+                [parent.parent.PopulationSize >= 5]
+                [parent.parent.PopulationSize % 4 == 0]
+              }
+              GACO { // Extended Ant Colony Optimization algorithm
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 63]
+              }
+              MACO { // Multi-objective Ant Colony Optimizer
+                MultiObjective -> predefined
+                [MultiObjective = True]
+                [parent.parent.PopulationSize >= 63]
+              }
+              GWO { // Grey Wolf Optimizer
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 3]
+              }
+              BEE_COLONY { // Artificial Bee Colony
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 2]
+              }
+              DE { // Differential Evolution
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 5]
+              }
+              SEA { // (N+1)-ES simple evolutionary algorithm
+                MultiObjective -> predefined
+                [MultiObjective = False]
+              }
+              SGA { // A Simple Genetic Algorithm
+                MultiObjective -> predefined
+                [MultiObjective = False]
+              }
+              SADE { // Self-adaptive Differential Evolution
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 7]
+              }
+              DE1220 { // Self-adaptive Differential Evolution, pygmo flavour (pDE). FROM HERE SO only tested
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 7]
+              }
+              CMAES { // Covariance Matrix Evolutionary Strategy
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 5]
+              }
+              MOEAD_GEN { // Multi Objective Evolutionary Algorithms by Decomposition (the DE variant)
+                MultiObjective -> predefined
+                [MultiObjective = True]
+                [parent.parent.PopulationSize in {35, 70, 126, 210, 330, 495, 715, 1001}]
+              }
+              PSO { // Particle Swarm Optimization
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 2]
+              }
+              PSO_GEN { // generational PSO
+                MultiObjective -> predefined
+                [MultiObjective = False]
+                [parent.parent.PopulationSize >= 2]
+              }
+              NSPSO { // Non dominated Sorting Particle Swarm Optimization
+                MultiObjective -> predefined
+                [MultiObjective = True]
+                [parent.parent.PopulationSize >= 2]
+              }
+            }
+            Type -> predefined
+            [Type = "moea"]
+          }
+        }
+      }
+// -------------------------Validator----------------------------
+      Validator {
+        xor ExternalValidator {
+          QualityValidator {
+            xor Split {
+              HoldOut {
+                TrainingSet -> float
+                [TrainingSet >= 0.5]
+                [TrainingSet <= 0.9]
+              }
+              KFold {
+                NumberOfFolds -> integer
+                [NumberOfFolds > 1]
+              }
+            }
+            QualityThreshold -> float
+            [QualityThreshold >= 0]
+            [QualityThreshold <= 1]
+            Type -> predefined
+            [Type = "quality_validator"]
+          }
+          EnergyValidator {
+            [fcard.parent.parent.InternalValidator = 0]
+            Type -> predefined
+            [Type = "energy_validator"]
+          }
+          MockValidator {
+            [fcard.parent.parent.InternalValidator = 0]
+            Type -> predefined
+            [Type = "mock_validator"]
+          }
+        }
+
+        xor InternalValidator ? {
+          QualityValidator {
+            xor Split {
+              KFold {
+                NumberOfFolds -> integer
+                [NumberOfFolds > 1]
+              }
+              HoldOut {
+                TrainingSet -> float
+                [TrainingSet >= 0.5]
+                [TrainingSet <= 0.9]
+              }
+            }
+            QualityThreshold -> float
+            [QualityThreshold >= 0]
+            [QualityThreshold <= 1]
+            Type -> predefined
+            [Type = "quality_validator"]
+          }
+        }
+      }
+// ---------------------Candidate Selector-----------------------
+      xor CandidateSelector {
+        BestMultiPointProposal {
+          NumberOfPoints -> integer
+          [NumberOfPoints == 1] // multipoint proposal is disabled until synchronous mode is provided
+          Type -> predefined
+          [Type = "best_multi_point"]
+        }
+        RandomMultiPointProposal {
+          NumberOfPoints -> integer
+          [NumberOfPoints == 1] // multipoint proposal is disabled until synchronous mode is provided
+          Type -> predefined
+          [Type = "random_multi_point"]
+        }
+      }
+    }
+  }
+}
+// ---------------------Repetition Manager-----------------------
+RepetitionManager {
+  MaxFailedTasksPerConfiguration -> integer
+  [MaxFailedTasksPerConfiguration >= 1]
+
+  xor Instance {
+    QuantityBased {
+      MaxTasksPerConfiguration -> integer
+      [MaxTasksPerConfiguration >= 1]
+
+      Type -> predefined
+      [Type = "quantity_based"]
+    }
+    AcceptableErrorBased {
+      MinTasksPerConfiguration -> integer
+      MaxTasksPerConfiguration -> integer
+      [MinTasksPerConfiguration >= 2]
+      [MinTasksPerConfiguration <= MaxTasksPerConfiguration]
+
+      BaseAcceptableError -> float
+      [BaseAcceptableError > 0]
+      [BaseAcceptableError < 100]
+
+      ConfidenceLevel -> float
+      [ConfidenceLevel > 0]
+      [ConfidenceLevel <= 1]
+
+      Type -> predefined
+      [Type = "acceptable_error_based"]
+
+      ExperimentAware ? {
+        MaxAcceptableError -> float
+        [MaxAcceptableError > parent.BaseAcceptableError]
+        [MaxAcceptableError < 100]
+
+        RatioMax -> float
+        [RatioMax > 0]
+
+        MinTasksPerUnderperformingConfiguration -> predefined
+        [MinTasksPerUnderperformingConfiguration = 1]
+      }
+    }
+  }
+}
+// ----------------------Stop Condition--------------------------
+StopCondition {
+  Instance {
+    AdaptiveSC : SC * {
+      Parameters {
+        SearchSpacePercentage -> float
+        [SearchSpacePercentage > 0]
+        [SearchSpacePercentage < 100]
+      }
+      [Type = "adaptive"]
+    }
+    BadConfigurationBasedSC : SC *{
+      Parameters {
+        MaxBadConfigurations -> integer
+        [MaxBadConfigurations > 0]
+      }
+      [Type = "bad_configuration_based"]
+    }
+    FewShotLearningBasedSC : SC 0 {
+      [Type = "few_shot_learning_based"]
+    }
+    GuaranteedSC : SC * {
+      [Type = "guaranteed"]
+    }
+    ImprovementBasedSC : SC * {
+      Parameters {
+        MaxConfigsWithoutImprovement -> integer
+        [MaxConfigsWithoutImprovement > 0]
+      }
+      [Type = "improvement_based"]
+    }
+    QuantityBasedSC : SC * {
+      Parameters {
+        MaxConfigs -> integer
+        [MaxConfigs > 0]
+      }
+      [Type = "quantity_based"]
+    }
+    TimeBasedSC : SC * {
+      Parameters {
+        MaxRunTime -> integer
+        TimeUnit -> string
+        [MaxRunTime > 0]
+        [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+      }
+      [Type = "time_based"]
+    }
+    ValidationBasedSC : SC * {
+        [Type = "validation_based"]
+    }
+    [size childs.self > 0]
+    [size unique Name at self == size childs.self]
+  }
+  StopConditionTriggerLogic {
+    Expression -> string
+    InspectionParameters {
+      RepetitionPeriod -> integer
+      TimeUnit -> string
+      [RepetitionPeriod > 0]
+      [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+    }
+  }
+}
+// ---------------------Transfer Learning------------------------
+TransferLearning ? {
+  TransferExpediencyDetermination {
+    SamplingLandmarkBased {
+      MinNumberOfSamples -> integer
+      [MinNumberOfSamples >= 1]
+      Type -> predefined
+      [Type = "sampling_landmark_based"]
+      xor Comparator {
+        NormDifference {
+          Type -> predefined
+          [Type = 'norm_difference_comparator']
+        }
+        RGPE {
+          Type -> predefined
+          [Type = 'rgpe_comparator']
+        }
+      }
+      xor ExperimentsQuantity {
+        FixedQuantity {
+          NumberOfSimilarExperiments -> integer
+          [NumberOfSimilarExperiments >= 1]
+        }
+        AdaptiveQuantity {
+          xor Clustering {
+            MeanShift {
+              Type -> predefined
+              BandwidthType -> string
+              bandwidth -> float
+              quantile -> float
+              [BandwidthType in {"Fixed", "Estimated"}]
+              [if BandwidthType == "Fixed" then bandwidth <= 1]
+              [if BandwidthType == "Fixed" then bandwidth >= 0]
+              [if BandwidthType == "Fixed" then quantile == -1]
+              [if BandwidthType == "Estimated" then bandwidth == -1]
+              [if BandwidthType == "Estimated" then quantile <= 1]
+              [if BandwidthType == "Estimated" then quantile >= 0]
+              [Type = 'mean_shift_clustering']
+            }
+          }
+        }
+      }
+    }
+  }
+  xor ModelRecommendation ? {
+    DynamicModelsRecommendation {
+      xor RecommendationGranularity {
+        Finite {
+          Value -> integer
+          [Value >= 1]
+        }
+        Infinite {
+          Value -> predefined
+          [Value = "inf"]
+        }
+      }
+      xor PerformanceMetric {
+        AverageRelativeImprovement {
+          Type -> predefined
+          [Type = 'average_relative_improvement']
+        }
+      }
+      Type -> predefined
+      ThresholdType -> string
+      TimeToBuildModelThreshold -> float
+      TimeUnit -> string
+
+      [ThresholdType in {"Hard", "Soft"}]
+      [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+      [TimeToBuildModelThreshold > 0]
+      [Type = 'dynamic_model_recommendation']
+    }
+    FewShotRecommendation {
+      Type -> predefined
+      [Type = 'few_shot']
+      [fcard.StopCondition.Instance.FewShotLearningBasedSC = "+"]
+      [self excludes TransferLearning.MultiTaskLearning.Filters.FewShotMultiTask]
+    }
+  }
+  MultiTaskLearning ? {
+    or Filters {
+      OldNewRatio{
+        Type -> predefined
+        [Type = 'old_new_ratio']
+        OldNewConfigsRatio -> float
+        [OldNewConfigsRatio > 0]
+      }
+      FewShotMultiTask {
+        Type -> predefined
+        [Type = 'few_shot']
+        [fcard.StopCondition.Instance.FewShotLearningBasedSC = "+"]
+      }
+      OnlyBestConfigurations  {
+        Type -> predefined
+        [Type = 'only_best']
+      }
+      ShuffleConfigurations {
+        Type -> predefined
+        [Type = 'shuffle']
+      }
+    }
+
+  }
+  [self.MultiTaskLearning or self.ModelRecommendation]
+}
+
+// ----------------Default Configuration Handler-----------------
+DefaultConfigurationHandler ? {
+  RandomDCH {
+    Type -> predefined
+    [Type = "random_default_config_handler"]
+  }
+}

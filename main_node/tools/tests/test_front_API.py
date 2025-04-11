@@ -83,6 +83,7 @@ class TestFrontApi:
             APIMessageBuilder.build('NEW', configurations=configurations, results=results)
         assert expected_result in str(excinfo.value)
 
+    @pytest.mark.skip(reason="Global config is deprecated, return when the Frontend is enabled")
     def test_8_build_experiment_message(self):
         # Test #8. Build experiment message according to the API message format
         # Expected result: the message of type 'dictionary' is built and contains all needed fields
@@ -94,9 +95,10 @@ class TestFrontApi:
                                                 experiment_description=experiment_description,
                                                 searchspace_description=searchspace_description)
         assert actual_result["global_configuration"]
-        assert actual_result["experiment_description"]
+        assert actual_result["metric_description"]
         assert actual_result["searchspace_description"]
 
+    @pytest.mark.skip(reason="Global config is deprecated, return when the Frontend is enabled")
     def test_9_build_incomplete_experiment_message(self):
         # Test #9. Build experiment message from incomplete parameters
         # Expected result: error is raised

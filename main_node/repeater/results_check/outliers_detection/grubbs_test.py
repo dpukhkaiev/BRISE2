@@ -19,25 +19,24 @@ class Grubbs(OutliersDetectionDecorator):
             # calculate extreme index and the critical t value based on the test
             if test == 'two-tailed':
                 extreme_ix = lambda Z: np.abs(Z).argmax()
-                t_crit = lambda N: t.isf(alpha / (2.*N), N-2)
+                t_crit = lambda N: t.isf(alpha / (2. * N), N - 2)
             elif test == 'max':
                 extreme_ix = lambda Z: Z.argmax()
-                t_crit = lambda N: t.isf(alpha / N, N-2)
+                t_crit = lambda N: t.isf(alpha / N, N - 2)
             elif test == 'min':
                 extreme_ix = lambda Z: Z.argmin()
-                t_crit = lambda N: t.isf(alpha / N, N-2)
+                t_crit = lambda N: t.isf(alpha / N, N - 2)
             else:
                 raise ValueError("Test must be 'min', 'max', or 'two-tailed'")
 
             # compute the threshold
             thresh = lambda N: (N - 1.) / np.sqrt(N) * \
-                np.sqrt(t_crit(N)**2 / (N - 2 + t_crit(N)**2))
+                               np.sqrt(t_crit(N) ** 2 / (N - 2 + t_crit(N) ** 2))
             # create array to store outliers
             outliers = np.array([])
 
             # loop through the array and remove any outliers
             while abs(Z[extreme_ix(Z)]) > thresh(N):
-
                 # update the outliers
                 outliers = np.r_[outliers, inputs[extreme_ix(Z)]]
                 # remove outlier from array

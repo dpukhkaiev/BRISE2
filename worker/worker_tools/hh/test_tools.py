@@ -29,7 +29,7 @@ def test_tsp_hh(task: dict) -> dict:
         return base_result - sum((b * 100000/math.exp(x / 10) for x in range(i)))
 
     mh_name = task["parameters"]["low level heuristic"]
-    iteration = task['warm_startup_info']['iteration'] if 'iteration' in task['warm_startup_info'].keys() else 0
+    iteration = task['parameter_control_info']['iteration'] if 'iteration' in task['parameter_control_info'].keys() else 0
     # by changing the boost, the favor should move from one MH to another.
     if mh_name == 'jMetalPy.SimulatedAnnealing':
         boost = rd.uniform(0.9, 1.2)
@@ -47,7 +47,7 @@ def test_tsp_hh(task: dict) -> dict:
     result = {
         "objective": current_result,
         "improvement": (previous_result - current_result) / previous_result,
-        "warm_startup_info": {
+        "parameter_control_info": {
             "iteration": iteration + 1
         }
     }

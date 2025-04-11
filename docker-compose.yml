@@ -1,5 +1,4 @@
-# Launch & Build a bunch containers with workers and one service for them.
-version: "3.7"
+# Launch & Build a set of containers with workers and one service for them.
 services: 
   main-node:
     build: ./main_node/
@@ -49,3 +48,23 @@ services:
   worker:
     build: ./worker/
     restart: on-failure
+
+  waffle:
+    build: ./waffle/
+    command: python3 manage.py runserver 0.0.0.0:8000
+    container_name: waffle
+    tty: true
+    ports:
+      - 8000:8000
+    restart: on-failure
+
+  mongo-db-test:
+    image: mongo:4.4.0
+    container_name: mongo-db-test
+    restart: on-failure
+    environment:
+        MONGO_INITDB_DATABASE: test_db
+    ports:
+        - 27017:27017
+    volumes:
+      - ./mongo_db/init_test.js:/docker-entrypoint-initdb.d/init.js

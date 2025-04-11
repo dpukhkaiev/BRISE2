@@ -1,5 +1,5 @@
 {
-  "rabbit_version": "3.6.5",
+  "rabbit_version": "3.8.9",
   "users": [
     {
       "name": "guest",
@@ -25,104 +25,6 @@
   "parameters": [],
   "policies": [],
   "queues": [
-    {
-      "name": "main_start_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "main_status_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "main_stop_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "main_download_dump_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "main_responses",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "task_result_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "task_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "taken_task_event_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "finished_task_event_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "measurement_results_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "default_configuration_results_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "configurations_results_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "stop_experiment_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
-    {
-      "name": "check_stop_condition_expression_queue",
-      "vhost": "/",
-      "durable": true,
-      "auto_delete": false,
-      "arguments": {}
-    },
     {
       "name": "front_log_queue",
       "vhost": "/",
@@ -187,28 +89,63 @@
       }
     },
     {
-      "name": "get_worker_capacity_queue",
+      "name": "main_start_queue",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
       "arguments": {}
     },
     {
-      "name": "get_new_configuration_queue",
+      "name": "main_status_queue",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
       "arguments": {}
     },
     {
-      "name": "measure_new_configuration_queue",
+      "name": "main_stop_queue",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
       "arguments": {}
     },
     {
-      "name": "process_tasks_queue",
+      "name": "main_download_dump_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "main_responses",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "task_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "taken_task_event_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "finished_task_event_queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "stop_experiment_queue",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
@@ -216,10 +153,120 @@
     }
   ],
   "exchanges": [
+
     {
-      "name": "task_result_sender",
+      "name": "experiment_termination_exchange",
       "vhost": "/",
-      "type": "fanout",
+      "type": "direct",
+      "durable": false,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+
+    {
+      "name": "task_result_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "measurement_results_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "default_configuration_results_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "configurations_results_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "stop_experiment_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "check_stop_condition_expression_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "get_worker_capacity_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "get_new_configuration_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "measure_new_configuration_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "process_tasks_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "experiment_api_exchange",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "logging_exchange",
+      "vhost": "/",
+      "type": "direct",
       "durable": true,
       "auto_delete": false,
       "internal": false,
@@ -287,15 +334,6 @@
       "auto_delete": false,
       "internal": false,
       "arguments": {}
-    },
-    {
-      "name": "brise_termination_sender",
-      "vhost": "/",
-      "type": "fanout",
-      "durable": false,
-      "auto_delete": false,
-      "internal": false,
-      "arguments": {}
     }
   ],
   "bindings": [
@@ -313,22 +351,6 @@
       "destination": "events-v1",
       "destination_type": "queue",
       "routing_key": "v1",
-      "arguments": {}
-    },
-    {
-      "source": "task_result_sender",
-      "vhost": "/",
-      "destination": "task_result_queue",
-      "destination_type": "queue",
-      "routing_key": "*",
-      "arguments": {}
-    },
-    {
-      "source": "task_result_sender",
-      "vhost": "/",
-      "destination": "finished_task_event_queue",
-      "destination_type": "queue",
-      "routing_key": "*",
       "arguments": {}
     },
     {

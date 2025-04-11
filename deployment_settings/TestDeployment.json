@@ -1,0 +1,9 @@
+{
+  "Database": {
+    "Address": "mongo-db-test",
+    "Port": 27017,
+    "DatabaseName": "test_db",
+    "DatabaseUser": "user",
+    "DatabasePass": "test111"
+  }
+}

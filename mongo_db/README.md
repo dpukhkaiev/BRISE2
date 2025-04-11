@@ -3,8 +3,9 @@
 BRISE uses [MongoDB](https://www.mongodb.com/), which has a convenient [Python driver](https://api.mongodb.com/python/current/), 
 as a database system. 
 
-**The purpose of using the database in BRISE** is to store the states and results of multiple experiments being executed
-simultaneosly and to allow BRISE services to exchange their data.
+**The purpose of using the database in BRISE** is to store the states and results of experiments for subsequent 
+**knowledge transfer** used by the feature Transfer Learning. Moreover, the database enables simultaneous execution of 
+multiple experiments.
 
 Currently 3 variants of MongoDB location are supported in BRISE:
 1. **Local database in container (default)** - if you want to use your own local database, adjust credentials in :
@@ -26,7 +27,7 @@ run options of the `./brise.sh up` command).
 
 An overview of the information stored in the database is shown in the following diagram:
 
-![Database instances and relations](./img/BRISE_db_scheme.png)
+![Database instances and relations](./img/BRISE_DB_schema.png)
 
 #### BRISE database clean up
 

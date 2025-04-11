@@ -1,0 +1,18 @@
+{
+  "DomainDescription":{
+    "DataFile"          : "./Resources/OpenML/OpenmlRFData.json"
+  },
+  "TaskConfiguration":{
+    "TaskName"          : "openml_RF_sklearn",
+    "Scenario":{
+      "instance": "OpenmlRF_1471",
+      "DatasetID": 1471
+    },
+    "Objectives"   : ["fit_time", "test_f1_macro", "test_f1_weighted", "test_roc_auc"],
+    "ObjectivesDataTypes": ["float", "float", "float", "float"],
+    "ObjectivesMinimization": [true, false, false, false],
+    "ObjectivesPriorities": [0, 0, 1, 0],
+    "ObjectivesPrioritiesModels": [0, 0, 1, 0],
+    "ExpectedValuesRange": [[0, Infinity], [0, 1.0], [0, 1.0], [0, 1.0]]
+  }
+}

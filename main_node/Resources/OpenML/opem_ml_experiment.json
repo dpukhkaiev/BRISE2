@@ -1,0 +1,305 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "openml_RF_sklearn",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {
+                "DatasetID": 31
+            },
+            "Objectives": {
+                "fit_time": {
+                    "Name": "fit_time",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
+                },
+                "test_f1_macro": {
+                    "Name": "test_f1_weighted",
+                    "DataType": "float",
+                    "Minimization": false,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 1
+                },
+                "test_f1_weighted": {
+                    "Name": "test_f1_weighted",
+                    "DataType": "float",
+                    "Minimization": false,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 1
+                },
+                "test_roc_auc": {
+                    "Name": "test_roc_auc",
+                    "DataType": "float",
+                    "Minimization": false,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 1
+                }
+            }
+        },
+        "SearchSpace": {
+            "criterion": {
+                "gini": {
+                    "max_depth": {
+                        "Lower": 10,
+                        "Upper": 120,
+                        "Default": 50,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "max_features": {
+                        "sqrt": {
+                            "Type": "Category"
+                        },
+                        "log2": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.criterion.gini.max_features.sqrt",
+                            "Context.SearchSpace.criterion.gini.max_features.log2"
+                        ],
+                        "Default": "Context.SearchSpace.criterion.gini.max_features.sqrt",
+                        "Type": "OrdinalHyperparameter",
+                        "Level": 1
+                    },
+                    "min_samples_leaf": {
+                        "Lower": 0.01,
+                        "Upper": 0.5,
+                        "Default": 0.1,
+                        "Type": "FloatHyperparameter",
+                        "Level": 1
+                    },
+                    "min_samples_split": {
+                        "Lower": 0.01,
+                        "Upper": 1.0,
+                        "Default": 0.1,
+                        "Type": "FloatHyperparameter",
+                        "Level": 1
+                    },
+                    "n_estimators": {
+                        "Lower": 100,
+                        "Upper": 1000,
+                        "Default": 100,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "entropy": {
+                    "max_depth": {
+                        "Lower": 10,
+                        "Upper": 120,
+                        "Default": 50,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "max_features": {
+                        "sqrt": {
+                            "Type": "Category"
+                        },
+                        "log2": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.criterion.entropy.max_features.sqrt",
+                            "Context.SearchSpace.criterion.entropy.max_features.log2"
+                        ],
+                        "Default": "Context.SearchSpace.criterion.entropy.max_features.sqrt",
+                        "Type": "OrdinalHyperparameter",
+                        "Level": 1
+                    },
+                    "min_samples_leaf": {
+                        "Lower": 0.01,
+                        "Upper": 0.5,
+                        "Default": 0.1,
+                        "Type": "FloatHyperparameter",
+                        "Level": 1
+                    },
+                    "min_samples_split": {
+                        "Lower": 0.01,
+                        "Upper": 1.0,
+                        "Default": 0.1,
+                        "Type": "FloatHyperparameter",
+                        "Level": 1
+                    },
+                    "n_estimators": {
+                        "Lower": 100,
+                        "Upper": 1000,
+                        "Default": 100,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.criterion.gini",
+                    "Context.SearchSpace.criterion.entropy"
+                ],
+                "Default": "Context.SearchSpace.criterion.gini",
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Hierarchical": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 1,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model_0": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Pure": {}
+                    }
+                },
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "GaussianProcessRegressor": {
+                            "MultiObjective": true,
+                            "Parameters": {
+                                "n_restarts_optimizer": 2
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 84,
+                            "Algorithms": {
+                                "MACO": {
+                                    "MultiObjective": {}
+                                },
+                                "MOEAD": {
+                                    "MultiObjective": {}
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "random_multi_point"
+                    }
+                }
+            },
+            "Model_1": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Pure": {}
+                    }
+                },
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "GaussianProcessRegressor": {
+                            "MultiObjective": true,
+                            "Parameters": {
+                                "n_restarts_optimizer": 4
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 70,
+                            "Algorithms": {
+                                "NSGA2": {
+                                    "MultiObjective": {}
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "random_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 1,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "QuantityBasedSC": {
+                "Parameters": {
+                    "MaxConfigs": 25
+                },
+                "Type": "quantity_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
+}

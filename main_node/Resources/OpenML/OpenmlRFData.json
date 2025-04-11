@@ -1,0 +1,99 @@
+{
+  "name": "criterion",
+  "type": "NominalHyperparameter",
+  "categories": [
+    {
+      "category": "gini",      
+      "children": [
+        {
+          "name": "max_depth",
+          "type": "IntegerHyperparameter",
+          "lower": 10,
+          "upper": 120,
+          "default": 50
+        },
+        {
+          "name": "max_features",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "sqrt"
+            },
+            {
+              "category": "log2"
+            }
+          ],
+          "default": "sqrt"
+        },
+        {
+        "name": "min_samples_leaf",
+        "type": "FloatHyperparameter",
+        "lower": 0.0,
+        "upper": 0.5,
+        "default": 0.1
+        },
+        {
+          "name": "min_samples_split",
+          "type": "FloatHyperparameter",
+          "lower": 0.0,
+          "upper": 1.0,
+          "default": 0.1
+        },
+        {
+          "name": "n_estimators",
+          "type": "IntegerHyperparameter",
+          "lower": 100,
+          "upper": 1000,
+          "default": 100
+        }
+      ]
+    },
+    {
+      "category": "entropy",      
+      "children": [
+        {
+          "name": "max_depth",
+          "type": "IntegerHyperparameter",
+          "lower": 10,
+          "upper": 120,
+          "default": 50
+        },
+        {
+          "name": "max_features",
+          "type": "NominalHyperparameter",
+          "categories": [
+            {
+              "category": "sqrt"
+            },
+            {
+              "category": "log2"
+            }
+          ],
+          "default": "sqrt"
+        },
+        {
+        "name": "min_samples_leaf",
+        "type": "FloatHyperparameter",
+        "lower": 0.0,
+        "upper": 0.5,
+        "default": 0.1
+        },
+        {
+          "name": "min_samples_split",
+          "type": "FloatHyperparameter",
+          "lower": 0.0,
+          "upper": 1.0,
+          "default": 0.1
+        },
+        {
+          "name": "n_estimators",
+          "type": "IntegerHyperparameter",
+          "lower": 100,
+          "upper": 1000,
+          "default": 100
+        }
+      ]
+    }
+  ],
+  "default": "gini"
+}

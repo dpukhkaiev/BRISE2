@@ -1,0 +1,547 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y2": {
+                    "Name": "Y2",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y3": {
+                    "Name": "Y3",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y4": {
+                    "Name": "Y4",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y5": {
+                    "Name": "Y5",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "N0": {
+                "N01": {
+                    "F1": {
+                        "Lower": 0.0,
+                        "Upper": 150.0,
+                        "Default": 25.0,
+                        "Type": "FloatHyperparameter",
+                        "Level": 0
+                    },
+                    "I1": {
+                        "Lower": -1,
+                        "Upper": 800,
+                        "Default": 10,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 0
+                    },
+                    "Type": "Category"
+                },
+                "N02": {
+                    "N1": {
+                        "N11": {
+                            "Type": "Category"
+                        },
+                        "N12": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.N0.N02.N1.N11",
+                            "Context.SearchSpace.N0.N02.N1.N12"
+                        ],
+                        "Default": "Context.SearchSpace.N0.N02.N1.N11",
+                        "Type": "NominalHyperparameter",
+                        "Level": 0
+                    },
+                    "O1": {
+                        "O11": {
+                            "Type": "Category"
+                        },
+                        "O12": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.N0.N02.O1.O11",
+                            "Context.SearchSpace.N0.N02.O1.O12"
+                        ],
+                        "Default": "Context.SearchSpace.N0.N02.O1.O11",
+                        "Type": "OrdinalHyperparameter",
+                        "Level": 0
+                    },
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.N0.N01",
+                    "Context.SearchSpace.N0.N02"
+                ],
+                "Default": "Context.SearchSpace.N0.N01",
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "MersenneTwister": {
+                "Seed": 1,
+                "Type": "mersenne_twister"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Compositional": {}
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                },
+                "Surrogate_0": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        },
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 30,
+                                "random_fraction": 0.0,
+                                "bandwidth_factor": 1.0,
+                                "min_bandwidth": 0.001
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Surrogate_1": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        },
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 30,
+                                "random_fraction": 0.0,
+                                "bandwidth_factor": 1.0,
+                                "min_bandwidth": 0.001
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Surrogate_2": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        },
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 30,
+                                "random_fraction": 0.0,
+                                "bandwidth_factor": 1.0,
+                                "min_bandwidth": 0.001
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Surrogate_3": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        },
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 30,
+                                "random_fraction": 0.0,
+                                "bandwidth_factor": 1.0,
+                                "min_bandwidth": 0.001
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Surrogate_4": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        },
+                        "FloatTransformer": {
+                            "SklearnFloatMinMaxScaler": {
+                                "Type": "sklearn_float_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "TreeParzenEstimator": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "top_n_percent": 30,
+                                "random_fraction": 0.0,
+                                "bandwidth_factor": 1.0,
+                                "min_bandwidth": 0.001
+                            },
+                            "Type": "tree_parzen_estimator"
+                        }
+                    }
+                },
+                "Optimizer_0": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 5,
+                            "PopulationSize": 80,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Optimizer_1": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 5,
+                            "PopulationSize": 80,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Optimizer_2": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 5,
+                            "PopulationSize": 80,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Optimizer_3": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 5,
+                            "PopulationSize": 80,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Optimizer_4": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "ValueTransformers": {
+                        "AcquisitionFunction": {
+                            "TPE_EI": {
+                                "Type": "tpe_ei"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 5,
+                            "PopulationSize": 80,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "AcceptableErrorBased": {
+                "MinTasksPerConfiguration": 2,
+                "MaxTasksPerConfiguration": 7,
+                "BaseAcceptableError": 5.0,
+                "ConfidenceLevel": 0.95,
+                "Type": "acceptable_error_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "BadConfigurationBasedSC": {
+                "Parameters": {
+                    "MaxBadConfigurations": 1
+                },
+                "Type": "bad_configuration_based",
+                "Name": "b"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "b",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
+}
