@@ -16,9 +16,10 @@ class JMetalWrapper(ILLHWrapper):
         self._call_arguments.append('paths_to_stdout=True')
         self._initial_solutions_file_name = "warm_startup_solutions.txt"
 
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
+        elitist = hyperparameters.get('elitist').split(".")[-1]
         self._call_arguments.append(f"mutation_probability={hyperparameters.get('mutation_probability')}")
-        self._call_arguments.append(f"elitist={hyperparameters.get('elitist')}")
+        self._call_arguments.append(f"elitist={elitist}")
         self._call_arguments.append(f"mu={hyperparameters.get('mu')}")
         self._call_arguments.append(f"lambda={hyperparameters.get('lambda_')}")
         self._call_arguments.append(f"problem={scenario['Problem']}")
@@ -38,19 +39,20 @@ class JMetalWrapper(ILLHWrapper):
         # pr439.tsp
         # rat783.tsp
         # If one needs to add a new scenario, the jar file should be modified. TSP instances should be put into
-        # tspInstances directory
+        # tsp directory
         if scenario["Problem"] == "TSP":
-            scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
+            scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
             self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
         elif scenario["Problem"] == "Sphere" or scenario["Problem"] == "Rastrigin":
-            self._call_arguments.append(f"numberOfVariables=" + str(scenario["problem_initialization_parameters"]["number_of_variables"]))
+            self._call_arguments.append(
+                f"numberOfVariables={scenario["InitializationParameters"]["number_of_variables"]}")
         else:
             raise NotImplementedError("jMetal.EvolutionStrategy is not yet supported for the specified problem!")
 
         self._attach_termination(scenario["Budget"])
-        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isWarmStartupEnabled']}")
+        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isParameterControlEnabled']}")
 
-        self._attach_initial_solutions(warm_startup_info)
+        self._attach_initial_solutions(parameter_control_info)
 
     def run_and_report(self) -> Mapping:
         stdout, stderr, return_code = jar_runner(*self._call_arguments)
@@ -84,7 +86,7 @@ class JMetalWrapper(ILLHWrapper):
             result = {
                 "objective": current_objective,
                 "improvement": improvement,
-                "warm_startup_info": {
+                "parameter_control_info": {
                     "solutions": solutions
                 }
             }
@@ -92,13 +94,13 @@ class JMetalWrapper(ILLHWrapper):
         # cleanup
         if os.path.exists(self._initial_solutions_file_name):
             os.remove(self._initial_solutions_file_name)
-
+        self.logger.warning(result)
         return result
 
-    def _attach_initial_solutions(self, warm_startup_info: Mapping) -> None:
-        if warm_startup_info and 'solutions' in warm_startup_info.keys():
+    def _attach_initial_solutions(self, parameter_control_info: Mapping) -> None:
+        if parameter_control_info and 'solutions' in parameter_control_info.keys():
             with open(self._initial_solutions_file_name, 'w') as f:
-                for solution in warm_startup_info['solutions']:
+                for solution in parameter_control_info['solutions']:
                     f.write(json.dumps(solution))
                     f.write("\n")
             self._call_arguments.append(f"initial_solutions={self._initial_solutions_file_name}")
@@ -111,28 +113,28 @@ class JMetalWrapper(ILLHWrapper):
 
 
 class JMetalWrapperTuned(JMetalWrapper):
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
         self._call_arguments.append("mutation_probability=0.9938884974393134")
         self._call_arguments.append("elitist=True")
         self._call_arguments.append("mu=5")
         self._call_arguments.append("lambda=605")
 
-        scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
-        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
+        scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
+        self._call_arguments.append(f"tsp_scenario=/tsp/{scenario_file_name}")
 
         self._attach_termination(scenario["Budget"])
-        self._attach_initial_solutions(warm_startup_info)
+        self._attach_initial_solutions(parameter_control_info)
 
 
 class JMetalWrapperDefault(JMetalWrapper):
-    def construct(self, hyperparameters: Mapping, scenario: Mapping, warm_startup_info: Mapping) -> None:
+    def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
         self._call_arguments.append("mutation_probability=0.5")
         self._call_arguments.append("elitist=False")
         self._call_arguments.append("mu=500")
         self._call_arguments.append("lambda=500")
 
-        scenario_file_name = scenario["problem_initialization_parameters"]["instance"].split("/")[-1]
-        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
+        scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
+        self._call_arguments.append(f"tsp_scenario=/tsp/{scenario_file_name}")
 
         self._attach_termination(scenario["Budget"])
-        self._attach_initial_solutions(warm_startup_info)
+        self._attach_initial_solutions(parameter_control_info)

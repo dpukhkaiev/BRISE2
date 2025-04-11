@@ -27,20 +27,24 @@ class StopConditionValidator:
         self.experiment_id = experiment_id
         self.logger = logging.getLogger(__name__)
         self.active = True
-        self.expression = experiment_description["StopConditionTriggerLogic"]["Expression"]
+        self.expression = experiment_description["StopCondition"]["StopConditionTriggerLogic"]["Expression"]
         self.stop_condition_states = {}
-        for sc_index in range(0, len(experiment_description["StopCondition"])):
-            if re.search(experiment_description["StopCondition"][sc_index]["Name"], self.expression):
-                self.stop_condition_states[experiment_description["StopCondition"][sc_index]["Name"]] = False
+
+        for sc_key in experiment_description["StopCondition"]["Instance"]:
+            if re.search(experiment_description["StopCondition"]["Instance"][sc_key]["Name"], self.expression):
+                self.stop_condition_states[experiment_description["StopCondition"]["Instance"][sc_key]["Name"]] = False
+
         self.expression = self.expression.replace("or", "|").replace("and", "&")
         self.repetition_interval = datetime.timedelta(**{
-            experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-            experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
-        self.connection_thread = EventServiceConnection(self)
-        self.connection_thread.start()
-        self.processing_thread = threading.Thread(target=self.self_evaluation, args=())
-        self.channel = self.connection_thread.channel
-        self.processing_thread.start()
+            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
+            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
+
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.connection_thread = EventServiceConnection(self)
+            self.connection_thread.start()
+            self.processing_thread = threading.Thread(target=self.self_evaluation, args=())
+            self.channel = self.connection_thread.channel
+            self.processing_thread.start()
 
     def self_evaluation(self):
         """
@@ -104,6 +108,7 @@ class StopConditionValidator:
         """
         self.connection_thread.stop()
         self.active = False
+
 
 class EventServiceConnection(RabbitMQConnection):
     """

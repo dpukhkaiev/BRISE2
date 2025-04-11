@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import List, Dict
 
 
 class ModelPerformanceMetric(ABC):
@@ -9,5 +10,10 @@ class ModelPerformanceMetric(ABC):
         self.logger = logging.getLogger(__name__)
 
     @abstractmethod
-    def compute(self) -> dict:
+    def compute(self,
+                improvement_curve: List,
+                prediction_infos: List,
+                start_index: int,
+                end_index: int,
+                multi_model: bool) -> Dict:
         pass

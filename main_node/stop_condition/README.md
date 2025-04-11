@@ -1,7 +1,6 @@
 # Stop Condition.
-##### This folder contains an Abstract Stop Condition class and some available out of the box Stop Conditions.
 
-When you specify a Stop Condition in the Experiment description file `stop_condition_selector.py` reads the description
+When you select a Stop Condition during product configuration process [stop_condition_selector.py](stop_condition_selector.py) reads the resulting `Json-file`
  and builds Stop Condition modules. 
 
 Each Stop Condition periodically performs self-validation according to a user-defined repetition 
@@ -9,219 +8,143 @@ interval. Stop Condition Validator orchestrates all Stop Conditions. Connection 
 
 The user could specify any logic of BRISE Experiment termination by composing operands `and`, `or`, brackets `(` `)` 
 and names of Stop Conditions into a single expression.
-This expression should be written at `StopConditionTriggerLogic` block of a BRISE settings file.
-###### Note: Stop Conditions, that are defined in `StopCondition` block, but not used in `StopConditionTriggerLogic` block will be ignored.
-Example of `StopConditionTriggerLogic` block:
+This expression should be specified within `Expression` attribute of `StopConditionTriggerLogic` feature.
+
+**Note: Stop Conditions, that are selected within `StopCondition` feature, but not used in `StopConditionTriggerLogic` are ignored.**
 
 ```json
-"StopConditionTriggerLogic":{
-    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and Adaptive) or BadConfigurationBased",
-    "InspectionParameters":{
-      "RepetitionPeriod": 10,
-      "TimeUnit": "seconds"
+StopCondition {
+  Instance {
+    ...
+  }
+  StopConditionTriggerLogic {
+    Expression -> string
+    InspectionParameters {
+      RepetitionPeriod -> integer
+      TimeUnit -> string
+      [RepetitionPeriod > 0]
+      [TimeUnit in {"seconds", "minutes", "hours", "days"}]
     }
+  }
 }
 ```
-## Stop Condition "Name" and "Type" parameters
 
-#### Name
+Example of a `StopConditionTriggerLogic` expression:
 
-"Name" reflects Stop Condition ID. Each name should be unique. You could use any combination of letters, numericals and special symbols to define name. 
+`(QuantityBased and Guaranteed and ImprovementBased and Adaptive) or BadConfigurationBased`,
+where each element is contained within `Name` attribute of a `StopCondition` instance.
 
-##### Hint: Use meaningful name which consists of Stop Condition type and Stop Condition parameters.
-For example "Name": "TimeBased10m" which reflects "TimeBased" Stop Condition with 10 minutes timeout.
-
-#### Type
-
-"Type" reflects BRISE Experiment termination strategy with own parameter set. Each type is designed to spot different trigger events. You could use only predefined set of types. Any other type will cause an error, and the experiment will be terminated.
-All Stop Condition types are described in the section below.
-
-## Variants of Stop Condition configurations
+## Feature model
+Feature model allows selecting unspecified number of each stop condition under condition that all `Name` values are unique.
+ `FewShotLearningBasedSC` is enabled via a cross-tree constraint from the [Transfer learning](../transfer_learning) component.
+```json
+abstract SC {
+  Type -> predefined
+  Name -> string
+}
+StopCondition {
+  Instance {
+    AdaptiveSC : SC * {
+      Parameters {
+        SearchSpacePercentage -> float
+        [SearchSpacePercentage > 0]
+        [SearchSpacePercentage < 100]
+      }
+      [Type = "adaptive"]
+    }
+    BadConfigurationBasedSC : SC *{
+      Parameters {
+        MaxBadConfigurations -> integer
+        [MaxBadConfigurations > 0]
+      }
+      [Type = "bad_configuration_based"]
+    }
+    FewShotLearningBasedSC : SC 0 {
+      [Type = "few_shot_learning_based"]
+    }
+    GuaranteedSC : SC * {
+      [Type = "guaranteed"]
+    }
+    ImprovementBasedSC : SC * {
+      Parameters {
+        MaxConfigsWithoutImprovement -> integer
+        [MaxConfigsWithoutImprovement > 0]
+      }
+      [Type = "improvement_based"]
+    }
+    QuantityBasedSC : SC * {
+      Parameters {
+        MaxConfigs -> integer
+        [MaxConfigs > 0]
+      }
+      [Type = "quantity_based"]
+    }
+    TimeBasedSC : SC * {
+      Parameters {
+        MaxRunTime -> integer
+        TimeUnit -> string
+        [MaxRunTime > 0]
+        [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+      }
+      [Type = "time_based"]
+    }
+    ValidationBasedSC : SC * {
+        [Type = "validation_based"]
+    }
+    [size childs.self > 0]
+    [size unique Name at self == size childs.self]
+  }
+  StopConditionTriggerLogic {
+    Expression -> string
+    InspectionParameters {
+      RepetitionPeriod -> integer
+      TimeUnit -> string
+      [RepetitionPeriod > 0]
+      [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+    }
+  }
+}
+```
+## Variants of Stop Condition
 
 #### Quantity Based Stop Condition
 
-This Stop Condition is satisfied, when the number of overall measured Configurations is greater than `StopCondition["MaxConfigs"]`.
+This Stop Condition is satisfied, when the number of overall measured Configurations is greater than `MaxConfigs`.
 
-```json
-"StopCondition":[
-    {
-      "Name": "QuantityBased",
-      "Type": "QuantityBased",
-      "Parameters": {
-        "MaxConfigs": 15
-      }
-    }
-  ]
-```
 
 #### Guaranteed Stop Condition
 
 This Stop Condition is satisfied, when a better Configuration than the Default Configuration was found.
 
-```json
-"StopCondition":[
-    {
-      "Name": "Guaranteed",
-      "Type": "Guaranteed",
-      "Parameters": {      }
-    }
-  ]
-```
 
 #### Improvement Based Stop Condition
 
 This Stop Condition is satisfied, when a better Configuration was not found after evaluating 
-`StopCondition["MaxConfigsWithoutImprovement"]` number of Configurations in a row.
-
-```json
-"StopCondition":[
-    {
-      "Name": "ImprovementBased",
-      "Type": "ImprovementBased",
-      "Parameters": {
-        "MaxConfigsWithoutImprovement": 5
-      }
-    }
-  ]
-```
+`MaxConfigsWithoutImprovement` number of Configurations in a row.
 
 #### Adaptive Stop Condition
 
 This Stop Condition is satisfied, when the BRISE had evaluated some percentage of overall number of Configurations in the Search Space. 
-This percentage can be specified by `StopCondition["SearchSpacePercentage"]` parameter for Adaptive Stop Condition.
+This percentage can be specified by `SearchSpacePercentage` parameter for Adaptive Stop Condition.
 
-```json
-"StopCondition":[
-    {
-      "Name": "Adaptive",
-      "Type": "Adaptive",
-      "Parameters": {
-        "SearchSpacePercentage": 15
-      }
-    }
-  ]
-```
 #### Bad Configuration Based Stop Condition
 
 This Stop Condition is satisfied, when a total number of broken, failed or not suitable Configurations reaches a 
-user-defined limit. This limit is reflected as `StopCondition["MaxBadConfigurations"]` parameter for Bad Configuration 
+user-defined limit. This limit is reflected as `MaxBadConfigurations` parameter for Bad Configuration 
 Based Stop Condition.
 
-```json
-"StopCondition":[
-    {
-      "Name": "BadConfigurationBased",
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
-      }
-    }
-  ]
-```
 
 #### Time Based Stop Condition
 
 This Stop Condition terminates BRISE execution, when the user-defined timeout is reached.
-This timeout could be set using `StopCondition["MaxRunTime"]` and `StopCondition["TimeUnit"]` parameters 
-that represent time value and time unit (seconds, minutes, etc.) respectively.
+This timeout could be set using `MaxRunTime` and `TimeUnit` parameters 
+that represent time value and time unit (seconds, minutes or hours) respectively.
 
-```json
-"StopCondition":[
-    {
-      "Name": "TimeBased",
-      "Type": "TimeBased",
-      "Parameters": {
-        "MaxRunTime": 10,
-        "TimeUnit": "minutes"
-      }
-    }
-  ]
-```
 
 #### Validation Based Stop Condition
 
-This Stop Condition is satisfied, when the model created during BRISE runtime is valid.
-
-```json
-"StopCondition":[
-    {
-      "Name": "ValidationBased",
-      "Type": "ValidationBased",
-      "Parameters": {      }
-    }
-  ]
-```
+This Stop Condition is satisfied, when the model created during BRISE run is valid.
 
 #### Few-shot-learning Based Stop Condition
 
 This Stop Condition is fired, when at least one entity was transferred to the current experiment via the transfer learning module.
-```json
-"StopCondition":[
-    {  
-      "Name": "FewShotLearningBased",
-      "Type": "FewShotLearningBased",
-      "Parameters": {      }
-    }
-  ]
-```
-
-
-#### An example of Stop Condition modules settings:
-
-```json
-"StopConditionTriggerLogic":{
-    "Expression": "(QuantityBased and Guaranteed and ImprovementBased and Adaptive or ValidationBased) or BadConfigurationBased",
-    "InspectionParameters":{
-      "RepetitionPeriod": 10,
-      "TimeUnit": "seconds"
-    }
-  },
-"StopCondition":[
-    {
-      "Name": "QuantityBased",
-      "Type": "QuantityBased",
-      "Parameters": {
-        "MaxConfigs": 15
-      }
-    },
-    {
-      "Name": "ImprovementBased",
-      "Type": "ImprovementBased",
-      "Parameters": {
-        "MaxConfigsWithoutImprovement": 5
-      }
-    },
-    {
-      "Name": "Guaranteed",
-      "Type": "Guaranteed",
-      "Parameters": {      }
-    },
-    {
-      "Name": "Adaptive",
-      "Type": "Adaptive",
-      "Parameters": {
-        "SearchSpacePercentage": 15
-      }
-    },
-    {
-      "Name": "BadConfigurationBased",
-      "Type": "BadConfigurationBased",
-      "Parameters": {
-        "MaxBadConfigurations": 10
-      }
-    },
-    {
-      "Name": "TimeBased",
-      "Type": "TimeBased",
-      "Parameters": {
-        "MaxRunTime": 10,
-        "TimeUnit": "minutes"
-      }
-    },
-    {
-      "Name": "ValidationBased",
-      "Type": "ValidationBased",
-      "Parameters": {      }
-    }
-  ]
-```

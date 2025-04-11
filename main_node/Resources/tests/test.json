@@ -1,0 +1,799 @@
+{
+  "_id": ObjectId(
+  "67054909bf75a256aa1ecdc2"
+  ),
+  "Exp_unique_ID": "9c7d478e-43ff-43fa-9cf9-00a2a8c3104f",
+  "Scenario": {},
+  "Samples": [
+    {
+      "type": 0,
+      "parameters": {
+        "X1": 3.507818383696235,
+        "X2": -81.05350084339528
+      },
+      "result": {
+        "Y1": 0.4415096885687905,
+        "Y2": 0.48670678859533445
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 2.01790463321457,
+        "X2": 809.0838023569675
+      },
+      "result": {
+        "Y1": 0.4520064146823493,
+        "Y2": 0.48920889966628456
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 3.423744474350429,
+        "X2": 504.4950363236727
+      },
+      "result": {
+        "Y1": 0.5094021194956072,
+        "Y2": 0.56663875380211
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 2.0330469932672397,
+        "X2": 157.5509834822726
+      },
+      "result": {
+        "Y1": 0.37227206777816124,
+        "Y2": 0.45585452884930794
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 1.237012935405747,
+        "X2": 955.886301665199
+      },
+      "result": {
+        "Y1": 0.6928676792938189,
+        "Y2": 0.4483118574675733
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 1.9080022027648806,
+        "X2": 575.7248766440779
+      },
+      "result": {
+        "Y1": 0.39039961455577504,
+        "Y2": 0.45067864307542227
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 3.214950753768911,
+        "X2": 774.1858048744144
+      },
+      "result": {
+        "Y1": 0.48470314609895065,
+        "Y2": 0.5548037905160994
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 4.398542329590745,
+        "X2": 962.9984094170106
+      },
+      "result": {
+        "Y1": 0.5471619832256404,
+        "Y2": 0.4443717617377516
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 2,
+      "parameters": {
+        "X1": 1.38471134103562,
+        "X2": -48.27493105728742
+      },
+      "result": {
+        "Y1": 0.41236082209425645,
+        "Y2": 0.42915104782716007
+      },
+      "prediction_info": [
+        {
+          "Model": [],
+          "time_to_build": 0
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 1.007451807088355,
+        "X2": -64.68714818500592
+      },
+      "result": {
+        "Y1": 0.4525788688737408,
+        "Y2": 0.5575111818978981
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              },
+              "LinearRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "LinearRegression": {
+                    "MultiObjective": false,
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.LinearRegression"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.006352901458740234
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 1.6816994351793697,
+        "X2": -99.94277427689156
+      },
+      "result": {
+        "Y1": 0.4850743194675997,
+        "Y2": 0.5667415038867545
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "BayesianRidgeRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "BayesianRidgeRegression": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "max_iter": 10,
+                      "tol": 1
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.BayesianRidge"
+                  }
+                }
+              },
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.0054988861083984375
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 1.4915096814293691,
+        "X2": -56.27329562205114
+      },
+      "result": {
+        "Y1": 0.36906520830858774,
+        "Y2": 0.5600176120394841
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "BayesianRidgeRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "BayesianRidgeRegression": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "max_iter": 10,
+                      "tol": 1
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.BayesianRidge"
+                  }
+                }
+              },
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.0054950714111328125
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 2.6422112581401267,
+        "X2": 999.9117811258833
+      },
+      "result": {
+        "Y1": 0.44671246869815723,
+        "Y2": 0.5267229631673244
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "BayesianRidgeRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "BayesianRidgeRegression": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "max_iter": 10,
+                      "tol": 1
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.BayesianRidge"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.004641056060791016
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 1.0307253291742007,
+        "X2": 999.7879065464737
+      },
+      "result": {
+        "Y1": 0.5459965940141372,
+        "Y2": 0.564978234334396
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "BayesianRidgeRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "BayesianRidgeRegression": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "max_iter": 10,
+                      "tol": 1
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.BayesianRidge"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.004513978958129883
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 3.8206589699158435,
+        "X2": -2.7127812336788493
+      },
+      "result": {
+        "Y1": 0.5298618883192694,
+        "Y2": 0.43853044361654053
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              },
+              "MultiLayerPerceptronRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "MultiLayerPerceptronRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "hidden_layer_sizes": 10,
+                      "activation": "tanh",
+                      "solver": "sgd",
+                      "alpha": 0.0001
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.neural_network.MLPRegressor"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.010491132736206055
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 1.261853552093817,
+        "X2": 58.439336456272066
+      },
+      "result": {
+        "Y1": 0.5470041703507819,
+        "Y2": 0.5441866970661495
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.006540060043334961
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 4.999610206218952,
+        "X2": 972.1761088870885
+      },
+      "result": {
+        "Y1": 0.34893038046487385,
+        "Y2": 0.39155214089208673
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              },
+              "LinearRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "LinearRegression": {
+                    "MultiObjective": false,
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.LinearRegression"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.005373954772949219
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 4.926302966826656,
+        "X2": 992.0376692375949
+      },
+      "result": {
+        "Y1": 0.5830849062147888,
+        "Y2": 0.5442609637638768
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.006499767303466797
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 4.999135465068056,
+        "X2": 992.3728581248025
+      },
+      "result": {
+        "Y1": 0.5051095401214684,
+        "Y2": 0.528229645579423
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "GradientBoostingRegressor": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "GradientBoostingRegressor": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "n_estimators": 4
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                  }
+                }
+              },
+              "LinearRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "LinearRegression": {
+                    "MultiObjective": false,
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.LinearRegression"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.0053386688232421875
+        }
+      ]
+    },
+    {
+      "type": 1,
+      "parameters": {
+        "X1": 4.896517660304707,
+        "X2": 999.8010976628337
+      },
+      "result": {
+        "Y1": 0.45518250677333383,
+        "Y2": 0.4205627159807657
+      },
+      "prediction_info": [
+        {
+          "Model": [
+            {
+              "BayesianRidgeRegression": {
+                "ConfigurationTransformers": {
+                  "NominalTransformer": {
+                    "BinaryEncoder": {
+                      "Type": "binary_transformer",
+                      "Class": "brise.BinaryEncoder"
+                    }
+                  }
+                },
+                "Instance": {
+                  "BayesianRidgeRegression": {
+                    "MultiObjective": false,
+                    "Parameters": {
+                      "max_iter": 10,
+                      "tol": 1
+                    },
+                    "Type": "sklearn_model_wrapper",
+                    "Class": "sklearn.linear_model.BayesianRidge"
+                  }
+                }
+              }
+            }
+          ],
+          "time_to_build": 0.004495143890380859
+        }
+      ]
+    }
+  ],
+  "Current_best_curve": [
+    {
+      "Y1": 0.4415096885687905,
+      "Y2": 0.48670678859533445
+    },
+    {
+      "Y1": 0.4415096885687905,
+      "Y2": 0.48670678859533445
+    },
+    {
+      "Y1": 0.37227206777816124,
+      "Y2": 0.45585452884930794
+    },
+    {
+      "Y1": 0.6928676792938189,
+      "Y2": 0.4483118574675733
+    },
+    {
+      "Y1": 0.39039961455577504,
+      "Y2": 0.45067864307542227
+    },
+    {
+      "Y1": 0.39039961455577504,
+      "Y2": 0.45067864307542227
+    },
+    {
+      "Y1": 0.5471619832256404,
+      "Y2": 0.4443717617377516
+    },
+    {
+      "Y1": 0.41236082209425645,
+      "Y2": 0.42915104782716007
+    },
+    {
+      "Y1": 0.41236082209425645,
+      "Y2": 0.42915104782716007
+    },
+    {
+      "Y1": 0.41236082209425645,
+      "Y2": 0.42915104782716007
+    },
+    {
+      "Y1": 0.36906520830858774,
+      "Y2": 0.5600176120394841
+    },
+    {
+      "Y1": 0.44671246869815723,
+      "Y2": 0.5267229631673244
+    },
+    {
+      "Y1": 0.44671246869815723,
+      "Y2": 0.5267229631673244
+    },
+    {
+      "Y1": 0.5298618883192694,
+      "Y2": 0.43853044361654053
+    },
+    {
+      "Y1": 0.5298618883192694,
+      "Y2": 0.43853044361654053
+    },
+    {
+      "Y1": 0.34893038046487385,
+      "Y2": 0.39155214089208673
+    },
+    {
+      "Y1": 0.34893038046487385,
+      "Y2": 0.39155214089208673
+    },
+    {
+      "Y1": 0.34893038046487385,
+      "Y2": 0.39155214089208673
+    },
+    {
+      "Y1": 0.34893038046487385,
+      "Y2": 0.39155214089208673
+    }
+  ]
+}

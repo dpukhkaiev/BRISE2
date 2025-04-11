@@ -48,6 +48,7 @@ class BRISEBenchmarkAnalyser:
         Args:
             folder_with_dumps (str, optional): Path to Experiment instances. Defaults to "./results/serialized/".
         """
+        # TODO remove as deprecated as soon as the new analyzer is available
         self.experiments_folder = experiments_folder
         self.output_folder = output_folder
         os.makedirs(output_folder, exist_ok=True)

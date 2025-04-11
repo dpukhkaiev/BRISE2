@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from collections.abc import Mapping
 
 from core_entities.configuration import Configuration
 from repeater.results_check.outliers_detection.outliers_detector_selector import (
@@ -16,7 +15,7 @@ from tools.reflective_class_import import reflective_class_import
 logging.getLogger("pika").propagate = False
 
 
-class RepeaterOrchestration():
+class RepeaterOrchestration:
     """
     This class runs repeater creation process, task preprocessing (errors, outliers check)
     and configuration status management.
@@ -44,18 +43,35 @@ class RepeaterOrchestration():
             self.experiment = experiment
             self.experiment_description = experiment.description
         self.performed_measurements = 0
-        self.repeater_parameters = self.experiment_description["Repeater"]["Parameters"]
-        self._objectives = self.experiment_description["TaskConfiguration"]["Objectives"]
-        self._objectives_data_types = self.experiment_description["TaskConfiguration"]["ObjectivesDataTypes"]
-        self._expected_values_range = self.experiment_description["TaskConfiguration"]["ExpectedValuesRange"]
 
-        if self.experiment_description["OutliersDetection"]["isEnabled"]:
-            self.outlier_detectors = get_outlier_detectors(self.experiment_description["OutliersDetection"])
-        else:
-            self.logger.info("Outliers detection module is disabled")
+        keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
+        assert len(keys) == 1
+        feature_name = keys[0]
+        self.repeater_parameters = {**self.experiment_description["RepetitionManager"]["Instance"][feature_name], **self.experiment_description["RepetitionManager"]}
+
+        objectives = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["Name"]
+                 for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
+        self._objectives = objectives
+        data_types = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["DataType"]
+                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
+
+        self._objectives_data_types = data_types
+        minimal_values = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["MinExpectedValue"]
+                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
+        maximal_values = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["MaxExpectedValue"]
+                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
+        expected_value_ranges = [(min, max) for min in minimal_values for max in maximal_values]
+        self._expected_values_range = expected_value_ranges
+
+        # TODO Outliers are disabled
+        # if self.metric_description["OutliersDetection"]["isEnabled"]:
+        #     self.outlier_detectors = get_outlier_detectors(self.metric_description["OutliersDetection"])
+        # else:
+        self.logger.info("Outliers detection module is disabled")
+
         self._type = self.get_repeater(True)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.connection_thread = EventServiceConnection(self)
+            self.connection_thread = self._EventServiceConnection(self)
             self.channel = self.connection_thread.channel
             self.connection_thread.start()
 
@@ -67,14 +83,18 @@ class RepeaterOrchestration():
         :return instance of a concrete Repeater
         """
         logger = logging.getLogger(__name__)
-        parameters = self.experiment_description["Repeater"]
+        parameters = self.experiment_description["RepetitionManager"]
+
+        keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
+        assert len(keys) == 1
+        feature_name = keys[0]
 
         if not is_default_configuration:
-            repeater_class = reflective_class_import(class_name=parameters["Type"], folder_path="repeater")
+            repeater_class = reflective_class_import(class_name=parameters["Instance"][feature_name]["Type"], folder_path="repeater")
         else:
-            repeater_class = reflective_class_import(class_name="Quantity-based", folder_path="repeater")
+            repeater_class = reflective_class_import(class_name="quantity_based", folder_path="repeater")
 
-        msg = parameters["Type"]
+        msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             return repeater_class(self.experiment_description, self.experiment_id)
@@ -121,21 +141,18 @@ class RepeaterOrchestration():
                                             objective,
                                             self._expected_values_range[index],
                                             self._objectives_data_types[index])
-            if self.experiment_description["OutliersDetection"]["isEnabled"]:
-                tasks_results = self.outlier_detectors.find_outliers_for_taskset(tasks_results,
-                                                                                 self._objectives,
-                                                                                 [configuration],
-                                                                                 tasks_to_send)
+            # if self.metric_description["OutliersDetection"]["isEnabled"]: # TODO enable outliers
+            #     tasks_results = self.outlier_detectors.find_outliers_for_taskset(tasks_results,
+            #                                                                      self._objectives,
+            #                                                                      [configuration],
+            #                                                                      tasks_to_send)
 
             # Sending data to API and adding Tasks to Configuration
             for parameters, task in zip(tasks_to_send, tasks_results):
                 if configuration.parameters == parameters:
                     if configuration.is_valid_task(task):
                         configuration.add_task(task)
-                        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                            self.database.write_one_record("Task", configuration.get_task_record(task))
-                    else:
-                        configuration.increase_failed_tasks_number()
+                        self.database.write_one_record("Task", configuration.get_task_record(task))
 
                 API().send('new', 'task', configurations=[parameters], results=[task])
 
@@ -169,14 +186,13 @@ class RepeaterOrchestration():
                 for i in range(current_measurement[point]['needed_tasks_count']):
                     tasks_to_send.append(current_measurement[point]['parameters'])
                     self.performed_measurements += 1
-                    if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                        self.database.update_record(
-                            "Experiment_state",
-                            {"Exp_unique_ID": self.experiment_id},
-                            {
-                                "Number_of_measured_tasks": self.performed_measurements
-                            }
-                        )
+                    self.database.update_record(
+                        "Experiment_state",
+                        {"Exp_unique_ID": self.experiment_id},
+                        {
+                            "Number_of_measured_tasks": self.performed_measurements
+                        }
+                    )
 
         if os.environ.get('TEST_MODE') == 'UNIT_TEST':
             return configuration, needed_tasks_count
@@ -199,30 +215,28 @@ class RepeaterOrchestration():
                     routing_key=self.experiment_id,
                     body=body)
 
-
-class EventServiceConnection(RabbitMQConnection):
-    """
-    This class runs in a separate thread and handles measurement result from WSClient,
-    connected to the `measurement_results_exchange` as consumer and recheck measurement by repeater.measure_configurations
-    """
-
-    def __init__(self, orchestrator):
+    class _EventServiceConnection(RabbitMQConnection):
         """
-        :param orchestrator: an instance of Repeater Orchestrator object
+        This class runs in a separate thread and handles measurement result from WSClient,
+        connected to the `measurement_results_exchange` as consumer and recheck measurement by repeater.measure_configurations
         """
-        self.orchestrator: RepeaterOrchestration = orchestrator
-        self.experiment_id = self.orchestrator.experiment_id
-        super().__init__(orchestrator)
+        def __init__(self, orchestrator):
+            """
+            :param orchestrator: an instance of Repeater Orchestrator object
+            """
+            self.orchestrator: RepeaterOrchestration = orchestrator
+            self.experiment_id = self.orchestrator.experiment_id
+            super().__init__(orchestrator)
 
-    def bind_and_consume(self):
-        self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
-        self.termination_queue_name = self.termination_result.method.queue
-        self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                queue=self.termination_queue_name,
-                                routing_key=self.experiment_id)
-        self.channel.basic_consume(queue='measurement_results_exchange' + self.experiment_id, auto_ack=True,
-                                   on_message_callback=self.orchestrator.measure_configurations)
-        self.channel.basic_consume(queue='measure_new_configuration_exchange' + self.experiment_id, auto_ack=True,
-                                   on_message_callback=self.orchestrator.measure_configurations)
-        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                   on_message_callback=self.stop)
+        def bind_and_consume(self):
+            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_queue_name = self.termination_result.method.queue
+            self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                    queue=self.termination_queue_name,
+                                    routing_key=self.experiment_id)
+            self.channel.basic_consume(queue='measurement_results_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.orchestrator.measure_configurations)
+            self.channel.basic_consume(queue='measure_new_configuration_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.orchestrator.measure_configurations)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                       on_message_callback=self.stop)

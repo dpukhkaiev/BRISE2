@@ -1,32 +1,210 @@
 {
-  "DomainDescription":{
-    "DataFile"          : "./Resources/GA/GAExperimentData.json"
-  },
-  "TaskConfiguration":{
-    "TaskName"          : "genetic",
-    "Scenario":{
-      "numTopLevelComponents": 1,
-      "avgNumImplSubComponents": 0,
-      "implSubComponentStdDerivation": 0,
-      "avgNumCompSubComponents": 2,
-      "compSubComponentStdDerivation": 0,
-      "componentDepth": 4,
-      "numImplementations": 4,
-      "excessComputeResourceRatio": 50,
-      "numRequests": 4,
-      "numCpus": 1,
-      "seed": 0,
-      "timeoutValue": 10,
-      "timeoutUnit": "SECONDS"
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "genetic",
+            "MaxTimeToRunTask": 60,
+            "TimeUnit": "seconds",
+            "Scenario": {
+                "numTopLevelComponents": 1,
+                "avgNumImplSubComponents": 0,
+                "implSubComponentStdDerivation": 0,
+                "avgNumCompSubComponents": 2,
+                "compSubComponentStdDerivation": 0,
+                "componentDepth": 2,
+                "numImplementations": 10,
+                "excessComputeResourceRatio": 5,
+                "numRequests": 15,
+                "numCpus": 1,
+                "seed": 0,
+                "timeoutValue": 10,
+                "timeoutUnit": "SECONDS"
+            },
+            "Objectives": {
+                "Validity": {
+                    "Name": "Validity",
+                    "DataType": "int",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
+                }
+            }
+        },
+        "SearchSpace": {
+            "selector_type": {
+                "NSGA2": {
+                    "Type": "Category"
+                },
+                "SPEA2": {
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.selector_type.NSGA2",
+                    "Context.SearchSpace.selector_type.SPEA2"
+                ],
+                "Default": "Context.SearchSpace.selector_type.NSGA2",
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "generations": {
+                "Lower": 1000000000,
+                "Upper": 1000000000,
+                "Default": 1000000000,
+                "Type": "IntegerHyperparameter",
+                "Level": 0
+            },
+            "population_size": {
+                "Lower": 100,
+                "Upper": 5000,
+                "Default": 500,
+                "Type": "IntegerHyperparameter",
+                "Level": 0
+            },
+            "lambda_": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.1,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "crossover_rate": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.95,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "mu": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.1,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "mutation_rate": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.45,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "resources_mutation_probability": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "evaluator_validity_weight": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "evaluator_software_validity_weight": {
+                "Lower": 0,
+                "Upper": 1,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "random_software_assignment_attempts": {
+                "Lower": 1,
+                "Upper": 1000,
+                "Default": 50,
+                "Type": "IntegerHyperparameter",
+                "Level": 0
+            },
+            "populate_software_solution_attempts": {
+                "Lower": 1,
+                "Upper": 1000,
+                "Default": 100,
+                "Type": "IntegerHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
     },
-    "Objectives"  : ["Validity"],
-    "ObjectivesDataTypes"  : ["int"],
-    "ObjectivesMinimization": [true],
-    "ObjectivesPriorities": [1],
-    "ObjectivesPrioritiesModels": [1],
-    "ExpectedValuesRange": [[0, Infinity]],
-    "RepeaterDecisionFunction"  : "student_deviation",
-    "MaxTasksPerConfiguration": 2,
-    "MaxTimeToRunTask": 300
-  }
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 1,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "LinearRegression": {
+                            "MultiObjective": false,
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.LinearRegression"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 1000,
+                            "MultiObjective": true,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 1,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 120,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
 }

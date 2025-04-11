@@ -24,6 +24,7 @@ def is_json_file_valid(validated_data: dict, schema_path):
         logging.getLogger(__name__).error(error)
         return False
 
+
 def get_duplicated_sc_names(validated_data: dict):
     """
     Validates if all Stop Condition names are unique.
@@ -37,6 +38,7 @@ def get_duplicated_sc_names(validated_data: dict):
     if len(sc_names) > len(set(sc_names)):
         duplicates = set([x for x in sc_names if sc_names.count(x) > 1])
     return duplicates
+
 
 def get_missing_sc_entities(validated_data: dict):
     """

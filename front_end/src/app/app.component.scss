@@ -9,22 +9,23 @@
     .brise {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-self: flex-start;
     }
     .description {
         color: $accent-color;
         font-size: .8em;
-        margin-top: -10px;
+        align-self: flex-start;
     }
     svg {
         margin-left: 5px;
+        align-self: center;
     }
 }
 #logo {
     fill: $primary-color-dark;
     transition: fill 0.5s ease;
     &:hover{
-        fill: $accent-color; 
+        fill: $accent-color;
     }
 }
 

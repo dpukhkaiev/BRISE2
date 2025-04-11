@@ -57,7 +57,7 @@ class Dixon(OutliersDetectionDecorator):
         for i in range(0, len(data)):
             # Dixon test could detect only 1 outlier per iteration
             # It could be left-side (lowest values) or right-side (highest values)
-            assert(left or right), 'At least one of the variables, `left` or `right`, must be True.'
+            assert (left or right), 'At least one of the variables, `left` or `right`, must be True.'
             if len(data) >= 3:
                 sdata = sorted(data)
                 Q_mindiff, Q_maxdiff = (0, 0), (0, 0)

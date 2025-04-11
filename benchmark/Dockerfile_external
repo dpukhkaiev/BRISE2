@@ -1,37 +1,29 @@
-FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:24.04
 
 RUN apt-get update && apt-get install -y -qq \
-    ca-certificates=20201027ubuntu0.18.04.1 \
-    wget=1.19.4-1ubuntu2.2 \
-    xvfb=2:1.19.6-1ubuntu4.7 \
-    software-properties-common=0.96.24.32.14 \
+    ca-certificates \
+    wget \
+    xvfb \
+    software-properties-common \
     && apt -qq clean \
     && apt -qq autoremove \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN add-apt-repository ppa:deadsnakes/ppa && \
     apt -qq update && \
-    apt -qq -y install python3.7-dev python3-pip
+    apt -qq -y install python3.12-dev python3-pip
 
-# Scripts and styles for report and plots
-RUN mkdir -p /home/benchmark_user/static \
-    && wget -O /home/benchmark_user/static/materialize.min.css https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css -q \
-    && wget -O /home/benchmark_user/static/plotly.min.js https://cdn.plot.ly/plotly-latest.min.js -q \
-    && wget -O /home/benchmark_user/static/font.woff2 https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2 -q \
-    # Download Orca AppImage
-    && wget https://github.com/plotly/orca/releases/download/v1.2.1/orca-1.2.1-x86_64.AppImage -P /home -q \
-    && chmod 777 /home/orca-1.2.1-x86_64.AppImage
-
-# Make Orca executable under xvfb
-RUN cd /home \
-    && /home/orca-1.2.1-x86_64.AppImage --appimage-extract \
-    && printf '#!/bin/bash \nxvfb-run --auto-servernum --server-args "-screen 0 1280x1024x24" /home/squashfs-root/app/orca "$@"' > /usr/bin/orca \
-    && chmod 777 /usr/bin/orca \
-    && chmod -R 777 /home/squashfs-root/
-
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 
 # Project dependencies
-COPY ./requirements.txt /home/benchmark_user/requirements.txt
-RUN python3.7 -m pip install -q Cython==0.29.21
-RUN python3.7 -m pip install -q -r /home/benchmark_user/requirements.txt
+RUN mkdir -p /opt/conda && \
+    mkdir -p /miniconda && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /miniconda/miniconda.sh && \
+    bash /miniconda/miniconda.sh -b -u -p /opt/conda/ && \
+    rm /miniconda/miniconda.sh
+
+ENV PATH=/opt/conda/bin:$PATH
+RUN conda update conda -y
+COPY ./benchmark/environment.yml /home/benchmark_user/environment.yml
+
+RUN conda env create --file /home/benchmark_user/environment.yml -y

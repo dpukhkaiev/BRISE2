@@ -1,0 +1,22 @@
+name: brise-260
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.12
+  - setuptools
+  - scikit-learn[alldeps]
+  - PyYAML
+  - statsmodels
+  - scipy
+  - pytest
+  - pika
+  - pymongo
+  - numexpr
+  - pandas
+  - pygmo
+  - plotly
+  - jinja2
+  - psutil
+  - sortedcontainers
+  - cython

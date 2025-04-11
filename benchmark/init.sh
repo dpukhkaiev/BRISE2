@@ -29,10 +29,11 @@ help() {
   echo "                      Available commands                              -"
   echo "-----------------------------------------------------------------------"
   echo -e -n "$BLUE"
-  echo "   > up - Executes 'build_image' and 'run_container' commands. 'run_container' requires parameter 'benchmark' or 'analyse' to run the benchmark or analyse the results."
+  echo "   > up - Executes 'build_image' and 'run_container' commands. 'run_container' requires parameter 'benchmark' to run the benchmark."
   echo "   > down - 'remove_container' and 'remove_image'."
   echo "   > restart - 'down' and 'up'."
   echo "   > build_image - Build the Docker image of benchmark container."
+  echo "   > build_external_image - Build the Docker image of benchmark container to be uploaded onto Dockerhub."
   echo "   > run_container - Create and run new container based on an image. "
   echo "   > remove_image - Remove the image."
   echo "   > remove_container - Remove the container."
@@ -46,8 +47,8 @@ help() {
 
 up() {
   log "Starting for ${1}"
-  build_image || true && \
-  run_container ${1}
+  build_image ${1} || true && \
+  run_container
 
 }
 
@@ -67,7 +68,17 @@ restart(){
 build_image() {
   log "Building Benchmark image."
   cd .. 
-  docker build -t $IMAGE_NAME --build-arg host_uid=$(id -u) --build-arg host_gid=$(id -g) --rm -f "benchmark/Dockerfile" .
+  docker build -t $IMAGE_NAME --build-arg host_uid=$(id -u) --build-arg host_gid=$(id -g) --build-arg MODE={1} --rm -f "benchmark/Dockerfile" .
+  cd benchmark
+
+  [ $? != 0 ] && error "Docker image build failed !" && exit 100
+  log "Done!"
+}
+
+build_external_image() {
+  log "Building external Benchmark image. Tag ${1}"
+  cd ..
+  docker build -t brisedev/benchmark-dev:${1} -f "benchmark/Dockerfile_external" .
   cd benchmark
 
   [ $? != 0 ] && error "Docker image build failed !" && exit 100
@@ -77,13 +88,13 @@ build_image() {
 run_container() {
   log "Running '${1}' in the $CONTAINER_NAME container."
   mkdir -p ./results/serialized/ ./results/reports/
-  docker run -it                                      \
+  docker run --platform linux/amd64 -it               \
     --name="$CONTAINER_NAME"                          \
     -v $(pwd)/results:/home/benchmark_user/results:z  \
     --restart=on-failure:10                           \
     --network=$BRISE_NETWORK                          \
-    $IMAGE_NAME                                       \
-    /usr/bin/python3.7 entrypoint.py ${1}
+    $IMAGE_NAME
+
 
   [ $? != 0 ] && error "Container run failed!" && exit 105
 }
@@ -128,7 +139,7 @@ execute_command_in_container(){
 
 rate(){
     log "executing check_file_appearance_rate under ./results/serialized folder"
-    execute_command_in_container "/usr/bin/python3.7 shared_tools.py"
+    execute_command_in_container "/usr/bin/python3.12 shared_tools.py"
 }
 
 if [ -z ${1}  ]; then

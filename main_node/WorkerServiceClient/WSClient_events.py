@@ -27,7 +27,7 @@ class WSClient:
         experiment_description = None
         while experiment_description is None:
             experiment_description = database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
-        task_configuration = experiment_description["TaskConfiguration"]
+        task_configuration = experiment_description["Context"]["TaskConfiguration"]
         self._task_name = task_configuration["TaskName"]
         self.parameter_names = []
         self._objectives = task_configuration["Objectives"]
@@ -47,7 +47,7 @@ class WSClient:
         The function creates a connection to a rabbitmq instance
         """
         # Create listeners thread
-        self.connection_thread = EventServiceConnection(self)
+        self.connection_thread = self._EventServiceConnection(self)
         self.channel = self.connection_thread.channel
         self.connection_thread.start()
 
@@ -164,35 +164,34 @@ class WSClient:
         except KeyError:
             self.logger.info("The old task was received")  # in case of restart main without cleaning all queues
 
-
-class EventServiceConnection(RabbitMQConnection):
-    """
-    This class runs WorkerService functionality in a separate thread,
-    connected to the `task_result_exchange` as consumer and sends tasks results into `measurement_results_exchange`.
-    """
-
-    def __init__(self, ws_client):
+    class _EventServiceConnection(RabbitMQConnection):
         """
-        The function for initializing consumer thread
-        :param ws_client: WSClient instances
+        This class runs WorkerService functionality in a separate thread,
+        connected to the `task_result_exchange` as consumer and sends tasks results into `measurement_results_exchange`.
         """
-        self.ws_client = ws_client
-        self.experiment_id = self.ws_client.experiment_id
-        super().__init__(ws_client)
 
-    def bind_and_consume(self):
-        self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
-        self.termination_queue_name = self.termination_result.method.queue
-        self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                queue=self.termination_queue_name,
-                                routing_key=self.experiment_id)
-        self.channel.basic_consume(queue='task_result_exchange' + self.experiment_id, auto_ack=True,
-                                   on_message_callback=self.ws_client.get_task_results)
-        self.channel.basic_consume(queue='process_tasks_exchange' + self.experiment_id, auto_ack=True,
-                                   on_message_callback=self.ws_client.work)
-        self.channel.basic_consume(queue='get_worker_capacity_exchange' + self.experiment_id, auto_ack=True,
-                                   on_message_callback=self.ws_client.get_number_of_needed_configurations)
-        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                   on_message_callback=self.stop)
+        def __init__(self, ws_client):
+            """
+            The function for initializing consumer thread
+            :param ws_client: WSClient instances
+            """
+            self.ws_client = ws_client
+            self.experiment_id = self.ws_client.experiment_id
+            super().__init__(ws_client)
 
-        self.sender_lock = threading.Lock()  # only one thread can use a channel for sending message
+        def bind_and_consume(self):
+            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_queue_name = self.termination_result.method.queue
+            self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                    queue=self.termination_queue_name,
+                                    routing_key=self.experiment_id)
+            self.channel.basic_consume(queue='task_result_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.ws_client.get_task_results)
+            self.channel.basic_consume(queue='process_tasks_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.ws_client.work)
+            self.channel.basic_consume(queue='get_worker_capacity_exchange' + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.ws_client.get_number_of_needed_configurations)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                       on_message_callback=self.stop)
+
+            self.sender_lock = threading.Lock()  # only one thread can use a channel for sending message

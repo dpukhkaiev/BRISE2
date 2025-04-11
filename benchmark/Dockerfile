@@ -1,4 +1,13 @@
-FROM brisedev/benchmark-dev:2.5.0
+FROM brisedev/benchmark-dev:2.6.0
+
+# Inner project dependencies
+COPY ./main_node/core_entities /home/benchmark_user/core_entities/
+COPY ./main_node/tools /home/benchmark_user/tools/
+COPY ./main_node/logger /home/benchmark_user/logger/
+
+# Copying common information for benchmark
+COPY ./benchmark/ /home/benchmark_user/
+COPY ./main_node/Resources/ /home/benchmark_user/Resources/
 
 # For changing an owner of report files
 ARG host_uid
@@ -6,19 +15,10 @@ ARG host_gid
 ENV host_uid=$host_uid
 ENV host_gid=$host_gid
 
-RUN groupadd -g $host_gid benchmark_user
-RUN useradd -rm -s /bin/bash -g $host_gid -G sudo -u $host_uid benchmark_user
+# Comment this line for Apple devices
+#RUN groupadd -g $host_gid benchmark_user
+RUN useradd -rm -s /bin/bash benchmark_user
 RUN usermod -aG sudo benchmark_user
-
-# Inner project dependencies
-COPY ./main_node/core_entities /home/benchmark_user/core_entities/
-COPY ./main_node/tools /home/benchmark_user/tools/
-COPY ./main_node/logger /home/benchmark_user/logger/
-COPY ./main_node/selection /home/benchmark_user/selection/
-
-# Copying common information for benchmark
-COPY ./benchmark/ /home/benchmark_user/
-COPY ./main_node/Resources/ /home/benchmark_user/Resources/
 
 # Copying information for specific benchmarks, for example
 
@@ -32,4 +32,5 @@ WORKDIR /home/benchmark_user
 RUN chown --recursive benchmark_user:benchmark_user .
 USER benchmark_user
 
-CMD [ "bash" ]
+RUN echo "conda activate brise-260" >> ~/.bashrc
+CMD conda run -n brise-260 python3 ./entrypoint.py $MODE

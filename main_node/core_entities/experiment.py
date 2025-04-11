@@ -13,14 +13,14 @@ from typing import List, Union
 
 import numpy as np
 from core_entities.configuration import Configuration
-from core_entities.search_space import Hyperparameter
+from core_entities.search_space import SearchSpace
 from tools.front_API import API
 from tools.mongo_dao import MongoDB
 
 
 class Experiment:
 
-    def __init__(self, description: dict, search_space: Hyperparameter):
+    def __init__(self, description: dict, search_space: SearchSpace):
         """
         Initialization of Experiment class
         Following fields are declared:
@@ -38,19 +38,21 @@ class Experiment:
         self._default_configuration: Configuration = None
         self._description: Mapping = description
         # TODO: search space should be decoupled from experiment (many entities require **only** search space)
-        self.search_space: Hyperparameter = search_space
+        self.search_space: SearchSpace = search_space
         self.end_time = self.start_time = datetime.datetime.now()
         # An ID that is used to differentiate Experiments by descriptions.
         self.ed_id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
         # A unique ID, different for every experiment (even with the same description)
         self.unique_id = str(uuid.uuid4())
-        self.name: str = f"exp_{self.description['TaskConfiguration']['TaskName']}_{self.ed_id}"
+
+        # self.name: str = f"exp_{self.description['TaskConfiguration']['TaskName']}_{self.ed_id}"
+        self.name: str = f"exp_{self.description['Context']['TaskConfiguration']['TaskName']}_{self.ed_id}"
         # TODO MultiOpt: Currently we store only one solution configuration here,
         #  but it was made as a possible Hook for multidimensional optimization.
         self.current_best_configurations: List[Configuration] = []
         self.bad_configurations_number = 0
         self.model_is_valid = False
-        self.improvement_curve = []
+        self.current_best_curve = []
 
         self.measured_conf_lock = Lock()
         self.evaluated_conf_lock = Lock()
@@ -109,6 +111,7 @@ class Experiment:
                 self.api.send("default", "configuration",
                               configurations=[default_configuration.parameters],
                               results=[default_configuration.results])
+                self.evaluated_configurations.append(default_configuration)
                 self.measured_configurations.append(default_configuration)
                 if not self.current_best_configurations:
                     self.current_best_configurations = [default_configuration]
@@ -117,33 +120,32 @@ class Experiment:
                     default_configuration.get_configuration_record()
                 )
                 self.database.write_one_record(
-                    collection_name="Warm_startup_info",
-                    record={"Exp_unique_ID": self.unique_id, "wsi": default_configuration.warm_startup_info}
+                    collection_name="Parameter_control_info",
+                    record={"Exp_unique_ID": self.unique_id, "parameter_control_info": default_configuration.parameter_control_info}
                 )
-                if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                    self.send_state_to_db()
+                self.send_state_to_db()
             else:
                 raise ValueError("The default Configuration was registered already.")
 
-    def try_add_configuration(self, configuration: Configuration):
+    def add_configuration(self, configuration: Configuration) -> bool:
         """
         Add a Configuration object to the Experiment, if the Configuration was now added previously.
         :param configuration: Configuration instance.
-        :return bool flag, True if the Configuration was added to list of either measured or evaluated configurations,
+        :return: True if the Configuration was added to list of either measured or evaluated configurations,
         False if not.
         """
         result = False
         if configuration.status["enabled"]:
-            if self._try_put(configuration):
+            if self._add(configuration):
                 # configuration will not be added to the Experiment if it is already there
                 result = True
         return result
 
-    def _try_put(self, configuration_instance: Configuration):
+    def _add(self, configuration_instance: Configuration) -> bool:
         """
         Takes instance of Configuration class and appends it to the list with all configuration instances.
         :param configuration_instance: Configuration class instance.
-        :return bool flag, is _put add configuration to any lists or not
+        :return: True if the Configuration was added to any lists or False if not.
         """
         if self._is_valid_configuration_instance(configuration_instance):
             if configuration_instance.status['measured']:
@@ -247,7 +249,7 @@ class Experiment:
             all_features = []
             for configuration in self.measured_configurations:
                 all_features.append(configuration.parameters)
-            results_folder = self.description["General"]["results_storage"]
+            results_folder = './Results/'  # FIXME
             self.dump(folder_path=results_folder)  # Store instance of Experiment
             self.write_csv(folder_path=results_folder)  # Store Experiment metrics
             self.summarize_results_to_file(report_format="yaml", folder_path=results_folder)
@@ -282,10 +284,9 @@ class Experiment:
         """
         self.measured_configurations.append(configuration)
         if configuration.is_better(self.get_objectives_minimization(),
-                                   self.get_objectives_priorities(),
                                    self.current_best_configurations[0]):
-            # we do not need warm_startup_info anymore, since better configuration was found
-            self.current_best_configurations[0].warm_startup_info = {}
+            # we do not need parameter_control_info anymore, since better configuration was found
+            self.current_best_configurations[0].parameter_control_info = {}
             self.current_best_configurations = [configuration]
             # TODO: do not transfer the solutions through main node.
             #  current flow: worker (reports) -> WSC -> repeater -> experiment -> DB -> worker (loads to continue)
@@ -293,17 +294,15 @@ class Experiment:
             #  for this we need to (1) keep track which is the best among available solution sets and
             #                      (2) remove unneeded solutions from DB to prevent littering of storage
             self.database.update_record(
-                collection_name="Warm_startup_info",
+                collection_name="Parameter_control_info",
                 query={"Exp_unique_ID": self.unique_id},
-                new_val={"wsi": configuration.warm_startup_info}
+                new_val={"parameter_control_info": configuration.parameter_control_info}
             )
         else:
             # this configuration did not improve the previous solution, no need to keep track its solutions.
-            configuration.warm_startup_info = {}
-        # TODO: improvement curve is defined only for a single objective (with the highest priority).
-        # Need to re-design the solution for multi-objectiveness
-        self.improvement_curve.append(self.get_current_solution().results[
-            self.get_objectives()[self.get_objectives_priorities().index(max(self.get_objectives_priorities()))]])
+            configuration.parameter_control_info = {}
+
+        self.current_best_curve.append(self.get_current_solution().results)
         self.database.write_one_record("Configuration", configuration.get_configuration_record())
         self.send_state_to_db()
         self.api.send("new", "configuration",
@@ -319,14 +318,14 @@ class Experiment:
         """
         self.evaluated_configurations.append(configuration)
 
-    def get_objectives(self) -> List[str]:
-        return self.description["TaskConfiguration"]["Objectives"]
+    def get_objectives(self) -> dict:
+        return self.description["Context"]["TaskConfiguration"]["Objectives"]
 
     def get_objectives_minimization(self) -> List[bool]:
-        return self.description["TaskConfiguration"]["ObjectivesMinimization"]
-
-    def get_objectives_priorities(self) -> List[int]:
-        return self.description["TaskConfiguration"]["ObjectivesPriorities"]
+        minimizations = []
+        for k in self.get_objectives().keys():
+            minimizations.append(self.get_objectives()[k]["Minimization"])
+        return minimizations
 
     def get_models_objectives_priorities(self) -> List[int]:
         return self.description["TaskConfiguration"]["ObjectivesPrioritiesModels"]
@@ -357,35 +356,35 @@ class Experiment:
         if self.database.get_last_record_by_experiment_id("Transfer_learning_info", self.unique_id) is None:
             self.database.write_one_record("Transfer_learning_info",
                                            {"Exp_unique_ID": self.unique_id,
-                                            "Scenario": self.description["TaskConfiguration"]["Scenario"],
+                                            "Scenario": self.description["Context"]["TaskConfiguration"]["Scenario"],
                                             "Samples": [{"type": config.type, "parameters": config.parameters,
-                                                        "result": config.results, "prediction_info": config.prediction_info}
+                                                        "results": config.results, "prediction_info": config.prediction_info}
                                                         for config in self.measured_configurations],
-                                            "Improvement_curve": self.improvement_curve})
+                                            "Current_best_curve": self.current_best_curve})
         else:
             self.database.update_record(
                 "Transfer_learning_info",
                 {"Exp_unique_ID": self.unique_id},
-                {"Scenario": self.description["TaskConfiguration"]["Scenario"],
+                {"Scenario": self.description["Context"]["TaskConfiguration"]["Scenario"],
                  "Samples": [{"type": config.type, "parameters": config.parameters,
-                             "result": config.results, "prediction_info": config.prediction_info}
+                             "results": config.results, "prediction_info": config.prediction_info}
                              for config in self.measured_configurations],
-                 "Improvement_curve": self.improvement_curve})
+                 "Current_best_curve": self.current_best_curve})
 
     def write_csv(self, folder_path: str) -> None:
         """save .csv file with main metrics of the experiment
         Args:
             folder_path (str, optional): Path to folder, where to store the csv report.
         """
-        if self.search_space.get_size() == np.inf:
+        if self.search_space.size == np.inf:
             search_space_coverage = "unknown (infinite search space)"
         else:
             search_space_coverage = str(
-                round((len(self.measured_configurations) / self.search_space.get_size()) * 100)
+                round((len(self.measured_configurations) / self.search_space.size) * 100)
             ) + '%'
 
         data = dict({
-            'model': "_".join([model["Type"] for model in self.description["Predictor"]["models"]]),
+            'predictor': self.description["ConfigurationSelection"]["Predictor"],
             'default configuration': [' '.join(
                 str(v) for v in self.default_configuration.parameters)],
             'solution configuration': [' '.join(
@@ -396,7 +395,7 @@ class Experiment:
             'search space coverage': search_space_coverage,
             'number of repetitions': len(self.get_all_repetition_tasks()),
             'execution time': (self.get_running_time()).seconds,
-            'repeater': self.description['Repeater']['Type']
+            'repeater': self.description['RepetitionManager']["Instance"]
         })
 
         file_path = '{0}{1}.csv'.format(folder_path, self.name)
@@ -424,9 +423,9 @@ class Experiment:
         Returns:
             [List] -- List with results for all atom-tasks
         """
-
+        # TODO To be tested with benchmark analyzer
         all_tasks = []
-        result_key = self.description['TaskConfiguration']['Objectives'][0]
+        result_key = list(self.description["Context"]['TaskConfiguration']['Objectives'].keys())[0]  # clarify purpose
         for configuration in self.measured_configurations:
             for task in configuration.get_tasks().values():
                 if 'result' in task:
@@ -440,7 +439,7 @@ class Experiment:
         return self.description["StopCondition"]
 
     def get_selection_algorithm_parameters(self):
-        return self.description["SelectionAlgorithm"]
+        return self.description["SamplingStrategy"]
 
     def get_outlier_detectors_parameters(self):
         return self.description["OutliersDetection"]
@@ -481,10 +480,10 @@ class Experiment:
             )
 
     def get_experiment_description_record(self) -> Mapping:
-        '''
-        The helper method that formats an experiment description to be stored as a record in a Database
+        """
+        Helper method that formats an experiment description to be stored as a record in a Database
         :return: Mapping. Field names of the database collection with respective information
-        '''
+        """
         record = {}
         # add this specific experiment information
         record["Exp_unique_ID"] = self.unique_id
@@ -497,10 +496,10 @@ class Experiment:
         return record
 
     def get_experiment_state_record(self) -> Mapping:
-        '''
-        The helper method that formats current experiment state to be stored as a record in a Database
+        """
+        Helper method that formats current experiment state to be stored as a record in a Database
         :return: Mapping. Field names of the database collection with respective information
-        '''
+        """
         record = {}
         record["Exp_unique_ID"] = self.unique_id
         record["Number_of_measured_configs"] = self.get_number_of_measured_configurations()

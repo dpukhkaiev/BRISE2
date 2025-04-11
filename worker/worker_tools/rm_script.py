@@ -52,7 +52,7 @@ def run_RM(path2RM :str, RMrepository :str, RMprocess :str, path2result :str):
     try:
         # prepare results file, that is going to be used by RapidMiner to insert the result
         with open(path2result, "w+") as result_file:
-            if RMprocess != None:
+            if RMprocess is not None:
                 begin_time = time.time()
                 cmd = 'sh ' + path2RM + ' "' + RMrepository + RMprocess.strip('.rmp') + '"'
                 subprocess.check_call(cmd, shell=True)  
@@ -65,20 +65,19 @@ def run_RM(path2RM :str, RMrepository :str, RMprocess :str, path2result :str):
         # get result from resulting file
         with open(path2result, 'r') as result_file:
             reader = csv.reader(result_file)        
-            for row in reader:  
+            for row in reader:
                 if row != []:
                     prec = row[len(row) - 3]
-                    rec = row[len(row) - 2]     
+                    rec = row[len(row) - 2]
                 else:
                     logger.debug("Row is empty!")
         try:
-            result = float(prec)*0.5 + float(rec)*0.5  
+            result = float(prec)*0.5 + float(rec)*0.5
             logger.info("Final result: %f with precision: %f and recall: %f" % (result, prec, rec))
         except ValueError:
-            logger.warning("Non-float result was received from RapidMiner!")  
+            logger.warning("Non-float result was received from RapidMiner!")
     except Exception as error:
         logger.error("ERROR occured while getting results from RapidMiner: %s" % error)
     return {
-        'prec_rec': result 
+        'prec_rec': result
     }
-

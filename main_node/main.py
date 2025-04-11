@@ -12,22 +12,19 @@ from warnings import filterwarnings
 
 import pika
 from configuration_selection.configuration_selection import ConfigurationSelection
+from default_config_handler.default_configuration_handler_orchestrator import DefaultConfigHandlerOrchestrator
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 from core_entities.search_space import Hyperparameter, get_search_space_record
-from default_config_handler.default_config_handler_selector import (
-    get_default_config_handler
-)
+
 from logger.default_logger import BRISELogConfigurator
 from repeater.repeater_selector import RepeaterOrchestration
 from stop_condition.stop_condition_selector import (
     launch_stop_condition_threads
 )
 from tools.front_API import API
-from tools.initial_config import (
-    load_experiment_setup,
-    validate_experiment_description
-)
+from tools.initial_config import load_experiment_setup
+
 from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
 
@@ -93,17 +90,16 @@ class MainThread(threading.Thread):
                 self.sub.send('log', 'warning', message=log_msg)
             experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
         else:
-            experiment_description = self.experiment_setup["experiment_description"]
+            experiment_description = self.experiment_setup["metric_description"]
             search_space = self.experiment_setup["search_space"]
 
-        validate_experiment_description(experiment_description)
-        os.makedirs(experiment_description["General"]["results_storage"], exist_ok=True)
+        os.makedirs("./Results/", exist_ok=True)  # FIXME remove hardcode
 
         # Initializing instance of Experiment - main data holder.
         self.experiment = Experiment(experiment_description, search_space)
-        self.experiment_id = self.experiment.unique_id
-        search_space.experiment_id = self.experiment_id
-        Configuration.set_task_config(self.experiment.description["TaskConfiguration"])
+        # self.experiment_id = self.experiment.unique_id
+        # search_space.experiment_id = self.experiment_id
+        Configuration.set_task_config(self.experiment.description["Context"]["TaskConfiguration"])
 
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(
@@ -114,15 +110,15 @@ class MainThread(threading.Thread):
         )
         self.consume_channel = self.connection.channel()
         self.create_and_bind_queues()
-        self.consume_channel.basic_consume(queue='default_configuration_results_exchange' + self.experiment_id, auto_ack=True,
+        self.consume_channel.basic_consume(queue='default_configuration_results_exchange' + self.experiment.unique_id, auto_ack=True,
                                            on_message_callback=self.get_default_configurations_results)
-        self.consume_channel.basic_consume(queue='configurations_results_exchange' + self.experiment_id, auto_ack=True,
+        self.consume_channel.basic_consume(queue='configurations_results_exchange' + self.experiment.unique_id, auto_ack=True,
                                            on_message_callback=self.get_configurations_results)
-        self.consume_channel.basic_consume(queue='stop_experiment_exchange' + self.experiment_id, auto_ack=True,
+        self.consume_channel.basic_consume(queue='stop_experiment_exchange' + self.experiment.unique_id, auto_ack=True,
                                            on_message_callback=self.stop)
-        self.consume_channel.basic_consume(queue="experiment_api_exchange" + self.experiment_id, auto_ack=True,
+        self.consume_channel.basic_consume(queue="experiment_api_exchange" + self.experiment.unique_id, auto_ack=True,
                                            on_message_callback=self.experiment_api)
-        self.consume_channel.basic_consume(queue="logging_exchange" + self.experiment_id, auto_ack=True,
+        self.consume_channel.basic_consume(queue="logging_exchange" + self.experiment.unique_id, auto_ack=True,
                                            on_message_callback=self.logging_api)
         self.consume_channel.basic_consume(queue='stop_experiment_queue', auto_ack=True,
                                            on_message_callback=self.stop)
@@ -139,44 +135,43 @@ class MainThread(threading.Thread):
         # write initial settings to the database
         self.database.write_one_record("Experiment_description", self.experiment.get_experiment_description_record())
         self.database.write_one_record(
-            "Search_space", get_search_space_record(self.experiment.search_space, self.experiment_id)
+            "Search_space", get_search_space_record(self.experiment.search_space, self.experiment.unique_id)
         )
         self.experiment.send_state_to_db()
 
         self.sub.send('experiment', 'description',
-                      global_config=self.experiment.description["General"],
+                      global_config={},  # FIXME Stub. When front-end is enabled again
                       experiment_description=self.experiment.description,
-                      searchspace_description=self.experiment.search_space.serialize(True)
+                      searchspace_description=self.experiment.search_space.serialize()
                       )
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
-        launch_stop_condition_threads(self.experiment_id)
+        launch_stop_condition_threads(self.experiment.unique_id)
 
         # Instantiate client for Worker Service, establish connection.
         # TODO: change this to event-based communication.
         #  (https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r440165389)
-        self.wsc_client = WSClient(self.experiment_id)
+        self.wsc_client = WSClient(self.experiment.unique_id)
 
-        # Initialize Repeater - encapsulate Configuration evaluation process to avoid results fluctuations.
-        # (achieved by multiple Configuration evaluations on Workers - Tasks)
-        RepeaterOrchestration(self.experiment_id)
+        # Initialize Repetition Manager - a mechanism for handling nondeterminism.
+        RepeaterOrchestration(experiment_id=self.experiment.unique_id, experiment=self.experiment)
 
         ConfigurationSelection(self.experiment)
 
-        self.default_config_handler = get_default_config_handler(self.experiment)
+        dch_o = DefaultConfigHandlerOrchestrator()
+        default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
         temp_msg = "Measuring default Configuration."
         self.logger.info(temp_msg)
         self.sub.send('log', 'info', message=temp_msg)
-        default_parameters = self.experiment.search_space.generate_default()
-        default_configuration = Configuration(default_parameters, Configuration.Type.DEFAULT, self.experiment_id)
-        default_configuration.experiment_id = self.experiment_id
+        default_configuration = default_config_handler.get_default_configuration()
         self.experiment.add_evaluated_configuration_to_experiment(default_configuration)
+
         dictionary_dump = {"configuration": default_configuration.to_json()}
         body = json.dumps(dictionary_dump)
 
         self.consume_channel.basic_publish(exchange='measure_new_configuration_exchange',
-                                           routing_key=self.experiment_id,
+                                           routing_key=self.experiment.unique_id,
                                            body=body)
         # listen all queues with responses until the _is_interrupted flag is False
         try:
@@ -197,28 +192,13 @@ class MainThread(threading.Thread):
         """
         default_configuration = Configuration.from_json(body.decode())
         self.logger.info("Got DEFAULT config from Repeater")
-        if not default_configuration.status['enabled']:
-            new_default_values = self.default_config_handler.get_new_default_config()
-            if new_default_values:
-                config = Configuration(
-                    new_default_values, Configuration.Type.FROM_SELECTOR, self.experiment_id)
-                temp_msg = "New default configuration sampled."
-                self.logger.info(temp_msg)
-                self.sub.send('log', 'info', message=temp_msg)
-                self.consume_channel.basic_publish(exchange='measure_new_configuration_exchange',
-                                                   routing_key=self.experiment_id,
-                                                   body=json.dumps({"configuration": config.to_json()}))
-            else:
-                self.logger.error("The specified default configuration is broken.")
-                self.stop()
-                self.sub.send('log', 'info', message="The specified default configuration is broken.")
-                return
-        elif default_configuration.status['measured']:
+
+        if default_configuration.status['measured']:
             self.logger.info("Configuration is measured")
             self.experiment.default_configuration = default_configuration
-            self.database.update_record("Search_space", {"Exp_unique_ID": self.experiment_id},
+            self.database.update_record("Search_space", {"Exp_unique_ID": self.experiment.unique_id},
                                         {"Default_configuration": default_configuration.get_configuration_record()})
-            self.database.update_record("Search_space", {"Exp_unique_ID": self.experiment_id},
+            self.database.update_record("Search_space", {"Exp_unique_ID": self.experiment.unique_id},
                                         {"SearchspaceObject": pickle.dumps(self.experiment.search_space)})
 
             temp_msg = f"Evaluated Default Configuration: {default_configuration}"
@@ -227,7 +207,7 @@ class MainThread(threading.Thread):
 
             # starting main work: building model and choosing configuration for measuring
             self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
-                                               routing_key=self.experiment_id,
+                                               routing_key=self.experiment.unique_id,
                                                body='')
 
     def get_configurations_results(self, ch, method, properties, body):
@@ -242,12 +222,12 @@ class MainThread(threading.Thread):
             configuration = Configuration.from_json(body.decode())
             self.logger.info("Got REGULAR config from Repeater")
             if not self._is_interrupted and configuration.status['measured']:
-                self.experiment.try_add_configuration(configuration)
+                self.experiment.add_configuration(configuration)
                 temp_msg = "-- New Configuration was evaluated. Building Target System model."
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
                 self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
-                                                   routing_key=self.experiment_id,
+                                                   routing_key=self.experiment.unique_id,
                                                    body='')
 
     def experiment_api(self, ch=None, method=None, properties=None, body=None):
@@ -263,15 +243,15 @@ class MainThread(threading.Thread):
         The function for stop main thread externally (e.g. from front-end)
         """
         with self.conf_lock:
-            self.consume_channel.basic_publish(exchange='experiment_termination_exchange',
-                                               routing_key=self.experiment_id,
-                                               body='')
             self.sub.send('log', 'info', message=f"Terminating experiment. Reason: {body}")
             self.logger.info(f"Terminating experiment. Reason: {body}")
             self._state = self.State.SHUTTING_DOWN
             self._is_interrupted = True
             optimal_configuration = self.experiment.get_final_report_and_result()
             self._state = self.State.IDLE
+            self.consume_channel.basic_publish(exchange='experiment_termination_exchange',
+                                               routing_key=self.experiment.unique_id,
+                                               body='')
             return optimal_configuration
 
     def get_state(self):
@@ -287,18 +267,18 @@ class MainThread(threading.Thread):
                           'get_worker_capacity_exchange', 'get_new_configuration_exchange',
                           'measure_new_configuration_exchange', 'process_tasks_exchange', 'experiment_api_exchange']
         for exchange in self.exchanges:
-            queue_name = exchange + self.experiment_id
+            queue_name = exchange + self.experiment.unique_id
             result = self.consume_channel.queue_declare(queue=queue_name)
             queue_name = result.method.queue
-            self.consume_channel.queue_bind(queue=queue_name, exchange=exchange, routing_key=self.experiment_id)
+            self.consume_channel.queue_bind(queue=queue_name, exchange=exchange, routing_key=self.experiment.unique_id)
 
     def unbind_and_delete_queues(self):
         """
         The method to remove all created queues after the experiment stop
         """
         for exchange in self.exchanges:
-            queue_name = exchange + self.experiment_id
-            self.consume_channel.queue_unbind(queue=queue_name, exchange=exchange, routing_key=self.experiment_id)
+            queue_name = exchange + self.experiment.unique_id
+            self.consume_channel.queue_unbind(queue=queue_name, exchange=exchange, routing_key=self.experiment.unique_id)
             self.consume_channel.queue_delete(queue=queue_name)
 
 

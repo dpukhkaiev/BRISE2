@@ -1,0 +1,166 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "X1": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.5,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 1,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "Surrogate": {
+                    "Instance": {
+                        "GradientBoostingRegressor": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "n_estimators": 100
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 1000,
+                            "MultiObjective": true,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "AcceptableErrorBased": {
+                "MinTasksPerConfiguration": 2,
+                "MaxTasksPerConfiguration": 10,
+                "BaseAcceptableError": 10.0,
+                "ConfidenceLevel": 0.95,
+                "Type": "acceptable_error_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 60,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "TransferLearning": {
+        "TransferExpediencyDetermination": {
+            "SamplingLandmarkBased": {
+                "MinNumberOfSamples": 10,
+                "Type": "sampling_landmark_based",
+                "Comparator": {
+                    "RGPE": {
+                        "Type": "rgpe_comparator"
+                    }
+                },
+                "ExperimentsQuantity": {
+                    "AdaptiveQuantity": {
+                        "Clustering": {
+                            "MeanShift": {
+                                "Type": "mean_shift_clustering",
+                                "BandwidthType": "Estimated",
+                                "bandwidth": -1.0,
+                                "quantile": 0.3
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ModelRecommendation": {
+            "DynamicModelsRecommendation": {
+                "RecommendationGranularity": {
+                    "Infinite": {
+                        "Value": Infinity
+                    }
+                },
+                "PerformanceMetric": {
+                    "AverageRelativeImprovement": {
+                        "Type": "average_relative_improvement"
+                    }
+                },
+                "Type": "dynamic_model_recommendation",
+                "ThresholdType": "Soft",
+                "TimeToBuildModelThreshold": 1.0,
+                "TimeUnit": "seconds"
+            }
+        },
+        "MultiTaskLearning": {
+            "Filters": {
+                "OnlyBestConfigurations": {
+                    "Type": "only_best"
+                }
+            }
+        }
+    }
+}

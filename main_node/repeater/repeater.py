@@ -8,7 +8,7 @@ from tools.mongo_dao import MongoDB
 class Repeater(ABC):
     def __init__(self, experiment_description, experiment_id):
 
-        self.repeater_configuration = experiment_description["Repeater"]
+        self.repeater_configuration = experiment_description["RepetitionManager"]
         self.experiment_id = experiment_id
         self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                 os.getenv("BRISE_DATABASE_PORT"),

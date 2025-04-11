@@ -3,7 +3,7 @@
 ###### This folder contains configuration files for [RabbitMQ service](https://www.rabbitmq.com/)
 
 
-#### Dependency
+#### Dependencies
 Software requirements:
 - Docker
 

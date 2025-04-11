@@ -39,7 +39,7 @@ def chown_files_in_dir(directory):
 def check_file_appearance_rate(folder: str = 'results/serialized/', interval_length: int = 60 * 60):
     """
     Logs out the rate of file appearance within a given folder. Could be useful when running benchmark to see how many
-        Experiments were performed hourly / daily since startup. Does not traverses recursively.
+        Experiments were performed hourly / daily since startup. Does not traverse recursively.
 
     :param folder: (str). Folder with files of interest.
     :param interval_length: (int). Time interval within number of files are aggregating.
@@ -62,7 +62,7 @@ def check_file_appearance_rate(folder: str = 'results/serialized/', interval_len
             counter += 1
             files.pop(0)
         logger.info(" " + time.ctime(time_interval) + " |->| " + time.ctime(
-            time_interval + interval_length) + ': Runned %s experiments.' % counter)
+            time_interval + interval_length) + ': Run %s experiments.' % counter)
 
     logging.basicConfig(level=previous_logging_level)
 

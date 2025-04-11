@@ -1,68 +1,76 @@
-import datetime
+from typing import Dict, List, Union, Tuple
+import numpy as np
+import pickle
 
-from transfer_learning.model_recommendation.metrics.selector import get_metric
-from transfer_learning.model_recommendation.decorator import ModelRecommendationModule
+from transfer_learning.model_recommendation.model_recommendation_abs import ModelRecommendation
+from transfer_learning.model_recommendation.metrics.metric_orchestrator import MetricOrchestrator
+from configuration_selection.model.model import Model
+from core_entities.search_space import Hyperparameter
+from core_entities.search_space import SearchSpace
 
 
-class DynamicModelsRecommendation(ModelRecommendationModule):
-    def __init__(self, decorator, experiment_description: dict):
-        super().__init__(decorator, __name__, experiment_description)
-        self.experiment_description = experiment_description
-        self.isMinimizationExperiment = self.experiment_description["TaskConfiguration"]["ObjectivesMinimization"][
-            self.experiment_description["TaskConfiguration"]["ObjectivesPriorities"].index(
-                max(self.experiment_description["TaskConfiguration"]["ObjectivesPriorities"]))]
-        self.recommendation_granularity = self.experiment_description["TransferLearning"][
-            "ModelsRecommendation"]["DynamicModelsRecommendation"]["RecommendationGranularity"]
-        self.time_to_build_model_threshold = datetime.timedelta(**{
-            self.experiment_description["TransferLearning"]["ModelsRecommendation"][
-                "DynamicModelsRecommendation"]["TimeUnit"]:
-            self.experiment_description["TransferLearning"]["ModelsRecommendation"][
-                "DynamicModelsRecommendation"]["TimeToBuildModelThreshold"]
-        }).total_seconds()
-        self.threshold_type = self.experiment_description["TransferLearning"]["ModelsRecommendation"][
-            "DynamicModelsRecommendation"]["ThresholdType"]
+class DynamicModelRecommendation(ModelRecommendation):
+    def __init__(self, experiment_description: Dict, experiment_id):
+        super().__init__(experiment_description, experiment_id)
+        recommendation_granularity_type = list(self.experiment_description["TransferLearning"]
+                                               ["ModelRecommendation"][self.feature_name]["RecommendationGranularity"])[0]
+        self.recommendation_granularity_value = (self.experiment_description["TransferLearning"]["ModelRecommendation"]
+        [self.feature_name]["RecommendationGranularity"][recommendation_granularity_type]["Value"])
+        self.threshold_type = (self.experiment_description["TransferLearning"]["ModelRecommendation"][self.feature_name]
+        ["ThresholdType"])
+        self.time_to_build_model_threshold = (self.experiment_description["TransferLearning"]["ModelRecommendation"]
+        [self.feature_name]["TimeToBuildModelThreshold"])
+        self.time_unit = (self.experiment_description["TransferLearning"]["ModelRecommendation"]
+        [self.feature_name]["TimeUnit"])
+        # metric orchestration
+        metric_orchestrator = MetricOrchestrator()
+        self.objective_name = list(experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys())[0]  # SO only
+        is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][self.objective_name][
+            "Minimization"]
+        self.performance_metric = (metric_orchestrator.get_metric(self.experiment_description[
+                                                                      "TransferLearning"]["ModelRecommendation"][
+                                                                      self.feature_name]["PerformanceMetric"],
+                                                                  is_minimization))
+
         self.was_model_recommended = False
-        self.performance_metric = get_metric(self.experiment_description, self.isMinimizationExperiment)
 
-    def get_data(self, input_data: dict, transferred_data: dict):
+    def recommend_best_model(self, similar_experiments: List) -> Union[Dict[Tuple[Hyperparameter], Model], None]:
         """
-        Recommends the best of the available source models' combinations by time and performance criteria
-        :param current_iteration: number of current iteration of the experiment
-        :return: dict (models' combination)
+        Recommends the best of the available source models' combinations by time and quality criteria
+        :return: a mapping of region to model to be used by predictor
         """
         if not self.was_model_recommended:
-            if 'CurrentIteration' in input_data.keys():
-                current_iteration = input_data['CurrentIteration']
-            else:
-                raise KeyError('No key CurrentIteration present in the input data.')
-            if self.recommendation_granularity != "inf":
-                if current_iteration % self.recommendation_granularity != 0:
-                    transferred_data.update({"Recommended_models": None})
-                    return transferred_data
+            current_iteration = (self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)[
+                "Number_of_measured_configs"])
+
+            if self.recommendation_granularity_value != np.inf:
+                if current_iteration % self.recommendation_granularity_value != 0:
+                    return None
             else:
                 self.was_model_recommended = True
             experiments_with_model_metrics = []
-            imp_start_index = current_iteration
-            imp_end_index = current_iteration + float(self.recommendation_granularity)
+            improvement_start_index = current_iteration
+            improvement_end_index = current_iteration + self.recommendation_granularity_value
             multi_model = True
             time_start_index = current_iteration
-            time_end_index = current_iteration + float(self.recommendation_granularity)
-            for experiment in self.similar_experiments:
+            time_end_index = current_iteration + self.recommendation_granularity_value
+            for experiment in similar_experiments:
                 prediction_infos = [sample["prediction_info"] for sample in experiment["Samples"]]
-                improvement_curve = experiment["Improvement_curve"]
-                if self.recommendation_granularity == 1:
-                    imp_start_index = current_iteration-1
-                    imp_end_index = current_iteration
+                improvement_curve = experiment["Current_best_curve"]  # a list of dicts
+                improvement_curve = [i[self.objective_name] for i in improvement_curve]
+                if self.recommendation_granularity_value == 1:
+                    improvement_start_index = current_iteration-1
+                    improvement_end_index = current_iteration
                     multi_model = False
-                elif self.recommendation_granularity == "inf":
-                    imp_start_index = 0
-                    imp_end_index = len(improvement_curve) - 1
+                elif self.recommendation_granularity_value == np.inf:
+                    improvement_start_index = 0
+                    improvement_end_index = len(improvement_curve) - 1
                     time_start_index = 0
                     time_end_index = len(improvement_curve) - 1
                 metric = self.performance_metric.compute(improvement_curve,
                                                          prediction_infos,
-                                                         imp_start_index,
-                                                         int(imp_end_index),
+                                                         improvement_start_index,
+                                                         improvement_end_index,
                                                          multi_model)
                 experiments_with_model_metrics.append({"Experiment": experiment,
                                                        "metric": metric,
@@ -73,68 +81,82 @@ class DynamicModelsRecommendation(ModelRecommendationModule):
                                                                                                int(time_end_index))})
             sorted_experiments_by_metric = \
                 sorted(filter(lambda experiment_with_metric:
-                              experiment_with_metric["metric"]["relative_improvement"] is not None,
+                              experiment_with_metric["metric"]["average_relative_improvement"] is not None,
                               experiments_with_model_metrics),
-                       key=lambda experiment: experiment["metric"]["relative_improvement"],
+                       key=lambda experiment: experiment["metric"]["average_relative_improvement"],
                        reverse=True)
-            filtered_experiments_by_time = list(filter(lambda experiment:
-                                                       (experiment["avg_time"][level] is not None for level in experiment["avg_time"].keys()),
-                                                       sorted_experiments_by_metric))
+            filtered_experiments_by_time = (
+                list(filter(lambda experiment: (experiment["avg_time"] is not None), sorted_experiments_by_metric)))
 
             i = 0
             resulting_best_combination = None
             while i < len(filtered_experiments_by_time):
-                if self.threshold_type == "soft":
+                if self.threshold_type == "Soft":
                     # If improvement is still good (better than average) - check time thresholds.
                     # If improvement is bad, rather take the most performant one
-                    avg_imp = sum([experiment["metric"]["relative_improvement"]
+                    avg_imp = sum([experiment["metric"]["average_relative_improvement"]
                                    for experiment in filtered_experiments_by_time])/len(filtered_experiments_by_time)
-                    if filtered_experiments_by_time[i]["metric"]["relative_improvement"] >= avg_imp and \
-                            filtered_experiments_by_time[i]["metric"]["relative_improvement"] > 0:
+                    if filtered_experiments_by_time[i]["metric"]["average_relative_improvement"] >= avg_imp and \
+                            filtered_experiments_by_time[i]["metric"]["average_relative_improvement"] > 0:
                         threshold_flag = True
-                        for level in filtered_experiments_by_time[i]["avg_time"].keys():
-                            if filtered_experiments_by_time[i]["avg_time"][level] < self.time_to_build_model_threshold:
-                                threshold_flag = False
+                        if filtered_experiments_by_time[i]["avg_time"] >= self.time_to_build_model_threshold:
+                            threshold_flag = False
                         if threshold_flag is True:
-                            self.logger.debug(
+                            self.logger.info(
                                 f"Recommended combination of models with performance \
-                                    {filtered_experiments_by_time[i]['metric']['relative_improvement']} is: \
+                                    {filtered_experiments_by_time[i]['metric']['average_relative_improvement']} is: \
                                     {filtered_experiments_by_time[i]['metric']['Model_combination']}")
                             resulting_best_combination = filtered_experiments_by_time[i]["metric"]["Model_combination"]
                             break
                         else:
-                            self.logger.debug(
+                            self.logger.info(
                                 f"Combination {filtered_experiments_by_time[i]['metric']['Model_combination']} has a good performance \
-                                    ({filtered_experiments_by_time[i]['metric']['relative_improvement']}), but violates the time threshold \
+                                    ({filtered_experiments_by_time[i]['metric']['average_relative_improvement']}), but violates the time threshold \
                                         {self.time_to_build_model_threshold} seconds")
                             i += 1
                     else:
                         resulting_best_combination = filtered_experiments_by_time[0]["metric"]["Model_combination"]
                         break
                 else:
-                    # hard threshold type (a model with violated threshold will be never recommended)
+                    # hard threshold type (a model with a violated threshold is never recommended)
                     threshold_flag = True
-                    for level in filtered_experiments_by_time[i]["avg_time"].keys():
-                        if filtered_experiments_by_time[i]["avg_time"][level] < self.time_to_build_model_threshold:
-                            threshold_flag = False
+                    if filtered_experiments_by_time[i]["avg_time"] >= self.time_to_build_model_threshold:
+                        threshold_flag = False
                     if threshold_flag is True:
-                        self.logger.debug(
+                        self.logger.info(
                             f"Recommended combination of models with performance \
-                                {filtered_experiments_by_time[i]['metric']['relative_improvement']} is: \
+                                {filtered_experiments_by_time[i]['metric']['average_relative_improvement']} is: \
                                 {filtered_experiments_by_time[i]['metric']['Model_combination']}")
                         resulting_best_combination = filtered_experiments_by_time[i]["metric"]["Model_combination"]
                         break
                     else:
-                        self.logger.debug(
+                        self.logger.info(
                             f"Combination {filtered_experiments_by_time[i]['metric']['Model_combination']} has a good performance \
-                                ({filtered_experiments_by_time[i]['metric']['relative_improvement']}), but violates the time threshold \
+                                ({filtered_experiments_by_time[i]['metric']['average_relative_improvement']}), but violates the time threshold \
                                     {self.time_to_build_model_threshold} seconds")
                         i += 1
-            transferred_data.update({"Recommended_models": resulting_best_combination})
-            return transferred_data
+            if resulting_best_combination is None:
+                return None
+            else:
+                mapping_region_model = {}
+                search_space: SearchSpace = pickle.loads(self.database.get_last_record_by_experiment_id
+                                                         ("Search_space", self.experiment_id)["SearchspaceObject"])
 
-    def __get_average_time_to_build_models(self, model_combination: dict,
-                                           prediction_infos: list,
+                models_types = []
+                for i in self.experiment_description["ConfigurationSelection"]["Predictor"].items():
+                    if "Model" in i[0]:
+                        models_types.append(i)
+                for r_index_str, model_description in resulting_best_combination.items():
+                    r_index = int(r_index_str)
+                    mapping_region_model[search_space.regions[r_index]] = Model(models_types[r_index],
+                                                                                search_space.regions[r_index],
+                                                                                self.experiment_description["Context"]
+                                                                                ["TaskConfiguration"]["Objectives"])
+                    mapping_region_model[search_space.regions[r_index]].update_surrogates_and_optimizers(model_description["Model"])
+                return mapping_region_model
+
+    @staticmethod
+    def __get_average_time_to_build_models(model_combination: dict, prediction_infos: list,
                                            start_index: int, end_index: int):
         """
         Computes average time to build a single model within the combination
@@ -150,18 +172,10 @@ class DynamicModelsRecommendation(ModelRecommendationModule):
                 return None
         if model_combination is None:
             return None
-        # if multiple models were used, filter out times only for previously selected combination
-        considered_times_for_models = list(filter(lambda combination: (combination[i]["Model"] == model_combination[i]
-                                                   and combination[i]["Model"] is not None for i in range(0, len(model_combination))),
-                                                  filter(lambda info: info is not None, prediction_infos[start_index:end_index])))
-        res = {}
-        for level in range(0, len(model_combination)):
-            times = [times_for_combination[level]["time_to_build"] for times_for_combination in
-                    list(filter(lambda times_for_combination: times_for_combination[level]["time_to_build"] != 0,
-                                considered_times_for_models))]
+
+        # calculate average time
+        times = [model["time_to_build"] for model in model_combination.values()]
         if len(times) > 0:
-            res.update({f'{level}': sum(times)/len(times)})
-        if res == {}:
-            return None
+            return sum(times)/len(times)
         else:
-            return res
+            return None

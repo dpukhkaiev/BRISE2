@@ -45,20 +45,10 @@
       ]
     },
     "Repeater":{
-      "Type": "AcceptableErrorBased",
+      "Type": "QuantityBased",
       "Parameters": {
-        "MaxFailedTasksPerConfiguration": 5,
-        "MaxTasksPerConfiguration": 10,
-        "MinTasksPerConfiguration": 2,
-        "BaseAcceptableErrors": [5, 5],
-        "ConfidenceLevels": [0.95, 0.95],
-        "DevicesScaleAccuracies": [0, 0],
-        "DevicesAccuracyClasses": [0, 0],
-        "ExperimentAwareness": {
-          "isEnabled": true,
-          "MaxAcceptableErrors": [50, 50],
-          "RatiosMax": [10, 10]
-        }
+        "MaxFailedTasksPerConfiguration": 1,
+        "MaxTasksPerConfiguration": 1
       }
     },
     "Predictor":{
@@ -67,17 +57,25 @@
         {
           "Type": "brise.TreeParzenEstimator",
           "Parameters": {
-            "top_n_percent": 30,
-            "random_fraction": 0,
-            "bandwidth_factor": 3,
-            "min_bandwidth": 0.001,
-            "SamplingSize": 96
+            "SamplingSize": 1000,
+            "random_fraction": 0.1,
+            "top_n_percent": 0.5,
+            "min_bandwidth": 0.7
+          }
+        },
+        {
+          "Type": "brise.TreeParzenEstimator",
+          "Parameters": {
+            "SamplingSize": 1000,
+            "random_fraction": 0.2,
+            "top_n_percent": 0.5,
+            "min_bandwidth": 0.7
           }
         }
       ]
     },
     "TransferLearning":{
-      "isEnabled": true,
+      "isEnabled": false,
       "TransferExpediencyDetermination": {
         "ComparatorType": "NormDifferenceComparator",
         "MinNumberOfSamples": 10,
@@ -108,7 +106,7 @@
       }
     },
     "StopConditionTriggerLogic":{
-      "Expression": "(QuantityBased and Guaranteed and ImprovementBased) or BadConfigurationBased or TimeBased or FewShotLearningBased",
+      "Expression": "(QuantityBased and Guaranteed and ImprovementBased) or BadConfigurationBased or TimeBased",
       "InspectionParameters":{
         "RepetitionPeriod": 1,
         "TimeUnit": "seconds"
@@ -148,11 +146,6 @@
           "MaxRunTime": 10,
           "TimeUnit": "minutes"
         }
-      },
-      {
-        "Name": "FewShotLearningBased",
-        "Type": "FewShotLearningBased",
-        "Parameters": {      }
       }
     ]
 }

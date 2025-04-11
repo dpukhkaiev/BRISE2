@@ -3,64 +3,81 @@ import os
 
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
-from core_entities.search_space import Hyperparameter, get_search_space_record
+from core_entities.search_space import SearchSpace
 from repeater.repeater_selector import RepeaterOrchestration
-from tools.mongo_dao import MongoDB
+from tools.restore_db import RestoreDB
 
-os.environ["TEST_MODE"] = 'UNIT_TEST'
-database = MongoDB("test", 0, "test", "user", "pass")
+rdb = RestoreDB()
+rdb.restore()
 
-def test_0(get_sample):
+def test_0(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Default Configuration
-    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 0,
-                                                     Configuration.Type.DEFAULT, {'enabled': True, 'evaluated': False, 'measured': False})
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     0, Configuration.Type.DEFAULT,
+                                                     {'enabled': True, 'evaluated': False, 'measured': False})
 
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': False}
     assert needed_tasks_count > 0
 
-def test_1(get_sample):
+
+def test_1(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Default Configuration
-    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 10,
-                                                     Configuration.Type.DEFAULT, {'enabled': True, 'evaluated': True, 'measured': False})
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     10, Configuration.Type.DEFAULT,
+                                                     {'enabled': True, 'evaluated': True, 'measured': False})
 
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
-def test_2(get_sample):
+
+def test_2(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Predicted Configuration
-    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 0,
-                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': False, 'measured': False})
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     0, Configuration.Type.PREDICTED,
+                                                     {'enabled': True, 'evaluated': False, 'measured': False})
 
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': False}
     assert needed_tasks_count > 0
 
-def test_3(get_sample):
-    # Measured Predicted configuration with low relative error in measurings.
-    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 2,
-                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': True, 'measured': False})
+
+def test_3(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+    # Measured Predicted configuration with low relative error in results.
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     2, Configuration.Type.PREDICTED,
+                                                     {'enabled': True, 'evaluated': True, 'measured': False})
 
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
-def test_4(get_sample):
-    # Measured Predicted configuration with high relative error in measurings.
-    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 8,
-                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': True, 'measured': False})
+
+def test_4(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+    # Measured Predicted configuration with high relative error in results.
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     8, Configuration.Type.PREDICTED,
+                                                     {'enabled': True, 'evaluated': True, 'measured': False})
 
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': False}
     assert needed_tasks_count > 0
 
-def test_5(get_sample):
+
+def test_5(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with number of measured tasks = threshold.
-    configuration, needed_tasks_count = measure_task(get_sample[0], get_sample[1], get_sample[2], get_sample[3], 10,
-                                                     Configuration.Type.PREDICTED, {'enabled': True, 'evaluated': True, 'measured': False})
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     10, Configuration.Type.PREDICTED,
+                                                     {'enabled': True, 'evaluated': True, 'measured': False})
 
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
 
 def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict,
-                 search_space: Hyperparameter, measured_tasks: int,
+                 search_space: SearchSpace, measured_tasks: int,
                  config_type: Configuration.Type, config_status: dict):
     """
     Test function for Repeater module.
@@ -70,18 +87,18 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     2. Create instance of current measurement.
     3. Call Repeater function.
 
-    :param configurations_sample: default sample of measured configurations
-    :param tasks_sample: default sample of measured tasks
-    :param experiment_description: Experiment Description sample in json format
-    :param search_space: Search Space sample
-    :param measured_tasks: specify number of measured tasks in current measurement.
-    :param config_type: specify current measurement configuration type.
-    :param config_status: specify current measurement configuration status.
+    :param configurations_sample: a sample of measured configurations
+    :param tasks_sample: a sample of measured tasks
+    :param experiment_description: experiment description in json format
+    :param search_space: search space object
+    :param measured_tasks: number of already measured tasks in the current configuration.
+    :param config_type: current configuration type.
+    :param config_status: current configuration status.
 
     :return: list of configuration status and number of tasks to measure.
     """
     experiment = Experiment(experiment_description, search_space)
-    Configuration.set_task_config(experiment.description["TaskConfiguration"])
+    Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
     configuration = Configuration(configurations_sample[1]["Params"], config_type, experiment.unique_id)
     configuration.status = config_status
     for i in range(0, measured_tasks):
@@ -96,7 +113,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
         )
         default_configuration.status = {'enabled': True, 'evaluated': True, 'measured': True}
         default_configuration._task_number = configurations_sample[0]["Tasks"]
-        default_configuration.results = configurations_sample[0]["Results"]
+        default_configuration.results = configurations_sample[0]["Result"]
         default_configuration._standard_deviation = configurations_sample[0]["STD"]
         experiment.default_configuration = default_configuration
     task = json.dumps({"configuration": configuration.to_json()})

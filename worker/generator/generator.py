@@ -18,7 +18,8 @@ def generate_worker_function(experiment_description_path):
         env = Environment(loader=file_loader)
         template = env.get_template('worker_f_template')
     except IOError as error:
-        logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}", exc_info=True)
+        logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}",
+                     exc_info=True)
         raise error
     # TODO: Usage of shared functionality - load_json_file
     try:

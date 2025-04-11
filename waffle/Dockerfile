@@ -1,0 +1,1 @@
+FROM vprokopets/waffle_temp:latest

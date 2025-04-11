@@ -1,14 +1,15 @@
 import logging
 import json
+import os
+from typing import List, Tuple
+from copy import deepcopy
 
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from configuration_selection.model.predictor import Predictor
 from tools.front_API import API
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish
-from transfer_learning.transfer_learning_module import TransferLearningModule
-
-from collections import OrderedDict
+from transfer_learning.transfer_learning_module import TransferLearningOrchestrator
 
 
 class ConfigurationSelection:
@@ -19,134 +20,196 @@ class ConfigurationSelection:
     def __init__(self, experiment: Experiment):
         self.sub = API()
         self.experiment = experiment
-        self.experiment_id = self.experiment.unique_id
-        # TODO: information, related to experiment, such as ED, UUID, etc. could be encapsulated into `context` entity.
+
         self.predictor: Predictor = Predictor(
-            self.experiment_id, self.experiment.description, self.experiment.search_space
+            self.experiment.unique_id,
+            self.experiment.description,
+            self.experiment.search_space
         )
-        # Initialize Transfer Learning module
-        if self.experiment.description["TransferLearning"]["isEnabled"]:
-            self.is_transfer_enabled = True
-            self.tl_module = TransferLearningModule(self.experiment.description, self.experiment_id)
+        # check if TL is available
+        if "TransferLearning" in self.experiment.description.keys():
+            self.transfer_is_enabled = True
+            self.transfer_learning_orchestrator = TransferLearningOrchestrator(self.experiment.description,
+                                                                               self.experiment.unique_id)
+        else:
+            self.transfer_is_enabled = False
+
         self.logger = logging.getLogger(__name__)
-        self.connection_thread = EventServiceConnection(self)
-        self.connection_thread.start()
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.connection_thread = self._EventServiceConnection(self)
+            self.connection_thread.start()
 
-    def send_new_configurations_to_measure(self, ch, method, properties, body):
+    def send_new_configurations_to_measure(self, ch, method, properties, body) -> Tuple[
+            List[Configuration], List[Configuration]]:
         """
-        This callback function will be triggered on arrival of ONE measured Configuration.
-        When there is new measured Configuration, following steps should be done:
+        This callback function will be triggered upon arrival of EACH measured Configuration.
+        When there is new measured Configuration, the following steps are done:
 
-            -   update and validate models;
+            1.   the surrogates are updated and validated
+            2.   configuration(s) selection either by the surrogate, or by the sampling strategy:
+                Note: The number of new configurations can be:
+                - 0 if the number of the available Worker nodes has decreased;
+                - 1 if the number of the available Workers has not changed;
+                - N + 1 if the number of the available Workers has increased by N.
+            3.   new configuration(s) are sent to the Repetition Manager for evaluation.
 
-            -   pick either by model, or by selection algorithm new Configuration(s) for evaluation;
-                Note: The amount of new Configurations are:
-                - 0 if number of available Worker nodes decreased;
-                - 1 if number of available Workers did not change;
-                - N + 1 if number of available Worker increased by N;
-
-            -   send new Configuration to Repeater for evaluation.
+        :return: FOR TESTING ONLY: Two lists:
+                                * configs_to_be_evaluated: contains all parameters for the flat search space
+                                * hierarchical_configs: the way a configuration is being sent to the worker
+        TODO Multi-point prediction makes sense only in synchronous mode, otherwise it overloads the workers, unless
+        TODO the queue is periodically cleaned up
         """
-
         needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
-        for _ in range(needed_configs):
-            # TODO some of parameters could be predicted, other could be sampled, need to change Configuration.Type
-            # TODO: check the logic. Now, if TL is disabled, prediction takes place sa usual.
-            # If enabled - n points are sampled deterministically.
-            # Possible consequences - only exps. with used TL can be further used for TL
-            if not self.is_transfer_enabled:
-                config = self.predictor.predict(self.experiment.measured_configurations)
+
+        number_of_predicted_configs = (
+            min([model.candidate_selector.number_of_points for model in self.predictor.mapping_region_model.values()]))
+
+        predicted_configs = []
+        configs_to_be_evaluated = []
+
+        if not self.transfer_is_enabled:
+            predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
+        else:
+            similar_experiments = self.transfer_learning_orchestrator.ted_module.analyse_experiments_similarity()
+            if similar_experiments is None:
+                sampled_config = self.predictor.predict(self.experiment.measured_configurations, True)[0]
+                predicted_configs.append(sampled_config)
+                temp_msg = f"Transfer expediency cannot be determined yet. Sampled: {sampled_config}."
+                self.logger.info(temp_msg)
+            elif len(similar_experiments) == 0:
+                temp_msg = "No similar experiment has been found."
+                self.logger.info(temp_msg)
+                predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
             else:
-                if len(self.experiment.measured_configurations) > \
-                        self.experiment.description["TransferLearning"]["TransferExpediencyDetermination"]["MinNumberOfSamples"]:
-                    transferred_knowledge = self.tl_module.get_transferred_knowledge()
-                    recommended_models = transferred_knowledge["Recommended_models"]
-                    transferred_models = transferred_knowledge["Models_to_transfer"]
-                    transferred_best_configuration = transferred_knowledge["Best_configuration_to_transfer"]
-                    transferred_configurations = transferred_knowledge["Configurations_to_transfer"]
-                    if recommended_models is not None and recommended_models != self.predictor.predictor_config["models"]:
-                        self.predictor.predictor_config["models"] = recommended_models
-                        self.predictor.models_dumps = [None] * len(recommended_models)
+                # Model transfer
+                model_transfer_module = self.transfer_learning_orchestrator.transfer_submodules["Model_transfer"]
+                if model_transfer_module is not None:
+                    transferred_mapping_region_model = (self.transfer_learning_orchestrator.
+                                                        transfer_submodules["Model_transfer"].
+                                                        recommend_best_model(similar_experiments))
+                    if transferred_mapping_region_model is not None:
+                        self.predictor.update_mapping_region_model(transferred_mapping_region_model)
+                        # TODO enhance log
                         self.logger.info(f"New combination of surrogate models is recommended for this iteration: \
-                                          {recommended_models}")
-                    if transferred_best_configuration is not None:
-                        config = transferred_best_configuration
-                        self.logger.info(f"Trying to measure best configuration from former experiment, \
-                                         if it was not measured yet: {config}")
+                                                                 {transferred_mapping_region_model.values()}")
+                # Configuration transfer
+                configuration_transfer_module = self.transfer_learning_orchestrator.transfer_submodules[
+                    "Configuration_transfer"]
+                if configuration_transfer_module is not None:
+                    transferred_configurations = (
+                        self.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"].
+                        transfer_configurations(similar_experiments))
+                    transferred_configurations = list(filter(
+                        lambda tc: tc.parameters not in [mc.parameters for mc in
+                                                         self.experiment.measured_configurations],
+                        transferred_configurations))
+                    self.logger.info(f"Identified a set of promising configurations from a similar experiment, "
+                                     f"{transferred_configurations}")
+                    # if few shot configuration transfer just take the best transferred config
+                    if configuration_transfer_module.is_few_shot:
+                        predicted_configs.append(transferred_configurations[0])
+                        self.logger.info(f"Measuring the best configuration from the former experiment, "
+                                         f"if it has not been measured yet: "
+                                         f"{transferred_configurations[0]}")
+                    # if few shot model transfer, extend the transferred model with transferred configurations,
+                    # take a single config from the prediction
+                    elif model_transfer_module is not None and model_transfer_module.is_few_shot:
+                        extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
+                        temp_predicted = self.predictor.predict(extended_configuration_list)[0]
+                        predicted_configs.append(temp_predicted)
+                        self.logger.info("Measuring a configuration using the transferred model")
+                    # regular transfer of configurations
                     else:
-                        if transferred_models is not None and len(transferred_models) > 0:
-                            config = self.predictor.predict(self.experiment.measured_configurations,
-                                                            transferred_models=transferred_models)
-                            config.type = Configuration.Type.TRANSFERRED
-                            self.logger.info(f"A combination of old surrogates will be used on this iteration: \
-                                             {transferred_models}")
-                        else:
-                            config = self.predictor.predict(self.experiment.measured_configurations,
-                                                            transferred_configurations=transferred_configurations)
-                        if transferred_configurations is not None:
-                            if len(transferred_configurations) > 0:
-                                config.type = Configuration.Type.TRANSFERRED
-                        elif recommended_models is not None:
-                                config.type = Configuration.Type.TRANSFERRED
-                else:
-                    new_parameter_values = OrderedDict()
-                    while not self.experiment.search_space.validate(new_parameter_values, is_recursive=True):
-                        self.experiment.search_space.generate(new_parameter_values)
-                    config = Configuration(
-                        new_parameter_values, Configuration.Type.FROM_SELECTOR, self.experiment_id
-                    )
+                        while needed_configs > 0:
+                            if needed_configs - number_of_predicted_configs >= 0:
+                                extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
+                                temp_predicted = self.predictor.predict(extended_configuration_list)
+                                predicted_configs.extend(temp_predicted)
+                            else:
+                                extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
+                                temp_predicted = self.predictor.predict(extended_configuration_list)
+                                predicted_configs.extend(temp_predicted[:needed_configs])
+                            needed_configs -= number_of_predicted_configs
+                # regular transfer of models
+                if model_transfer_module is not None:
+                    predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
 
-            if config not in self.experiment.evaluated_configurations:
-                temp_msg = f"Model predicted {config}."
+        for c in predicted_configs:
+            if c not in self.experiment.evaluated_configurations:
+                temp_msg = f"The model predicted {c}."
+                self.logger.info(temp_msg)
+                configs_to_be_evaluated.append(c)
+            elif len(self.experiment.measured_configurations) == self.experiment.search_space.size:
+                msg = "Entire Search Space has been already evaluated. Shutting down."
+                self.logger.info(msg)
+                if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+                    publish(exchange='stop_experiment_exchange',
+                            routing_key=self.experiment.unique_id,
+                            body=msg)
+
             else:
-                while config in self.experiment.evaluated_configurations:
-                    if len(self.experiment.evaluated_configurations) >= self.experiment.search_space.get_size():
-                        msg = "Entire Search Space was evaluated. Shutting down."
-                        self.logger.warning(msg)
-                        publish(exchange='stop_experiment_exchange',
-                                routing_key=self.experiment_id,
-                                body=msg)
-                        break
+                sampled_config = self.predictor.predict(self.experiment.measured_configurations, True)[0]
+                temp_msg = f"Predicted configuration {c} has already been evaluated. Randomly sampled {sampled_config}."
+                self.logger.info(temp_msg)
+                configs_to_be_evaluated.append(sampled_config)
 
-                    new_parameter_values = OrderedDict()
-                    while not self.experiment.search_space.validate(new_parameter_values, is_recursive=True):
-                        self.experiment.search_space.generate(new_parameter_values)
-                    config = Configuration(
-                        new_parameter_values, Configuration.Type.FROM_SELECTOR, self.experiment_id
-                    )
-                temp_msg = f"Fully randomly sampled {config}."
-            self.experiment.add_evaluated_configuration_to_experiment(config)
+        hierarchical_configs = []
+        for c in configs_to_be_evaluated:
+            self.experiment.add_evaluated_configuration_to_experiment(c)
+            if c.type is Configuration.Type.PREDICTED:
+                self.experiment.update_model_state(True)
+            else:
+                self.experiment.update_model_state(False)
             self.logger.info(temp_msg)
+            c_to_send = deepcopy(c)
+            if self.experiment.search_space.is_flat:
+                c_to_send.parameters = self.experiment.search_space.transform_flat_parameters_to_hierarchic(
+                    c.parameters)
+            hierarchical_configs.append(c_to_send)
             self.sub.send('log', 'info', message=temp_msg)
-            publish(exchange='measure_new_configuration_exchange',
-                    routing_key=self.experiment_id,
-                    body=json.dumps({"configuration": config.to_json()}))
+            if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+                publish(exchange='measure_new_configuration_exchange',
+                        routing_key=self.experiment.unique_id,
+                        body=json.dumps({"configuration": c_to_send.to_json()}))
 
+        return configs_to_be_evaluated, hierarchical_configs
 
-class EventServiceConnection(RabbitMQConnection):
-    """
-    This class is responsible for listening 2 queues.
-    1. `get_new_configuration_exchange` queue for triggering configuration selection process.
-    2. `stop_components` for shutting down configuration selection module (in case of BRISE Experiment termination).
-    """
+    def _regular_prediction(self, needed_configs: int, number_of_predicted_configs: int):
+        result = []
+        while needed_configs > 0:
+            if needed_configs - number_of_predicted_configs >= 0:
+                temp_predicted = self.predictor.predict(self.experiment.measured_configurations)
+                result.extend(temp_predicted)
+            else:
+                temp_predicted = self.predictor.predict(self.experiment.measured_configurations)
+                result.extend(temp_predicted[:needed_configs])
+            needed_configs -= number_of_predicted_configs
+        return result
 
-    def __init__(self, configuration_selection: ConfigurationSelection):
+    class _EventServiceConnection(RabbitMQConnection):
         """
-        The function for initializing consumer thread
-        :param configuration_selection: instance of ConfigurationSelection class
+        This class is responsible for listening to 2 queues.
+        1. `get_new_configuration_exchange` queue for triggering configuration selection process.
+        2. `stop_components` for shutting down configuration selection module (in case of BRISE Experiment termination).
         """
-        self.configuration_selection: ConfigurationSelection = configuration_selection
-        self.experiment_id = self.configuration_selection.experiment_id
-        super().__init__(configuration_selection)
 
-    def bind_and_consume(self):
-        self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
-        self.termination_queue_name = self.termination_result.method.queue
-        self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                queue=self.termination_queue_name,
-                                routing_key=self.experiment_id)
+        def __init__(self, configuration_selection):
+            """
+            The function for initializing consumer thread
+            :param configuration_selection: instance of ConfigurationSelection class
+            """
+            self.configuration_selection: ConfigurationSelection = configuration_selection
+            self.experiment_id = self.configuration_selection.experiment.unique_id
+            super().__init__(configuration_selection)
 
-        self.channel.basic_consume(queue="get_new_configuration_exchange" + self.experiment_id, auto_ack=True,
-                                           on_message_callback=self.configuration_selection.send_new_configurations_to_measure)
-        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                   on_message_callback=self.stop)
+        def bind_and_consume(self):
+            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_queue_name = self.termination_result.method.queue
+            self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                    queue=self.termination_queue_name,
+                                    routing_key=self.experiment_id)
+
+            self.channel.basic_consume(queue="get_new_configuration_exchange" + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.configuration_selection.send_new_configurations_to_measure)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                       on_message_callback=self.stop)

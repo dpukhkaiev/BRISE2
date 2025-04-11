@@ -3,11 +3,8 @@ Mock for main module for running BRISE configuration balancing."""
 
 import pickle
 import time
-import random
 import logging
 import os
-
-from copy import deepcopy
 
 from core_entities.experiment import Experiment
 from WorkerServiceClient.WSClient_sockets import WSClient
@@ -22,11 +19,15 @@ else:
     logger = logging.getLogger(__name__)
 
 
-class LoggerStub(logging.Logger): pass
-class ApiStub(API): pass
+class LoggerStub(logging.Logger):
+    pass
 
 
-def run(experiment_description=None, mock_data_file = None):
+class ApiStub(API):
+    pass
+
+
+def run(experiment_description=None, mock_data_file=None):
     try:
         with open(mock_data_file, 'rb') as f:
             mock_data = pickle.loads(f.read())
@@ -70,14 +71,11 @@ def run(experiment_description=None, mock_data_file = None):
         for config in state["Configurations"]:
             config.logger = logging.getLogger("core_entities.configuration.py")
 
-
     # --- Start actual imitation.
     experiment = Experiment(mock_data["Experiment"].description, mock_data["Experiment"].search_space)
-    api.send('experiment', 'description',
-                 global_config=mock_data["Global config"],
-                 experiment_description=experiment.description,
-                 searchspace_description=experiment.search_space.generate_searchspace_description()
-                 )
+    api.send('experiment', 'description', global_config=mock_data["Global config"],
+             experiment_description=experiment.description,
+             searchspace_description=experiment.search_space.generate_searchspace_description())
 
     # for config in [experiment.default_configuration, *mock_data["Solution configuration"], *mock_data["Initial configurations"]]:
     #     config.logger = logging.getLogger("core_entities.configuration.py")
@@ -97,7 +95,7 @@ def run(experiment_description=None, mock_data_file = None):
     repeater.performed_measurements += len(mock_data["Default configuration"].get_tasks())
     experiment.put_default_configuration(mock_data["Default configuration"])
 
-    logger.info("Measuring initial Configurations") # Initial configuration included into the first model.
+    logger.info("Measuring initial Configurations")  # Initial configuration included into the first model.
     for state_num, state in enumerate(mock_data['Models and configurations']):
         # Select new configurations.
         new_configs = []
@@ -123,6 +121,7 @@ def run(experiment_description=None, mock_data_file = None):
 
     # At this point stop condition said "Stop"
     experiment.get_final_report_and_result(repeater)
+
 
 class A:
     @staticmethod

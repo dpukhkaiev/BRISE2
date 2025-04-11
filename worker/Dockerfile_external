@@ -1,19 +1,19 @@
-FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:24.04
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Updating the system
 RUN apt-get update && apt-get install -y -qq \
-    wget=1.19.4-1ubuntu2.2 \
-    rsync=3.1.2-2.1ubuntu1.1 \
-    vim=2:8.0.1453-1ubuntu1.4 \
-    git=1:2.17.1-1ubuntu0.7 \
-    unzip=6.0-21ubuntu1 \
-    python3.7 \
+    wget \
+    rsync \
+    vim \
+    git \
+    unzip \
+    python3.12 \
     python3-pip \
-    python3.7-dev \
+    python3.12-dev \
 # Installing Java (Open JDK) for Rapidminer and MQUAT problems
-    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk=8u275-b01-0ubuntu1~18.04\
+    && apt-get -y -qq install --no-install-recommends openjdk-8-jdk\
 # Installing R and related packages for Rapidminer
     && apt-get install -y -qq r-base && \
     Rscript -e "install.packages('data.table', repos='http://cran.rstudio.com/')" && \
@@ -24,15 +24,20 @@ RUN apt-get update && apt-get install -y -qq \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV JAVA_HOME="$(dirname $(dirname $(readlink -f $(which javac))))"
 
+RUN mkdir -p /opt/conda && \
+    mkdir -p /miniconda && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /miniconda/miniconda.sh && \
+    bash /miniconda/miniconda.sh -b -u -p /opt/conda/ && \
+    rm /miniconda/miniconda.sh
+
+ENV PATH=/opt/conda/bin:$PATH
+COPY environment.yml /root
+RUN conda env create --file /root/environment.yml -y
+RUN conda update conda -y
+
 # Installing dockerize tool
-ENV DOCKERIZE_VERSION v0.6.1
+ENV DOCKERIZE_VERSION=v0.8.0
 
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
-
-# Installing Python modules
-RUN python3.7 -m pip install -U pika==1.1.0 pymongo==3.11.3 openml
-
-# Installing jMetalPy for Hyperheuristics
-RUN python3.7 -m pip install git+https://github.com/NatalieGvozdetska/jMetalPy.git@diploma_aggregate

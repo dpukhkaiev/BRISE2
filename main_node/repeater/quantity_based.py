@@ -16,7 +16,8 @@ class QuantityBasedType(Repeater):
         :param experiment: Experiment class instance, (!)used only in tests
         """
         super().__init__(experiment_description, experiment_id)
-        self.max_tasks_per_configuration = self.repeater_configuration["Parameters"]["MaxTasksPerConfiguration"]
+        feature_name = list(self.repeater_configuration["Instance"].keys())[0]
+        self.max_tasks_per_configuration = self.repeater_configuration["Instance"][feature_name]["MaxTasksPerConfiguration"]
 
     def evaluate(self, current_configuration: Configuration):
         """

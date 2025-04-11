@@ -3,20 +3,18 @@ from __future__ import annotations
 import pickle
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Dict, Iterable, List, MutableMapping, Union
-
+from typing import Dict, Iterable, List, Set, MutableMapping, Union, Tuple
 import numpy as np
-from configuration_selection.sampling.selection_algorithm_abs import SelectionAlgorithm
-from configuration_selection.sampling.selection_algorithms import get_selector
+import pandas as pd
 
 _CATEGORY = Union[str, int, float, bool]
 
 
 class Hyperparameter(ABC):
     """
-    The fundamental entity of the Search Space.
+    The main building block of the Search Space.
 
-    Using Hyperparameter(s), one could define Search Space as a combination of several Hyperparameters into
+    Using Hyperparameter(s), one could define Search Space as a combination of several Hyperparameters into a
     tree-like structure with 'activation' dependencies.
 
     Tree-like structure should be defined using Composition of Hyperparameters, based on activation values.
@@ -55,66 +53,26 @@ class Hyperparameter(ABC):
             bounded.
     """
 
-    def __init__(self, name: str):
+    def __init__(self,
+                 name: str,
+                 level: int,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None):
         self.name = name
         self.configuration_number = 0
-
-    #   --- Set of methods to operate with Hyperparameter values
-    def validate(self, values: MutableMapping, is_recursive: bool) -> bool:
-        """
-        Validates if hyperparameter 'values' are valid in Search Space by ensuring that:
-            1. Current Hyperparameter is defined in 'values' (the name is present).
-            2. Hyperparameter value is not violated (done by specific type of Hyperparameter by itself).
-            3. 'values' is valid for all "activated" children (done by Composition logic).
-
-        :param values: The MutableMapping of Hyperparameter names to corresponding values.
-        :param is_recursive: Boolean flag, whether to call "validate" also on all activated children.
-        :returns: bool True if 'values' are valid.
-        """
-        return self.name in values
+        self.level = level  # level within the search space
+        self.parent = parent
+        self.type = None
+        # TODO enable numerical values
+        self.activation_category = activation_category  # category activating this parameter
 
     @abstractmethod
-    def generate(self, values: MutableMapping) -> None:
+    def get_default(self) -> MutableMapping:
         """
-        Take 'values', a MutableMapping from hyperparameter names to their values
-         and extend it in following order:
-            1. If current Hyperparameter is not in 'values':
-             pick a random value for Hyperparameter according to a user-defined selection algorithm,
-             modify Mapping adding key:value to 'values'.
-            TODO: A logic of random sampling could be encapsulated to support more sophisticated sampling then uniform.
-            2. If current Hyperparameter is in 'values':
-            forward generate call to all "activated" children.
-
-        :param values: The MutableMapping of Hyperparameter names to corresponding values.
+        Get mapping of Hyperparameter name to its default value.
+        :return: The MutableMapping of Hyperparameter name to corresponding default value.
         """
-
-    @abstractmethod
-    def generate_default(self) -> MutableMapping:
-        """
-        Generate hyperparameters set out of default values recursively.
-        :return: The MutableMapping of Hyperparameter names to corresponding default values.
-        """
-
-    @abstractmethod
-    def describe(self, values: MutableMapping) -> MutableMapping[str, MutableMapping[str, Union[Hyperparameter, list]]]:
-        """
-        Return description of each available hyperparameters as a MutableMapping.
-
-        Example:
-        {
-            "hyperparameter1 name": {
-                    "hyperparameter": Hyperparameter object
-                    "boundaries": [lower, upper] if Hyperparameter is Numeric
-                    "categories": [cat1, ... catN] if Hyperparameter is Categorical
-            },
-            "hyperparameter2 name": {
-                    "hyperparameter": Hyperparameter object
-                    "boundaries": [lower, upper] if Hyperparameter is Numeric
-                    "categories": [cat1, ... catN] if Hyperparameter is Categorical
-            }
-            ...
-        }
-        """
+        pass
 
     @abstractmethod
     def get_size(self) -> Union[int, np.inf]:
@@ -125,18 +83,22 @@ class Hyperparameter(ABC):
         Note, by definition, numeric Float Hyperparameters have infinite size.
         :return: Union[int, np.inf]
         """
+        pass
 
-    def are_siblings(self, base_values: MutableMapping, target_values: MutableMapping) -> bool:
+    @abstractmethod
+    def transform(self, value):
         """
-        Analyse whether hyperparameter values base_values
-        form a sub-feature-tree of target_values hyperparameter values.
+        Transform a value between 0 and 1 to a corresponding Hyperparameter value.
+        """
+        pass
 
-        :param base_values: MutableMapping
-        :param target_values: MutableMapping
-        :return: boolean
+    def new_are_siblings(self, other: Hyperparameter) -> bool:
         """
-        # by default, leaf hyperparameters are siblings, the difference could be only in composite (categorical)
-        return True
+            Check whether current Hyperparameter is within the same region as another Hyperparameter.
+            :param other: Hyperparameter
+            :return: boolean
+        """
+        return self.parent.__eq__(other.parent) and self.activation_category.__eq__(other.activation_category)
 
     #   --- Set of methods to operate the structure of the Search Space
     @abstractmethod
@@ -152,8 +114,15 @@ class Hyperparameter(ABC):
         raise TypeError("Child Hyperparameters are only available in Composite Hyperparameter type.")
 
     @abstractmethod
-    def get_child_hyperparameter(self, name: str) -> Union[Hyperparameter, None]:
+    def get_children(self) -> List[Hyperparameter]:
         raise TypeError("Child Hyperparameters are only available in Composite Hyperparameter type.")
+
+    @abstractmethod
+    def remove_children(self):
+        raise TypeError("Child Hyperparameters are only available in Composite Hyperparameter type.")
+
+    def get_type(self) -> str:
+        return self.type
 
     def __eq__(self, other: Hyperparameter):
         """
@@ -167,21 +136,12 @@ class Hyperparameter(ABC):
     def __hash__(self):
         return hash(self.name)
 
-    def serialize(self) -> Dict:
+    def serialize(self, first, boundaries=None) -> Dict:
         """
         Serialize search space to mapping object, which could be later used to restore search space object.
         :return: Mapping
         """
         raise NotImplementedError
-
-    def update_selection_algorithm(self, selection_algorithm, dimensionality):
-        self.dimensionality = dimensionality
-        self.selection_algorithm = selection_algorithm
-
-    def get_selection(self, length):
-        value = self.selection_algorithm.get_value(self.dimensionality, self.configuration_number, length - 1)
-        self.configuration_number += 1
-        return value
 
 
 class CategoricalHyperparameter(Hyperparameter, ABC):
@@ -191,9 +151,13 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
 
     def __init__(self,
                  name: str,
+                 level: int,
                  categories: Iterable[_CATEGORY],
-                 default_value: _CATEGORY = None):
-        super().__init__(name)
+                 default_value: _CATEGORY = None,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None
+                 ):
+        super().__init__(name, level, parent, activation_category)
 
         # Each category could 'activate' children, so list of activated children is 'behind' each category.
         self._categories: MutableMapping[_CATEGORY, List[Hyperparameter]] = OrderedDict({cat: [] for cat in categories})
@@ -208,9 +172,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
                                  other: Hyperparameter,
                                  activation_category: _CATEGORY = None
                                  ) -> Hyperparameter:
-        # TODO: check for possible collisions in hyperparameter names
-        #  (could cause unexpected behavior in generate, describe)
-        if activation_category:
+        if activation_category is not None:
             self._add_to_category(activation_category, other)
         else:
             for category in self._categories:
@@ -225,11 +187,16 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
         else:
             self._categories[category].append(other)
 
-    def get_child_hyperparameter(self, name: str) -> Union[Hyperparameter, None]:
-        for children in self._categories.values():
-            for child in children:
-                if child.name == name:
-                    return child
+    def get_children(self) -> List[Hyperparameter]:
+        children: List[Hyperparameter] = []
+        for region in list(self._categories.values()):
+            for child in region:
+                children.append(child)
+        return children
+
+    def remove_children(self):
+        for category in self._categories:
+            self._categories[category] = []
 
     def get_size(self) -> Union[int, np.inf]:
         accumulated_size = 0
@@ -240,63 +207,14 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
             accumulated_size += branch_size
         return accumulated_size
 
-    def validate(self, values: MutableMapping, is_recursive: bool) -> bool:
-        is_valid = super().validate(values, is_recursive)
-        if not is_valid or values[self.name] not in self._categories:
-            is_valid = False
-        else:
-            # now it is time to ask 'activated' children to validate
-            if is_recursive:
-                for child in self._categories[values[self.name]]:
-                    is_valid = is_valid and child.validate(values, is_recursive)
-                    if not is_valid:
-                        break
-
-        return is_valid
-
-    def generate(self, values: MutableMapping) -> None:
-        # if this hyperparameter is not in hyperparameters set already - add it
-        # in other case - forwarding request to each 'activated' children.
-        if self.name not in values:
-            categories = list(self._categories.keys())
-            # np.random.choice converts python primitive types 'int' and 'float' to np.int64 and np.float64 -_-
-            value = self.get_selection(len(values))
-            values[self.name] = categories[self.transform(value)]
-        else:
-            for child in self._categories[values[self.name]]:
-                child.generate(values)
-
-    def generate_default(self) -> MutableMapping:
-        parent_values = OrderedDict({self.name: self._default_value})
-        for child in self._categories[self._default_value]:
-            child_values = child.generate_default()
-            if any((ch in parent_values.keys() for ch in child_values.keys())):
-                raise ValueError(f"Parent and Child hyperparameters names intersect: {parent_values}, {child_values}")
-            parent_values.update(child_values)
-        return parent_values
-
-    def describe(self, values: MutableMapping) -> MutableMapping[str, MutableMapping[str, Union[Hyperparameter, list]]]:
-        description = OrderedDict()
-        if self.name in values:
-            description[self.name] = {"hyperparameter": self, "categories": list(self._categories.keys())}
-            for child in self._categories[values[self.name]]:
-                description.update(child.describe(values))
-        return description
-
-    def are_siblings(self, base_values: MutableMapping, target_values: MutableMapping) -> bool:
-        result = []
-        if self.name in base_values:
-            if base_values.get(self.name) == target_values.get(self.name):
-                for child in self._categories[base_values[self.name]]:
-                    result.append(child.are_siblings(base_values, target_values))
-            else:
-                result.append(False)
-        return all(result)
+    def get_default(self) -> MutableMapping:
+        default_value = OrderedDict({self.name: self._default_value})
+        return default_value
 
     def __repr__(self):
         represent = f"{self.__class__.__name__} '{self.name}'."
         represent += f"\n├ Default category: '{self._default_value}'."
-        represent += f"\n├ Categories:"
+        represent += "\n├ Categories:"
         for category in self._categories:
             represent += f"\n├  {category}:"
             for child in self._categories[category]:
@@ -311,6 +229,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
             root_parameters_list = []
         else:
             self.first = False
+
         first = False
         categories_description = []
         for category, children in self._categories.items():
@@ -347,16 +266,26 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
 
     def transform(self, value):
         categories = list(self._categories.keys())
-        return round(value*(len(categories) - 1))
+        category_index = round(value * (len(categories) - 1))
+        return categories[category_index]
+
+    def __eq__(self, other):
+        return super.__eq__(self, other)
+
+    def __hash__(self):
+        return super.__hash__(self)
 
 
 class NumericHyperparameter(Hyperparameter, ABC):
     def __init__(self,
                  name: str,
+                 level: int,
                  lower: Union[int, float],
                  upper: Union[int, float],
-                 default_value: Union[int, float] = None):
-        super().__init__(name)
+                 default_value: Union[int, float] = None,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None):
+        super().__init__(name, level, parent, activation_category)
 
         self._lower = lower
         self._upper = upper
@@ -372,23 +301,20 @@ class NumericHyperparameter(Hyperparameter, ABC):
                                  activation_categories: Iterable[Union[str, int, float]]) -> Hyperparameter:
         raise TypeError("Child Hyperparameters are only available in Composite Hyperparameter type.")
 
-    def get_child_hyperparameter(self, name: str) -> Union[Hyperparameter, None]:
-        raise TypeError("Child Hyperparameters are only available in Composite Hyperparameter type.")
+    def get_children(self) -> List[Hyperparameter]:
+        return []
 
-    def generate_default(self) -> MutableMapping:
+    def remove_children(self):
+        pass
+
+    def get_default(self) -> MutableMapping:
         return OrderedDict({self.name: self._default_value})
 
-    def validate(self, values: MutableMapping, is_recursive: bool) -> bool:
-        result = super().validate(values, is_recursive)
-        if result is True:
-            result = self._lower <= values[self.name] <= self._upper
-        return result
+    def get_upper(self):
+        return self._upper
 
-    def describe(self, values: MutableMapping) -> MutableMapping[str, MutableMapping[str, Union[Hyperparameter, list]]]:
-        description = OrderedDict()
-        if self.name in values:
-            description[self.name] = OrderedDict({"hyperparameter": self, "boundaries": [self._lower, self._upper]})
-        return description
+    def get_lower(self):
+        return self._lower
 
     def __repr__(self):
         represent = f"{self.__class__.__name__} '{self.name}'"
@@ -405,6 +331,9 @@ class NumericHyperparameter(Hyperparameter, ABC):
             result = False
         return result
 
+    def __hash__(self):
+        return super().__hash__(self)
+
     def serialize(self, first, boundaries=None) -> Dict:
         boundaries[self.name] = self._lower, self._upper
         return boundaries
@@ -414,173 +343,357 @@ class IntegerHyperparameter(NumericHyperparameter):
 
     def __init__(self,
                  name: str,
+                 level: int,
                  lower: Union[int, float],
                  upper: Union[int, float],
-                 default_value: Union[int, float] = None):
+                 default_value: Union[int, float] = None,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None):
         default_value = default_value or (upper - lower) // 2
-        super().__init__(name, int(lower), int(upper), default_value)
-
-    def generate(self, values: MutableMapping) -> None:
-        if self.name not in values:
-            value = self.get_selection(len(values))
-            values[self.name] = self.transform(value)
-
-    def validate(self, values: MutableMapping, is_recursive: bool) -> bool:
-        return super().validate(values, is_recursive) and isinstance(values[self.name], int)
+        super().__init__(name, level, int(lower), int(upper), default_value, parent, activation_category)
+        self.type = "Integer"
 
     def get_size(self) -> Union[int, np.inf]:
         return self._upper - self._lower
 
-    def transform(self, value):
+    def transform(self, value) -> int:
         return round(self._lower + value*(self._upper - self._lower))
+
+    def __eq__(self, other):
+        return super.__eq__(self, other)
+
+    def __hash__(self):
+        return super.__hash__(self)
 
 
 class FloatHyperparameter(NumericHyperparameter):
 
     def __init__(self,
                  name: str,
+                 level: int,
                  lower: Union[int, float],
                  upper: Union[int, float],
-                 default_value: Union[int, float] = None):
+                 default_value: Union[int, float] = None,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None):
         default_value = default_value or (upper - lower) / 2
-        super().__init__(name, float(lower), float(upper), default_value)
-
-    def generate(self, values: MutableMapping) -> None:
-        if self.name not in values:
-            value = self.get_selection(len(values))
-            values[self.name] = self.transform(value)
-
-    def validate(self, values: MutableMapping, is_recursive: bool) -> bool:
-        return super().validate(values, is_recursive) and isinstance(values[self.name], float)
+        super().__init__(name, level, float(lower), float(upper), default_value, parent, activation_category)
+        self.type = "Float"
 
     def get_size(self) -> Union[int, np.inf]:
         return np.inf
 
-    def transform(self, value):
+    def transform(self, value) -> float:
         return self._lower + value*(self._upper - self._lower)
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __hash__(self):
+        return super.__hash__(self)
 
 
 class OrdinalHyperparameter(CategoricalHyperparameter):
+    def __init__(self,
+                 name: str,
+                 level: int,
+                 categories: Iterable[_CATEGORY],
+                 default_value: _CATEGORY = None,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None
+                 ):
+        super().__init__(name, level, categories, default_value, parent, activation_category)
+        self.type = "Ordinal"
+
     def __eq__(self, other: OrdinalHyperparameter):
-        result = super().__eq__(other)
-        if result and not (isinstance(other, OrdinalHyperparameter)
-                           or self._default_value != other._default_value
-                           or self._categories != other._categories):
-            result = False
-        return result
+        if type(other) is OrdinalHyperparameter:
+            result = super().__eq__(other)
+            if result and not (isinstance(other, OrdinalHyperparameter)
+                               or self._default_value != other._default_value
+                               or self._categories != other._categories):
+                result = False
+            return result
+        else:
+            return False
+
+    def __hash__(self):
+        return super.__hash__(self)
 
 
 class NominalHyperparameter(CategoricalHyperparameter):
-    def __eq__(self, other: NominalHyperparameter):
-        result = super().__eq__(other)
-        if result and not (isinstance(other, NominalHyperparameter)
-                           or self._default_value != other._default_value
-                           or self._categories.keys() != other._categories.keys()):
-            result = False
-        elif result:
-            for cat in self._categories.keys():
-                if cat not in other._categories or self._categories[cat] != other._categories[cat]:
-                    result = False
-                    break
-        return result
+    def __init__(self,
+                 name: str,
+                 level: int,
+                 categories: Iterable[_CATEGORY],
+                 default_value: _CATEGORY = None,
+                 parent: Hyperparameter = None,
+                 activation_category: _CATEGORY = None
+                 ):
+        super().__init__(name, level, categories, default_value, parent, activation_category)
+        self.type = "Nominal"
 
+    def __eq__(self, other: NominalHyperparameter):
+        if type(other) is NominalHyperparameter:
+            result = super().__eq__(other)
+            if result and not (isinstance(other, NominalHyperparameter)
+                               or self._default_value != other._default_value
+                               or self._categories.keys() != other._categories.keys()):
+                result = False
+            elif result:
+                for cat in self._categories.keys():
+                    if cat not in other._categories or self._categories[cat] != other._categories[cat]:
+                        result = False
+                        break
+            return result
+        else:
+            return False
+
+    def __hash__(self):
+        return super.__hash__(self)
+
+
+class SearchSpace:
+    def __init__(self, h: dict):
+        self.is_flat = False
+        self.hierarchical_view = self.initialize_hierarchical_view(h)
+        self.flat_view = self.initialize_flat_view()
+        self.number_of_levels = self.__get_number_of_levels()
+
+        if "Flat" in h["Structure"].keys():
+            self.is_flat = True
+            self.search_space_description = self.flat_view
+        else:
+            self.search_space_description = self.hierarchical_view
+
+        self._size = self.__get_size()
+
+        self.current_level: List[Hyperparameter] = []
+        self.current_level.append(self.search_space_description)
+        self.next_level()
+
+        self.regions = []
+        while len(self.current_level) > 0:
+            regions = self.get_regions_on_current_level()
+            for r in regions:
+                self.regions.append(r)
+            self.next_level()
+
+        self.reset_level()
+
+        self.hp_names = sum([[hp.name for hp in r]for r in self.regions], [])
+
+    def reset_level(self):
+        self.current_level.append(self.search_space_description)
+        self.next_level()
+
+    def next_level(self):
+        children: List[Hyperparameter] = []
+        for h in self.current_level:
+            children.extend(h.get_children())
+        self.current_level = children
+        return self.current_level
+
+    def get_regions_on_current_level(self) -> Set[Tuple[Hyperparameter]]:
+        regions: Set[Tuple[Hyperparameter]] = set()
+
+        for h in self.current_level:
+            region = tuple(filter(lambda x: h.new_are_siblings(x), self.current_level))  # list of relevant parameters
+            regions.add(region)
+
+        return regions
+
+    def activate_regions(self, parent: pd.DataFrame) -> Set[Tuple[Hyperparameter]]:
+        parent = parent.drop(columns=parent.columns.difference(self.hp_names))
+        available_regions = self.get_regions_on_current_level()
+        activated_regions = set()
+        for r in available_regions:
+            for hp in r:
+                for p in parent.to_numpy().flatten():
+                    if type(p) is str:  # TODO: only for categorical parameters. check if top-level features do not influence it
+                        if hp.activation_category in p:
+                            activated_regions.add(r)
+        return activated_regions
+
+    def serialize(self) -> Dict:
+        # TODO test
+        serialized_search_space_description = self.search_space_description.serialize(True)
+        return serialized_search_space_description
+
+    def flatten(self, h: Hyperparameter):
+        """
+         A recursive method, which constructs a flat representation of the search space.
+         :param h: hierarchical representation of the search space
+         :return: flattened representation of the search space
+         """
+        flattened_search_space = []
+        if h.get_type() in ("Nominal", "Ordinal"):
+            children = h.get_children()
+            for child in children:
+                flattened_search_space += self.flatten(child)
+            if h.name != "root":
+                flattened_search_space.append(h)
+        else:
+            flattened_search_space.append(h)
+
+        return flattened_search_space
+
+    @property
+    def size(self):
+        return self._size
+
+    def __get_number_of_levels(self) -> int:
+        flattened_parameters = self.flatten(self.hierarchical_view)
+        return max([hp.level for hp in flattened_parameters]) + 1  # levels start with 0
+
+    def __get_size(self) -> Union[int, np.inf]:
+        size = 0
+        flattened_parameters = self.flatten(self.hierarchical_view)
+        for hp in flattened_parameters:
+            if hp.get_type() in ("Nominal", "Ordinal"):
+                size += len(hp.categories)
+            elif hp.get_type() == "Integer":
+                size += hp.get_upper() - hp.get_lower()
+            else:
+                return np.inf
+        return size
+
+    def initialize_hierarchical_view(self, hyperparameter_description: dict) -> Hyperparameter:
+        """
+        A recursive method whose intent is to create a hierarchical search space representation from the description.
+        :param hyperparameter_description: search space parameters description in json format.
+        :return: Hyperparameter object.
+        """
+        root = NominalHyperparameter(name="root", level=-1, categories=["root"], default_value="root")
+
+        for name in hyperparameter_description.keys():
+            if name == "Structure":
+                continue
+            h = self._inner_init(hyperparameter_description[name], name, root, "root")
+            root.add_child_hyperparameter(h)
+
+        return root
+
+    def initialize_flat_view(self) -> Hyperparameter:
+        root = NominalHyperparameter(name="root", level=-1, categories=["root"], default_value="root")
+        from copy import deepcopy
+        flattened_parameters = self.flatten(self.hierarchical_view)
+        # find unique names set([p.name for p in flattened_parameters])
+        unique_parameter_names = set([p.name for p in flattened_parameters])
+        for hp in flattened_parameters:
+            hp = deepcopy(hp)
+            if hp.name in unique_parameter_names:
+                root.add_child_hyperparameter(hp, activation_category="root")
+                hp.activation_category = "root"
+                hp.parent = root
+                hp.remove_children()
+                unique_parameter_names.remove(hp.name)
+
+        return root
+
+    def _inner_init(self, hyperparameter_description: dict,
+                    name: str,
+                    parent: Hyperparameter = None,
+                    activation_category: _CATEGORY = None) -> Hyperparameter:
+        h_name: str = name
+        h_type: str = hyperparameter_description["Type"]
+        level: int = hyperparameter_description["Level"]
+
+        default_value = hyperparameter_description["Default"]
+        # TODO rethink modeling of the default configuration. At the moment DCH can overwrite this value
+
+        if h_type in ("NominalHyperparameter", "OrdinalHyperparameter"):
+            categories: List[_CATEGORY] = hyperparameter_description["Categories"]
+
+            if h_type == "NominalHyperparameter":
+                h = NominalHyperparameter(name=h_name,
+                                          level=level,
+                                          categories=categories,
+                                          default_value=default_value,
+                                          parent=parent,
+                                          activation_category=activation_category)
+            else:
+                h = OrdinalHyperparameter(name=h_name,
+                                          level=level,
+                                          categories=categories,
+                                          default_value=default_value,
+                                          parent=parent,
+                                          activation_category=activation_category)
+
+            # declared children for each category
+            for c in categories:
+                # derive category name from the absolute path
+                relative_name = c.split(".")[-1]
+                for hp in hyperparameter_description[relative_name].keys():
+                    if hp != "Type":
+                        child = self._inner_init(hyperparameter_description[relative_name][hp], hp, h, c)
+                        h.add_child_hyperparameter(child, c)
+
+        elif h_type in ("IntegerHyperparameter", "FloatHyperparameter"):
+            lower_bound = hyperparameter_description["Lower"]
+            upper_bound = hyperparameter_description["Upper"]
+            if h_type == "IntegerHyperparameter":
+                h = IntegerHyperparameter(name=h_name,
+                                          level=level,
+                                          lower=lower_bound,
+                                          upper=upper_bound,
+                                          default_value=default_value,
+                                          parent=parent,
+                                          activation_category=activation_category)
+            else:
+                h = FloatHyperparameter(name=h_name,
+                                        level=level,
+                                        lower=lower_bound,
+                                        upper=upper_bound,
+                                        default_value=default_value,
+                                        parent=parent,
+                                        activation_category=activation_category)
+
+        else:
+            import logging
+            logging.debug(f"{hyperparameter_description}")
+            raise TypeError(f"Hyperparameter {h_name} has unknown type: {h_type}.")
+        return h
+
+    def transform_flat_parameters_to_hierarchic(self, parameters: MutableMapping) -> MutableMapping:
+        """
+        Constructs a valid hierarchic configuration from a flattened configuration.
+        """
+        self.search_space_description = self.hierarchical_view
+        self.reset_level()
+
+        valid_parameters = {}
+
+        activated_regions = self.get_regions_on_current_level()
+        while len(activated_regions) > 0:
+            self.next_level()
+            next_activated_regions: Set[Tuple[Hyperparameter]] = set()
+            for region in activated_regions:
+                for hp in region:
+                    valid_parameters[hp.name] = parameters[hp.name]
+
+                    valid_parameters_series = pd.Series(valid_parameters.values(), valid_parameters.keys())
+                    valid_parameters_df = pd.DataFrame(columns=valid_parameters_series.index)
+                    valid_parameters_df.loc[0] = valid_parameters_series.values
+
+                    if len(next_activated_regions) == 0:
+                        next_activated_regions = self.activate_regions(valid_parameters_df)
+                    else:
+                        next_activated_regions.update(self.activate_regions(valid_parameters_df))
+                activated_regions = next_activated_regions
+
+        self.search_space_description = self.flat_view
+        self.reset_level()
+        return valid_parameters
 
 ################
 # Auxiliary methods
 ################
-def initialize_search_space(hyperparameter_description: dict, selection_algorithm: dict) -> Hyperparameter:
-    """
-    Auxiliary method of search space creation. The main intent is to avoid unnecessary selection algorithm
-    object creations in the recursive method 'initialize_hyperparameter'
-    :param hyperparameter_description: search space parameters description in json format.
-    :param selection_algorithm: the selection algorithm description in json format.
-    :return: search space object.
-    """
-    selector = get_selector(selection_algorithm)
-    dimensionality = get_dimensionality(hyperparameter_description, 0) - 1
-    h = initialize_hyperparameter(hyperparameter_description, selector, dimensionality)
-    return h
-
-def initialize_hyperparameter(hyperparameter_description: dict, selector: SelectionAlgorithm, dimensionality: int) -> Hyperparameter:
-    """
-    A recursive method which intent is to create search space object from the description.
-    :param hyperparameter_description: search space parameters description in json format.
-    :param selector: the selection algorithm object.
-    :param dimensionality: the number of parameters in search space.
-    :return: search space object.
-    """
-    h_name: str = hyperparameter_description["name"]
-    h_type: str = hyperparameter_description["type"]
-    default_value = hyperparameter_description.get("default", None)
-
-    if h_type in ("NominalHyperparameter", "OrdinalHyperparameter"):
-        categories_desc: List[MutableMapping[str, _CATEGORY]] = hyperparameter_description["categories"]
-        categories: List[_CATEGORY] = [category["category"] for category in categories_desc]
-        shared_children_desc = hyperparameter_description.get("children", None)
-
-        if h_type == "NominalHyperparameter":
-            h = NominalHyperparameter(name=h_name, categories=categories, default_value=default_value)
-        else:
-            h = OrdinalHyperparameter(name=h_name, categories=categories, default_value=default_value)
-
-        # declared shared children
-        if shared_children_desc:
-            for shared_child_desc in shared_children_desc:
-                sh_child = initialize_hyperparameter(shared_child_desc, selector, dimensionality)  # Recursion
-                h.add_child_hyperparameter(sh_child)
-
-        # declared children for each category
-        for category in categories_desc:
-            if "children" in category:
-                for child_des in category["children"]:
-                    child = initialize_hyperparameter(child_des, selector, dimensionality)  # Recursion
-                    h.add_child_hyperparameter(child, activation_category=category["category"])
-
-    elif h_type in ("IntegerHyperparameter", "FloatHyperparameter"):
-        lower_bound = hyperparameter_description["lower"]
-        upper_bound = hyperparameter_description["upper"]
-        if h_type == "IntegerHyperparameter":
-            h = IntegerHyperparameter(name=h_name, lower=lower_bound, upper=upper_bound,
-                                      default_value=default_value)
-        else:
-            h = FloatHyperparameter(name=h_name, lower=lower_bound, upper=upper_bound, default_value=default_value)
-
-    else:
-        import logging
-        logging.debug(f"{hyperparameter_description}")
-        raise TypeError(f"Hyperparameter {h_name} has unknown type: {h_type}.")
-    h.update_selection_algorithm(selector, dimensionality)
-    return h
 
 
-def get_search_space_record(search_space: Hyperparameter, experiment_id: str) -> Dict:
+def get_search_space_record(search_space: SearchSpace, experiment_id: str) -> Dict:
     record = {
         "Exp_unique_ID": experiment_id,
-        "Search_space_size": search_space.get_size(),
+        "Search_space_size": search_space.size,
         "SearchspaceObject": pickle.dumps(search_space)
     }
     return record
-
-def get_dimensionality(hyperparameter_description: Hyperparameter, dimensionality: int) -> int:
-    """
-    A recursive method which intent is to count the number of parameters in the search space.
-    :param hyperparameter_description: search space parameters description in json format.
-    :param dimensionality: the counter which is transferred between recursive calls.
-    :return: number of counted hyperparameters
-    """
-    h_type: str = hyperparameter_description["type"]
-
-    if h_type in ("NominalHyperparameter", "OrdinalHyperparameter"):
-        categories_desc: List[MutableMapping[str, _CATEGORY]] = hyperparameter_description["categories"]
-        shared_children_desc = hyperparameter_description.get("children", None)
-
-        if shared_children_desc:
-            for shared_child_desc in shared_children_desc:
-                dimensionality = get_dimensionality(shared_child_desc, dimensionality)  # Recursion
-
-        for category in categories_desc:
-            if "children" in category:
-                for child_des in category["children"]:
-                    dimensionality = get_dimensionality(child_des, dimensionality)  # Recursion
-    dimensionality += 1
-    return dimensionality

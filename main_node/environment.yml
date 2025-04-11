@@ -1,0 +1,20 @@
+name: brise-260
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.12
+  - setuptools
+  - scikit-learn[alldeps]
+  - PyYAML
+  - statsmodels
+  - scipy
+  - pytest
+  - pika
+  - pymongo
+  - numexpr
+  - pandas
+  - pygmo
+  - flake8

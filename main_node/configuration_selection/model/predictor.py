@@ -1,17 +1,16 @@
-import copy
 import logging
 import pickle
-import time
 import os
-from collections import OrderedDict
-from typing import List, Mapping
+from typing import List, Mapping, Set, Tuple
 
 import pandas as pd
+
+from configuration_selection.sampling.sampling_strategy_orchestrator import SamplingStrategyOrchestrator
 from core_entities.configuration import Configuration
 from core_entities.search_space import Hyperparameter
-from configuration_selection.model.model_selection import get_model
+from core_entities.search_space import SearchSpace
 from tools.mongo_dao import MongoDB
-from configuration_selection.model.model_abs import Model
+from configuration_selection.model.model import Model
 
 
 class Predictor:
@@ -25,157 +24,162 @@ class Predictor:
         - provide data and data description for underlying models about current level.
         - select underlying model for each level
     """
-
-    def __init__(self, experiment_id: str, experiment_description: Mapping, search_space: Hyperparameter):
+    def __init__(self,
+                 experiment_id: str,
+                 experiment_description: Mapping,
+                 search_space: SearchSpace):
         self.experiment_id = experiment_id
-        self.predictor_config = experiment_description["Predictor"]
-        self.task_config = experiment_description["TaskConfiguration"]
+        self.predictor_config = experiment_description["ConfigurationSelection"]["Predictor"]
+        self.task_config = experiment_description["Context"]["TaskConfiguration"]
         self.search_space = search_space
-        self.models_dumps = [None] * len(self.predictor_config["models"])
+        self.window_size = self.predictor_config["WindowSize"]
+        self.sampling_strategy_orchestrator = SamplingStrategyOrchestrator()
+
         self.logger = logging.getLogger(__name__)
 
-    def predict(self, measured_configurations: List[Configuration], transferred_configurations: List[Configuration] = None,
-                transferred_models: List[Model] = None) -> Configuration:
+        models_types = []
+        for i in self.predictor_config.items():
+            if "Model" in i[0]:
+                models_types.append(i)
+
+        self.mapping_region_model = {}
+        for r in self.search_space.regions:
+            level = r[0].level
+            type = models_types[level]  # TODO Enable region-wise model type assignment
+            model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
+            self.mapping_region_model[r] = model
+
+        self.mapping_region_sampling_strategy = {}
+        for r in self.search_space.regions:
+            sampling_strategy = (self.sampling_strategy_orchestrator.
+                                 get_sampling_strategy
+                                 (experiment_description["ConfigurationSelection"]["SamplingStrategy"], r))
+            self.mapping_region_sampling_strategy[r] = sampling_strategy
+
+        self.hierarchical_models_dumps = []
+
+        self.logger = logging.getLogger(__name__)
+
+    def predict(self, measured_configurations: List[Configuration], sample: bool = False) -> List[Configuration]:
         """
-        Predict next Configuration using already evaluated configurations.
-        Prediction is a construction process and it is done in iterations.
-        It stops after constructing the valid Configuration within the Search Space.
-        Each iteration uncovers and predicts new Hyperparameters deeper in the Search Space.
+        Predict or sample one or multiple configurations
+        :param measured_configurations: list of already measured configurations
+        :param sample: whether to fully sample or do a surrogate-based prediction
+        :return: list of predicted configurations
+        """
 
-        :param measured_configurations: a list of already measured Configurations that will be used to make a
-        prediction.
-        :return: Configuration that is going to be measured.
+        # information for transfer learning
+        prediction_info = {}
+        model_dump = []  # a combination of models for hierarchical search space
 
-        Question: need to transfer data from the previous level? (that was fixed and will not be changed)
-          - more no than yes.
-              for no:
-                - less data to (pre)process - less dimensions
-                - less ad-hoc solutions on "how to differentiate in data???" - simply predict over all dimensions,
-                other are targets.
-              for yes:
-                - models will be more accurate (?)
-         """
-        prediction_info = [{"Model": None, "time_to_build": 0} for i in range(0, len(self.predictor_config["models"]))]
-        level = -1
-        parameters = OrderedDict()
-        # Select the latest Configurations, according to the window size
-        if isinstance(self.predictor_config["window size"], int):
-            number_of_configs_to_consider = self.predictor_config["window size"]
-        else:
-            # meaning self.window_size, float)
-            number_of_configs_to_consider = \
-                int(round(self.predictor_config["window size"] * len(measured_configurations)))
-        level_configs = measured_configurations[len(measured_configurations) - number_of_configs_to_consider:]
+        configuration_type = Configuration.Type.PREDICTED
 
-        # if old configurations can be transferred to help building the model - add old configurations
-        if transferred_configurations is not None:
-            level_configs.extend(transferred_configurations)
+        # calculating configurations to be used by the prediction
+        number_of_configs_to_consider = int(round(self.window_size * len(measured_configurations)))
+        considered_configs = measured_configurations[-number_of_configs_to_consider:]
 
-        # Check if entire configuration is valid now.
-        while not self.search_space.validate(parameters, is_recursive=True):
-            level += 1  # it is here because of 'continue'
+        activated_regions = self.search_space.get_regions_on_current_level()
+        assert len(activated_regions) == 1
 
-            # 1. Filter Configurations.
-            level_configs = list(filter(
-                lambda x: self.search_space.are_siblings(parameters, x.parameters),  # Filter
-                level_configs   # Input data for filter
-            ))
-            if transferred_models is None:
-                if not level_configs:
-                    # If there is no data on current level, just use random sampling
-                    # TODO: Generalize sampling (selection) mechanisms.
-                    self.search_space.generate(parameters)
-                    continue
+        predicted = pd.DataFrame()
+        considered_hp_names = []
 
-            # 2. Derive which parameters will be predicted on this level:
-            # - by expanding the parameters from previous level to this level
-            # - by removing information from the previous level(s)
-            dummy = copy.deepcopy(parameters)
-            self.search_space.generate(dummy)
-            description = self.search_space.describe(dummy)
-            for hyperparameter in parameters:
-                del description[hyperparameter]
+        while len(activated_regions) > 0:
+            self.search_space.next_level()
+            next_activated_regions: Set[Tuple[Hyperparameter]] = set()
+            for region in activated_regions:
+                if not sample:
+                    considered_hp_names_in_region = [hp.name for hp in region]
+                    considered_hp_names += considered_hp_names_in_region
+                    considered_activation_category = [hp.activation_category for hp in region][0]
+                    considered_parent_hp_name = [hp.parent.name for hp in region][0]
 
-            if transferred_models is None:
-                # 4. Select and build model, predict parameters for this level
-                # 4.1. Select and create model from ED
-                # 4.2. Transform Configurations into Pandas DataFrame keeping only relevant for this level information,
-                # split features and labels
-                # 4.3. Build model
-                # 4.4. Make a prediction as PD DataFrame or None
-                # 4.5. Validate a prediction: results could be out of bound or more sophisticated cases (in future)
+                    # filter according to the considered activation category for the current region
+                    if considered_parent_hp_name != "root":
+                        considered_configs = list(filter(lambda cfg:
+                               cfg.parameters[considered_parent_hp_name] == considered_activation_category,
+                               considered_configs))
+                    # filter according to the region
+                    if len(considered_configs) > 0 and considered_parent_hp_name != "root":
+                        logging.info("Considered Configs: " + " ".join([c.__str__() for c in considered_configs]))
+                        logging.info("REGION: " + str(region.__str__()))
+                    considered_configs = list(filter(
+                        lambda cfg: any(map(lambda x: x in considered_hp_names_in_region, list(cfg.parameters.keys()))),
+                        considered_configs  # Input data for filter
+                    ))
+                    # TODO prediction of multiple configurations is not handled
+                    partial_configuration = self.mapping_region_model[region].predict(list(region), considered_configs)
 
-                # 4.1.
-                model_parameters = \
-                    self.predictor_config["models"][level if len(self.predictor_config["models"]) > level else -1]
-                model = get_model(model_parameters)
-
-                # 4.2.
-                feature_columns = list(description.keys())
-                # TODO: models do not support MO, using highest-priority objective
-                highest_priority_objective_index = self.task_config["ObjectivesPrioritiesModels"]\
-                    .index(max(self.task_config["ObjectivesPrioritiesModels"]))
-
-                highest_priority_objective = self.task_config["Objectives"][highest_priority_objective_index]
-
-                data = pd.DataFrame(
-                    [cfg.to_series()[feature_columns + [highest_priority_objective]] for cfg in level_configs])
-
-                features = pd.DataFrame(data[feature_columns])
-                labels = pd.DataFrame(data[highest_priority_objective])
-
-                # 4.3
-                is_minimization = self.task_config["ObjectivesMinimization"][highest_priority_objective_index]
-                time_to_build = None
-                start_time = time.time()
-                is_built = model.build_model(features, labels, description, is_minimization)
-                if is_built:
-                    time_to_build = time.time() - start_time
-                prediction_info[level if len(self.predictor_config["models"]) > level else -1] = {
-                    "Model": model_parameters,
-                    "time_to_build": prediction_info[level if len(self.predictor_config["models"]) > level else -1]["time_to_build"]
-                    + time_to_build if time_to_build is not None else 0}
-            else:
-                model = transferred_models[level if len(self.predictor_config["models"]) > level else -1]
-
-            # 4.4
-            if model.is_built:
-                self.models_dumps[level if len(self.predictor_config["models"]) > level else -1] = pickle.dumps(model)
-                pd_prediction = model.predict()
-                prediction = pd_prediction.to_dict(orient="records")
-                if len(prediction) > 1:
-                    self.logger.warning(f"Model predicted more than 1 parameters set. "
-                                        f"Only first valid will be used{prediction[0]}.")
-                # 4.5
-                valid_prediction_found = False
-                for predicted_hyperparameters in prediction:
-                    valid_prediction_found = True
-                    for hyperparameter_name in description.keys():
-                        hyperparameter = description[hyperparameter_name]["hyperparameter"]
-                        # Validation should be encapsulated if more sophisticated approaches arise.
-                        if not hyperparameter.validate(predicted_hyperparameters, is_recursive=False):
-                            valid_prediction_found = False
-                            break
-                    if valid_prediction_found:
-                        break
+                    if partial_configuration.empty:
+                        configuration_type = Configuration.Type.FROM_SELECTOR
+                        partial_configuration = self.mapping_region_sampling_strategy[region].sample()
+                        if predicted.empty:
+                            predicted = partial_configuration
+                        else:
+                            # in case on one level of the search space model offered several configurations,
+                            # while on another level, sampling was performed; sampled config must be multiplied
+                            # to merge into a set of full configurations
+                            multiplied_partial_configuration = pd.DataFrame()
+                            for i in range(len(predicted.index)):
+                                if multiplied_partial_configuration.empty:
+                                    multiplied_partial_configuration = partial_configuration
+                                else:
+                                    multiplied_partial_configuration.loc[i] = partial_configuration.values[0]
+                            # since sampling has been used, there are no objective function values and merge is safe
+                            predicted = pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
                     else:
-                        continue
-
-                if not valid_prediction_found:
-                    self.logger.warning("Model did not predict valid hyperparameter set. Sampling random.")
-                    self.search_space.generate(parameters)
+                        if predicted.empty:
+                            predicted = partial_configuration
+                        else:
+                            # TODO develop a strategy for merging objectives on different levels.
+                            #  Problem: merging scalarized with regular predictions
+                            #  Corrupts statistics, but doesn't influence optimization
+                            predicted = pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
                 else:
-                    if any((h_name in parameters for h_name in predicted_hyperparameters)):
-                        raise ValueError(f"Previously selected hyperparameters should not be altered! "
-                                         f"Previous: {parameters}. This level: {predicted_hyperparameters}")
-                    parameters.update(predicted_hyperparameters)
+                    configuration_type = Configuration.Type.FROM_SELECTOR
+                    partial_configuration = self.mapping_region_sampling_strategy[region].sample()
+                    if predicted.empty:
+                        predicted = partial_configuration
+                    else:
+                        predicted = predicted.join(partial_configuration)
+                if len(next_activated_regions) == 0:
+                    # TODO handle multiple predicted configurations.
+                    #  multiple regions can be activated by different configs, which breaks next iteration
+                    next_activated_regions = self.search_space.activate_regions(predicted)
+                else:
+                    next_activated_regions.update(self.search_space.activate_regions(predicted))
+
+                region_index = str(self.search_space.regions.index(region))
+                prediction_info[region_index] = {
+                    "Model": self.mapping_region_model[region].created_surrogates_descriptions_and_objectives_and_optimizer_descriptions,
+                    "time_to_build": self.mapping_region_model[region].time_to_build
+                    if self.mapping_region_model[region].time_to_build is not None else 0}
+                if self.mapping_region_model[region].time_to_build is not None:
+                    model_dump.append(pickle.dumps(self.mapping_region_model[region]))
+
+            activated_regions = next_activated_regions
+
+        predicted_configurations = []
+        for i, f in predicted.iterrows():
+            if not sample:
+                parameters = f.drop(predicted.columns.difference(considered_hp_names)).to_dict()
+                predicted_values = f.drop(considered_hp_names).to_dict()
             else:
-                self.logger.debug(
-                    f"{model_parameters['Type']} model was not build to predict hyperparameters: {list(description.keys())}. "
-                    f"Random values will be sampled.")
-                self.search_space.generate(parameters)
+                parameters = f.to_dict()
+                predicted_values = {}
+            configuration = Configuration(parameters, configuration_type, self.experiment_id, prediction_info=prediction_info)
+            configuration.predicted_result = list(predicted_values.values())
+            predicted_configurations.append(configuration)
+
+        self.search_space.reset_level()
+        msg = f"CONFIGURATION STATUS: {configuration_type}"
+        self.logger.info(msg)
+
+        if len(model_dump) == self.search_space.number_of_levels:
+            self.hierarchical_models_dumps.append(model_dump)
+
         self.store_model_dumps_to_db()
-        return Configuration(parameters, Configuration.Type.PREDICTED, self.experiment_id, prediction_info=prediction_info)
+        return predicted_configurations
 
     def store_model_dumps_to_db(self):
         # initialize connection to the database
@@ -187,9 +191,18 @@ class Predictor:
         if database.get_last_record_by_experiment_id("Transfer_learning_info", self.experiment_id) is None:
             database.write_one_record("Transfer_learning_info",
                                       {"Exp_unique_ID": self.experiment_id,
-                                       "Models_dumps": self.models_dumps})
+                                       "Models_dumps": self.hierarchical_models_dumps})
         else:
             database.update_record(
                 "Transfer_learning_info",
                 {"Exp_unique_ID": self.experiment_id},
-                {"Models_dumps": self.models_dumps})
+                {"Models_dumps": self.hierarchical_models_dumps})
+
+    def update_mapping_region_model(self, transferred_mapping_region_model):
+        """
+        Update the models, based on the transfer learning results. Assumption: regions are identical
+        """
+        for current_region in self.mapping_region_model.keys():
+            for transferred_region in transferred_mapping_region_model.keys():
+                if transferred_region == current_region:
+                    self.mapping_region_model[current_region] = transferred_mapping_region_model[transferred_region]

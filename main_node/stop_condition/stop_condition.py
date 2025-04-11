@@ -24,8 +24,8 @@ class StopCondition(ABC):
         self.decision = False
         self.logger = logging.getLogger(stop_condition_parameters["Name"])
         self.repetition_interval = datetime.timedelta(**{
-            experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-            experiment_description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
+            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
+            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
 
     def start_threads(self):
         """
@@ -33,7 +33,7 @@ class StopCondition(ABC):
         One thread listens event to shut down Stop Condition.
         Second thread run the functionality of Stop Condition (`self_evaluation` method).
         """
-        self.connection_thread = EventServiceConnection(self)
+        self.connection_thread = self._EventServiceConnection(self)
         self.channel = self.connection_thread.channel
         self.connection_thread.start()
         self.active = True
@@ -107,7 +107,7 @@ class StopCondition(ABC):
                     self.is_finish()
                     if previous_decision != self.decision:
                         msg = f"{self.__class__.__name__} Stop Condition decision: " \
-                              f"{ 'stop' if self.decision else 'continue'} running Experiment."
+                              f"{'stop' if self.decision else 'continue'} running Experiment."
                         self.logger.info(msg)
                         previous_decision = self.decision
                         self.update_expression(self.stop_condition_type, self.decision)
@@ -121,26 +121,25 @@ class StopCondition(ABC):
                 routing_key=self.experiment_id,
                 body="Stop condition is not able to initialize.")
 
-
-class EventServiceConnection(RabbitMQConnection):
-    """
-    This class is responsible for listening `stop_brise_components` queue
-    for shutting down Stop Condition (in case of BRISE Experiment termination).
-    """
-
-    def __init__(self, stop_condition: StopCondition):
+    class _EventServiceConnection(RabbitMQConnection):
         """
-        The function for initializing consumer thread
-        :param stop_condition: an instance of Stop Condition object
+        This class is responsible for listening `stop_brise_components` queue
+        for shutting down Stop Condition (in case of BRISE Experiment termination).
         """
-        self.stop_condition: StopCondition = stop_condition
-        super().__init__(stop_condition)
 
-    def bind_and_consume(self):
-        self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
-        self.termination_queue_name = self.termination_result.method.queue
-        self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                queue=self.termination_queue_name,
-                                routing_key=self.stop_condition.experiment_id)
-        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                   on_message_callback=self.stop_condition.stop_threads)
+        def __init__(self, stop_condition):
+            """
+            The function for initializing consumer thread
+            :param stop_condition: an instance of Stop Condition object
+            """
+            self.stop_condition: StopCondition = stop_condition
+            super().__init__(stop_condition)
+
+        def bind_and_consume(self):
+            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_queue_name = self.termination_result.method.queue
+            self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                    queue=self.termination_queue_name,
+                                    routing_key=self.stop_condition.experiment_id)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                       on_message_callback=self.stop_condition.stop_threads)

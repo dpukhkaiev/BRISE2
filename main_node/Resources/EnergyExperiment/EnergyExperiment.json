@@ -1,18 +1,232 @@
 {
-  "DomainDescription":{
-    "DataFile"          : "./Resources/EnergyExperiment/EnergyExperimentData.json"
-  },
-  "TaskConfiguration":{
-    "TaskName"          : "energy_consumption",
-    "Scenario":{
-      "ws_file": "search_space_96/Radix-500mio_full.csv"
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "energy_consumption",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {
+                "ws_file": "search_space_96/Radix-500mio_full.csv"
+            },
+            "Objectives": {
+                "energy": {
+                    "Name": "energy",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
+                }
+            }
+        },
+        "SearchSpace": {
+            "frequency": {
+                "twelve_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "thirteen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "fourteen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "fifteen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "sixteen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "seventeen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "eighteen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "nineteen_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_one_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_two_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_three_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_four_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_five_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_six_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_seven_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_eight_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "twenty_nine_hundred_hertz": {
+                    "Type": "Category"
+                },
+                "turbo": {
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.frequency.twelve_hundred_hertz",
+                    "Context.SearchSpace.frequency.thirteen_hundred_hertz",
+                    "Context.SearchSpace.frequency.fourteen_hundred_hertz",
+                    "Context.SearchSpace.frequency.sixteen_hundred_hertz",
+                    "Context.SearchSpace.frequency.seventeen_hundred_hertz",
+                    "Context.SearchSpace.frequency.eighteen_hundred_hertz",
+                    "Context.SearchSpace.frequency.nineteen_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_two_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_three_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_four_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_five_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_seven_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_eight_hundred_hertz",
+                    "Context.SearchSpace.frequency.twenty_nine_hundred_hertz",
+                    "Context.SearchSpace.frequency.turbo"
+                ],
+                "Default": "Context.SearchSpace.frequency.twenty_nine_hundred_hertz",
+                "Type": "OrdinalHyperparameter",
+                "Level": 0
+            },
+            "threads": {
+                "one": {
+                    "Type": "Category"
+                },
+                "two": {
+                    "Type": "Category"
+                },
+                "four": {
+                    "Type": "Category"
+                },
+                "eight": {
+                    "Type": "Category"
+                },
+                "sixteen": {
+                    "Type": "Category"
+                },
+                "thirty_two": {
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.threads.one",
+                    "Context.SearchSpace.threads.two",
+                    "Context.SearchSpace.threads.four",
+                    "Context.SearchSpace.threads.eight",
+                    "Context.SearchSpace.threads.sixteen",
+                    "Context.SearchSpace.threads.thirty_two"
+                ],
+                "Default": "Context.SearchSpace.threads.thirty_two",
+                "Type": "OrdinalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
     },
-    "Objectives"   : ["energy"],
-    "ObjectivesDataTypes"  : ["float"],
-    "ObjectivesMinimization": [true],
-    "ObjectivesPriorities": [1],
-    "ObjectivesPrioritiesModels": [1],
-    "ExpectedValuesRange": [[0, 150000]],
-    "MaxTimeToRunTask": 10
-  }
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 1,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "LinearRegression": {
+                            "MultiObjective": false,
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.LinearRegression"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 96,
+                            "MultiObjective": true,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "EnergyValidator": {
+                            "Type": "energy_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "AcceptableErrorBased": {
+                "MinTasksPerConfiguration": 2,
+                "MaxTasksPerConfiguration": 10,
+                "BaseAcceptableError": 5.0,
+                "ConfidenceLevel": 0.95,
+                "Type": "acceptable_error_based",
+                "ExperimentAware": {
+                    "MaxAcceptableError": 50.0,
+                    "RatioMax": 10.0,
+                    "MinTasksPerUnderperformingConfiguration": 1
+                }
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "GuaranteedSC": {
+                "Type": "guaranteed",
+                "Name": "G"
+            },
+            "QuantityBasedSC": {
+                "Parameters": {
+                    "MaxConfigs": 15
+                },
+                "Type": "quantity_based",
+                "Name": "Q"
+            },
+            "ValidationBasedSC": {
+                "Type": "validation_based",
+                "Name": "V"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "G and Q and V",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
 }
