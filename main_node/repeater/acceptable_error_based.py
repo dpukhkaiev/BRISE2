@@ -77,7 +77,6 @@ class AcceptableErrorBasedType(Repeater):
 
         if len(tasks_data) < self.min_tasks_per_configuration:
             if self.is_experiment_aware:
-                # TODO: issue #140
                 ratios = [cur_config_dim / cur_solution_dim
                           for cur_config_dim, cur_solution_dim in zip(c_c_results_l, c_s_results_l)]
                 ratios_max = [self.ratios_max] * len(ratios)
@@ -93,10 +92,10 @@ class AcceptableErrorBasedType(Repeater):
 
             # The number of Degrees of Freedom generally equals the number of observations (Tasks) minus
             # the number of estimated parameters.
-            degrees_of_freedom = len(tasks_data) - len(c_c_results_l)/len(self.objectives)  # TODO check with MOO
+            degrees_of_freedom = len(tasks_data) - len(c_c_results_l)/len(self.objectives)
 
             # Calculate the critical t-student value from the t distribution
-            student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in [self.confidence_levels] * len(self.objectives)]  # TODO check with MOO
+            student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in [self.confidence_levels] * len(self.objectives)]
 
             # Calculating confidence interval for each dimension, that contains a confidence intervals for
             # singular measurements and confidence intervals for multiple measurements.
@@ -119,7 +118,6 @@ class AcceptableErrorBasedType(Repeater):
             relative_errors = []
             for interval, avg_res in zip(absolute_errors, c_c_results_l):
                 if not avg_res:     # it is 0 or 0.0
-                    # TODO: WorkAround for cases where avg = 0, need to review it here and in \ratio\ calculation
                     # if new use-cases appear with the same behaviour.
                     if interval == 0:
                         avg_res = 1  # Anyway relative error will be 0 and avg will not be changed.

@@ -28,7 +28,6 @@ class ModelMock(Surrogate):
         :param df: Floating-point value to be transformed.
         :return: Transformed DataFrame.
         """
-        # TODO add a separate objective class like for hypeparameters
         transformed_values = pd.DataFrame()  # transform based on the Objective type
         for value, objective in mapping_predicted_objective.items():
             if self.objectives[objective]["DataType"].__eq__("float"):

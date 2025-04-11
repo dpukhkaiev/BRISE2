@@ -35,16 +35,6 @@ def run_benchmark():
         logging.error("Unable to create BRISEBenchmarkRunner instance: %s" % exception, exc_info=True)
 
 
-# def run_analysis():
-#     path_to_experiment_dumps = "./results/serialized/"
-#     output_folder = './results/reports/'
-#     benchmark_analyser = BRISEBenchmarkAnalyser(path_to_experiment_dumps, output_folder)
-#
-#     # ---   Add custom benchmark analysis below --- #
-#     # benchmark_analyser.build_detailed_report()
-#     benchmark_analyser.analyse_repeater_results()
-#     # ---   Add custom benchmark analysis above --- #
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="The entry point of BRISE Benchmark service.")
@@ -52,8 +42,4 @@ if __name__ == "__main__":
                         help="Mode in which Benchmarking functionality should be run.")
     args = parser.parse_args()
 
-    # TODO enable when the new analyzer is available
-    # if args.mode == "analyse":
-    #     run_analysis()
-    # else:   # args.mode == "benchmark"
     run_benchmark()

@@ -3,7 +3,7 @@ To deploy BRISE onto the Kubernetes cluster you must first create it, please con
 [tutorial1](https://kubernetes.io/docs/tutorials/kubernetes-basics/) or 
 [tutorial2](https://www.tecmint.com/install-kubernetes-cluster-on-centos-7/) to configure your own cluster.
 
-Having a functioning K8s cluster, use`brise.sh` with mode `k8s` to setup BRISE-related services (manually). 
+Having a functioning K8s cluster, use`brise.sh` with mode `k8s` to set up BRISE-related services (manually). 
 In all scenarios you would require at least the `event-service` and `mongo-db.`
 
 Under the hood, the script builds images for specified services, pushes them to the specified `docker-hub` 

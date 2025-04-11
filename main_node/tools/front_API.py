@@ -187,8 +187,6 @@ class APIMessageBuilder:
             and checks if "global_config", "experiment_description" and "searchspace_description" are presents.
             Currently, it just provides validation of input (needed fields are present).
 
-            # TODO In future, if new subtypes of the"EXPERIMENT" type will appear - this method must be refined.
-
         :param kwargs: "global_config", "experiment_description" and "searchspace_description" as mandatory fields.
         :return: Dictionary.
         """

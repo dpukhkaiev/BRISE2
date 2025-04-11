@@ -35,7 +35,6 @@ class QualityValidator(Validator):
             else:
                 predicted = pd.concat([predicted, p])
         if not surrogate.scalarized:
-            # TODO multi-objective validation. currently weighted as uniform average
             score = r2_score(labels.values, predicted.values)
         else:
             vt: ValueScalarizator = list(filter(lambda vt: issubclass(type(vt), ValueScalarizator), surrogate.value_transformers))[0]

@@ -45,7 +45,6 @@ class Hyperparameter(ABC):
                 - Integer Hyperparameter 'lambda';
                 - Nominal Hyperparameter 'elitist';
                 - etc...
-            TODO: Support of child-parent relationship for Numeric hyperparameters.
             (Children are activated if Numeric Hyperparameter value is in specific boundaries).
 
             It could be done by encapsulating "activation" logic for each type of Hyperparameters to own type and
@@ -63,7 +62,6 @@ class Hyperparameter(ABC):
         self.level = level  # level within the search space
         self.parent = parent
         self.type = None
-        # TODO enable numerical values
         self.activation_category = activation_category  # category activating this parameter
 
     @abstractmethod
@@ -509,13 +507,12 @@ class SearchSpace:
         for r in available_regions:
             for hp in r:
                 for p in parent.to_numpy().flatten():
-                    if type(p) is str:  # TODO: only for categorical parameters. check if top-level features do not influence it
+                    if type(p) is str:
                         if hp.activation_category in p:
                             activated_regions.add(r)
         return activated_regions
 
     def serialize(self) -> Dict:
-        # TODO test
         serialized_search_space_description = self.search_space_description.serialize(True)
         return serialized_search_space_description
 
@@ -599,7 +596,6 @@ class SearchSpace:
         level: int = hyperparameter_description["Level"]
 
         default_value = hyperparameter_description["Default"]
-        # TODO rethink modeling of the default configuration. At the moment DCH can overwrite this value
 
         if h_type in ("NominalHyperparameter", "OrdinalHyperparameter"):
             categories: List[_CATEGORY] = hyperparameter_description["Categories"]

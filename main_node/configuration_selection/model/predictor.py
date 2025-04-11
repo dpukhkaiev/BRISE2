@@ -45,7 +45,7 @@ class Predictor:
         self.mapping_region_model = {}
         for r in self.search_space.regions:
             level = r[0].level
-            type = models_types[level]  # TODO Enable region-wise model type assignment
+            type = models_types[level]
             model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
             self.mapping_region_model[r] = model
 
@@ -107,7 +107,6 @@ class Predictor:
                         lambda cfg: any(map(lambda x: x in considered_hp_names_in_region, list(cfg.parameters.keys()))),
                         considered_configs  # Input data for filter
                     ))
-                    # TODO prediction of multiple configurations is not handled
                     partial_configuration = self.mapping_region_model[region].predict(list(region), considered_configs)
 
                     if partial_configuration.empty:
@@ -131,9 +130,6 @@ class Predictor:
                         if predicted.empty:
                             predicted = partial_configuration
                         else:
-                            # TODO develop a strategy for merging objectives on different levels.
-                            #  Problem: merging scalarized with regular predictions
-                            #  Corrupts statistics, but doesn't influence optimization
                             predicted = pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
                 else:
                     configuration_type = Configuration.Type.FROM_SELECTOR
@@ -143,8 +139,6 @@ class Predictor:
                     else:
                         predicted = predicted.join(partial_configuration)
                 if len(next_activated_regions) == 0:
-                    # TODO handle multiple predicted configurations.
-                    #  multiple regions can be activated by different configs, which breaks next iteration
                     next_activated_regions = self.search_space.activate_regions(predicted)
                 else:
                     next_activated_regions.update(self.search_space.activate_regions(predicted))

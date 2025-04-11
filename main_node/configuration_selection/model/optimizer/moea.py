@@ -59,7 +59,6 @@ class MOEA(Optimizer):
                     self.params.append(c)
 
     def optimize(self, surrogate: Surrogate) -> pd.DataFrame:
-        # TODO parallelize
         problem = self._PygmoProblem(optimizer=self, surrogate=surrogate)
         population = pg.population(problem, self.pop_size)
         for algo_name in self.algorithms:

@@ -1,5 +1,5 @@
 __doc__ = """
-Main module for running BRISE configuration balancing."""
+Main module for running BRISE optimization process."""
 
 import json
 import logging
@@ -8,7 +8,6 @@ import pickle
 import threading
 from enum import Enum
 from sys import argv
-from warnings import filterwarnings
 
 import pika
 from configuration_selection.configuration_selection import ConfigurationSelection
@@ -29,7 +28,6 @@ from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
 
 logging.getLogger("pika").setLevel(logging.WARNING)
-filterwarnings("ignore")  # disable warnings for demonstration.
 
 
 class MainThread(threading.Thread):
@@ -60,7 +58,6 @@ class MainThread(threading.Thread):
         else:
             self.logger = logging.getLogger(__name__)
 
-        # TODO: Description for the fields?
         self.experiment: Experiment = None
         self.connection: pika.BlockingConnection = None
         self.consume_channel = None
@@ -150,8 +147,6 @@ class MainThread(threading.Thread):
         launch_stop_condition_threads(self.experiment.unique_id)
 
         # Instantiate client for Worker Service, establish connection.
-        # TODO: change this to event-based communication.
-        #  (https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r440165389)
         self.wsc_client = WSClient(self.experiment.unique_id)
 
         # Initialize Repetition Manager - a mechanism for handling nondeterminism.

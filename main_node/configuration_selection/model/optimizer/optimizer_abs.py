@@ -119,7 +119,6 @@ class Optimizer(ABC):
         return result
 
     def _transform_values(self, labels: pd.DataFrame) -> pd.DataFrame:
-        # TODO check when there are several VTs available. Current order: ValueScalarizator -> AcquisitionFunction
         transformed_labels = pd.DataFrame()
         if len(self.value_transformers) > 0:
             for vt in self.value_transformers:

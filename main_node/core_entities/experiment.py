@@ -32,12 +32,10 @@ class Experiment:
         self.logger = logging.getLogger(__name__)
         self.api = API()
 
-        # TODO: merge lists into a single one (https://github.com/dpukhkaiev/BRISEv2/pull/112#discussion_r371761149)
         self.evaluated_configurations: List[Configuration] = []  # repeater already evaluates these configurations
         self.measured_configurations: List[Configuration] = []  # the results for these configurations are already received
         self._default_configuration: Configuration = None
         self._description: Mapping = description
-        # TODO: search space should be decoupled from experiment (many entities require **only** search space)
         self.search_space: SearchSpace = search_space
         self.end_time = self.start_time = datetime.datetime.now()
         # An ID that is used to differentiate Experiments by descriptions.
@@ -45,10 +43,8 @@ class Experiment:
         # A unique ID, different for every experiment (even with the same description)
         self.unique_id = str(uuid.uuid4())
 
-        # self.name: str = f"exp_{self.description['TaskConfiguration']['TaskName']}_{self.ed_id}"
         self.name: str = f"exp_{self.description['Context']['TaskConfiguration']['TaskName']}_{self.ed_id}"
-        # TODO MultiOpt: Currently we store only one solution configuration here,
-        #  but it was made as a possible Hook for multidimensional optimization.
+
         self.current_best_configurations: List[Configuration] = []
         self.bad_configurations_number = 0
         self.model_is_valid = False
@@ -288,11 +284,7 @@ class Experiment:
             # we do not need parameter_control_info anymore, since better configuration was found
             self.current_best_configurations[0].parameter_control_info = {}
             self.current_best_configurations = [configuration]
-            # TODO: do not transfer the solutions through main node.
-            #  current flow: worker (reports) -> WSC -> repeater -> experiment -> DB -> worker (loads to continue)
-            #  needed flow: worker -> DB -> worker.
-            #  for this we need to (1) keep track which is the best among available solution sets and
-            #                      (2) remove unneeded solutions from DB to prevent littering of storage
+
             self.database.update_record(
                 collection_name="Parameter_control_info",
                 query={"Exp_unique_ID": self.unique_id},
@@ -423,7 +415,6 @@ class Experiment:
         Returns:
             [List] -- List with results for all atom-tasks
         """
-        # TODO To be tested with benchmark analyzer
         all_tasks = []
         result_key = list(self.description["Context"]['TaskConfiguration']['Objectives'].keys())[0]  # clarify purpose
         for configuration in self.measured_configurations:

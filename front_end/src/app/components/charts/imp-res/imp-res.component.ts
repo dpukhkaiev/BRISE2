@@ -117,7 +117,6 @@ export class ImpResComponent implements OnInit {
             // Check the best available point
             const descr = this.experimentDescription;
             this.bestRes && this.bestRes.forEach(function (resItem) {
-              // TODO: Max or min from task
               let objPriorities = descr['TaskConfiguration']['ObjectivesPriorities']
               let topObjectiveIdx = objPriorities.indexOf(Math.max(...objPriorities))
               let isMinimization = descr['TaskConfiguration']['ObjectivesMinimization'][topObjectiveIdx]

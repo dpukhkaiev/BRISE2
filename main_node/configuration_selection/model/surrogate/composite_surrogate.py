@@ -6,7 +6,7 @@ from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 
 class CompositeSurrogate(Surrogate):
     def __init__(self, surrogates: Tuple[Surrogate], region: Tuple):
-        self.surrogates = surrogates  # TODO copy surrogates?
+        self.surrogates = surrogates
         objectives = {}
         surrogate_description = {}
         for s in surrogates:

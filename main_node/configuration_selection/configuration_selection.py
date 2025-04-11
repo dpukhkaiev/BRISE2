@@ -56,8 +56,6 @@ class ConfigurationSelection:
         :return: FOR TESTING ONLY: Two lists:
                                 * configs_to_be_evaluated: contains all parameters for the flat search space
                                 * hierarchical_configs: the way a configuration is being sent to the worker
-        TODO Multi-point prediction makes sense only in synchronous mode, otherwise it overloads the workers, unless
-        TODO the queue is periodically cleaned up
         """
         needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
 
@@ -89,7 +87,6 @@ class ConfigurationSelection:
                                                         recommend_best_model(similar_experiments))
                     if transferred_mapping_region_model is not None:
                         self.predictor.update_mapping_region_model(transferred_mapping_region_model)
-                        # TODO enhance log
                         self.logger.info(f"New combination of surrogate models is recommended for this iteration: \
                                                                  {transferred_mapping_region_model.values()}")
                 # Configuration transfer

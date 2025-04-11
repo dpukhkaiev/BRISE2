@@ -62,7 +62,6 @@ class WSClient:
         number_ready_task = len(measurement['tasks_results'])
         for i, task_parameter in enumerate(measurement['tasks_to_send']):
             if i >= number_ready_task:
-                # TODO: Tasks should (1) be encapsulated as separate class, (2) and created by Configuration.
                 self.logger.info("Sending task: %s" % task_parameter)
                 task_description = dict()
                 task_description["experiment_id"] = self.experiment_id
@@ -150,7 +149,6 @@ class WSClient:
         try:
             self.measurement[task_result['id_measurement']]['tasks_results'].append(
                 task_result['task_result'])
-            # TODO: parallelization: Worker Service should not wait for entire bunch of Tasks to finish.
             # We should decouple one from another.
             if self.is_all_tasks_finish(task_result['id_measurement']):
                 publish(exchange='measurement_results_exchange',

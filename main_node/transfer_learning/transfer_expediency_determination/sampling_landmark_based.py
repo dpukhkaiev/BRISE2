@@ -71,7 +71,7 @@ class SamplingLandmarkBased(TransferExpediencyAnalyser):
                     self.clustering_algorithm.cluster_top_most_similar_experiments(sorted_similar_experiments))
             else:
                 similar_experiments = [sorted_similar_experiments[
-                                       :self.number_of_similar_experiments]]  # TODO add feature adaptive quantity "all"
+                                       :self.number_of_similar_experiments]]
             for source_experiment in source_experiments:
                 for experiment in similar_experiments:
                     if source_experiment["Exp_unique_ID"] in str(experiment):

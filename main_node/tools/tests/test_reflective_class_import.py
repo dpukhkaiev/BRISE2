@@ -74,7 +74,6 @@ class TestReflectiveClassImport:
     def test_9_import_if_multiple_choices(self, caplog):
         # Test #9. Try to import class if many classes meet the request
         # Expected result: class with the most similar name is imported, warning is emmited
-        # TODO: check expected behavior: alphabet order is used if all names are the same
         # only 1 class is being found in module, if classes are in different files!
         import logging
         caplog.set_level(logging.WARNING)

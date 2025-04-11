@@ -117,11 +117,6 @@ class Configuration:
 
     @property
     def results(self) -> Mapping:
-        # TODO: deepcopy may be slow for frequent requests
-        #  consider reworking it with the implementation of frozendict.
-        #   The same should be done for parameters.
-        #  (https://stackoverflow.com/questions/24756712/deepcopy-is-extremely-slow)
-        #  (https://stackoverflow.com/a/2704866)
         return deepcopy(self._results)
 
     @results.setter
@@ -172,7 +167,6 @@ class Configuration:
         return self._standard_deviation.copy()
 
     def to_json(self) -> str:
-        # TODO: this method partially repeats the functionality of 'Configuration.get_configuration_record()'. Refactoring needed
         dictionary_dump = {"configuration_id": self.unique_id,
                            "parameters": self.parameters,
                            "results": self.results,
@@ -191,8 +185,6 @@ class Configuration:
 
     @staticmethod
     def from_json(json_string: str) -> Configuration:
-        # TODO: communication should be reworked in a way that we avoid using this method
-        # (as it creates additional physical objects for a single logical configuration)
         dictionary_dump: dict = json.loads(json_string)
         conf = Configuration(dictionary_dump["parameters"], dictionary_dump["type"], dictionary_dump["experiment_id"])
         conf.results = dictionary_dump["results"]
@@ -232,8 +224,6 @@ class Configuration:
     def __eq__(self, other: Configuration) -> bool:
         if not isinstance(other, Configuration):
             return False
-        # TODO: This is a temporary solution. More details at:
-        # https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r446104461
         return self.unique_id == other.unique_id or self.parameters == other.parameters
 
     def __lt__(self, other: Configuration) -> bool:

@@ -47,11 +47,6 @@ class Model:
         elif self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
             for o_name in objectives.keys():
                 for s in surrogate_types:
-                    # TODO check if limiting MO surrogates to predict only all objectives at once lowers quality.
-                    #  At the moment we apply all surrogates to each objective.
-                    # s_feature_name = list(s[1]['Instance'].keys())[0]
-                    # if s[1]['Instance'][s_feature_name]['MultiObjective'] is True:
-                    #     continue
                     surrogate = self.surrogate_orchestrator.get_surrogate(s, region, {o_name: objectives[o_name]})
                     self.mapping_surrogate_objective[surrogate] = {o_name: objectives[o_name]}
             for s in surrogate_types:
@@ -254,8 +249,6 @@ class Model:
                                 "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective})
                         optimized = optimizer.optimize(s)
                         optimized_full = pd.concat([optimized_full, optimized])
-
-        # TODO enable best-point selection by correctly merging results from multiple optimizers
 
         # select candidates
 

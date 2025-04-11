@@ -22,7 +22,6 @@ class AverageRelativeImprovementMetric(ModelPerformanceMetric):
         :return: dict (model with its relative improvement)
         """
 
-        # TODO Model -> Sampling -> Model situation is not treated, but the initial approach works this way
         if len(improvement_curve) <= end_index:  # adapt end index to the length of transferred data
             end_index = len(improvement_curve) - 1
             if start_index >= end_index:
