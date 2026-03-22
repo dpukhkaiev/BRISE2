@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH="/home/kiara/.local/bin:$PATH"
 
 # Output colors
 NORMAL="\\033[0;39m"
