@@ -64,4 +64,27 @@ jobs:
       run: |
         docker ps
         cd main_node
-        pytest
+        pip install pytest pytest-cov coverage
+        pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term || TEST_EXIT_CODE=$?
+        if [ -n "${TEST_EXIT_CODE:-}" ]; then exit $TEST_EXIT_CODE; fi
+    # Fetch coverage badge svg
+    - name: Extract coverage %
+      shell: bash -el {0}
+      run: |
+        cd main_node
+        LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
+        PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
+        echo "coverage=${PERCENT}"
+        cd ..
+        mkdir -p badge-data
+
+        # create url with percentage
+        n=$(($PERCENT+0))
+        url="https://img.shields.io/badge/Code%20Coverage-"${n}"%25-success?style=flat"
+        curl -sSL --fail "$url" -o badge-data/coverage.svg
+    # Commit updated badge svg
+    - name: Commit badge data
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "Update coverage badge"
+        file_pattern: badge-data/coverage.svg
