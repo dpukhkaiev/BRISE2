@@ -8,11 +8,12 @@ on:
     branches: [ master, dev ]
   pull_request:
     branches: [ master, dev ]
+  workflow_dispatch:
 
 jobs:
   docker-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 300
 
     steps:
     - name: Checkout Repository
@@ -59,9 +60,34 @@ jobs:
         flake8 . --config tox.ini --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=50 --max-line-length=300 --statistics
-    - name: Test with pytest
+
+    - name: Wait for Waffle to be ready
+      run: |
+        echo "Waiting for Waffle to start..."
+        for i in $(seq 1 10); do
+          if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ | grep -q "200"; then
+            echo "Waffle is ready."
+            break
+          fi
+          echo "Attempt $i/30 - Waffle not ready yet..."
+          sleep 5
+        done
+
+    - name: Phase 1 — Generate configs via Selenium
+      shell: bash -el {0}
+      run: |
+        cd main_node/test_gen_approach/test_generation
+        python3 selenium_validator.py
+
+    - name: Test with pytest (original BRISE tests)
       shell: bash -el {0}
       run: |
         docker ps
         cd main_node
-        pytest
+        pytest --ignore=test_gen_approach
+
+    - name: Phase 2 — Integration tests
+      shell: bash -el {0}
+      run: |
+        cd main_node
+        pytest test_gen_approach/integration_tests/

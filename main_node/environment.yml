@@ -7,7 +7,7 @@ channels:
 dependencies:
   - python=3.12
   - setuptools
-  - scikit-learn[alldeps]
+  - scikit-learn[alldeps]=1.5.2
   - PyYAML
   - statsmodels
   - scipy
@@ -18,3 +18,8 @@ dependencies:
   - pandas
   - pygmo
   - flake8
+  - pip:
+    - allpairspy
+    - textx
+    - selenium
+    - webdriver-manager
