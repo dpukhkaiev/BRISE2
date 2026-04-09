@@ -17,7 +17,10 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
+    
+    - name: Set up QEMU (for arm64 Waffle image)
+      uses: docker/setup-qemu-action@v3
 
     - name: Set Up Docker Compose
       run: |
