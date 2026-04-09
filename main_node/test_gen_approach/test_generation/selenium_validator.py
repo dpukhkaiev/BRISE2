@@ -19,7 +19,7 @@ Requirements:
 """
 
 # Set to True to print step-by-step debug output to stdout
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 import json
 import logging
