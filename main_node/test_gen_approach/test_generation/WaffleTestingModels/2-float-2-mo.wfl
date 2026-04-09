@@ -87,18 +87,6 @@ Context {
       [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.ModelRecommendation.DynamicModelsRecommendation]
       [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.MultiTaskLearning.Filters.FewShotMultiTask]
       [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.MultiTaskLearning.Filters.OnlyBestConfigurations]
-
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.GACO]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.GWO]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.BEE_COLONY]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.DE]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SEA]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SGA]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SADE]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.DE1220]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.CMAES]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.PSO]
-      [if size childs.self > 1 then self excludes ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.PSO_GEN]
     }
     [if size childs.self.Objectives > 1 then fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 1 else fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 0]
   }
