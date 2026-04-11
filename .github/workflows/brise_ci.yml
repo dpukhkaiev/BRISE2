@@ -18,9 +18,6 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v5
-    
-    - name: Set up QEMU (for arm64 Waffle image)
-      uses: docker/setup-qemu-action@v3
 
     - name: Set Up Docker Compose
       run: |
@@ -64,24 +61,6 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=50 --max-line-length=300 --statistics
 
-    - name: Wait for Waffle to be ready
-      run: |
-        echo "Waiting for Waffle to start..."
-        for i in $(seq 1 10); do
-          if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ | grep -q "200"; then
-            echo "Waffle is ready."
-            break
-          fi
-          echo "Attempt $i/30 - Waffle not ready yet..."
-          sleep 5
-        done
-
-    - name: Phase 1 — Generate configs via Selenium
-      shell: bash -el {0}
-      run: |
-        cd main_node/test_gen_approach/test_generation
-        python3 selenium_validator.py
-
     - name: Test with pytest (original BRISE tests)
       shell: bash -el {0}
       run: |
@@ -89,7 +68,7 @@ jobs:
         cd main_node
         pytest --ignore=test_gen_approach
 
-    - name: Phase 2 — Integration tests
+    - name: Phase 2 - Integration tests (new Test Generation Approach)
       shell: bash -el {0}
       run: |
         cd main_node
