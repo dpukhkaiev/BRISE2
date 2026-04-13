@@ -15,6 +15,6 @@ dependencies:
   - pika
   - pymongo
   - numexpr
-  - pandas
+  - pandas=2.2.2
   - pygmo
   - flake8
