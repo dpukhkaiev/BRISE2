@@ -381,3 +381,18 @@ def moo_benchmarks(task: dict):
         'f1': result[0],
         'f2': result[1]
     }
+
+def mock_experiment(task: dict):
+    try:
+        import math
+
+        # Function from points (0, 100), (5, 30), (10, 20), (15, 50), (20, 5), (25, 50)
+        # Minimum will be arround -7,75 at x=22,5
+        #0.001x^5 - 0.0563x^4 + 1.0383x^3 - 6.3917x^2 - 1.5833*x + 100
+
+        x = task["parameters"]['x']
+        result = 0.001*math.pow(x, 5) - 0.0563*math.pow(x, 4) + 1.0383*math.pow(x, 3) - 6.3917*math.pow(x, 2) - 1.5833*x + 100
+
+        return {"result": result}
+    except Exception as error:
+        logging.getLogger(__name__).error(f"An error occurred during performing Task '' {task}: {error}.")
