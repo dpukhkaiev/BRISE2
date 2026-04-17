@@ -1,1 +1,1 @@
-FROM vprokopets/waffle_temp:latest
+FROM vprokopets/waffle_temp_amd

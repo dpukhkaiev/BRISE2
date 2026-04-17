@@ -12,6 +12,7 @@ class SamplingStrategyOrchestrator:
         :return: sampling strategy object
         """
         keys = list(sampling_strategy_description.keys())
+        
         assert len(keys) == 1
         feature_name = keys[0]
         sampling_strategy_class = reflective_class_import(class_name=sampling_strategy_description[feature_name]["Type"],

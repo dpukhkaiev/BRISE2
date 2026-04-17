@@ -97,7 +97,7 @@ class MainThread(threading.Thread):
         # self.experiment_id = self.experiment.unique_id
         # search_space.experiment_id = self.experiment_id
         Configuration.set_task_config(self.experiment.description["Context"]["TaskConfiguration"])
-
+        
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(
@@ -152,8 +152,8 @@ class MainThread(threading.Thread):
         # Initialize Repetition Manager - a mechanism for handling nondeterminism.
         RepeaterOrchestration(experiment_id=self.experiment.unique_id, experiment=self.experiment)
 
-        ConfigurationSelection(self.experiment)
-
+        self.configuration_selection = ConfigurationSelection(self.experiment)
+        
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
         temp_msg = "Measuring default Configuration."
@@ -221,6 +221,16 @@ class MainThread(threading.Thread):
                 temp_msg = "-- New Configuration was evaluated. Building Target System model."
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
+
+                #exit()
+                # Change Strategies here?
+
+                # Both working
+                #self.configuration_selection.predictor.change_sampling_startegy({'Sobol': {'Seed': 1, 'Type': 'sobol'}})
+                #self.configuration_selection.predictor.change_sampling_startegy({'MerseneTwister': {'Seed': 1, 'Type': 'mersenne_twister'}})
+
+                self.configuration_selection.predictor.change_candidate_selector({'RandomMultiPointProposal': {'NumberOfPoints': 1, 'Type': 'random_multi_point'}})
+                exit()
                 self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
                                                    routing_key=self.experiment.unique_id,
                                                    body='')

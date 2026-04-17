@@ -81,6 +81,7 @@ class Model:
         # validator
         self.validator_orchestrator = ValidatorOrchestrator()
         validator_description = model_description[1]["Validator"]
+        print("Val Description", validator_description)
         self.external_validator = None
         self.internal_validator = None
         for k in validator_description.keys():
@@ -93,11 +94,26 @@ class Model:
         self.candidate_selector_orchestrator = CandidateSelectorOrchestrator()
         candidate_selector_description = model_description[1]["CandidateSelector"]
         self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(candidate_selector_description)
+        print("Seletctor descr:", candidate_selector_description)
 
         # transfer learning
         self.time_to_build = None
         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
         self.model_dumps = None
+
+    def change_candidate_selector(self, selector_description):
+        print("Old candidate selector", self.candidate_selector)
+        self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(selector_description)
+        print("New candidate selector", self.candidate_selector)
+
+    def change_validator(self, validator_description):
+        self.external_validator = None
+        self.internal_validator = None
+        for k in validator_description.keys():
+            if k == 'ExternalValidator':
+                self.external_validator = self.validator_orchestrator.get_validator(validator_description[k], self.region, self.objectives)
+            elif k == 'InternalValidator':
+                self.internal_validator = self.validator_orchestrator.get_validator(validator_description[k], self.region, self.objectives)
 
     def predict(self, parameters: List[Hyperparameter], configurations: List[Configuration]) -> pd.DataFrame:
         """
