@@ -1,9 +1,8 @@
-import { RxStomp, type RxStompConfig } from '@stomp/rx-stomp'
+import { RxStomp } from '@stomp/rx-stomp'
 import { stompConfig } from '../config/stomp.config'
 
-export const  stompClient = new RxStomp();
+export const stompClient = new RxStomp();
 // configuring data for transportation 
-  stompClient.configure(stompConfig)
+stompClient.configure(stompConfig)
 // activate the connection
-  stompClient.activate();
-   
+stompClient.activate();

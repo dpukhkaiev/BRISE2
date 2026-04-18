@@ -1,19 +1,22 @@
 // Socket.io events
-export enum Event {
-    CONNECT = 'connect',
-    DISCONNECT = 'disconnect'
-}
+export const Event = {
+    CONNECT: 'connect',
+    DISCONNECT: 'disconnect'
+} as const;
 
-export enum MainEvent {
-    CONNECT = 'connect',
-    DISCONNECT = 'disconnect',
-    EXPERIMENT = 'experiment',
-    DEFAULT= 'default',
-    NEW = 'new',
-    PREDICTIONS = 'predictions',
-    FINAL = 'final',
-    LOG = 'log'
-}
+export type Event = typeof Event[keyof typeof Event]
+
+export const MainEvent = {
+    CONNECT: 'connect',
+    DISCONNECT: 'disconnect',
+    EXPERIMENT: 'experiment',
+    DEFAULT: 'default',
+    NEW: 'new',
+    PREDICTIONS: 'predictions',
+    FINAL: 'final',
+    LOG: 'log'
+} as const;
+export type MainEvent = typeof MainEvent[keyof typeof MainEvent];
 
 export const SubEvent = {
     EXPERIMENT: ['description'],

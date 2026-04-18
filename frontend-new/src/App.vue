@@ -2,12 +2,13 @@
 import { onMounted } from 'vue'
 import { useMainEventStore } from './entities/main/model/main.event.store'
 import logo from './assets/logo.svg'
-
+import LaunchControl from './widgets/control-bar/ui/LaunchControl.vue'
 const store = useMainEventStore()
 
 onMounted(() => {
   store.initEvent()
 })
+
 </script>
 
 <template>
@@ -15,6 +16,7 @@ onMounted(() => {
     <img :src="logo" alt="BRISE Logo" />
     <h1>BRISE Dashboard</h1>
   </div>
+  <LaunchControl></LaunchControl>
 
 </template>
 
