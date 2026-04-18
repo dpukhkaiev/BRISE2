@@ -3,10 +3,10 @@ import '@mdi/font/css/materialdesignicons.css'
 import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 // services
-import { useMainEventStore } from '../../../entities/main/model/main.event.store'
-import { MainClientApi } from '../../../entities/main/api/main.client.store'
+import { useMainEventStore } from '../../../entities/main'
+import { MainClientApi } from '../../../entities/main'
 //data
-import { MainEvent } from '../../../entities/main/model/main.types'
+import { MainEvent } from '../../../entities/main'
 
 
 // download feature
@@ -58,39 +58,86 @@ onMounted(() => {
 </script>
 <template>
     <div class="button-row">
-        <v-card class="mx-auto" color="#eeee" max-width="650" min-height="350">
-            <v-card-item>
-                <div class="experiment">
-                    <h2>Experiment</h2>
-                    <span> {{ experiment_description?.Context?.TaskConfiguration?.TaskName }}</span>
+        <v-card class="mx-auto" style="position: relative" ; elevation="4" rounded="x1">
+            <v-card-item class="mb-2">
+                <div class="info-row">
+                    <span class="label">Experiment</span>
+                    <span class="value"> {{ experiment_description?.Context?.TaskConfiguration?.TaskName }}</span>
                 </div>
             </v-card-item>
             <v-card-item>
-                <div class="scenario">
-                    <span>Scenario </span>
-                    <span>{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file }}</span>
+                <div class="info-row">
+                    <span class="label">Scenario</span>
+                    <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
+                    }}</span>
                 </div>
             </v-card-item>
             <v-card-actions>
-                <v-btn :disabled="isRunning" @click="startMainControl">
+                <v-btn :disabled="isRunning" @click="startMainControl" color="#A8D5A2" style="color: #2D6A27;"
+                    variant="elevated" prepend-icon="mdi-play">
                     Start
                 </v-btn>
-                <v-btn :disabled="!isRunning" @click="stopMainControl">
+                <v-btn :disabled="!isRunning" @click="stopMainControl" color="#F4B8B8" style="color: #8B2E2E;"
+                    variant="elevated" prepend-icon="mdi-stop">
                     Stop
                 </v-btn>
                 <v-btn class="text-none text-body-large" v-if="isFinish" @click="openDownloadOption"
-                    append-icon="mdi-content-save" color="#5865f2" size="small">
+                    append-icon="mdi-content-save" color="#B8C9F4" style="color: #2E3F8B;" variant="outlined">
 
                     Save Experiment
 
                 </v-btn>
 
             </v-card-actions>
-        </v-card>
-        <v-bottom-sheet v-model="showDownload">
-            <DownloadPopup @close="showDownload = false" />
-        </v-bottom-sheet>
 
-        <v-progress-linear v-if="isRunning" indeterminate color="#FF9800" />
+            <v-progress-linear v-if="isRunning" indeterminate color="#FF9800" height="4"
+                style="position:absolute; bottom: 0; left: 0; right: 0;" />
+
+        </v-card>
+        <v-dialog v-model="showDownload" max-width="350">
+            <DownloadPopup @close="showDownload = false" />
+        </v-dialog>
+
     </div>
 </template>
+
+<style scoped>
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.label {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.5);
+    font-weight: 500;
+}
+
+.value {
+    font-size: 14px;
+    color: var(--v-theme-on-surface);
+}
+
+.mono {
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.btn-start {
+    background: #A8D5A2;
+    color: #2D6A27;
+}
+
+.btn-stop {
+    background: #F4B8B8;
+    color: #8B2E2E;
+}
+
+.btn-save {
+    background: #B8C9F4;
+    color: #2E3F8B;
+}
+</style>

@@ -14,7 +14,10 @@ onMounted(() => {
 <template>
   <div class="header">
     <img :src="logo" alt="BRISE Logo" />
-    <h1>BRISE Dashboard</h1>
+    <div class="title-container">
+      <h1>BRISE Dashboard</h1>
+      <span class="description">A Software Product Line for Expensive Blackbox Optimization</span>
+    </div>
   </div>
   <LaunchControl></LaunchControl>
 
@@ -25,6 +28,22 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.title-container h1 {
+  color: #d40eb3;
+}
+
+.title-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.description {
+  color: #c8469c;
+  font-size: 0.9rem;
+  font-style: bold;
+
 }
 
 .logo {

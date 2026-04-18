@@ -9,7 +9,7 @@ import type { Observable } from 'rxjs'
 
 export const useMainEventStore = defineStore('mainEvent', () => {
    const experiment_description = ref<ExperimentDescription | null>(null)
-
+   const searchspace = ref<any>(null)
 
    const listeners: Record<string, Observable<IMessage>> = {
       [MainEvent.EXPERIMENT]: stompClient.watch('front_experiment_queue', { 'x-message-ttl': '1000' }),
@@ -31,11 +31,13 @@ export const useMainEventStore = defineStore('mainEvent', () => {
          if (message.headers['message_subtype'] === 'description') {
             console.log(message.body)
             const clean = message.body.replace(/:\s*Infinity/g, ': null')
-            const body = JSON.parse(clean) as { experiment_description: ExperimentDescription }
+            const body = JSON.parse(clean) as { experiment_description: ExperimentDescription, searchspace_description: any }
             experiment_description.value = body.experiment_description
+            searchspace.value = body.searchspace_description
+
          }
       })
    }
 
-   return { experiment_description, onEvent, initEvent }
+   return { searchspace, experiment_description, onEvent, initEvent }
 })

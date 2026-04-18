@@ -34,7 +34,6 @@ export function stopMain(): void {
 }
 
 export async function downloadDump(format = 'pkl'): Promise<any> {
-
     const myServiceEndPoint = 'main_download_dump_queue'
     const request = `{"format": "${format}"}`
     const response = await firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: request }))

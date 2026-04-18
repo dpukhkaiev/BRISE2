@@ -9,16 +9,22 @@ async function download(format: string) {
 </script>
 
 <template>
-    <div class="download-container">
-        <h2>Download</h2>
-        <button @click="download('pkl')" class="btn-download">
-            Experiment instance
-        </button>
-        <button @click="download('csv')" class="btn-download">
-            Basic metrics
-        </button>
+    <v-card class="mx-auto pa-4" min-width="300">
+        <v-card-title class="text-h6 mb-4">
+            Download
+        </v-card-title>
+        <v-card-actions class="flex-column ga-2">
+            <v-btn block variant="elevated" color="#B8C9F4" style="color: #2E3F8B;" prepend-icon="mdi-file"
+                @click="download('pkl')">
+                Experiment instance
+            </v-btn>
+            <v-btn block variant="elevated" color="#A8D5A2" style="color: #2D6A27;" prepend-icon="mdi-table"
+                @click="download('csv')">
+                Basic metrics
+            </v-btn>
+        </v-card-actions>
+    </v-card>
 
-    </div>
 </template>
 
 <style scoped>
