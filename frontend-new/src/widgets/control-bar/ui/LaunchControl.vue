@@ -69,7 +69,7 @@ onMounted(() => {
                 <div class="info-row">
                     <span class="label">Scenario</span>
                     <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
-                        }}</span>
+                    }}</span>
                 </div>
             </v-card-item>
             <v-card-actions>
@@ -81,7 +81,7 @@ onMounted(() => {
                     variant="elevated" prepend-icon="mdi-stop">
                     Stop
                 </v-btn>
-                <v-btn class="text-none text-body-large" v-if="isFinish" @click="openDownloadOption"
+                <v-btn class="text-none text-body-small" v-if="isFinish" @click="openDownloadOption"
                     append-icon="mdi-content-save" color="#B8C9F4" style="color: #2E3F8B;" variant="outlined">
 
                     Save Experiment

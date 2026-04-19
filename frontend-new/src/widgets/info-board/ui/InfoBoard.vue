@@ -138,7 +138,7 @@ function formatPercent(value: number): string {
 </script>
 
 <template>
-    <v-expansion-panels>
+    <v-expansion-panels elevation="4">
         <!-- Panel 1 -->
         <v-expansion-panel :disabled="news.length === 0">
             <v-expansion-panel-title class="info">

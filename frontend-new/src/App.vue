@@ -25,18 +25,19 @@ onMounted(() => {
     </div>
   </div>
 
-  <v-container>
+  <v-container fluid class="px-2 py-2">
     <v-row>
       <v-col cols="12" md="6">
         <div class="mb-4">
           <LaunchControl />
         </div>
 
-        <InfoBoard />
+        <TaskList />
       </v-col>
 
-      <v-col cols="12" md="6">
-        <TaskList />
+      <v-col cols="6" md="6">
+
+        <InfoBoard />
       </v-col>
     </v-row>
   </v-container>
