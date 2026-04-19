@@ -2,7 +2,11 @@
 import { onMounted } from 'vue'
 import { useMainEventStore } from './entities/main/model/main.event.store'
 import logo from './assets/logo.svg'
-import LaunchControl from './widgets/control-bar/ui/LaunchControl.vue'
+import { LaunchControl } from './widgets/control-bar'
+import { InfoBoard } from './widgets/info-board'
+import { TaskList } from './widgets/task-list'
+
+
 const store = useMainEventStore()
 
 onMounted(() => {
@@ -15,12 +19,27 @@ onMounted(() => {
   <div class="header">
     <img :src="logo" alt="BRISE Logo" />
     <div class="title-container">
-      <h1>BRISE Dashboard</h1>
+      <p class="font-weight-black">BRISE Dashboard</p>
+
       <span class="description">A Software Product Line for Expensive Blackbox Optimization</span>
     </div>
   </div>
-  <LaunchControl></LaunchControl>
 
+  <v-container>
+    <v-row>
+      <v-col cols="12" md="6">
+        <div class="mb-4">
+          <LaunchControl />
+        </div>
+
+        <InfoBoard />
+      </v-col>
+
+      <v-col cols="12" md="6">
+        <TaskList />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>
@@ -30,17 +49,23 @@ onMounted(() => {
   gap: 10px;
 }
 
-.title-container h1 {
-  color: #d40eb3;
-}
 
 .title-container {
   display: flex;
   flex-direction: column;
 }
 
+.title-container p {
+  font-size: 55px;
+  font-weight: 450;
+  line-height: 54px;
+  letter-spacing: -0.25px;
+  color: black;
+
+}
+
 .description {
-  color: #c8469c;
+  color: #2D6A27;
   font-size: 0.9rem;
   font-style: bold;
 

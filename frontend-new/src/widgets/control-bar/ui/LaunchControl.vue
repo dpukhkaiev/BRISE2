@@ -44,7 +44,7 @@ function stopMainControl(): any {
 }
 
 function initMainEvents(): void {
-    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.FINAL)?.subscribe(() => {
         isRunning.value = false;
         isFinish.value = true;
     })
@@ -69,7 +69,7 @@ onMounted(() => {
                 <div class="info-row">
                     <span class="label">Scenario</span>
                     <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
-                    }}</span>
+                        }}</span>
                 </div>
             </v-card-item>
             <v-card-actions>
@@ -108,12 +108,13 @@ onMounted(() => {
     align-items: center;
     padding: 8px 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
 }
 
 .label {
     font-size: 13px;
-    color: rgba(0, 0, 0, 0.5);
-    font-weight: 500;
+    color: rgba(0, 0, 0, 0.822);
+    font-weight: 650;
 }
 
 .value {
@@ -138,6 +139,6 @@ onMounted(() => {
 
 .btn-save {
     background: #B8C9F4;
-    color: #2E3F8B;
+    color: #354baa;
 }
 </style>
