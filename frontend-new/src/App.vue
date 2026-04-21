@@ -5,6 +5,7 @@ import logo from './assets/logo.svg'
 import { LaunchControl } from './widgets/control-bar'
 import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
+import { MultiDim } from './widgets/charts/multi-dim'
 
 
 const store = useMainEventStore()
@@ -31,15 +32,14 @@ onMounted(() => {
         <div class="mb-4">
           <LaunchControl />
         </div>
-
         <TaskList />
       </v-col>
 
       <v-col cols="6" md="6">
-
         <InfoBoard />
       </v-col>
     </v-row>
+    <MultiDim />
   </v-container>
 </template>
 

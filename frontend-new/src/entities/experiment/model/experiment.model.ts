@@ -18,10 +18,11 @@ interface DomainDescription {
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number
     MaxTimeToRunTask: number
-    RepeaterDecisionFunction: String
-    Objectives: Array<String>
-    ObjectivesDataTypes: Array<String>
-    TaskName: String
+    RepeaterDecisionFunction: string
+    Objectives: Array<string>
+    ObjectivesDataTypes: Array<string>
+    ObjectivesPriorities: Array<number>
+    TaskName: string
     Scenario: { ws_file: string }
     TimeUnit: string
 }

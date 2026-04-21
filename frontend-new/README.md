@@ -1,5 +1,22 @@
-# Vue 3 + TypeScript + Vite
+# Frontend – Vue 3 + TypeScript (FSD)
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This project is a frontend application built with Vue 3, TypeScript, and Vite.  
+The architecture follows the Feature-Sliced Design (FSD) methodology to ensure a scalable and maintainable codebase.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Technologies
+- Vue 3
+- TypeScript
+- Vite
+
+## Architecture
+The project is structured according to the Feature-Sliced Design (FSD) approach, separating the code into distinct layers:
+
+- **app** – application setup and global configuration  
+- **pages** – application views  
+- **widgets** – larger UI blocks  
+- **features** – business features  
+- **entities** – domain models and business logic  
+- **shared** – reusable components and utilities  
+
+## Goal
+The goal is to improve scalability, maintainability, and separation of concerns within the frontend application. Additionally, the chosen architecture aims to slow down software aging by promoting a clean, modular, and easily extensible codebase.
