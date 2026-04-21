@@ -40,10 +40,14 @@ function resetRes() {
 }
 
 function isModelType(type: string) {
-    const result = experiment_description.value?.Predictor?.models[0].Type == type
-    console.log('isModelType:', type, result, experiment_description.value?.Predictor)
-    return result
+    const surrogate = experiment_description.value?.ConfigurationSelection?.Predictor?.Model.Surrogate?.Instance
+    const surrogateType = surrogate ? Object.keys(surrogate)[0] : undefined
+    return surrogateType === type
+    //console.log('isModelType:', type, result, experiment_description.value?.Predictor)
+    //return result
 }
+
+
 
 //return an arry of values by key from all directionaries
 function unpack(set: any, key: any) {
@@ -61,7 +65,7 @@ function zip(keys: Array<any>, values: Array<any>) {
     }
     return result
 }
-function chose(configuration: any) {
+async function chose(configuration: any) {
     console.log('experiment:', experiment)
     console.log('configurations:', configuration.configurations)
     currentDiagram.value = experiment
@@ -79,26 +83,28 @@ function chose(configuration: any) {
 function initMainEvents() {
 
     watch(experiment_description, () => {
-        console.log('watch fired')
-        console.log('searchspace:', searchspace.value)
-        console.log('rootParam before:', rootParam.value)
-        if (!experiment_description.value || !searchspace.value) return
-        console.log('early return!')
+        if (!experiment_description.value || !searchspace.value) {
+            return
+        }
         resetRes()
 
         rootParam.value = searchspace.value["root_parameters_list"]
         console.log('rootParam after:', rootParam.value)
         experiment = searchspace.value["name"]
+        // ObjectPriorities does not exist on received data, updated new path 
+        let priorities = experiment_description.value?.Context?.TaskConfiguration?.Objectives
 
-        let priorities = experiment_description.value["TaskConfiguration"]?.["ObjectivesPriorities"]
-        if (!priorities) return
-        let i = priorities.indexOf(Math.max(...priorities));
-
-        keyParam.value = experiment_description.value["TaskConfiguration"]?.["Objectives"][i] ?? ''
+        if (priorities) {
+            keyParam.value = Object.keys(priorities)[0]  // → "energy"
+        }
+        // console.log('keyParam:', keyParam.value)
+        // console.log('Objectives:', priorities)
+        //  console.log('exp_descr: ', experiment_description.value)
     },
+
         // reactive object from store, need deep to track properties of the object
         { deep: true })
-
+    console.log('exp_descr: ', experiment_description.value)
     // Default configuration
     store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
@@ -125,6 +131,8 @@ function initMainEvents() {
                 }
             })
             console.log('Default:', configs)
+
+
         }
     });
 
@@ -132,7 +140,6 @@ function initMainEvents() {
     store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value.length || !experiment) {
-                console.warn('not ready yet - rootParam or experiment not there ')
                 return
             }
             let configs = JSON.parse(message.body)
@@ -153,6 +160,8 @@ function initMainEvents() {
                     console.log("Empty task")
                 }
             })
+
+
         }
     });
 
@@ -172,9 +181,8 @@ function initMainEvents() {
     });
 }
 
+function render() {
 
-async function render() {
-    await nextTick()
     const element = document.getElementById(currentDiagram.value)
     if (!element) {
         console.warn('element not found', currentDiagram.value)
@@ -238,9 +246,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <div>rootParam: {{ rootParam }}</div>
     <div v-for="item in rootParam" :key="item">
         <v-card>
+
             <div :id="item" style="width:100%; height:500px;"></div>
         </v-card>
     </div>
