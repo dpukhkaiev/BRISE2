@@ -6,6 +6,7 @@ import { LaunchControl } from './widgets/control-bar'
 import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
 import { MultiDim } from './widgets/charts/multi-dim'
+import { ImpRes } from './widgets/charts/imp-res'
 
 
 const store = useMainEventStore()
@@ -40,6 +41,7 @@ onMounted(() => {
       </v-col>
     </v-row>
     <MultiDim />
+    <ImpRes />
   </v-container>
 </template>
 
