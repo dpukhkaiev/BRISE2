@@ -7,6 +7,7 @@ import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
 import { MultiDim } from './widgets/charts/multi-dim'
 import { ImpRes } from './widgets/charts/imp-res'
+import { Heatmap } from './widgets/charts/heatmap'
 
 
 const store = useMainEventStore()
@@ -42,6 +43,7 @@ onMounted(() => {
     </v-row>
     <MultiDim />
     <ImpRes />
+    <Heatmap />
   </v-container>
 </template>
 

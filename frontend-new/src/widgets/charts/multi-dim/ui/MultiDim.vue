@@ -39,13 +39,13 @@ function resetRes() {
     defaultPoint = null
 }
 
-function isModelType(type: string) {
-    const surrogate = experiment_description.value?.ConfigurationSelection?.Predictor?.Model.Surrogate?.Instance
-    const surrogateType = surrogate ? Object.keys(surrogate)[0] : undefined
-    return surrogateType === type
-    //console.log('isModelType:', type, result, experiment_description.value?.Predictor)
-    //return result
-}
+//function isModelType(type: string) {
+//  const surrogate = experiment_description.value?.ConfigurationSelection?.Predictor?.Model.Surrogate?.Instance
+//const surrogateType = surrogate ? Object.keys(surrogate)[0] : undefined
+//return surrogateType === type
+//console.log('isModelType:', type, result, experiment_description.value?.Predictor)
+//return result
+//}
 
 
 

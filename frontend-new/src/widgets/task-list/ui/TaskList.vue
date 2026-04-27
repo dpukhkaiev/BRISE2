@@ -13,19 +13,16 @@ const result = ref<Task[]>([])
 const update = ref(false)
 
 // task object for expanding a row in a table
-const focus = ref<Task | null>(null)
+
 
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace } = storeToRefs(store)
+const { experiment_description } = storeToRefs(store)
 function refresh() {
     result.value = []
 
     update.value = true
-}
-function clearFocus(): void {
-    focus.value = null
 }
 
 const filterValue = ref('')

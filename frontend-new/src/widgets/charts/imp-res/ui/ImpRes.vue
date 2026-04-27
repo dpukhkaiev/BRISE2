@@ -21,12 +21,7 @@ interface PointExp {
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
 const { experiment_description } = storeToRefs(store)
-const parameter_names = ref()
-const currentDiagram = ref()
-let experiment: string = ''
-const rootParam = ref<any[]>([])
-let resultParamsRange = ref<Map<string, any>>()
-let keyParam = ref('')
+
 let solution: Solution
 
 const isVisible = ref(false)
@@ -35,7 +30,7 @@ const isVisible = ref(false)
 const bestRes = ref<PointExp[]>([])
 // experiment results
 const allRes = ref<PointExp[]>([])
-let defaultPoint: any
+
 const impr = ref<HTMLElement | null>(null)
 
 onMounted(() => {
