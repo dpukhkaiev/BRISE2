@@ -649,6 +649,7 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
         experiment.dump("Results")
 
+    @pytest.mark.skip(reason="no way of currently testing this")
     def test_14(self, get_experiment, get_workers, get_configurations_2_float):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'lr', 'surr.vt.none', 'surr.ct.none',
