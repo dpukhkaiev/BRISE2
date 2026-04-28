@@ -2,6 +2,7 @@ import pandas as pd
 
 from typing import List
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils.validation import check_is_fitted
 
 
 class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
@@ -52,21 +53,23 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         :param input_column_names: names of columns to apply transformer.
         """
 
-        self.transformer_ = transformer
+        self.transformer = transformer
+        self.transformer_ = None
         self.input_column_names = input_column_names
         self.out_column_names = None
         self.original_data_types = {}
-        self._enc_suffix = f"_{self.transformer_.__class__.__name__}"
+        self._enc_suffix = f"_{self.transformer.__class__.__name__}"
 
     def fit(self, df: pd.DataFrame, y=None, **fit_params):
         if not self.input_column_names:
             # If column_names parameter was provided in 'fit' - use it, otherwise - apply transformation to all columns.
             self.input_column_names = fit_params.get("column_names", None) or df.keys().tolist()
         self.original_data_types = df.dtypes.to_dict()
-        self.transformer_ = self.transformer_.fit(df[self.input_column_names], y=y, **fit_params)
+        self.transformer_ = self.transformer.fit(df[self.input_column_names], y=y, **fit_params)
         return self
 
     def transform(self, df: pd.DataFrame, y=None) -> pd.DataFrame:
+        #check_is_fitted(self, "transformer_")
         df = df.copy(deep=True)
         df['temp_index'] = range(1, len(df) + 1)
         # Select needed columns
@@ -88,10 +91,11 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         return df
 
     def inverse_transform(self, df: pd.DataFrame) -> pd.DataFrame:
+       # check_is_fitted(self, "transformer_")
         df = df.copy(deep=True)
         # Select and transform back needed columns
         to_transform = df[self.out_column_names]
-        transformed_raw = self.transformer_.inverse_transform(to_transform)
+        transformed_raw = self.transformer.inverse_transform(to_transform)
 
         # Replace data in columns
         for idx, c_name in enumerate(self.input_column_names):
