@@ -6,7 +6,7 @@ name: BRISE-CI
 
 on:
   push:
-    branches: [ master, dev. grrr ]
+    branches: [ master, dev, grrr ]
   pull_request:
     branches: [ master, dev, grrr ]
 
