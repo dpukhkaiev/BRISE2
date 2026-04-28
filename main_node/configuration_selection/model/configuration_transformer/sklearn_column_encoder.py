@@ -1,74 +1,102 @@
 import pandas as pd
-from sklearn.pipeline import Pipeline
-from typing import Tuple
 
-from configuration_selection.model.configuration_transformer.float_transformer_abs import FloatTransformer
-from configuration_selection.model.configuration_transformer.sklearn_column_encoder import SklearnColumnTransformer
-from sklearn.preprocessing import MinMaxScaler
+from typing import List
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class SklearnFloatTransformer(FloatTransformer):
-    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple):
-        super().__init__(configuration_transformer_description, relevant_parameters)
-        self.mapping_old_feature_pipeline = {}
+class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
+    """
+    Object Decorator for Sklearn-based preprocessing units.
+    The main intense of object is to maintain pandas.DataFrame structure of data,
+    while applying different preprocessing steps to different columns of input pandas.DataFrame.
 
-    def transform(self, features: pd.DataFrame) -> pd.DataFrame:
-        # preserve original indexing
-        features_ordering = features.columns.tolist()
+    Example:
+    --------
+        >>>from configuration_selection.model.configuration_transformer.sklearn_column_encoder import SklearnColumnTransformer
+        >>>from sklearn.preprocessing import OrdinalEncoder as SKEnc
+        >>>import pandas as pd
 
-        # filter relevant features
-        relevant_features = self._filter_relevant_features(features)
-        if len(relevant_features) == 0:
-            return pd.DataFrame()
+        >>>data = pd.DataFrame({'numeric_data': [1, 2, 3, 1, 2], 'categorical_data':[10, 20, 50, 10, 20]})
 
-        intact_features = features.drop(columns=relevant_features.columns)
-        if not intact_features.empty:
-            self.mapping_old_new_features = dict(
-                map(lambda i, j: (i, j), intact_features.columns.tolist(), intact_features.columns.tolist()))
-        intact_features['temp_index'] = range(1, len(intact_features) + 1)
+        # initialize sklearn encoder and wrap it by SklearnColumnTransformer specifying columns for preprocessing
+        >>>unique_categories = list(set(data['categorical_data']))
+        >>>base_enc = SklearnColumnTransformer(SKEnc(categories=[unique_categories]), column_names=['categorical_data'])
 
-        transformed_features = pd.DataFrame()
+        # transform
+        >>>transformed = base_enc.fit_transform(data)
+        >>>print(transformed)
+           numeric_data  categorical_data_OrdinalEncoder
+        0             1                              0.0
+        1             2                              1.0
+        2             3                              2.0
+        3             1                              0.0
+        4             2                              1.0
 
-        for feature_name in relevant_features.columns:
-            # create encoder object
-            encoder = MinMaxScaler()
-            encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
-            name = list(self.configuration_transformer_description.keys())[0]
-            encoder_name = f"{name} for {feature_name}"
+        # inverse transformation
+        >>>inversed = base_enc.inverse_transform(transformed)
+        >>>print(inversed)
+           numeric_data  categorical_data
+        0             1                10
+        1             2                20
+        2             3                50
+        3             1                10
+        4             2                20
+    """
 
-            # append to steps
-            steps = []
-            steps.append((encoder_name, encoder))
+    def __init__(self, transformer: (BaseEstimator, TransformerMixin), input_column_names: List[str] = None):
+        """
+        SklearnColumnTransformer is an adapter for sklearn.preprocessing transformers,
+        that enables Sklearn transformers to be applied to specific column in pandas DataFrame.
 
-            # create pipeline
-            features_pipeline = Pipeline(steps)
+        :param transformer: initialized Sklearn transformer.
+        :param input_column_names: names of columns to apply transformer.
+        """
 
-            # fit transform by pipeline
-            transformed_feature = features_pipeline.fit_transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
-            self.mapping_old_feature_pipeline[feature_name] = features_pipeline
-            if transformed_features.empty:
-                transformed_features = pd.DataFrame(transformed_feature)
-            else:
-                transformed_features = pd.concat([transformed_features, transformed_feature])
-            self.mapping_old_new_features[feature_name] = transformed_feature.columns.tolist()
+        self.transformer_ = transformer
+        self.input_column_names = input_column_names
+        self.out_column_names = None
+        self.original_data_types = {}
+        self._enc_suffix = f"_{self.transformer_.__class__.__name__}"
 
-        transformed_features['temp_index'] = range(1, len(transformed_features) + 1)
+    def fit(self, df: pd.DataFrame, y=None, **fit_params):
+        if not self.input_column_names:
+            # If column_names parameter was provided in 'fit' - use it, otherwise - apply transformation to all columns.
+            self.input_column_names = fit_params.get("column_names", None) or df.keys().tolist()
+        self.original_data_types = df.dtypes.to_dict()
+        self.transformer_ = self.transformer_.fit(df[self.input_column_names], y=y, **fit_params)
+        return self
 
-        merged_features = transformed_features.merge(intact_features, on='temp_index')
-        merged_features = merged_features.drop(columns="temp_index")
+    def transform(self, df: pd.DataFrame, y=None) -> pd.DataFrame:
+        df = df.copy(deep=True)
+        df['temp_index'] = range(1, len(df) + 1)
+        # Select needed columns
+        df_to_transform = df[self.input_column_names]
+        transformed_raw = self.transformer_.transform(df_to_transform)
 
-        # sort
-        sorted_transformed = []
-        for f in features_ordering:
-            t_f = self.mapping_old_new_features[f]
-            if type(t_f) is str:
-                sorted_transformed.append(t_f)
-            else:
-                sorted_transformed = sorted_transformed + t_f
+        # Replace data in columns
+        if df_to_transform.shape != transformed_raw.shape:
+            self.out_column_names = ["_".join(self.input_column_names) + self._enc_suffix + str(x) for x in
+                                     range(transformed_raw.shape[1])]
+        else:
+            self.out_column_names = [name + self._enc_suffix for name in self.input_column_names]
+        transformed_df = pd.DataFrame(transformed_raw, columns=self.out_column_names)
+        transformed_df['temp_index'] = range(1, len(transformed_df) + 1)
+        df = df.merge(transformed_df, on="temp_index")
+        df = df.drop(columns=self.input_column_names)
+        df = df.drop(columns='temp_index')
 
-        result = merged_features.reindex(columns=sorted_transformed)
+        return df
 
-        return result
+    def inverse_transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy(deep=True)
+        # Select and transform back needed columns
+        to_transform = df[self.out_column_names]
+        transformed_raw = self.transformer_.inverse_transform(to_transform)
 
-    def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
-        return super()._inverse_sklearn_transform(transformed_features, self.mapping_old_feature_pipeline)
+        # Replace data in columns
+        for idx, c_name in enumerate(self.input_column_names):
+            df[c_name] = transformed_raw.T[idx]
+        df = df.drop(columns=self.out_column_names)
+        df = df.astype(self.original_data_types)
+
+        return df
