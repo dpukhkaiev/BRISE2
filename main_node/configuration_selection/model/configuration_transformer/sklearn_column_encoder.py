@@ -91,7 +91,6 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         return df
 
     def inverse_transform(self, df: pd.DataFrame) -> pd.DataFrame:
-       # check_is_fitted(self, "transformer_")
         df = df.copy(deep=True)
         # Select and transform back needed columns
         to_transform = df[self.out_column_names]
