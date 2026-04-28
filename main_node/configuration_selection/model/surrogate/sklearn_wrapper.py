@@ -24,11 +24,8 @@ class SklearnWrapper(Surrogate):
             self.surrogate_instance = surrogate_class()
 
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
-
         transformed_features = self._transform_configuration(features)
         transformed_labels = self._transform_values(labels)
-        # sklearn expects a 1d array for single-output targets. If labels is a single-column
-        # DataFrame, ravel it to avoid DataConversionWarning. Leave multi-output labels as-is.
         y = transformed_labels
         if isinstance(transformed_labels, pd.DataFrame) and transformed_labels.shape[1] == 1:
             y = transformed_labels.iloc[:, 0].values.ravel()
