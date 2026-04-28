@@ -24,13 +24,11 @@ class SklearnWrapper(Surrogate):
             self.surrogate_instance = surrogate_class()
 
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
+
         transformed_features = self._transform_configuration(features)
         transformed_labels = self._transform_values(labels)
-        y = transformed_labels
-        if isinstance(transformed_labels, pd.DataFrame) and transformed_labels.shape[1] == 1:
-            y = transformed_labels.iloc[:, 0].values.ravel()
 
-        self.surrogate_instance.fit(transformed_features, y)
+        self.surrogate_instance.fit(transformed_features, transformed_labels)
         return True
 
     def predict(self, cfg: pd.Series, transform: bool = True) -> pd.DataFrame:

@@ -20,20 +20,20 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, categories: Union[str, List[object]] = 'auto'):
 
         self.__categories = categories
-        self.__transformer_ = OrdinalEncoder(categories=self.__categories, dtype=np.int64)
+        self.__transformer = OrdinalEncoder(categories=self.__categories, dtype=np.int64)
         self.__encode_mapping = {}
         self.__decode_mapping = {}
         self.__n_bits = {}
         self._enc_suffix = f"_{self.__class__.__name__}"
 
     def fit(self, df: pd.DataFrame, y=None):
-        self.__transformer_.fit(X=df, y=y)
+        self.__transformer.fit(X=df, y=y)
         self.__n_bits = {c_name: len(format(len(c_cats), 'b'))
-                         for c_name, c_cats in enumerate(self.__transformer_.categories_)}
+                         for c_name, c_cats in enumerate(self.__transformer.categories_)}
         # __n_bits reflects how many bits it is needed to encode categories of corresponding (by index) column
 
         # precompute binary encodings
-        for idx, column_categories in enumerate(self.__transformer_.categories_):
+        for idx, column_categories in enumerate(self.__transformer.categories_):
             self.__encode_mapping[idx] = dict()
             self.__decode_mapping[idx] = dict()
             for cat_idx, category in enumerate(column_categories):
@@ -48,7 +48,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
             raise TypeError(f"Transformer was fit to data with {self.__n_bits} columns, "
                             f"but given data with {len(df.keys())} columns.")
         # Convert to OrdinalEncoding
-        pre_transformed = self.__transformer_.transform(X=df)  # In OrdinalEncoding
+        pre_transformed = self.__transformer.transform(X=df)  # In OrdinalEncoding
         # Convert to BinaryEncoding
         n_out_columns = sum(self.__n_bits.values())
         n_out_rows = len(pre_transformed)
@@ -80,7 +80,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
 
             ordinal_encoded[column] = ord_column
         # convert back from OrdinalEncoding to original one
-        decoded = self.__transformer_.inverse_transform(ordinal_encoded)
+        decoded = self.__transformer.inverse_transform(ordinal_encoded)
         return decoded
 
     @staticmethod

@@ -406,8 +406,6 @@ class OrdinalHyperparameter(CategoricalHyperparameter):
     def __eq__(self, other: OrdinalHyperparameter):
         if type(other) is OrdinalHyperparameter:
             result = super().__eq__(other)
-            if result is NotImplemented:
-                return NotImplemented
             if result and not (isinstance(other, OrdinalHyperparameter)
                                or self._default_value != other._default_value
                                or self._categories != other._categories):
@@ -435,8 +433,6 @@ class NominalHyperparameter(CategoricalHyperparameter):
     def __eq__(self, other: NominalHyperparameter):
         if type(other) is NominalHyperparameter:
             result = super().__eq__(other)
-            if result is NotImplemented:
-                return NotImplemented
             if result and not (isinstance(other, NominalHyperparameter)
                                or self._default_value != other._default_value
                                or self._categories.keys() != other._categories.keys()):
