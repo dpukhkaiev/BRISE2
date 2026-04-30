@@ -1,5 +1,3 @@
-#FROM vprokopets/waffle_temp:latest
-
 # ARM - if you use ARM uncomment the following line
 # FROM docker.io/vprokopets/waffle_temp:latest
 

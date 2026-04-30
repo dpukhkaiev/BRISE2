@@ -7,7 +7,7 @@ channels:
 dependencies:
   - python=3.12
   - setuptools
-  - scikit-learn[alldeps]
+  - scikit-learn[alldeps]=1.6.1
   - PyYAML
   - statsmodels
   - scipy
