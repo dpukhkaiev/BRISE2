@@ -84,7 +84,7 @@ help() {
 up() {
   if [[ "${mode}" == "docker-compose" ]]; then
         log "Building and deploying BRISE to docker-compose."
-        services=("main-node" "event_service" "worker_service" "worker" "waffle" "mongo-db")
+        services=("main-node" "event_service" "worker_service" "worker" "waffle" "mongo-db" "front-end")
         docker compose build --build-arg BRISE_EVENT_SERVICE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.Address' ) \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.AMQTPort' )\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.GUIPort' )\

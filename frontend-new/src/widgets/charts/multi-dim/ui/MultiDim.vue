@@ -47,7 +47,7 @@ function resetRes() {
 //return result
 //}
 
-
+const lastName = (s: string) => String(s).split('.').pop() ?? String(s)
 
 //return an arry of values by key from all directionaries
 function unpack(set: any, key: any) {

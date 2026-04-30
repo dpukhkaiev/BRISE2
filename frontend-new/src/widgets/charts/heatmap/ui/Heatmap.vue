@@ -93,25 +93,11 @@ function zParser(data: Map<String, any>): Array<Array<any>> {
 
 
 function render(): void {
-    console.log('BOUNDARIES RAW:', searchspace.value.boundaries)
-    console.log('KEYS:', Object.keys(searchspace.value.boundaries || {}))
 
     // if (isModelType.value !== 'regression') return
-    console.log('y:', y.value, Array.isArray(y.value))
-    console.log('x:', x.value, Array.isArray(x.value))
-    console.log('map:', map.value)
-    console.log('model:', isModelType.value)
-    console.log('x:', x.value)
-    console.log('y:', y.value)
-    console.log('result size:', result.value.size)
+
     if (isModelType.value === 'regression') {
         const element = map.value
-        console.log('Z matrix:', zParser(result.value))
-        const z = zParser(result.value)
-
-        console.log('x length:', x.value.length)
-        console.log('y length:', y.value.length)
-        console.log('z shape:', z.length, z[0]?.length)
         const data: any[] = [
             { // defined X and Y axises with data, type and color
                 z: zParser(result.value),
@@ -140,6 +126,7 @@ function render(): void {
         ];
 
         const layout: any = {
+            margin: { l: 220 },
             title: { text: 'Heat map results' } as any,
             autosize: true,
             showlegend: false,
@@ -147,21 +134,27 @@ function render(): void {
                 title: Object.keys(searchspace.value.boundaries[0].Boundaries)[1],
                 type: 'category' as const,
                 autorange: true,
-                range: [Math.min(...x.value), Math.max(...x.value)],
-                showgrid: true
+                range: [-0.5, x.value.length - 0.5],
+                showgrid: true,
+                categoryorder: 'array',
+                categoryarray: x.value
             },
             yaxis: {
                 title: Object.keys(searchspace.value.boundaries[0].Boundaries)[0],
                 type: 'category' as const,
                 autorange: true,
-                range: [Math.min(...y.value), Math.max(...y.value)],
-                showgrid: true
+                range: [-0.5, x.value.length - 0.5],
+                showgrid: true,
+                categoryorder: 'array',
+                categoryarray: y.value
             }
         };
         if (element)
             Plotly.react(element, data, layout);
     }
 }
+
+const lastName = (s: string) => String(s).split('.').pop() ?? String(s)
 function initMainEvents() {
     watch(experiment_description, () => {
         if (!experiment_description.value || !searchspace.value || !globalConfig.value) {
@@ -173,8 +166,8 @@ function initMainEvents() {
         resetRes()
 
         const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
-        x.value = boundaryObj?.threads ?? []
-        y.value = boundaryObj?.frequency ?? []
+        x.value = (boundaryObj?.threads ?? []).map(lastName)
+        y.value = (boundaryObj?.frequency ?? []).map(lastName)
         console.log('x FIXED:', x.value)
         console.log('y FIXED:', y.value)
     }, { deep: true })
@@ -185,8 +178,8 @@ function initMainEvents() {
         configs.forEach((configuration: any) => {
             if (configuration) {
                 const conf = configuration['configurations'];
-                const freq = conf.frequency;
-                const threads = conf.threads;
+                const freq = lastName(conf.frequency);
+                const threads = lastName(conf.threads);
                 result.value.set(String([freq, threads]), configuration['results']);
                 measPoints.value.push([freq, threads]);
                 console.log('New configuration:', configuration);
@@ -206,9 +199,12 @@ function initMainEvents() {
                 if (configuration) {
                     solution = configuration; // In case if only one point solution
                     defaultConfiguration = configuration;
+                    configWithNones.value = JSON.stringify(solution.configurations, null, '\t');
+                    configWithNones.value = configWithNones.value.replace(',,', ',None,');
+                    results.value = JSON.stringify(solution.results)
                     const conf = configuration['configurations'];
-                    result.value.set(String([conf.frequency, conf.threads]), configuration['results']);
-                    measPoints.value.push([conf.frequency, conf.threads]);
+                    result.value.set(String([lastName(conf.frequency), lastName(conf.threads)]), configuration['results']);
+                    measPoints.value.push([lastName(conf.frequency), lastName(conf.threads)]);
                     sol = Object.values(solution.results)
                     dc = Object.values(defaultConfiguration.results)
                     console.log('Final:', configs);
@@ -256,4 +252,10 @@ onMounted(() => {
             {{ col }}
         </option>
     </select>
+    <select v-model="theme.type" @change="render">
+        <option v-for="type in types" :key="type" :value="type">
+            {{ type }}
+        </option>
+    </select>
+
 </template>
