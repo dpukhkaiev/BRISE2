@@ -108,21 +108,57 @@ class TreeParzenEstimator(Surrogate):
 
         self.varsizes = np.array(self.varsizes, dtype=int)
 
+        # Fix divide-by-zero RuntimeWarning - kernel_value = np.ones(Xi.size) * h / (num_levels - 1)
+        # p = 1 (a column that contains only a single value), the term p‑1 becomes zero, h = 1/0
+        if self.varsizes.size > 0:  
+            self.varsizes[self.varsizes < 2] = 2
+
+        # raw data could still contain single value for categorical columns
+        # filtering out categorical columns with only a single observed level across the data
+        used_columns = []
+        used_kde_vartypes = ""
+        used_varsizes = []
+        for idx, column_name in enumerate(transformed_features.keys()):
+            if column_name in transformed_features.columns:
+                col = transformed_features[column_name]
+                hp = None
+                for hp_candidate in self.region:
+                    if hp_candidate.name in column_name:
+                        hp = hp_candidate
+                        break
+                # Skip columns with only one unique value
+                if col.nunique() < 2:
+                    continue
+                used_columns.append(column_name)
+                used_kde_vartypes += self.kde_vartypes[idx]
+                if not isinstance(hp, NumericHyperparameter):
+                    size = len(hp.categories) if hp is not None else 2
+                    used_varsizes.append(max(2, int(size)))
+                else:
+                    used_varsizes.append(0)
+    
+        if len(used_columns) == 0:
+            return False
+
         # Bandwidth selection method. There are 3 possible variants:
         # 'cv_ml' - cross validation maximum likelihood
         # 'cv_ls' - cross validation the least squares, more expensive cross validation method
         # 'normal_reference' - default, quick, rule of thumb
         bw_estimation = 'normal_reference'
-
-        good_kde = sm.nonparametric.KDEMultivariate(data=t_features_good, var_type=self.kde_vartypes, bw=bw_estimation)
-        bad_kde = sm.nonparametric.KDEMultivariate(data=t_features_bad, var_type=self.kde_vartypes, bw=bw_estimation)
+        good_kde = sm.nonparametric.KDEMultivariate(data=t_features_good[used_columns],
+                                                    var_type=used_kde_vartypes,
+                                                    bw=bw_estimation)
+        bad_kde = sm.nonparametric.KDEMultivariate(data=t_features_bad[used_columns],
+                                                   var_type=used_kde_vartypes,
+                                                   bw=bw_estimation)
 
         good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth, None)
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth, None)
 
         self.model = {
             'good': good_kde,
-            'bad': bad_kde
+            'bad': bad_kde,
+            'used_columns': used_columns
         }
 
         is_built = True
