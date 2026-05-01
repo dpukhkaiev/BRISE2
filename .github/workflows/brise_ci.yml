@@ -5,9 +5,9 @@ name: BRISE-CI
 
 on:
   push:
-    branches: [master, grrr]
+    branches: [master, develop]
   pull_request:
-    branches: [master, grrr]
+    branches: [master, develop]
 
 jobs:
   docker-build:
