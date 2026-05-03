@@ -18,7 +18,7 @@ const isFinish = ref(false)
 // create a store 
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description } = storeToRefs(store)
+const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
 
 const showDownload = ref(false)
 
@@ -50,15 +50,39 @@ function initMainEvents(): void {
     })
 
 }
+const selectedFile = ref<any>(null)
 
+const uploadFile = async () => {
+    console.log('uploadFile called')
+    console.log('selectedFile:', selectedFile.value)
+    if (!selectedFile.value) return
+
+    const file = selectedFile.value!
+
+    const reader = new FileReader()
+    reader.onload = () => {
+        console.log('reader.result:', reader.result)
+        const clean = (reader.result as string).replace(/:\s*Infinity/g, ': null')
+        const parsed = JSON.parse(clean)
+        console.log('reader.result:', reader.result)
+        store.experiment_description = parsed.experiment_description
+        store.searchspace = parsed.searchspace_description
+        store.globalConfig = parsed.global_configuration
+        console.log('searchspace:', store.searchspace)
+        console.log('globalConfig:', store.globalConfig)
+    }
+
+    reader.readAsText(file)
+}
 
 onMounted(() => {
     initMainEvents()
 })
+
 </script>
 <template>
     <div class="button-row">
-        <v-card class="mx-auto" style="position: relative" ; elevation="4" rounded="x1">
+        <v-card flat border rounded="lg">
             <v-card-item class="mb-2">
                 <div class="info-row">
                     <span class="label">Experiment</span>
@@ -69,7 +93,7 @@ onMounted(() => {
                 <div class="info-row">
                     <span class="label">Scenario</span>
                     <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
-                    }}</span>
+                        }}</span>
                 </div>
             </v-card-item>
             <v-card-actions>
@@ -83,10 +107,14 @@ onMounted(() => {
                 </v-btn>
                 <v-btn class="text-none text-body-small" v-if="isFinish" @click="openDownloadOption"
                     append-icon="mdi-content-save" color="#B8C9F4" style="color: #2E3F8B;" variant="outlined">
-
                     Save Experiment
-
                 </v-btn>
+
+                <v-file-input label="Select Experiment" density="compact" v-model="selectedFile"
+                    placeholder="Select an experiment" color="deep-green-accent-2" variant="outlined"
+                    style="position:relative">
+                </v-file-input>
+                <v-btn color="#A8D5A2" style="color: #2D6A27;" @click="uploadFile">Select </v-btn>
 
             </v-card-actions>
 

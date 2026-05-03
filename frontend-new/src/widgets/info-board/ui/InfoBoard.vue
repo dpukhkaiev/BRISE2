@@ -138,30 +138,32 @@ function formatPercent(value: number): string {
 </script>
 
 <template>
-    <v-expansion-panels elevation="4">
+    <v-expansion-panels elevation="2" multiple>
         <!-- Panel 1 -->
         <v-expansion-panel :disabled="news.length === 0">
             <v-expansion-panel-title class="info">
                 Info messages
 
-                <v-icon icon="mdi-text-box"></v-icon>
-
+                <v-icon icon="mdi-text-box" class="mx-2"></v-icon>
+                <p class="ml-4"> Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
+                </p>
             </v-expansion-panel-title>
             <v-expansion-panel-text>
-                Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
+
+
+
+                <!-- Logs list -->
+
+                <v-list lines="two" v-if="news.length != 0">
+                    <v-list-item v-for="info in news" :key="info.time" prepend-icon="mdi-check">
+                        <v-list-item-title>{{ info.message }}</v-list-item-title>
+                        <v-list-item-subtitle>
+                            {{ new Date(info.time).toLocaleDateString() }}
+                        </v-list-item-subtitle>
+                        <v-divider />
+                    </v-list-item>
+                </v-list>
             </v-expansion-panel-text>
-
-            <!-- Logs list -->
-
-            <v-list lines="two" v-if="news.length != 0">
-                <v-list-item v-for="info in news" :key="info.time" prepend-icon="mdi-check">
-                    <v-list-item-title>{{ info.message }}</v-list-item-title>
-                    <v-list-item-subtitle>
-                        {{ new Date(info.time).toLocaleDateString() }}
-                    </v-list-item-subtitle>
-                    <v-divider />
-                </v-list-item>
-            </v-list>
         </v-expansion-panel>
 
         <!-- Panel 2 -->

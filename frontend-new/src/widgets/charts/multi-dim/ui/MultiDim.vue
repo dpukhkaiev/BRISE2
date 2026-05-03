@@ -76,8 +76,10 @@ async function chose(configuration: any) {
     }
     parameter_names.value = Object.keys(searchspace.value["boundaries"][index]["Boundaries"])
     let rangeValues = Object.values(searchspace.value["boundaries"][index]["Boundaries"])
-    resultParamsRange.value = zip(parameter_names.value, rangeValues)
+    const shortNames = parameter_names.value.map(lastName)
+    resultParamsRange.value = zip(shortNames, rangeValues)
     resultParamsRange.value.set('result', undefined) // range for results is undefined
+
 }
 
 function initMainEvents() {
@@ -122,7 +124,7 @@ function initMainEvents() {
                     parameter_names.value.forEach((key: any) => {
                         alphas.push(configuration.configurations[key])
                     })
-                    let point = zip(parameter_names.value, alphas)
+                    let point = zip(parameter_names.value.map(lastName), alphas)
                     point.set('result', configuration.results[keyParam.value])
                     allPoints.value.push(point)
                     render()
@@ -151,7 +153,7 @@ function initMainEvents() {
                     parameter_names.value.forEach((key: any) => {
                         alphas.push(configuration.configurations[key])
                     })
-                    let point = zip(parameter_names.value, alphas)
+                    let point = zip(parameter_names.value.map(lastName), alphas)
                     point.set('result', configuration.results[keyParam.value])
                     allPoints.value.push(point)
                     render()
@@ -201,6 +203,10 @@ function render() {
     }];
 
     var layout = {
+        margin: {
+            l: 150,
+
+        },
         title: {
             text: currentDiagram.value,
             font: {
@@ -247,9 +253,9 @@ onMounted(() => {
 
 <template>
     <div v-for="item in rootParam" :key="item">
-        <v-card>
 
-            <div :id="item" style="width:100%; height:500px;"></div>
-        </v-card>
+
+        <div :id="item" style="width:100%; height:500px;"></div>
+
     </div>
 </template>

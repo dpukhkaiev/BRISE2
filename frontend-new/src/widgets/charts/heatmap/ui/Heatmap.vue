@@ -143,7 +143,7 @@ function render(): void {
                 title: Object.keys(searchspace.value.boundaries[0].Boundaries)[0],
                 type: 'category' as const,
                 autorange: true,
-                range: [-0.5, x.value.length - 0.5],
+                range: [-0.5, y.value.length - 0.5],
                 showgrid: true,
                 categoryorder: 'array',
                 categoryarray: y.value
