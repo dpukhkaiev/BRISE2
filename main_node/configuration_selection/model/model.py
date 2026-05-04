@@ -14,6 +14,7 @@ from configuration_selection.model.validator.validator_orchestrator import Valid
 from configuration_selection.model.candidate_selector.candidate_selector_orchestrator import CandidateSelectorOrchestrator
 from configuration_selection.model.surrogate.composite_surrogate import CompositeSurrogate
 
+from reconfiguration.effector import Effector
 
 class Model:
     def __init__(self, model_description: Tuple, region: Tuple, objectives: Dict):
@@ -30,74 +31,98 @@ class Model:
             if "MultiObjectiveHandling" in i[0]:
                 self.mo_handling_surrogate_type = list(i[1]["SurrogateType"])[0]
 
-        surrogate_types = []
-        for key, description in model_description[1].items():
-            if "Surrogate" in key:
-                surrogate_types.append(description)
-
-        self.mapping_surrogate_objective: Mapping[Surrogate, Dict] = {}
-
-        if self.mo_handling_surrogate_type == "Compositional":
-            i = 0
-            for key, value in objectives.items():
-                temp_o = {key: value}
-                surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_types[i], region, temp_o)
-                self.mapping_surrogate_objective[surrogate] = temp_o
-                i += 1
-        elif self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
-            for o_name in objectives.keys():
-                for s in surrogate_types:
-                    surrogate = self.surrogate_orchestrator.get_surrogate(s, region, {o_name: objectives[o_name]})
-                    self.mapping_surrogate_objective[surrogate] = {o_name: objectives[o_name]}
-            for s in surrogate_types:
-                surrogate = self.surrogate_orchestrator.get_surrogate(s, region, objectives)
-                if surrogate.multi_objective:
-                    self.mapping_surrogate_objective[surrogate] = objectives
-
-        else:  # Scalar Pure None
-            surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_types[0], region, objectives)
-            self.mapping_surrogate_objective[surrogate] = objectives
+        self._init_surrogates(self._get_descriptions(model_description[1], "Surrogate"))
 
         # optimizer
         self.optimizer_orchestrator = OptimizerOrchestrator()
-
-        optimizer_types = []
-        for key, description in model_description[1].items():
-            if "Optimizer" in key:
-                optimizer_types.append(description)
-
-        self.mapping_optimizer_objective: Mapping[Optimizer, dict] = {}
-        if self.mo_handling_surrogate_type == "Compositional":
-            i = 0
-            for key, value in objectives.items():
-                temp_o = {key: value}
-                optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_types[i], region, temp_o)
-                self.mapping_optimizer_objective[optimizer] = temp_o
-                i += 1
-        else:
-            optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_types[0], region, objectives)
-            self.mapping_optimizer_objective[optimizer] = objectives
+        self._init_optimizer(self._get_descriptions(model_description[1], "Optimizer"))
 
         # validator
         self.validator_orchestrator = ValidatorOrchestrator()
         validator_description = model_description[1]["Validator"]
-        self.external_validator = None
-        self.internal_validator = None
-        for k in validator_description.keys():
-            if k == 'ExternalValidator':
-                self.external_validator = self.validator_orchestrator.get_validator(validator_description[k], region, objectives)
-            elif k == 'InternalValidator':
-                self.internal_validator = self.validator_orchestrator.get_validator(validator_description[k], region, objectives)
+        self._init_validators(validator_description)
 
         # candidate selector
         self.candidate_selector_orchestrator = CandidateSelectorOrchestrator()
         candidate_selector_description = model_description[1]["CandidateSelector"]
-        self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(candidate_selector_description)
+        self._init_candiate_selector(candidate_selector_description)
 
         # transfer learning
         self.time_to_build = None
         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
         self.model_dumps = None
+
+    @Effector.effector("Surrogate")
+    def _init_surrogates(self, surrogate_descriptions):
+        # Convert single element to list
+        if not isinstance(surrogate_descriptions, list):
+            surrogate_descriptions = [surrogate_descriptions]
+
+        self.mapping_surrogate_objective: Mapping[Surrogate, Dict] = {}
+
+        if self.mo_handling_surrogate_type == "Compositional":
+            i = 0
+            for key, value in self.objectives.items():
+                temp_o = {key: value}
+                surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[i], self.region, temp_o)
+                self.mapping_surrogate_objective[surrogate] = temp_o
+                i += 1
+        elif self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
+            for o_name in self.objectives.keys():
+                for s in surrogate_descriptions:
+                    surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, {o_name: self.objectives[o_name]})
+                    self.mapping_surrogate_objective[surrogate] = {o_name: self.objectives[o_name]}
+            for s in surrogate_descriptions:
+                surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, self.objectives)
+                if surrogate.multi_objective:
+                    self.mapping_surrogate_objective[surrogate] = self.objectives
+
+        else:  # Scalar Pure None
+            surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[0], self.region, self.objectives)
+            self.mapping_surrogate_objective[surrogate] = self.objectives
+
+    @Effector.effector("Optimizer")
+    def _init_optimizer(self, optimizer_descriptions):
+        """:param optimizer_descriptions: list of optimizer descriptions or single description"""
+
+        # Convert single element to list
+        if not isinstance(optimizer_descriptions, list):
+            optimizer_descriptions = [optimizer_descriptions]
+
+        self.mapping_optimizer_objective: Mapping[Optimizer, dict] = {}
+        if self.mo_handling_surrogate_type == "Compositional":
+            i = 0
+            for key, value in self.objectives.items():
+                temp_o = {key: value}
+                optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[i], self.region, temp_o)
+                self.mapping_optimizer_objective[optimizer] = temp_o
+                i += 1
+        else:
+            optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[0], self.region, self.objectives)
+            self.mapping_optimizer_objective[optimizer] = self.objectives
+
+    @Effector.effector("Validator")
+    def _init_validators(self, description:dict):
+        self.external_validator = None
+        self.internal_validator = None
+
+        for k in description.keys():
+            if k == 'ExternalValidator':
+                self.external_validator = self.validator_orchestrator.get_validator(description[k], self.region, self.objectives)
+            elif k == 'InternalValidator':
+                self.internal_validator = self.validator_orchestrator.get_validator(description[k], self.region, self.objectives)
+
+    @Effector.effector("CandidateSelector")
+    def _init_candiate_selector(self, description):
+        self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(description)
+
+    def _get_descriptions(self, model_description, type_name):
+        """Return a list with all descriptions of a special type like Optimizer, Surrogate, etc."""
+        descriptions = []
+        for key, description in model_description.items():
+            if type_name in key:
+                descriptions.append(description)
+        return descriptions
 
     def predict(self, parameters: List[Hyperparameter], configurations: List[Configuration]) -> pd.DataFrame:
         """

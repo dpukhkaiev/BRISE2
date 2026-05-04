@@ -42,7 +42,7 @@ class ReconfigurationModule():
         return inner
 
     @configure_method
-    def change_variant(self, variability_point:str, new_feature:dict):
+    def change_variant(self, variability_point:str, new_feature:list[dict]|dict):
         """Request to change the given variability point to a new feature"""
         # Select prev_feature by Type or Key in feature model or both?
         parent_keys = self._get_variability_point(variability_point, self._new_experiment_description, [])
@@ -70,9 +70,9 @@ class ReconfigurationModule():
         for vp, new_feature in self._requested_changes.items():
             self.executor.change(vp, new_feature, self._new_experiment_description)
 
-        # Update experiment description
+        # Update experiment description (so the stop condition and repeatition management can use the description??)
         # TODO: Test
-        #self.experiment.description = self._new_experiment_description
+        self.experiment.description = self._new_experiment_description
 
         self.state = State.IDLE
 

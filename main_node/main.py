@@ -154,13 +154,16 @@ class MainThread(threading.Thread):
         # Initialize Repetition Manager - a mechanism for handling nondeterminism.
         RepeaterOrchestration(experiment_id=self.experiment.unique_id, experiment=self.experiment)
 
-        configuration_selection = ConfigurationSelection(self.experiment)
+        self.configuration_selection = ConfigurationSelection(self.experiment)
 
         # Create reconfiguration module
-        self.reconf = ReconfigurationModule(self.experiment, configuration_selection)
+        self.reconf = ReconfigurationModule(self.experiment, self.configuration_selection)
         # Test
-        self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}}).done()
-        self.reconf.reconfigure()
+        #first_model = list(self.configuration_selection.predictor.mapping_region_model.keys())[0]
+        #print(self.configuration_selection.predictor.mapping_region_model[first_model].mapping_surrogate_objective)
+        #.done()
+        #self.reconf.reconfigure()
+        #print(self.configuration_selection.predictor.mapping_region_model[first_model].mapping_surrogate_objective)
         exit()
 
         dch_o = DefaultConfigHandlerOrchestrator()
@@ -234,9 +237,21 @@ class MainThread(threading.Thread):
                 # Reconfiguration
                 # For Testing
                 if len(self.experiment.evaluated_configurations) <= 3:
-                    self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}})
+                    #self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}})
                     
-                    """self.reconf.change_variant("Optimizer", {"Instance": { "RandomSearch": {
+                    """
+                    self.reconf.change_variant("Surrogate", {"Instance": {
+                        "MultiArmedBandit": {
+                            "MultiObjective": False,
+                            "CType": "std",
+                            "CFloat": 10.0,
+                            "Parameters": {
+                                "c": "std"
+                            },
+                            "Type": "multi_armed_bandit"
+                        }
+                    }})
+                    self.reconf.change_variant("Optimizer", {"Instance": { "RandomSearch": {
                                 "SamplingSize": 96,
                                 "MultiObjective": True,
                                 "Type": "random_search"
@@ -245,6 +260,28 @@ class MainThread(threading.Thread):
                             "NumberOfPoints": 1,
                             "Type": "best_multi_point"
                         }})
+                    self.reconf.change_variant("Validator", {"ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.9
+                                }
+                            },
+                            "QualityThreshold": 0.3,
+                            "Type": "quality_validator"
+                        }
+                    },
+                    "InternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "KFold": {
+                                    "NumberOfFolds": 4
+                                }
+                            },
+                            "QualityThreshold": 0.65,
+                            "Type": "quality_validator"
+                        }
+                    }})
                     self.reconf.change_variant("Predictor", {"WindowSize": 1.0, "Model": {
                             "Surrogate": {
                                 "ConfigurationTransformers": {

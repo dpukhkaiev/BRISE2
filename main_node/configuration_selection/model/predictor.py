@@ -12,6 +12,7 @@ from core_entities.search_space import SearchSpace
 from tools.mongo_dao import MongoDB
 from configuration_selection.model.model import Model
 
+from reconfiguration.effector import Effector
 
 class Predictor:
     """
@@ -49,16 +50,20 @@ class Predictor:
             model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
             self.mapping_region_model[r] = model
 
-        self.mapping_region_sampling_strategy = {}
-        for r in self.search_space.regions:
-            sampling_strategy = (self.sampling_strategy_orchestrator.
-                                 get_sampling_strategy
-                                 (experiment_description["ConfigurationSelection"]["SamplingStrategy"], r))
-            self.mapping_region_sampling_strategy[r] = sampling_strategy
+        self._init_mapping_region_sampling_strategy(experiment_description["ConfigurationSelection"]["SamplingStrategy"])
 
         self.hierarchical_models_dumps = []
 
         self.logger = logging.getLogger(__name__)
+
+    @Effector.effector("SamplingStrategy")
+    def _init_mapping_region_sampling_strategy(self, description):
+        self.mapping_region_sampling_strategy = {}
+        for r in self.search_space.regions:
+            sampling_strategy = (self.sampling_strategy_orchestrator.
+                                 get_sampling_strategy
+                                 (description, r))
+            self.mapping_region_sampling_strategy[r] = sampling_strategy
 
     def predict(self, measured_configurations: List[Configuration], sample: bool = False) -> List[Configuration]:
         """
