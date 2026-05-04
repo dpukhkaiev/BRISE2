@@ -27,6 +27,8 @@ from tools.initial_config import load_experiment_setup
 from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
 
+from reconfiguration.reconfiguration_module import ReconfigurationModule
+
 logging.getLogger("pika").setLevel(logging.WARNING)
 
 
@@ -80,7 +82,7 @@ class MainThread(threading.Thread):
             if len(argv) > 1:
                 exp_desc_file_path = argv[1]
             else:
-                exp_desc_file_path = './Resources/EnergyExperiment/EnergyExperiment.json'
+                exp_desc_file_path = './Resources/Mock/MockExperiment.json'
                 log_msg = f"The Experiment Setup was not provided and the path to an experiment file was not specified." \
                           f" The default one will be executed: {exp_desc_file_path}"
                 self.logger.warning(log_msg)
@@ -152,7 +154,14 @@ class MainThread(threading.Thread):
         # Initialize Repetition Manager - a mechanism for handling nondeterminism.
         RepeaterOrchestration(experiment_id=self.experiment.unique_id, experiment=self.experiment)
 
-        ConfigurationSelection(self.experiment)
+        configuration_selection = ConfigurationSelection(self.experiment)
+
+        # Create reconfiguration module
+        self.reconf = ReconfigurationModule(self.experiment, configuration_selection)
+        # Test
+        self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}}).done()
+        self.reconf.reconfigure()
+        exit()
 
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
@@ -221,6 +230,69 @@ class MainThread(threading.Thread):
                 temp_msg = "-- New Configuration was evaluated. Building Target System model."
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
+
+                # Reconfiguration
+                # For Testing
+                if len(self.experiment.evaluated_configurations) <= 3:
+                    self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}})
+                    
+                    """self.reconf.change_variant("Optimizer", {"Instance": { "RandomSearch": {
+                                "SamplingSize": 96,
+                                "MultiObjective": True,
+                                "Type": "random_search"
+                            }}})
+                    self.reconf.change_variant("CandidateSelector", {"BestMultiPointProposal": {
+                            "NumberOfPoints": 1,
+                            "Type": "best_multi_point"
+                        }})
+                    self.reconf.change_variant("Predictor", {"WindowSize": 1.0, "Model": {
+                            "Surrogate": {
+                                "ConfigurationTransformers": {
+                                    "NominalTransformer": {
+                                        "BinaryEncoder": {
+                                            "Type": "binary_transformer",
+                                            "Class": "brise.BinaryEncoder"
+                                        }
+                                    }
+                                },
+                                "Instance": {
+                                    "LinearRegression": {
+                                        "MultiObjective": False,
+                                        "Type": "sklearn_model_wrapper",
+                                        "Class": "sklearn.linear_model.LinearRegression"
+                                    }
+                                }
+                            },
+                            "Optimizer": {
+                                "Instance": {
+                                    "RandomSearch": {
+                                        "SamplingSize": 1000,
+                                        "MultiObjective": True,
+                                        "Type": "random_search"
+                                    }
+                                }
+                            },
+                            "Validator": {
+                                "ExternalValidator": {
+                                    "MockValidator": {
+                                        "Type": "mock_validator"
+                                    }
+                                }
+                            },
+                            "CandidateSelector": {
+                                "BestMultiPointProposal": {
+                                    "NumberOfPoints": 1,
+                                    "Type": "best_multi_point"
+                                }
+                            }
+                        }
+                    })"""
+                    
+                    self.reconf.done()
+
+                    self.reconf.reconfigure()
+                    exit()
+
                 self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
                                                    routing_key=self.experiment.unique_id,
                                                    body='')
