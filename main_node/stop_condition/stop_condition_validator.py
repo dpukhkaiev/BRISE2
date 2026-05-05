@@ -17,7 +17,7 @@ class StopConditionValidator:
     using user-defined pattern (StopConditionLogic in experiment description)
     and then execute it with numexpr (math-only functions analogue of eval)
     """
-    def __init__(self, experiment_id: str, experiment_description: dict):
+    def __init__(self, experiment_id: str, description: dict):
         self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                 os.getenv("BRISE_DATABASE_PORT"),
                                 os.getenv("BRISE_DATABASE_NAME"),
@@ -27,17 +27,17 @@ class StopConditionValidator:
         self.experiment_id = experiment_id
         self.logger = logging.getLogger(__name__)
         self.active = True
-        self.expression = experiment_description["StopCondition"]["StopConditionTriggerLogic"]["Expression"]
+        self.expression = description["StopConditionTriggerLogic"]["Expression"]
         self.stop_condition_states = {}
 
-        for sc_key in experiment_description["StopCondition"]["Instance"]:
-            if re.search(experiment_description["StopCondition"]["Instance"][sc_key]["Name"], self.expression):
-                self.stop_condition_states[experiment_description["StopCondition"]["Instance"][sc_key]["Name"]] = False
+        for sc_key in description["Instance"]:
+            if re.search(description["Instance"][sc_key]["Name"], self.expression):
+                self.stop_condition_states[description["Instance"][sc_key]["Name"]] = False
 
         self.expression = self.expression.replace("or", "|").replace("and", "&")
         self.repetition_interval = datetime.timedelta(**{
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
+            description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
+            description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
 
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             self.connection_thread = EventServiceConnection(self)

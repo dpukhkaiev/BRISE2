@@ -18,9 +18,7 @@ from core_entities.search_space import Hyperparameter, get_search_space_record
 
 from logger.default_logger import BRISELogConfigurator
 from repeater.repeater_selector import RepeaterOrchestration
-from stop_condition.stop_condition_selector import (
-    launch_stop_condition_threads
-)
+from stop_condition.stop_condition_selector import StopConditionSelector
 from tools.front_API import API
 from tools.initial_config import load_experiment_setup
 
@@ -146,8 +144,9 @@ class MainThread(threading.Thread):
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
-        launch_stop_condition_threads(self.experiment.unique_id)
-
+        self.sc_selector = StopConditionSelector() # Create and save instance to avoid that the effector is cleaned up!
+        self.sc_selector.launch_stop_condition_threads(self.experiment.unique_id)
+        
         # Instantiate client for Worker Service, establish connection.
         self.wsc_client = WSClient(self.experiment.unique_id)
 
@@ -164,7 +163,7 @@ class MainThread(threading.Thread):
         #.done()
         #self.reconf.reconfigure()
         #print(self.configuration_selection.predictor.mapping_region_model[first_model].mapping_surrogate_objective)
-        exit()
+        #exit()
 
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
@@ -235,31 +234,58 @@ class MainThread(threading.Thread):
                 self.sub.send('log', 'info', message=temp_msg)
 
                 # Reconfiguration
+                #self.reconf.check_for_reconfiguration()
+
                 # For Testing
                 if len(self.experiment.evaluated_configurations) <= 3:
-                    #self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}})
                     
+                    #self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}})
                     """
-                    self.reconf.change_variant("Surrogate", {"Instance": {
-                        "MultiArmedBandit": {
-                            "MultiObjective": False,
-                            "CType": "std",
-                            "CFloat": 10.0,
+                    self.reconf.change_variant("StopCondition", {"Instance": {
+                        "TimeBasedSC": {
                             "Parameters": {
-                                "c": "std"
+                                "MaxRunTime": 10,
+                                "TimeUnit": "seconds"
                             },
-                            "Type": "multi_armed_bandit"
+                            "Type": "time_based",
+                            "Name": "t"
+                        }
+                    },
+                    "StopConditionTriggerLogic": {
+                        "Expression": "t",
+                        "InspectionParameters": {
+                            "RepetitionPeriod": 1,
+                            "TimeUnit": "seconds"
                         }
                     }})
+
+                    self.reconf.change_variant("RepetitionManager", {"MaxFailedTasksPerConfiguration": 3,
+                    "Instance": {
+                        "QuantityBased": {
+                            "MaxTasksPerConfiguration": 2,
+                            "Type": "quantity_based"
+                        }
+                    }})
+                    
+                    self.reconf.change_variant("Surrogate", {"Instance": {
+                        "LinearRegression": {
+                            "MultiObjective": False,
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.LinearRegression"
+                        }
+                    }})
+
                     self.reconf.change_variant("Optimizer", {"Instance": { "RandomSearch": {
                                 "SamplingSize": 96,
                                 "MultiObjective": True,
                                 "Type": "random_search"
                             }}})
+
                     self.reconf.change_variant("CandidateSelector", {"BestMultiPointProposal": {
                             "NumberOfPoints": 1,
                             "Type": "best_multi_point"
                         }})
+
                     self.reconf.change_variant("Validator", {"ExternalValidator": {
                         "QualityValidator": {
                             "Split": {
@@ -282,6 +308,7 @@ class MainThread(threading.Thread):
                             "Type": "quality_validator"
                         }
                     }})
+
                     self.reconf.change_variant("Predictor", {"WindowSize": 1.0, "Model": {
                             "Surrogate": {
                                 "ConfigurationTransformers": {
@@ -324,11 +351,12 @@ class MainThread(threading.Thread):
                             }
                         }
                     })"""
-                    
-                    self.reconf.done()
-
-                    self.reconf.reconfigure()
-                    exit()
+                    pass
+                    #self.reconf.done()
+                    #self.reconf.reconfigure()
+                else:
+                    #exit()
+                    pass
 
                 self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
                                                    routing_key=self.experiment.unique_id,

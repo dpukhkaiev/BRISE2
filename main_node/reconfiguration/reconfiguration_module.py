@@ -1,3 +1,6 @@
+import logging
+import time
+
 from reconfiguration.reconfiguration_executor import ReconfigurationExecutor
 
 from core_entities.experiment import Experiment
@@ -5,6 +8,9 @@ from configuration_selection.configuration_selection import ConfigurationSelecti
 
 from enum import Enum
 from copy import deepcopy
+
+# Determines how long to wait for unfinished configurations before skipping them for the next round of iteration
+RECONFIGURATION_TIMEOUT = 10 # time in seconds
 
 class State(Enum):
     IDLE = 0 # No configuration requested or ongoing
@@ -16,6 +22,7 @@ class ReconfigurationModule():
 
     def __init__(self, experiment:Experiment, configuration_selection:ConfigurationSelection):
         self.state = State.IDLE
+        self.logger = logging.getLogger(__name__)
 
         self.experiment = experiment
         self.configuration_selection = configuration_selection
@@ -71,10 +78,39 @@ class ReconfigurationModule():
             self.executor.change(vp, new_feature, self._new_experiment_description)
 
         # Update experiment description (so the stop condition and repeatition management can use the description??)
-        # TODO: Test
-        self.experiment.description = self._new_experiment_description
+        # Make it not read only??
+        #self.experiment.description = self._new_experiment_description
 
         self.state = State.IDLE
+
+    def check_for_reconfiguration(self):
+        """Check if a new configuration was provided. Wait for unfinished configurations to be finished"""
+        if self.unfinished_configuration():
+            self.logger.info("Waiting for reconfiguration to finish...")
+
+        # Waiting timeout
+        start_time = time.time()
+        while self.unfinished_configuration() and (time.time() - start_time < RECONFIGURATION_TIMEOUT):
+            time.sleep(0.5)
+            pass
+        
+        # Skip message
+        if self.unfinished_configuration():
+            self.logger.info("Skipped unfinished configuration requests. Attempt to reconfigure next time.")
+            return
+
+        # Perform reconfiguration
+        if self.finished_configuration():
+            self.logger.info("Performing reconfiguration...")
+            self.reconfigure()
+
+    def unfinished_configuration(self):
+        """Return True if the state is CONFIG_UNFINSIHED. Need to wait for more configuration input"""
+        return self.state == State.CONFIG_UNFINISHED
+    
+    def finished_configuration(self):
+        """Return True if the state is CONFIG_FINISHED. Can call reconfigure()"""
+        return self.state == State.CONFIG_FINISHED
 
     def _get_variability_point(self, vp:str, feature_selection:dict, parents_keys:list) -> list:
         """Returns a list of parent keys for the variability point"""
