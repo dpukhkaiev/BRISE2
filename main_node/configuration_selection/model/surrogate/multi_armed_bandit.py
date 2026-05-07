@@ -58,16 +58,21 @@ class MultiArmedBandit(Surrogate):
                 }
         # 3. calculate UCB value of each category in every hyperparameter
         for hp in self.region:
-            for feature_category in hp.categories:
-                exploration_rate = np.sqrt(
-                    np.divide(
-                        2 * np.log(len(transformed_labels)),
-                        categories_info[hp.name][feature_category]["times used"]
-                    )
-                )
-                if np.isnan(exploration_rate):
-                    # only one, but not this category was used (in previous formula nominator=inf and denominator=inf).
+            for feature_category in hp.categories: # begin
+                n = len(transformed_labels)
+                ni = categories_info[hp.name][feature_category]["times used"]
+
+                if ni < 0:
                     exploration_rate = np.inf
+                else:
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        value = np.divide(2 * np.log(n), ni)
+
+                    if not np.isfinite(value) or value < 0:
+                        exploration_rate = np.inf
+
+                    exploration_rate = np.sqrt(value)
+
                 exploitation_rate = categories_info[hp.name][feature_category]["quality"]
                 if isinstance(self.c, (int, float)):
                     c = self.c
