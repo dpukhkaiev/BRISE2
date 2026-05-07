@@ -70,6 +70,7 @@ jobs:
     - name: Extract coverage %
       shell: bash -el {0}
       run: |
+        cd main_node
         LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
         PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
         echo "coverage=${PERCENT}"
