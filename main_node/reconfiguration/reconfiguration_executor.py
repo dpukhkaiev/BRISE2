@@ -8,12 +8,13 @@ class ReconfigurationExecutor():
 
         self.update_effectors()
 
-    def update_effectors(self):
+    def update_effectors(self, do_cleanup:bool=True):
         """Load all effectors in the `effectors`dict. Key is the variability point and the value is the instance of the effector"""
         self.effectors = {}
 
         # Remove all unused instances
-        Effector.cleanup()
+        if do_cleanup:
+            Effector.cleanup()
 
         # Init the effectors dict
         for effector in Effector.get_all():

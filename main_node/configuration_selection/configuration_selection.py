@@ -41,12 +41,14 @@ class ConfigurationSelection:
     @Effector.effector("TransferLearning", full_description=True)
     def _init_transfer_learning(self, experiment_description):
         # check if TL is available
-        if "TransferLearning" in self.experiment.description.keys():
+        if "TransferLearning" in experiment_description.keys() and\
+            len(experiment_description["TransferLearning"]) != 0:
             self.transfer_is_enabled = True
             self.transfer_learning_orchestrator = TransferLearningOrchestrator(experiment_description,
                                                                                self.experiment.unique_id)
         else:
             self.transfer_is_enabled = False
+            self.transfer_learning_orchestrator = None
 
     def send_new_configurations_to_measure(self, ch, method, properties, body) -> Tuple[
             List[Configuration], List[Configuration]]:

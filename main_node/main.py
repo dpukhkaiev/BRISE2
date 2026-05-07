@@ -157,13 +157,6 @@ class MainThread(threading.Thread):
 
         # Create reconfiguration module
         self.reconf = ReconfigurationModule(self.experiment, self.configuration_selection)
-        # Test
-        #first_model = list(self.configuration_selection.predictor.mapping_region_model.keys())[0]
-        #print(self.configuration_selection.predictor.mapping_region_model[first_model].mapping_surrogate_objective)
-        #.done()
-        #self.reconf.reconfigure()
-        #print(self.configuration_selection.predictor.mapping_region_model[first_model].mapping_surrogate_objective)
-        #exit()
 
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)

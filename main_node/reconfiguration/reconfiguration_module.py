@@ -68,6 +68,7 @@ class ReconfigurationModule():
         """Signal that all reconfiguration requests are done. Set state to CONFIG_FINISHED"""
         assert self.state == State.CONFIG_UNFINISHED, "No configuration requested"
         self.state = State.CONFIG_FINISHED
+        return self
 
     def reconfigure(self):
         """Performs the reconfiguration"""
@@ -83,8 +84,10 @@ class ReconfigurationModule():
 
         self.state = State.IDLE
 
-    def check_for_reconfiguration(self):
-        """Check if a new configuration was provided. Wait for unfinished configurations to be finished"""
+    def check_for_reconfiguration(self) -> bool:
+        """Check if a new configuration was provided. Wait for unfinished configurations to be finished.
+        
+        Return True if the configuration was performed (for unit tests)"""
         if self.unfinished_configuration():
             self.logger.info("Waiting for reconfiguration to finish...")
 
@@ -97,12 +100,16 @@ class ReconfigurationModule():
         # Skip message
         if self.unfinished_configuration():
             self.logger.info("Skipped unfinished configuration requests. Attempt to reconfigure next time.")
-            return
+            return False
 
         # Perform reconfiguration
         if self.finished_configuration():
             self.logger.info("Performing reconfiguration...")
             self.reconfigure()
+
+            return True
+        
+        return False
 
     def unfinished_configuration(self):
         """Return True if the state is CONFIG_UNFINSIHED. Need to wait for more configuration input"""

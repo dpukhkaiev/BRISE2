@@ -61,3 +61,8 @@ class Effector(Generic[T]):
                 continue
             
             cls.instances.remove(e)
+
+    @classmethod
+    def clear_all(cls):
+        """Clears all saved instances. Relevant for unit tests"""
+        cls.instances.clear()

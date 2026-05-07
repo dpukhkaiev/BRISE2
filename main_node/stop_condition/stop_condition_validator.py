@@ -106,7 +106,9 @@ class StopConditionValidator:
         :param properties: pika.spec.BasicProperties
         :param body: empty
         """
-        self.connection_thread.stop()
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.connection_thread.stop()
+        
         self.active = False
 
 

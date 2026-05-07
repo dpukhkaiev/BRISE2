@@ -46,6 +46,7 @@ class RepeaterOrchestration:
             self.experiment_description = experiment.description
         self.performed_measurements = 0
 
+        self.default_config_evaluated = False
         self._init_experiment_description(self.experiment_description)
 
         objectives = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["Name"]
@@ -64,7 +65,6 @@ class RepeaterOrchestration:
 
         self.logger.info("Outliers detection module is disabled")
 
-        self._type = self.get_repeater(True)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             self.connection_thread = self._EventServiceConnection(self)
             self.channel = self.connection_thread.channel
@@ -80,8 +80,7 @@ class RepeaterOrchestration:
         feature_name = keys[0]
         self.repeater_parameters = {**self.experiment_description["RepetitionManager"]["Instance"][feature_name], **self.experiment_description["RepetitionManager"]}
 
-        # When to set this??
-        self._type = self.get_repeater(True)
+        self._type = self.get_repeater(not self.default_config_evaluated)
 
     def get_repeater(self, is_default_configuration: bool = False):
         """
@@ -202,6 +201,7 @@ class RepeaterOrchestration:
 
         elif configuration.status['measured']:
             if configuration.type == Configuration.Type.DEFAULT:
+                self.default_config_evaluated = True
                 self._type = self.get_repeater()
                 publish(exchange='default_configuration_results_exchange',
                         routing_key=self.experiment_id,
