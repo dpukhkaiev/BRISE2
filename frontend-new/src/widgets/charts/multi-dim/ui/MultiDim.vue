@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // Plotly
@@ -32,6 +32,9 @@ const allPoints = ref<Map<string, any>[]>([])
 let defaultPoint: any
 
 let solution: Solution | null = null
+
+let renderPending = false
+let renderTimer: ReturnType<typeof setTimeout> | null = null
 
 function resetRes() {
     allPoints.value = ([])
@@ -66,8 +69,6 @@ function zip(keys: Array<any>, values: Array<any>) {
     return result
 }
 async function chose(configuration: any) {
-    console.log('experiment:', experiment)
-    console.log('configurations:', configuration.configurations)
     currentDiagram.value = experiment
     let index = rootParam.value.indexOf(currentDiagram.value)
     if (index === -1) {
@@ -84,7 +85,7 @@ async function chose(configuration: any) {
 
 function initMainEvents() {
 
-    watch(experiment_description, () => {
+    watch([experiment_description, searchspace], () => {
         if (!experiment_description.value || !searchspace.value) {
             return
         }
@@ -99,14 +100,14 @@ function initMainEvents() {
         if (priorities) {
             keyParam.value = Object.keys(priorities)[0]  // → "energy"
         }
-        // console.log('keyParam:', keyParam.value)
-        // console.log('Objectives:', priorities)
-        //  console.log('exp_descr: ', experiment_description.value)
-    },
 
+    },
         // reactive object from store, need deep to track properties of the object
-        { deep: true })
-    console.log('exp_descr: ', experiment_description.value)
+        {
+            deep: true,
+            immediate: true
+        })
+
     // Default configuration
     store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
@@ -127,14 +128,18 @@ function initMainEvents() {
                     let point = zip(parameter_names.value.map(lastName), alphas)
                     point.set('result', configuration.results[keyParam.value])
                     allPoints.value.push(point)
-                    render()
+
                 } else {
                     console.log("Empty default")
                 }
             })
             console.log('Default:', configs)
 
-
+            if (renderTimer) clearTimeout(renderTimer)
+            renderTimer = setTimeout(() => {
+                render()
+                renderTimer = null
+            }, 500)
         }
     });
 
@@ -156,13 +161,17 @@ function initMainEvents() {
                     let point = zip(parameter_names.value.map(lastName), alphas)
                     point.set('result', configuration.results[keyParam.value])
                     allPoints.value.push(point)
-                    render()
+
                 }
                 else {
                     console.log("Empty task")
                 }
             })
-
+            if (renderTimer) clearTimeout(renderTimer)
+            renderTimer = setTimeout(() => {
+                render()
+                renderTimer = null
+            }, 500)
 
         }
     });
@@ -248,6 +257,12 @@ function dimmensionsData() {
 
 onMounted(() => {
     initMainEvents()
+})
+
+onUnmounted(() => {
+    if (renderTimer) clearTimeout(renderTimer)
+    const element = document.getElementById(currentDiagram.value)
+    if (element) Plotly.purge(element)
 })
 </script>
 

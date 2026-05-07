@@ -104,13 +104,13 @@ onMounted(() => {
 
           <v-tabs-window-item value="charts" eager>
             <v-row no-gutters>
-              <v-col v-show="visibleCharts.includes('impres')" cols="12" md="6" class="pr-2">
+              <v-col v-show="visibleCharts.includes('impres')" cols="12" md="8" class="pr-2">
                 <ImpRes />
               </v-col>
-              <v-col v-show="visibleCharts.includes('heatmap')" cols="12" md="6" class="pr-2">
+              <v-col v-show="visibleCharts.includes('heatmap')" cols="12" md="8" class="pr-2">
                 <Heatmap />
               </v-col>
-              <v-col v-show="visibleCharts.includes('multidim')" cols="12" md="8" class="pr-2">
+              <v-col v-show="visibleCharts.includes('multidim')" cols="12" md="10" class="pr-2">
                 <MultiDim />
               </v-col>
             </v-row>

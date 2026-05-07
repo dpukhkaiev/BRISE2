@@ -45,6 +45,7 @@ function initMainEvents(): void {
             default_configuration = obj[0]
             let temp: NewsPoint = { 'time': Date.now(), 'message': 'Default configuration results received' }
             snackbarMsg.value = temp['message']
+            snackbar.value = true
             //news.value.push(temp)
             // snackbar.open(temp['message'], '×', {
             //   duration: 3000
@@ -60,7 +61,12 @@ function initMainEvents(): void {
             configWithNones.value = JSON.stringify(solution.value?.configurations, null, '\t')
             result.value = JSON.stringify(solution.value?.results)
             sol = Object.values(solution.value?.results || {})
-            dc = Object.values(default_configuration.results)
+            if (!default_configuration) {
+                console.warn('default_configuration not set yet')
+                dc = []
+            } else {
+                dc = Object.values(default_configuration.results)
+            }
             configWithNones.value = configWithNones.value.replace(",,", ",None,")
             // NewsPOint type everywhere?
             let temp: NewsPoint = {
@@ -68,7 +74,9 @@ function initMainEvents(): void {
                 'message': '★★★ The optimum result is found. The best point is reached ★★★'
             }
             snackbarMsg.value = temp['message']
+            snackbar.value = true
             news.value.push(temp)
+            if (news.value.length > 30) news.value.shift()
         }
     });
 
@@ -78,12 +86,14 @@ function initMainEvents(): void {
             let obj = JSON.parse(message.body)
             let temp = { 'time': Date.now(), 'message': obj }
             snackbarMsg.value = temp['message']
+            snackbar.value = true
             news.value.push(temp)
         }
     });
 
     // oldValue, newValue?
     watch(experiment_description, () => {
+        console.log('experiment_description:', JSON.stringify(experiment_description.value, null, 2))
         refresh()
         searchspace.value['size'] = parseFloat(searchspace.value['size'])
         let temp = {
@@ -105,6 +115,7 @@ function initMainEvents(): void {
                         'message': 'New results for ' + JSON.stringify(configuration["configurations"], null, '\t')
                     }
                     snackbarMsg.value = temp['message']
+                    snackbar.value = true
                     news.value.push(temp)
                 } else {
                     console.log("Empty configuration")
@@ -121,6 +132,7 @@ function initMainEvents(): void {
                 'message': 'Prediction obtained. ' + obj.length + ' predictions'
             }
             snackbarMsg.value = temp['message']
+            snackbar.value = true
             news.value.push(temp)
         }
     });
@@ -149,7 +161,6 @@ function formatPercent(value: number): string {
                 </p>
             </v-expansion-panel-title>
             <v-expansion-panel-text>
-
 
 
                 <!-- Logs list -->
@@ -204,7 +215,8 @@ function formatPercent(value: number): string {
                             {{
                                 formatPercent((1 - solution['performed_measurements'] /
                                     ((searchspace['size'] as any) *
-                                        (experiment_description as any)?.['Repeater']?.['Parameters']?.['MaxTasksPerConfiguration'])
+                                        (experiment_description as
+                                            any)?.['RepetitionManager']?.['Instance']?.['AcceptableErrorBased']?.['MaxTasksPerConfiguration'])
                                 ) * 100
                                 ) }} %
                         </span>

@@ -160,17 +160,14 @@ function initMainEvents() {
         if (!experiment_description.value || !searchspace.value || !globalConfig.value) {
             return
         }
-        // Log the model type for debugging
-        console.log('model types: ', experiment_description.value?.ConfigurationSelection?.Predictor?.Model)
-
         resetRes()
-
         const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
         x.value = (boundaryObj?.threads ?? []).map(lastName)
         y.value = (boundaryObj?.frequency ?? []).map(lastName)
-        console.log('x FIXED:', x.value)
-        console.log('y FIXED:', y.value)
-    }, { deep: true })
+    }, {
+        deep: true,
+        immediate: true
+    })
 
     // new configuration results
     store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
@@ -182,7 +179,6 @@ function initMainEvents() {
                 const threads = lastName(conf.threads);
                 result.value.set(String([freq, threads]), configuration['results']);
                 measPoints.value.push([freq, threads]);
-                console.log('New configuration:', configuration);
             } else {
                 console.log('Empty configuration');
             }
@@ -207,7 +203,7 @@ function initMainEvents() {
                     measPoints.value.push([lastName(conf.frequency), lastName(conf.threads)]);
                     sol = Object.values(solution.results)
                     dc = Object.values(defaultConfiguration.results)
-                    console.log('Final:', configs);
+
                 } else {
                     console.log('Empty solution');
                 }

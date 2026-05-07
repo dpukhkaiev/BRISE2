@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, ref, computed, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { MainEvent } from '../../../entities/main'
@@ -21,11 +21,14 @@ const store = useMainEventStore()
 const { experiment_description } = storeToRefs(store)
 function refresh() {
     result.value = []
-
     update.value = true
 }
 
 const filterValue = ref('')
+
+//batching for improving the performance
+const pendingTasks: Task[] = []
+let intervalId: ReturnType<typeof setInterval>
 
 function applyFilter(value: string) {
     filterValue.value = value.trim().toLocaleLowerCase()
@@ -76,7 +79,6 @@ const headers = [
         }
     }
 ]
-
 
 
 function searchTasks(search: Record<string, any>) {
@@ -137,28 +139,38 @@ function initMainEvents(): void {
             var params_array = Object.values(fresh.config)
             fresh.stub_config = replaceNones(params_array)
             // add a new task if it is not in the this.result
-            !result.value.includes(fresh, -1) && result.value.push(fresh);
-            console.log('new', message)
-            console.log('message raw', message.body)
-            console.log('fresh task', fresh)
-            console.log('fresh meta', fresh.meta)
+            //  !result.value.includes(fresh, -1) && result.value.push(fresh);
+            pendingTasks.push(fresh) // only collect, not render yet
         }
     });
 
     watch(experiment_description, () => {
+
         update.value = false
         refresh()
     },
         // reactive object from store, need deep to tracl properties of the object
-        { deep: true })
+        {
+            deep: true,
+            immediate: true
+        })
 
 }
 
 onMounted(() => {
     initMainEvents()
+
+    intervalId = setInterval(() => {
+        if (pendingTasks.length === 0) return
+        result.value.push(...pendingTasks.splice(0, 20))
+    }, 500)
+
 })
 
-const expanded = ref([])
+onUnmounted(() => {
+    clearInterval(intervalId)
+})
+const expanded = ref<string[]>([])
 </script>
 
 <template>
@@ -170,7 +182,7 @@ const expanded = ref([])
             <v-text-field variant="outlined" @keyup="(e: any) => applyFilter(e.target.value)" placeholder="Filter">
             </v-text-field>
 
-            <v-data-table show-expand v-model:expanded="expanded" class="result" :headers="headers"
+            <v-data-table-virtual show-expand v-model:expanded="expanded" class="result" :headers="headers"
                 :items="filteredResult">
                 <!-- Configuration Column -->
                 <template v-slot:item.run="{ item }">
@@ -205,7 +217,7 @@ const expanded = ref([])
                         </v-list-item>
                     </v-list>
                 </template>
-            </v-data-table>
+            </v-data-table-virtual>
         </v-card>
     </div>
 </template>

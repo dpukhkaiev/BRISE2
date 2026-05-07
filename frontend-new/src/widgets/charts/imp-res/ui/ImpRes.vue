@@ -46,6 +46,9 @@ function initMainEvents() {
         isVisible.value = false
         if (element)
             Plotly.purge(element)
+    }, {
+        deep: true,
+        immediate: true
     })
 
     // add start point

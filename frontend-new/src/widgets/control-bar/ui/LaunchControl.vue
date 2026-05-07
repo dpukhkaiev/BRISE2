@@ -53,7 +53,7 @@ function initMainEvents(): void {
 const selectedFile = ref<any>(null)
 
 const uploadFile = async () => {
-    console.log('uploadFile called')
+
     console.log('selectedFile:', selectedFile.value)
     if (!selectedFile.value) return
 
@@ -61,15 +61,11 @@ const uploadFile = async () => {
 
     const reader = new FileReader()
     reader.onload = () => {
-        console.log('reader.result:', reader.result)
         const clean = (reader.result as string).replace(/:\s*Infinity/g, ': null')
         const parsed = JSON.parse(clean)
-        console.log('reader.result:', reader.result)
         store.experiment_description = parsed.experiment_description
         store.searchspace = parsed.searchspace_description
         store.globalConfig = parsed.global_configuration
-        console.log('searchspace:', store.searchspace)
-        console.log('globalConfig:', store.globalConfig)
     }
 
     reader.readAsText(file)
@@ -97,15 +93,15 @@ onMounted(() => {
                 </div>
             </v-card-item>
             <v-card-actions>
-                <v-btn :disabled="isRunning" @click="startMainControl" color="#A8D5A2" style="color: #2D6A27;"
-                    variant="elevated" prepend-icon="mdi-play">
+                <v-btn :ripple="false" :disabled="isRunning" @click="startMainControl" color="#A8D5A2"
+                    style="color: #2D6A27;" variant="elevated" prepend-icon="mdi-play">
                     Start
                 </v-btn>
-                <v-btn :disabled="!isRunning" @click="stopMainControl" color="#F4B8B8" style="color: #8B2E2E;"
-                    variant="elevated" prepend-icon="mdi-stop">
+                <v-btn :ripple="false" :disabled="!isRunning" @click="stopMainControl" color="#F4B8B8"
+                    style="color: #8B2E2E;" variant="elevated" prepend-icon="mdi-stop">
                     Stop
                 </v-btn>
-                <v-btn class="text-none text-body-small" v-if="isFinish" @click="openDownloadOption"
+                <v-btn :ripple="false" class="text-none text-body-small" v-if="isFinish" @click="openDownloadOption"
                     append-icon="mdi-content-save" color="#B8C9F4" style="color: #2E3F8B;" variant="outlined">
                     Save Experiment
                 </v-btn>
@@ -114,7 +110,7 @@ onMounted(() => {
                     placeholder="Select an experiment" color="deep-green-accent-2" variant="outlined"
                     style="position:relative">
                 </v-file-input>
-                <v-btn color="#A8D5A2" style="color: #2D6A27;" @click="uploadFile">Select </v-btn>
+                <v-btn :ripple="false" color="#A8D5A2" style="color: #2D6A27;" @click="uploadFile">Select </v-btn>
 
             </v-card-actions>
 
