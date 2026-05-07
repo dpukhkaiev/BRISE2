@@ -4,7 +4,7 @@ import os
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 from core_entities.search_space import SearchSpace
-from repeater.repeater_selector import RepeaterOrchestration
+from repeater.repeater_selector_mock import RepeaterOrchestrationMock
 from tools.restore_db import RestoreDB
 
 rdb = RestoreDB()
@@ -103,7 +103,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     configuration.status = config_status
     for i in range(0, measured_tasks):
         configuration.add_task(tasks_sample[i])
-    orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
+    orchestrator = RepeaterOrchestrationMock(experiment.unique_id, experiment)
     if config_type == Configuration.Type.DEFAULT:
         orchestrator._type = orchestrator.get_repeater(True)
     else:
