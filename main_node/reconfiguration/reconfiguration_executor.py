@@ -21,14 +21,18 @@ class ReconfigurationExecutor():
             vp = effector.vp
             if vp in self.effectors:
                 self.effectors[vp].append(effector)
-                return
+                continue
             
             self.effectors[vp] = [effector]
 
-    def change(self, variability_point:str, new_description:tuple, full_description:tuple):
+    def change(self, variability_point:str, new_description:tuple, full_description:tuple, identifiers:None|list):
         """Change the component for the given variability point according to the ``new_description``"""
         if variability_point not in self.effectors:
             raise KeyError("No effector for the variability point " + variability_point + " found!")
         
-        for o in self.effectors[variability_point]:
-            o.change(full_description if o.full_description else new_description)
+        for e in self.effectors[variability_point]:
+            # Check for identifiers
+            if identifiers is not None and all(i in identifiers for i in e.identifiers):
+                continue
+
+            e.change(full_description if e.full_description else new_description)

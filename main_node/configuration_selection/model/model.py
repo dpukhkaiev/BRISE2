@@ -17,34 +17,39 @@ from configuration_selection.model.surrogate.composite_surrogate import Composit
 from reconfiguration.effector import Effector
 
 class Model:
-    def __init__(self, model_description: Tuple, region: Tuple, objectives: Dict):
-        self.model_name = model_description[0]
-        self.model_description = model_description
+    def __init__(self, model_name:str, model_description: dict, region: Tuple, objectives: Dict):
+        self.model_name = model_name
         self.region = region
-
-        self.mo_handling_surrogate_type = None
         self.objectives = objectives
-        # surrogate and MO handling
+
         self.surrogate_orchestrator = SurrogateOrchestrator()
 
-        for i in model_description[1].items():
+        self._init_model(model_description)
+
+    @Effector.effector("ATTR:model_name")
+    def _init_model(self, model_description):
+        self.model_description = model_description
+        self.mo_handling_surrogate_type = None
+        
+        # surrogate and MO handling
+        for i in model_description.items():
             if "MultiObjectiveHandling" in i[0]:
                 self.mo_handling_surrogate_type = list(i[1]["SurrogateType"])[0]
 
-        self._init_surrogates(self._get_descriptions(model_description[1], "Surrogate"))
+        self._init_surrogates(self._get_descriptions(model_description, "Surrogate"))
 
         # optimizer
         self.optimizer_orchestrator = OptimizerOrchestrator()
-        self._init_optimizer(self._get_descriptions(model_description[1], "Optimizer"))
+        self._init_optimizer(self._get_descriptions(model_description, "Optimizer"))
 
         # validator
         self.validator_orchestrator = ValidatorOrchestrator()
-        validator_description = model_description[1]["Validator"]
+        validator_description = model_description["Validator"]
         self._init_validators(validator_description)
 
         # candidate selector
         self.candidate_selector_orchestrator = CandidateSelectorOrchestrator()
-        candidate_selector_description = model_description[1]["CandidateSelector"]
+        candidate_selector_description = model_description["CandidateSelector"]
         self._init_candiate_selector(candidate_selector_description)
 
         # transfer learning
@@ -52,7 +57,7 @@ class Model:
         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
         self.model_dumps = None
 
-    @Effector.effector("Surrogate")
+    @Effector.effector("Surrogate", identifiers="model_name")
     def _init_surrogates(self, surrogate_descriptions):
         # Convert single element to list
         if not isinstance(surrogate_descriptions, list):
@@ -72,6 +77,7 @@ class Model:
                 for s in surrogate_descriptions:
                     surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, {o_name: self.objectives[o_name]})
                     self.mapping_surrogate_objective[surrogate] = {o_name: self.objectives[o_name]}
+            # Does this not overwrite some parts of the above logic?
             for s in surrogate_descriptions:
                 surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, self.objectives)
                 if surrogate.multi_objective:
@@ -81,7 +87,7 @@ class Model:
             surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[0], self.region, self.objectives)
             self.mapping_surrogate_objective[surrogate] = self.objectives
 
-    @Effector.effector("Optimizer")
+    @Effector.effector("Optimizer", identifiers="model_name")
     def _init_optimizer(self, optimizer_descriptions):
         """:param optimizer_descriptions: list of optimizer descriptions or single description"""
 
@@ -101,7 +107,7 @@ class Model:
             optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[0], self.region, self.objectives)
             self.mapping_optimizer_objective[optimizer] = self.objectives
 
-    @Effector.effector("Validator")
+    @Effector.effector("Validator", identifiers="model_name")
     def _init_validators(self, description:dict):
         self.external_validator = None
         self.internal_validator = None
@@ -112,7 +118,7 @@ class Model:
             elif k == 'InternalValidator':
                 self.internal_validator = self.validator_orchestrator.get_validator(description[k], self.region, self.objectives)
 
-    @Effector.effector("CandidateSelector")
+    @Effector.effector("CandidateSelector", identifiers="model_name")
     def _init_candiate_selector(self, description):
         self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(description)
 

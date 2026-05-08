@@ -33,12 +33,16 @@ class Effector(Generic[T]):
 
         :param identifiers: name of the variable of the class instance the decorator is used on"""
         def effector(func):
-            def inner(self, *args, **kwargs):
+            def inner(self, *args, vp=vp, **kwargs):
 
                 # Create the new effector instance
                 found_identifier = getattr(self, identifiers) if identifiers is not None else []
                 if not isinstance(found_identifier, list):
                     found_identifier = [found_identifier]
+                
+                # Get VP name from class attribute
+                if vp.startswith("ATTR:"):
+                    vp = getattr(self, vp.split("ATTR:")[1])
 
                 Effector(vp, self, func, found_identifier, full_description)
 

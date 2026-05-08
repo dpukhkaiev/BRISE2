@@ -47,7 +47,7 @@ class Predictor:
         for r in self.search_space.regions:
             level = r[0].level
             type = models_types[level]
-            model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
+            model = Model(model_name=type[0], model_description=type[1], region=r, objectives=self.task_config["Objectives"])
             self.mapping_region_model[r] = model
 
         self._init_mapping_region_sampling_strategy(experiment_description["ConfigurationSelection"]["SamplingStrategy"])

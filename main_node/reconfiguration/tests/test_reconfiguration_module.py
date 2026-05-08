@@ -29,9 +29,17 @@ class TestReconfigurationModule:
 
     @pytest.fixture(scope='function')
     def reconf_module(self, get_experiment):
+        return self._get_reconf_module(get_experiment)
+    
+    @pytest.fixture(scope='function')
+    def reconf_module_multi_models(self, get_experiment):
+        return self._get_reconf_module(get_experiment, experiment_num=8)
+    
+    def _get_reconf_module(self, get_experiment, experiment_num:int = 0):
+        """Make a separate function out of it to reuse it for diffrent experiment numbers"""
         Effector.clear_all()
 
-        experiment_description, search_space = get_experiment(0)
+        experiment_description, search_space = get_experiment(experiment_num)
         experiment = Experiment(experiment_description, search_space)
         cs = ConfigurationSelection(experiment)
         return ReconfigurationModule(experiment, cs)
@@ -428,3 +436,115 @@ class TestReconfigurationModule:
         # Assert change was successful
         assert cs.transfer_is_enabled == False
         assert cs.transfer_learning_orchestrator is None
+
+    def test_change_single_model(self, get_experiment):
+        """Test to change a single model"""
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=8)
+        cs = reconf_module.configuration_selection
+        
+        assert len(cs.predictor.mapping_region_model) == 3
+
+        # Model 0 has best multi point as candidate selector other model has random
+        assert any([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+        assert any([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+
+        # Change Model 1
+        reconf_module.change_variant("Model_1", {
+            "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "Scalar": {}
+                    }
+                },
+                "Surrogate": {
+                    "ValueTransformers": {
+                        "ValueScalarizator": {
+                            "WeightedSum": {
+                                "Weights": [1, 2],
+                                "Type": "weighted_sum"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MultiArmedBandit": {
+                            "MultiObjective": False,
+                            "CType": "std",
+                            "CFloat": 1.0,
+                            "Parameters": {
+                                "c": "std"
+                            },
+                            "Type": "multi_armed_bandit"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 500,
+                            "MultiObjective": True,
+                            "Type": "random_search"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+        })
+        reconf_module.done().reconfigure()
+        #print([e.vp + " " + str(e.identifiers) for e in Effector.get_all()])
+
+        # Assert that the change worked
+        assert len(cs.predictor.mapping_region_model) == 3
+        assert all([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+
+    def test_change_single_optimizer(self, get_experiment):
+        """Test to change a single optimizer"""
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
+
+    def test_change_single_surrogat_on_multiple_models(self, get_experiment):
+        """Test to change a single surrogate on a experiment with multiple models"""
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
+
+    def test_change_component_on_multiple_models(self, get_experiment):
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=12)
+        cs = reconf_module.configuration_selection
+        
+        assert len(cs.predictor.mapping_region_model) == 3
+        assert all([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+
+        # Case 1: Change of all models
+        reconf_module.change_variant("CandidateSelector", {"RandomMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "random_multi_point"
+                    }})
+        reconf_module.done().reconfigure()
+
+        assert all([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+
+        # Assert that the internla model is correct
+        desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]
+        assert "RandomMultiPointProposal" in desc["Model_0"]["CandidateSelector"]
+        assert "RandomMultiPointProposal" in desc["Model_1"]["CandidateSelector"]
+
+        # Case 2: Change of one model
+        reconf_module.change_variant("CandidateSelector", {"BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }}, ["Model_1"])
+        reconf_module.done().reconfigure()
+
+        assert any([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+        assert any([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+
+        # Assert that the internla model is correct
+        assert "RandomMultiPointProposal" in desc["Model_0"]["CandidateSelector"] # Model 0 must be remain unchanged
+        assert "BestMultiPointProposal" in desc["Model_1"]["CandidateSelector"]

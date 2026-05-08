@@ -49,18 +49,19 @@ class ReconfigurationModule():
         return inner
 
     @configure_method
-    def change_variant(self, variability_point:str, new_feature:list[dict]|dict):
+    def change_variant(self, variability_point:str, new_feature:list[dict]|dict, parent_nodes:None|list=None):
         """Request to change the given variability point to a new feature"""
         # Select prev_feature by Type or Key in feature model or both?
-        parent_keys = self._get_variability_point(variability_point, self._new_experiment_description, [])
-        if parent_keys is None:
+        parent_keys_list = self._get_variability_point_keys(variability_point, parent_nodes)
+        if len(parent_keys_list) == 0:
             raise ValueError("Variability point " + variability_point + " was not found in the feature selection!")
-
+        
         # Update the feature selection
-        self._update_feature_selection(parent_keys, variability_point, new_feature)
+        for parent_keys in parent_keys_list:
+            self._update_feature_selection(parent_keys, variability_point, new_feature)
         #print("New feature selection", self._new_experiment_description)
 
-        self._requested_changes[variability_point] = new_feature
+        self._requested_changes[variability_point] = {"feature": new_feature, "identifiers": parent_nodes}
 
         return self
 
@@ -75,8 +76,8 @@ class ReconfigurationModule():
         assert self.state == State.CONFIG_FINISHED, "No configuration requested or configuration is unfinished"
 
         # Perform reconfigure plan/requests
-        for vp, new_feature in self._requested_changes.items():
-            self.executor.change(vp, new_feature, self._new_experiment_description)
+        for vp, changes in self._requested_changes.items():
+            self.executor.change(vp, changes["feature"], self._new_experiment_description, changes["identifiers"])
 
         # Update experiment description (so the stop condition and repeatition management can use the description??)
         # Make it not read only??
@@ -119,20 +120,29 @@ class ReconfigurationModule():
         """Return True if the state is CONFIG_FINISHED. Can call reconfigure()"""
         return self.state == State.CONFIG_FINISHED
 
-    def _get_variability_point(self, vp:str, feature_selection:dict, parents_keys:list) -> list:
-        """Returns a list of parent keys for the variability point"""
-        if vp in feature_selection:
-            parents_keys.insert(0, vp)
-            return parents_keys
+    def _get_variability_point_keys(self, vp:str, required_parent_nodes:None|list) -> list:
+        """Returns a list of lists with parent keys for the variability point. All vps must have the given parent nodes. Otherwise they will be ignored"""
+        paths = [k.split(" ") for k in self._flatten_keys(self._new_experiment_description, vp)]
+        if required_parent_nodes is None or len(required_parent_nodes) == 0:
+            return paths
         
-        for key, value in feature_selection.items():
+        return [p for p in paths if set(p[-len(required_parent_nodes)-1:-1]) == set(required_parent_nodes)]
+    
+    def _flatten_keys(self, d:dict, search:str, parent_key=""):
+        """Returns a list of strings with the flattend keys that end with the given search term. Single keys are separated by white spaces"""
+        keys = []
+
+        for key, value in d.items():
+            new_key = parent_key + " " + key if parent_key else key
+            if key == search:
+                keys.append(new_key)
+                return keys
+
             if isinstance(value, dict):
-                result = self._get_variability_point(vp, value, parents_keys)
-                if result is not None:
-                    result.insert(0, key)
-                    return result
-        
-        return None
+                keys.extend(self._flatten_keys(value, search, parent_key=new_key))
+                continue
+
+        return keys
 
     def _update_feature_selection(self, keys:list, parent_key:str, new_value):
         """Update the `_new_experiment_description`"""

@@ -158,8 +158,52 @@ class TestEffector:
 
         assert master_comp.sub_comp.value == new_desc_sub
 
-    ### Helper methods ###
+    def test_dynamic_identifiers(self):
+        """Test that it is possible to register the same VP with differtent identifiers by setting the var right before the registration"""
+        class TestClass:
+            def __init__(self):
+                self._init_test_variability_point({})
 
+            @Effector.effector("test-vp")
+            def _init_test_variability_point(self, description):
+                self.some_map = {}
+
+                for x in range(3):
+                    self.current_sub_id = x # Dynamically change the id that the effector will be registered with
+                    self._init_sub_vp({"key": x, "value": x * 2})
+
+            @Effector.effector("test-vp", identifiers="current_sub_id")
+            def _init_sub_vp(self, description):
+                self.some_map[description["key"]] = description["value"]
+
+        test_class = TestClass()
+        assert len(Effector.get_all()) == 4
+
+        # Assert all sub ids are registered
+        sub_ids = []
+        for e in Effector.get_all():
+            if e.identifiers is not None and len(e.identifiers) > 0:
+                sub_ids.extend(e.identifiers)
+
+        assert len(sub_ids) == 3
+        assert all([x in sub_ids for x in range(3)])
+
+    def test_dynamic_vp_name(self):
+        """Test that it is possible to register dynamically named VPs by setting the var right before the registration"""
+        class TestClass:
+            def __init__(self):
+                self.vp_name = "dynamic-vp"
+                self._init_test_variability_point({})
+
+            @Effector.effector("ATTR:vp_name")
+            def _init_test_variability_point(self, description):
+                self.value = description
+
+        test_class = TestClass()
+        assert len(Effector.get_all()) == 1
+        assert Effector.get_all()[0].vp == "dynamic-vp"
+
+    ### Helper methods ###
     def change_vp(self, vp:str, new_description):
         """Call the change method on a given variability point"""
         for e in Effector.get_all():
@@ -170,6 +214,6 @@ class TestEffector:
 
     def _print_effectors(self):
         """For debugging the tests"""
-        print([e.vp for e in Effector.get_all()])
+        print([e.vp + " " + str(e.identifiers) for e in Effector.get_all()])
 
     
