@@ -4,7 +4,7 @@ from core_entities.experiment import Configuration
 from core_entities.experiment import Experiment
 from repeater.repeater_selector import RepeaterOrchestration
 from repeater.quantity_based import QuantityBasedType as RMQuantityBasedType
-from repeater.acceptable_error_based import AcceptableErrorBasedType
+from repeater.acceptable_error_based import AcceptableErrorBasedTypeMock
 from stop_condition.stop_condition_selector import launch_stop_condition_threads
 from stop_condition.bad_configuration_based import BadConfigurationBasedType
 from stop_condition.guaranteed import GuaranteedType
@@ -97,7 +97,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         # configuration selection
         cs = ConfigurationSelection(experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 1
@@ -174,7 +174,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
@@ -210,7 +210,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 1
@@ -250,7 +250,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
@@ -322,7 +322,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 1
@@ -441,7 +441,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         # configuration selection
         cs = ConfigurationSelection(experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
@@ -480,7 +480,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         # configuration selection
         cs = ConfigurationSelection(experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -525,7 +525,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
@@ -565,7 +565,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         # configuration selection
         cs = ConfigurationSelection(experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -602,7 +602,7 @@ class TestInput:
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
-        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedTypeMock)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0

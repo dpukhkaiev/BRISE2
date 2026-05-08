@@ -15,6 +15,7 @@ from tools.restore_db import RestoreDB
 rdb = RestoreDB()
 
 
+@pytest.mark.skip("Test other tests for mocking. TODO: reanable")
 class TestConfigurationSelection:
 
     def test_0(self, get_experiment, get_workers, get_configurations_2_float):

@@ -49,9 +49,6 @@ class AcceptableErrorBasedType(Repeater):
             if not self.base_acceptable_errors <= self.max_acceptable_errors:
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
-        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
-            self.experiment = experiment
-
     def evaluate(self, current_configuration: Configuration):
         """
         Return the number of evaluations to complete a configuration or 0 if it is evaluated.
@@ -160,3 +157,8 @@ class AcceptableErrorBasedType(Repeater):
                 if error > threshold:
                     return 1
             return 0
+
+class AcceptableErrorBasedTypeMock(AcceptableErrorBasedType):
+    def __init__(self, experiment_description: dict, experiment_id: str, experiment=None):
+        super().__init__(experiment_description, experiment_id)
+        self.experiment = experiment
