@@ -34,10 +34,13 @@ class Effector(Generic[T]):
         :param identifiers: name of the variable of the class instance the decorator is used on"""
         def effector(func):
             def inner(self, *args, **kwargs):
+
                 # Create the new effector instance
-                Effector(vp, self, func,
-                         getattr(self, identifiers) if identifiers is not None else [],
-                         full_description)
+                found_identifier = getattr(self, identifiers) if identifiers is not None else []
+                if not isinstance(found_identifier, list):
+                    found_identifier = [found_identifier]
+
+                Effector(vp, self, func, found_identifier, full_description)
 
                 return func(self, *args, **kwargs)
             return inner
