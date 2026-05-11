@@ -509,10 +509,90 @@ class TestReconfigurationModule:
     def test_change_single_optimizer(self, get_experiment):
         """Test to change a single optimizer"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
+        cs = reconf_module.configuration_selection
 
-    def test_change_single_surrogat_on_multiple_models(self, get_experiment):
+        # Assert that config was loaded correctly
+        assert len(cs.predictor.mapping_region_model) == 1
+
+        model = cs.predictor.mapping_region_model.popitem()[1]
+        assert len(model.mapping_optimizer_objective) == 5
+        
+        assert all([isinstance(optimizer, MOEA) for optimizer in list(model.mapping_optimizer_objective.keys())])
+        
+        # Change
+        reconf_module.change_variant("Optimizer_0", {"Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 500,
+                            "MultiObjective": True,
+                            "Type": "random_search"
+                        }
+                    }})
+        reconf_module.done().reconfigure()
+
+        # Assert that the change worked
+        assert len(model.mapping_optimizer_objective) == 5
+
+        moea_count = 0
+        random_count = 0
+        for optimizer in list(model.mapping_optimizer_objective.keys()):
+            if isinstance(optimizer, MOEA):
+                moea_count += 1
+                continue
+
+            if isinstance(optimizer, RandomSearch):
+                random_count += 1
+
+        assert moea_count == 4
+        assert random_count == 1
+
+        # Assert that model was changed correctly
+        desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["Model"]
+        assert "RandomSearch" in desc["Optimizer_0"]["Instance"] # Single changed optimizer
+
+        for i in range(1, 5):
+            assert "MOEA" in desc["Optimizer_" + str(i)]["Instance"] # Others are untouched
+
+    def test_change_single_surrogate_on_multiple_models(self, get_experiment):
         """Test to change a single surrogate on a experiment with multiple models"""
-        reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=8)
+        cs = reconf_module.configuration_selection
+
+        # Assert that config was loaded correctly
+        assert len(cs.predictor.mapping_region_model) == 3
+
+        model_ones = [model for model in cs.predictor.mapping_region_model.values() if model.model_name == "Model_1"]
+        assert len(model_ones) == 2
+
+        surrogate_types = ["LinearRegression", "GradientBoostingRegressor", "BayesianRidgeRegression", "ModelMock"]
+        for model in model_ones:
+            for s in list(model.mapping_surrogate_objective.keys()):
+                assert s.feature_name in surrogate_types
+        
+        # Change
+        reconf_module.change_variant("Surrogate_0", {"Instance": {
+                        "ModelMock": {
+                            "MultiObjective": True,
+                            "Type": "model_mock"
+                        }
+                    }}, ["Model_1"])
+        reconf_module.done().reconfigure()
+        
+        # Assert that change was correct
+        surrogate_types = ["GradientBoostingRegressor", "BayesianRidgeRegression", "ModelMock"] # No LinearRegression any more
+        for model in model_ones:
+            for s in list(model.mapping_surrogate_objective.keys()):
+                assert s.feature_name in surrogate_types
+
+        # Assert that model was changed correctly
+        desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]
+        org_desc = reconf_module.experiment.description["ConfigurationSelection"]["Predictor"]
+
+        assert desc["Model_0"] == org_desc["Model_0"] # Model 0 stays the same
+
+        assert "ModelMock" in desc["Model_1"]["Surrogate_0"]["Instance"] # Changed
+        assert "GradientBoostingRegressor" in desc["Model_1"]["Surrogate_1"]["Instance"] # Unchanged
+        assert "BayesianRidgeRegression" in desc["Model_1"]["Surrogate_2"]["Instance"] # Unchanged
+        assert "ModelMock" in desc["Model_1"]["Surrogate_3"]["Instance"] # Unchanged
 
     def test_change_component_on_multiple_models(self, get_experiment):
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=12)
@@ -530,7 +610,7 @@ class TestReconfigurationModule:
 
         assert all([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
 
-        # Assert that the internla model is correct
+        # Assert that the internal model is correct
         desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]
         assert "RandomMultiPointProposal" in desc["Model_0"]["CandidateSelector"]
         assert "RandomMultiPointProposal" in desc["Model_1"]["CandidateSelector"]
