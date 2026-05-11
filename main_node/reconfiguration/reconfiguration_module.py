@@ -1,10 +1,14 @@
 import logging
 import time
+import os
+import json
 
 from reconfiguration.reconfiguration_executor import ReconfigurationExecutor
 
 from core_entities.experiment import Experiment
 from configuration_selection.configuration_selection import ConfigurationSelection
+
+from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
 from enum import Enum
 from copy import deepcopy
@@ -34,6 +38,10 @@ class ReconfigurationModule():
         self._requested_changes = {}
 
         self.executor = ReconfigurationExecutor()
+
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.connection_thread = self._EventServiceConnection(self)
+            self.connection_thread.start()
 
     ### Annotations ###
     def configure_method(func):
@@ -78,6 +86,25 @@ class ReconfigurationModule():
             self._update_feature_selection_values(parent_keys, variability_point, new_values)
 
         self._requested_changes[variability_point + "_Values"] = {"description": new_values, "identifiers": None}
+
+    def request_change(self, ch, method, properties, body):
+        """Determine the requested change from the queue"""
+        event = json.loads(body.decode())
+        event_type = event["type"]
+        event_data = event.get("data", {})
+
+        if not isinstance(event_data, dict):
+            raise ValueError("Expected event data to be a dictionary!")
+
+        # Handle event based on type (call correct function)
+        if event_type == "variant":
+            self.change_variant(event_data["vp"], event_data["new_feature"], event_data.get("parent_nodes", None))
+        elif event_type == "variables":
+            self.change_variables(event_data["vp"], event_data["new_values"])
+        elif event_type == "done":
+            self.done()
+        else:
+            raise ValueError("Unknown event type " + str(event_type))
 
     def done(self):
         """Signal that all reconfiguration requests are done. Set state to CONFIG_FINISHED"""
@@ -176,3 +203,31 @@ class ReconfigurationModule():
         
         for key, value in new_values.items():
             level[parent_key][key] = value
+
+    class _EventServiceConnection(RabbitMQConnection):
+        """
+        This class is responsible for listening to 2 queues.
+        1. `reconfiguration_exchange` queue for handleing reconfiguration requests.
+        2. `stop_components` for shutting down configuration selection module (in case of BRISE Experiment termination).
+        """
+
+        def __init__(self, reconf_module):
+            """
+            The function for initializing consumer thread
+            :param configuration_selection: instance of ConfigurationSelection class
+            """
+            self.reconf_module: ReconfigurationModule = reconf_module
+            self.experiment_id = self.reconf_module.configuration_selection.experiment.unique_id
+            super().__init__(reconf_module)
+
+        def bind_and_consume(self):
+            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_queue_name = self.termination_result.method.queue
+            self.channel.queue_bind(exchange='experiment_termination_exchange',
+                                    queue=self.termination_queue_name,
+                                    routing_key=self.experiment_id)
+
+            self.channel.basic_consume(queue="reconfiguration_exchange" + self.experiment_id, auto_ack=True,
+                                       on_message_callback=self.reconf_module.request_change)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
+                                       on_message_callback=self.stop)

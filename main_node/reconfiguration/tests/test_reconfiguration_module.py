@@ -1,5 +1,6 @@
 import pytest
 import time
+import json
 
 from core_entities.experiment import Experiment
 from configuration_selection.configuration_selection import ConfigurationSelection
@@ -643,3 +644,46 @@ class TestReconfigurationModule:
         # Assert that the change was correct
         assert cs.predictor.window_size == new_size
         assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size
+
+    def test_request_change_method(self, reconf_module:ReconfigurationModule):
+        """Test the callback for the queue"""
+        # Test the redirect to change_variant
+        feature_data = {"RandomMultiPointProposal": {
+                        "NumberOfPoints": 10,
+                        "Type": "random_multi_point"}
+                        }
+        event = {
+            "type": "variant",
+            "data": {
+                "vp": "CandidateSelector",
+                "new_feature": feature_data
+            }
+        }
+        reconf_module.request_change(None, None, None, json.dumps(event).encode())
+
+        assert "CandidateSelector" in reconf_module._requested_changes
+        assert reconf_module._requested_changes["CandidateSelector"]["description"] == feature_data
+        assert reconf_module._requested_changes["CandidateSelector"]["identifiers"] is None
+
+        # Test redirection to change_variables
+        values = {"WindowSize": 0.9}
+        event = {
+            "type": "variables",
+            "data": {
+                "vp": "Predictor",
+                "new_values": values
+            }
+        }
+        reconf_module.request_change(None, None, None, json.dumps(event).encode())
+
+        assert "Predictor_Values" in reconf_module._requested_changes
+        assert reconf_module._requested_changes["Predictor_Values"]["description"] == values
+
+        # Test invalid event type
+        event_invalid = {
+            "type": "unknown",
+            "data": {}
+        }
+
+        with pytest.raises(ValueError):
+            reconf_module.request_change(None, None, None, json.dumps(event_invalid).encode())

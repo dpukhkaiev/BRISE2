@@ -231,7 +231,6 @@ class MainThread(threading.Thread):
 
                 # For Testing
                 if len(self.experiment.evaluated_configurations) <= 3:
-                    
                     #self.reconf.change_variant("SamplingStrategy", {'Sobol': {'Seed': 1, 'Type': 'sobol'}})
                     """
                     self.reconf.change_variant("StopCondition", {"Instance": {
@@ -390,7 +389,8 @@ class MainThread(threading.Thread):
                           'default_configuration_results_exchange', 'configurations_results_exchange',
                           'stop_experiment_exchange', 'check_stop_condition_expression_exchange', 'logging_exchange',
                           'get_worker_capacity_exchange', 'get_new_configuration_exchange',
-                          'measure_new_configuration_exchange', 'process_tasks_exchange', 'experiment_api_exchange']
+                          'measure_new_configuration_exchange', 'process_tasks_exchange', 'experiment_api_exchange',
+                          'reconfiguration_exchange']
         for exchange in self.exchanges:
             queue_name = exchange + self.experiment.unique_id
             result = self.consume_channel.queue_declare(queue=queue_name)
