@@ -628,3 +628,18 @@ class TestReconfigurationModule:
         # Assert that the internla model is correct
         assert "RandomMultiPointProposal" in desc["Model_0"]["CandidateSelector"] # Model 0 must be remain unchanged
         assert "BestMultiPointProposal" in desc["Model_1"]["CandidateSelector"]
+
+    def test_change_values(self, reconf_module:ReconfigurationModule):
+        """Test that the `change_variables` method works correctly"""
+        cs = reconf_module.configuration_selection
+
+        assert cs.predictor.window_size == 1.0
+
+        # Change
+        new_size = 0.5
+        reconf_module.change_variables("Predictor", {"WindowSize": new_size})
+        reconf_module.done().reconfigure()
+
+        # Assert that the change was correct
+        assert cs.predictor.window_size == new_size
+        assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size

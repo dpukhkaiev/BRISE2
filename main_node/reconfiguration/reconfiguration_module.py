@@ -50,7 +50,7 @@ class ReconfigurationModule():
 
     @configure_method
     def change_variant(self, variability_point:str, new_feature:list[dict]|dict, parent_nodes:None|list=None):
-        """Request to change the given variability point to a new feature"""
+        """Request to change the given variability point to a new variant"""
         # Select prev_feature by Type or Key in feature model or both?
         parent_keys_list = self._get_variability_point_keys(variability_point, parent_nodes)
         if len(parent_keys_list) == 0:
@@ -61,9 +61,23 @@ class ReconfigurationModule():
             self._update_feature_selection(parent_keys, variability_point, new_feature)
         #print("New feature selection", self._new_experiment_description)
 
-        self._requested_changes[variability_point] = {"feature": new_feature, "identifiers": parent_nodes}
+        self._requested_changes[variability_point] = {"description": new_feature, "identifiers": parent_nodes}
 
         return self
+    
+    @configure_method
+    def change_variables(self, variability_point:str, new_values:dict):
+        """Request to change the values of a component with a given variability point"""
+        # Select prev_feature by Type or Key in feature model or both?
+        parent_keys_list = self._get_variability_point_keys(variability_point, None)
+        if len(parent_keys_list) == 0:
+            raise ValueError("Variability point " + variability_point + " was not found in the feature selection!")
+        
+        # Update the feature selection
+        for parent_keys in parent_keys_list:
+            self._update_feature_selection_values(parent_keys, variability_point, new_values)
+
+        self._requested_changes[variability_point + "_Values"] = {"description": new_values, "identifiers": None}
 
     def done(self):
         """Signal that all reconfiguration requests are done. Set state to CONFIG_FINISHED"""
@@ -77,7 +91,7 @@ class ReconfigurationModule():
 
         # Perform reconfigure plan/requests
         for vp, changes in self._requested_changes.items():
-            self.executor.change(vp, changes["feature"], self._new_experiment_description, changes["identifiers"])
+            self.executor.change(vp, changes["description"], self._new_experiment_description, changes["identifiers"])
 
         # Update experiment description (so the stop condition and repeatition management can use the description??)
         # Make it not read only??
@@ -152,3 +166,13 @@ class ReconfigurationModule():
             level = level[key]
         
         level[parent_key] = new_value
+
+    def _update_feature_selection_values(self, keys:list, parent_key:str, new_values:dict):
+        """Update all given values in the `_new_experiment_description` for the given path of keys"""
+        level = self._new_experiment_description
+        keys.remove(parent_key)
+        for key in keys:
+            level = level[key]
+        
+        for key, value in new_values.items():
+            level[parent_key][key] = value

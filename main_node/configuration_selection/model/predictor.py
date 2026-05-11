@@ -33,8 +33,9 @@ class Predictor:
         self.predictor_config = experiment_description["ConfigurationSelection"]["Predictor"]
         self.task_config = experiment_description["Context"]["TaskConfiguration"]
         self.search_space = search_space
-        self.window_size = self.predictor_config["WindowSize"]
         self.sampling_strategy_orchestrator = SamplingStrategyOrchestrator()
+
+        self._init_values(self.predictor_config)
 
         self.logger = logging.getLogger(__name__)
 
@@ -55,6 +56,10 @@ class Predictor:
         self.hierarchical_models_dumps = []
 
         self.logger = logging.getLogger(__name__)
+
+    @Effector.effector("Predictor_Values")
+    def _init_values(self, description):
+        self.window_size = description["WindowSize"]
 
     @Effector.effector("SamplingStrategy")
     def _init_mapping_region_sampling_strategy(self, description):
