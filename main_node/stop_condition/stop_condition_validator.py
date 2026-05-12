@@ -17,7 +17,7 @@ class StopConditionValidator:
     using user-defined pattern (StopConditionLogic in experiment description)
     and then execute it with numexpr (math-only functions analogue of eval)
     """
-    def __init__(self, experiment_id: str, experiment_description: dict):
+    def __init__(self, experiment_id: str, experiment_description: dict, isMock=False):
         self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                 os.getenv("BRISE_DATABASE_PORT"),
                                 os.getenv("BRISE_DATABASE_NAME"),
@@ -39,7 +39,7 @@ class StopConditionValidator:
             experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
             experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
 
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if not isMock:
             self.connection_thread = EventServiceConnection(self)
             self.connection_thread.start()
             self.processing_thread = threading.Thread(target=self.self_evaluation, args=())

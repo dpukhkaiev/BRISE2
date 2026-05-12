@@ -6,7 +6,7 @@ from stop_condition.stop_condition import StopCondition
 
 class TimeBased(StopCondition):
 
-    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
+    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str, isMock: bool = False):
         super().__init__(stop_condition_parameters, experiment_description, experiment_id)
         self.interval = datetime.timedelta(**{
             stop_condition_parameters["Parameters"]["TimeUnit"]:
@@ -14,7 +14,7 @@ class TimeBased(StopCondition):
         temp_msg = f"Timeout set to {self.interval} seconds."
         self.logger.info(temp_msg)
         self.time_started = datetime.datetime.now()
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if not isMock:
             self.start_threads()
 
     def is_finish(self):

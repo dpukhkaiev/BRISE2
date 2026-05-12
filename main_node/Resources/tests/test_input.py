@@ -49,13 +49,13 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         # configuration selection
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 1
@@ -93,13 +93,13 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 1
@@ -132,12 +132,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -170,12 +170,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 2
@@ -206,12 +206,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -246,12 +246,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 1
@@ -282,12 +282,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -318,12 +318,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -358,12 +358,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -393,12 +393,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -437,13 +437,13 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 0
@@ -476,13 +476,13 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -521,12 +521,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -561,13 +561,13 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -598,12 +598,12 @@ class TestInput:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
-        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment, isMock=True)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
-        cs = ConfigurationSelection(experiment=experiment)
+        cs = ConfigurationSelection(experiment=experiment, isMock=True)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[

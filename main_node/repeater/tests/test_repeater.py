@@ -103,7 +103,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     configuration.status = config_status
     for i in range(0, measured_tasks):
         configuration.add_task(tasks_sample[i])
-    orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
+    orchestrator = RepeaterOrchestration(experiment.unique_id, experiment, isMock=True)
     if config_type == Configuration.Type.DEFAULT:
         orchestrator._type = orchestrator.get_repeater(True)
     else:

@@ -12,15 +12,18 @@ class RabbitApi(metaclass=Singleton):
     The singleton - is a core API object for API class.
     """
 
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, isMock = False):
         """
         Constructor for RabbitApi class
         :param host (str): ip or hostname of Rabbitmq service
         :param port (int):port of Rabbitmq service
+        :param isMock (bool): flag to indicate if API called from tests
         """
         self._host = host
         self._port = port
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        self._isMock = isMock
+        
+        if not self._isMock:
             self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
         self.sender_lock = threading.Lock()
 
