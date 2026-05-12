@@ -14,7 +14,6 @@ from tools.restore_db import RestoreDB
 
 rdb = RestoreDB()
 
-
 class TestConfigurationSelection:
 
     def test_0(self, get_experiment, get_workers, get_configurations_2_float):
@@ -41,7 +40,7 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0], TreeParzenEstimator)
         configs = []
@@ -74,7 +73,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(1)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -104,7 +103,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(2)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         hierarchical_configs = []
         for i in range(20):
@@ -134,7 +133,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(3)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         hierarchical_configs = []
         for i in range(20):
@@ -178,7 +177,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -222,7 +221,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(5)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
@@ -264,7 +263,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(6)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -289,7 +288,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(7)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
@@ -325,7 +324,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_experiment(8)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # Scalar
@@ -377,7 +376,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         # assert isinstance(list(cs.predictor.mapping_region_model[
         #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
@@ -442,7 +441,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0].surrogate_instance, GradientBoostingRegressor)
         configs = []
@@ -503,7 +502,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -560,7 +559,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -616,7 +615,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -672,7 +671,7 @@ class TestConfigurationSelection:
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0].surrogate_instance, LinearRegression)
         configs = []
@@ -715,7 +714,7 @@ class TestConfigurationSelection:
         """
         experiment_description, search_space = get_energy_experiment_and_search_space
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         configs = []
         for i in range(30):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)

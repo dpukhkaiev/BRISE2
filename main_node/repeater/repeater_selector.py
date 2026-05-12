@@ -21,14 +21,17 @@ class RepeaterOrchestration:
     and configuration status management.
     """
 
-    def __init__(self, experiment_id: str, experiment=None):
+    def __init__(self, experiment_id: str, experiment=None, isMock = False):
         """
         :param experiment_id: ID of experiment, required to get experiment description from DB
         :param experiment: Experiment class instance, (!)used only in tests
+        :param isMock: Flag indicating if the repeater is in mock mode
         """
         self.logger = logging.getLogger(__name__)
         self.experiment_id = experiment_id
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        self.isMock = isMock
+
+        if not isMock:
             self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                     os.getenv("BRISE_DATABASE_PORT"),
                                     os.getenv("BRISE_DATABASE_NAME"),
@@ -66,7 +69,7 @@ class RepeaterOrchestration:
         self.logger.info("Outliers detection module is disabled")
 
         self._type = self.get_repeater(True)
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if not self.isMock:
             self.connection_thread = self._EventServiceConnection(self)
             self.channel = self.connection_thread.channel
             self.connection_thread.start()
@@ -92,10 +95,10 @@ class RepeaterOrchestration:
 
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            return repeater_class(self.experiment_description, self.experiment_id)
+        if not self.isMock:
+            return repeater_class(self.experiment_description, self.experiment_id, self.isMock)
         else:
-            return repeater_class(self.experiment_description, self.experiment_id, self.experiment)
+            return repeater_class(self.experiment_description, self.experiment_id, self.experiment, self.isMock)
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """
@@ -124,12 +127,12 @@ class RepeaterOrchestration:
         :param properties: pika.spec.BasicProperties
         :param body: result of a configurations in bytes format
         """
-        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
+        if self.isMock:
             result = json.loads(body)
         else:
             result = json.loads(body.decode())
         configuration = Configuration.from_json(result["configuration"])
-        if configuration.status['evaluated'] and os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if configuration.status['evaluated'] and not self.isMock:
             tasks_to_send = result["tasks_to_send"]
             tasks_results = result["tasks_results"]
             for index, objective in enumerate(self._objectives):
@@ -185,7 +188,7 @@ class RepeaterOrchestration:
                         }
                     )
 
-        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
+        if self.isMock:
             return configuration, needed_tasks_count
 
         elif configuration.status['measured']:

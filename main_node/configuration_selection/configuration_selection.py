@@ -17,9 +17,10 @@ class ConfigurationSelection:
     Orchestration class for Configuration Selection module.
     """
 
-    def __init__(self, experiment: Experiment):
+    def __init__(self, experiment: Experiment, isMock=False):
         self.sub = API()
         self.experiment = experiment
+        self.isMock = isMock
 
         self.predictor: Predictor = Predictor(
             self.experiment.unique_id,
@@ -35,7 +36,7 @@ class ConfigurationSelection:
             self.transfer_is_enabled = False
 
         self.logger = logging.getLogger(__name__)
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if not isMock:
             self.connection_thread = self._EventServiceConnection(self)
             self.connection_thread.start()
 
@@ -139,7 +140,7 @@ class ConfigurationSelection:
             elif len(self.experiment.measured_configurations) == self.experiment.search_space.size:
                 msg = "Entire Search Space has been already evaluated. Shutting down."
                 self.logger.info(msg)
-                if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+                if not self.isMock:
                     publish(exchange='stop_experiment_exchange',
                             routing_key=self.experiment.unique_id,
                             body=msg)
@@ -164,7 +165,7 @@ class ConfigurationSelection:
                     c.parameters)
             hierarchical_configs.append(c_to_send)
             self.sub.send('log', 'info', message=temp_msg)
-            if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            if not self.isMock:
                 publish(exchange='measure_new_configuration_exchange',
                         routing_key=self.experiment.unique_id,
                         body=json.dumps({"configuration": c_to_send.to_json()}))

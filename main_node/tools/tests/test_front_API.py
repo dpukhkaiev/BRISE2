@@ -4,8 +4,6 @@ import pytest
 from tools.front_API import API, APIMessageBuilder
 from tools.rabbit_API_class import RabbitApi
 
-os.environ["TEST_MODE"] = 'UNIT_TEST'
-
 class TestFrontApi:
     # this test set is aimed to cover the functionality of the 'front_API' tools and the 'singleton'
 
@@ -171,7 +169,7 @@ class TestFrontApi:
         # Expected result: only a single instance exists (due to the singleton)
         API._instance = None
         api1 = API()
-        api2 = API(api_object=RabbitApi("event-service", 49153))
+        api2 = API(api_object=RabbitApi("event-service", 49153, isMock=True))
         assert api1 is api2
 
     def test_16_api_without_emit(self):
