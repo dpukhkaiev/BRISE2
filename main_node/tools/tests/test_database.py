@@ -10,11 +10,7 @@ from core_entities.search_space import get_search_space_record
 from tools.initial_config import load_experiment_setup
 from tools.mongo_dao import MongoDB
 
-database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                                os.getenv("BRISE_DATABASE_PORT"),
-                                os.getenv("BRISE_DATABASE_NAME"),
-                                os.getenv("BRISE_DATABASE_USER"),
-                                os.getenv("BRISE_DATABASE_PASS"))
+database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS"))
 experiment_description_file = "./Resources/EnergyExperiment/EnergyExperiment.json"
 
 
@@ -61,9 +57,7 @@ class TestDatabase:
         # Expected result: record can be read from the database and contains all required SS fields.
         # The Experiment id matches. The id of the default configuration matches that one from Experiment
         experiment, search_space = self.initialize_experiment()
-        database.write_one_record(
-            "Search_space", get_search_space_record(experiment.search_space, experiment.unique_id)
-        )
+        database.write_one_record("Search_space", get_search_space_record(experiment.search_space, experiment.unique_id))
         written_record = database.get_all_records("Search_space")[-1]
         assert written_record["Exp_unique_ID"] == experiment.unique_id
         assert written_record["SearchspaceObject"] == pickle.dumps(search_space)
@@ -97,12 +91,12 @@ class TestDatabase:
         # Expected result: record can be read from the database.
         # Task belongs to the expected configuration and has expected task ID
         c1 = Configuration(OrderedDict({"frequency": "dummy", "threads": "dummy"}), Configuration.Type.DEFAULT, "DummyID")
-        task = {'task id': 'id', 'worker': 'worker', 'result': {'energy': 0.9}, 'ResultValidityCheckMark': 'OK'}
+        task = {"task id": "id", "worker": "worker", "result": {"energy": 0.9}, "ResultValidityCheckMark": "OK"}
         c1.add_task(task)
         database.write_one_record("Task", c1.get_task_record(task))
         written_record = database.get_all_records("Task")[-1]
         assert c1.unique_id == written_record["Configuration_ID"]
-        assert task['task id'] == written_record["Task_ID"]
+        assert task["task id"] == written_record["Task_ID"]
         assert task == written_record["Task"]
 
     @staticmethod

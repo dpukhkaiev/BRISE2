@@ -1,4 +1,1 @@
-__all__ = [
-    "reflective_worker_method_import",
-    "splitter"
-]
+__all__ = ["reflective_worker_method_import", "splitter"]

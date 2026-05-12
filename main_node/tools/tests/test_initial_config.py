@@ -11,6 +11,7 @@ class TestInitialConfig:
         # Expected result: both experiment description and search space are loaded.
         # Experiment description can be used as a dictionary
         from core_entities.search_space import SearchSpace
+
         input_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
         expected_experiment = "test"
         actual_experiment_description, actual_search_space = load_experiment_setup(input_file)

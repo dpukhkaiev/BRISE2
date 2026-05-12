@@ -23,9 +23,8 @@ class SklearnFloatTransformer(FloatTransformer):
 
         intact_features = features.drop(columns=relevant_features.columns)
         if not intact_features.empty:
-            self.mapping_old_new_features = dict(
-                map(lambda i, j: (i, j), intact_features.columns.tolist(), intact_features.columns.tolist()))
-        intact_features['temp_index'] = range(1, len(intact_features) + 1)
+            self.mapping_old_new_features = dict(map(lambda i, j: (i, j), intact_features.columns.tolist(), intact_features.columns.tolist()))
+        intact_features["temp_index"] = range(1, len(intact_features) + 1)
 
         transformed_features = pd.DataFrame()
 
@@ -52,9 +51,9 @@ class SklearnFloatTransformer(FloatTransformer):
                 transformed_features = pd.concat([transformed_features, transformed_feature])
             self.mapping_old_new_features[feature_name] = transformed_feature.columns.tolist()
 
-        transformed_features['temp_index'] = range(1, len(transformed_features) + 1)
+        transformed_features["temp_index"] = range(1, len(transformed_features) + 1)
 
-        merged_features = transformed_features.merge(intact_features, on='temp_index')
+        merged_features = transformed_features.merge(intact_features, on="temp_index")
         merged_features = merged_features.drop(columns="temp_index")
 
         # sort

@@ -26,12 +26,11 @@ class OutlierDetector:
             input_data = np.array([])
             input_data_full = np.array([])
             for index_j in range(0, input_size):
-                input_data_full = np.append(input_data_full, tasks[index_j]['result'][parameter])
+                input_data_full = np.append(input_data_full, tasks[index_j]["result"][parameter])
                 # filter dataset
-                if (tasks[index_j]['ResultValidityCheckMark'] != "Bad value"
-                        and tasks[index_j]['ResultValidityCheckMark'] != "Out of bounds"):
+                if tasks[index_j]["ResultValidityCheckMark"] != "Bad value" and tasks[index_j]["ResultValidityCheckMark"] != "Out of bounds":
                     # no need to operate with bad values from error check script
-                    input_data = np.append(input_data, tasks[index_j]['result'][parameter])
+                    input_data = np.append(input_data, tasks[index_j]["result"][parameter])
             outliers, criterions_used = self._validate_conditions_for_od(input_data, outliers, criterions_used)
             criterions_used_number = criterions_used.count(True)
             # find indexes of outliers in filtered dataset
@@ -46,15 +45,15 @@ class OutlierDetector:
             outliers_position = np.array([])
             unique, counts = np.unique(delete_rows, return_counts=True)
             for index in range(0, len(counts)):
-                if float(counts[index])/float(criterions_used_number) >= 0.5:
+                if float(counts[index]) / float(criterions_used_number) >= 0.5:
                     outliers_position = np.append(outliers_position, unique[index])
             unique = np.unique(outliers_position)
             # mark outliers in the results
             for index in range(0, len(tasks)):
-                if tasks[index]['ResultValidityCheckMark'] == "Outlier":
-                    tasks[index]['ResultValidityCheckMark'] = "OK"
+                if tasks[index]["ResultValidityCheckMark"] == "Outlier":
+                    tasks[index]["ResultValidityCheckMark"] = "OK"
             for index_j in sorted(unique.astype(int), reverse=True):
-                tasks[index_j]['ResultValidityCheckMark'] = "Outlier"
+                tasks[index_j]["ResultValidityCheckMark"] = "Outlier"
         return tasks, criterions_used_number
 
     def _report_according_to_required_structure(self, config, final_results, criterions_used_number):
@@ -68,12 +67,12 @@ class OutlierDetector:
         outbound_value_tasks = []
         outlier_value_tasks = []
         for task in final_results:
-            if task['ResultValidityCheckMark'] == 'Bad value':
-                bad_value_tasks.append(task['result'])
-            elif task['ResultValidityCheckMark'] == 'Out of bounds':
-                outbound_value_tasks.append(task['result'])
-            elif task['ResultValidityCheckMark'] == 'Outlier':
-                outlier_value_tasks.append(task['result'])
+            if task["ResultValidityCheckMark"] == "Bad value":
+                bad_value_tasks.append(task["result"])
+            elif task["ResultValidityCheckMark"] == "Out of bounds":
+                outbound_value_tasks.append(task["result"])
+            elif task["ResultValidityCheckMark"] == "Outlier":
+                outlier_value_tasks.append(task["result"])
 
         output_message = f"Configuration {config.parameters} has"
 
@@ -87,8 +86,7 @@ class OutlierDetector:
             output_message += f"; {len(outbound_value_tasks)} task(s) with outbound values"
 
         if len(outlier_value_tasks) > 0:
-            output_message += f"; {len(outlier_value_tasks)} task(s) with outlier values, " \
-                              f"{criterions_used_number} outlier detection criteria were used"
+            output_message += f"; {len(outlier_value_tasks)} task(s) with outlier values, " f"{criterions_used_number} outlier detection criteria were used"
         output_message += "."
 
         logging.getLogger(__name__).info(output_message)

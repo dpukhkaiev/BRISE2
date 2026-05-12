@@ -38,7 +38,7 @@ class SamplingStrategy(ABC):
         """
 
         transformed_values = []  # transform based on the Hyperparameter type
-        it = np.nditer(df, flags=['f_index'])  # safe iterator for ndarrays
+        it = np.nditer(df, flags=["f_index"])  # safe iterator for ndarrays
         for sampled_value in it:
             transformed_values.append(self.region[it.index].transform(sampled_value))
 

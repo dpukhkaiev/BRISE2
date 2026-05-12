@@ -12,6 +12,7 @@ class AcceptableErrorBasedType(Repeater):
     the quality of each Configuration (better Configuration - better quality)
     and deviation of all Tasks are taken into account.
     """
+
     def __init__(self, experiment_description: dict, experiment_id: str, experiment=None):
         """
         :param experiment_description: experiment description in json format
@@ -30,9 +31,10 @@ class AcceptableErrorBasedType(Repeater):
         self.max_tasks_per_configuration = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MaxTasksPerConfiguration"]
 
         if self.max_tasks_per_configuration < self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MinTasksPerConfiguration"]:
-            raise ValueError("Invalid configuration of the Repetition Manager provided: MinTasksPerConfiguration(%s) "
-                             "is greater than ManTasksPerConfiguration(%s)!" %
-                             (self.max_tasks_per_configuration, self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MinTasksPerConfiguration"]))
+            raise ValueError(
+                "Invalid configuration of the Repetition Manager provided: MinTasksPerConfiguration(%s) "
+                "is greater than ManTasksPerConfiguration(%s)!" % (self.max_tasks_per_configuration, self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MinTasksPerConfiguration"])
+            )
         self.min_tasks_per_configuration = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MinTasksPerConfiguration"]
 
         self.base_acceptable_errors = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["BaseAcceptableError"]
@@ -49,7 +51,7 @@ class AcceptableErrorBasedType(Repeater):
             if not self.base_acceptable_errors <= self.max_acceptable_errors:
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
-        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
+        if os.environ.get("TEST_MODE") == "UNIT_TEST":
             self.experiment = experiment
 
     def evaluate(self, current_configuration: Configuration):
@@ -60,8 +62,7 @@ class AcceptableErrorBasedType(Repeater):
                  or 1 if Configuration was not measured precisely or 0 if it finished
         """
         tasks_data = current_configuration.get_tasks()
-        db_current_solution_record = self.database.\
-            get_last_record_by_experiment_id("Experiment_state", self.experiment_id)["Current_solution"]
+        db_current_solution_record = self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)["Current_solution"]
 
         c_s_results = db_current_solution_record["Results"]
 
@@ -77,8 +78,7 @@ class AcceptableErrorBasedType(Repeater):
 
         if len(tasks_data) < self.min_tasks_per_configuration:
             if self.is_experiment_aware:
-                ratios = [cur_config_dim / cur_solution_dim
-                          for cur_config_dim, cur_solution_dim in zip(c_c_results_l, c_s_results_l)]
+                ratios = [cur_config_dim / cur_solution_dim for cur_config_dim, cur_solution_dim in zip(c_c_results_l, c_s_results_l)]
                 ratios_max = [self.ratios_max] * len(ratios)
                 if all([ratio >= ratio_max for ratio, ratio_max in zip(ratios, ratios_max)]):
                     return 0
@@ -92,7 +92,7 @@ class AcceptableErrorBasedType(Repeater):
 
             # The number of Degrees of Freedom generally equals the number of observations (Tasks) minus
             # the number of estimated parameters.
-            degrees_of_freedom = len(tasks_data) - len(c_c_results_l)/len(self.objectives)
+            degrees_of_freedom = len(tasks_data) - len(c_c_results_l) / len(self.objectives)
 
             # Calculate the critical t-student value from the t distribution
             student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in [self.confidence_levels] * len(self.objectives)]
@@ -117,7 +117,7 @@ class AcceptableErrorBasedType(Repeater):
             # Calculating relative error for each dimension
             relative_errors = []
             for interval, avg_res in zip(absolute_errors, c_c_results_l):
-                if not avg_res:     # it is 0 or 0.0
+                if not avg_res:  # it is 0 or 0.0
                     # if new use-cases appear with the same behaviour.
                     if interval == 0:
                         avg_res = 1  # Anyway relative error will be 0 and avg will not be changed.
@@ -142,10 +142,7 @@ class AcceptableErrorBasedType(Repeater):
                         else:
                             ratio = c_s_results_l[i] / c_c_results_l[i]
 
-                    adopted_threshold = \
-                        self.base_acceptable_errors \
-                        + (self.max_acceptable_errors - self.base_acceptable_errors) \
-                        / (1 + exp(- (10 / self.ratios_max) * (ratio - self.ratios_max / 2)))
+                    adopted_threshold = self.base_acceptable_errors + (self.max_acceptable_errors - self.base_acceptable_errors) / (1 + exp(-(10 / self.ratios_max) * (ratio - self.ratios_max / 2)))
 
                     thresholds.append(adopted_threshold)
 

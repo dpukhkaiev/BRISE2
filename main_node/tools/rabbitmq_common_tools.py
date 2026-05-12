@@ -8,6 +8,7 @@ class RabbitMQConnection(threading.Thread):
     """
     The class contains commonly used tools to communicate with Event Service
     """
+
     def __init__(self, module):
         super(RabbitMQConnection, self).__init__()
         self.module = module

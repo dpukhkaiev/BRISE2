@@ -23,9 +23,7 @@ class ConfigurationTransformer(ABC):
     def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
         pass
 
-    def _inverse_sklearn_transform(self,
-                                   transformed_features: pd.DataFrame,
-                                   mapping_old_feature_pipeline: Dict) -> pd.DataFrame:
+    def _inverse_sklearn_transform(self, transformed_features: pd.DataFrame, mapping_old_feature_pipeline: Dict) -> pd.DataFrame:
         """
         Helper method for sklearn inverse transformation, which is identical for all parameter types.
         """
@@ -49,9 +47,11 @@ class ConfigurationTransformer(ABC):
         return features[relevant_feature_names_from_input]
 
     def __eq__(self, other):
-        return (self.configuration_transformer_description.__eq__(
-            other.configuration_transformer_description) and self.relevant_parameters.__eq__(
-            other.relevant_parameters) and self.mapping_old_new_features.__eq__(other.mapping_old_new_features))
+        return (
+            self.configuration_transformer_description.__eq__(other.configuration_transformer_description)
+            and self.relevant_parameters.__eq__(other.relevant_parameters)
+            and self.mapping_old_new_features.__eq__(other.mapping_old_new_features)
+        )
 
     def __hash__(self):
         return 17 * hash(self.relevant_parameters) + hash(list(self.configuration_transformer_description.keys())[0])

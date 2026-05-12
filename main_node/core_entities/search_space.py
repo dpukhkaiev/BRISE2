@@ -52,11 +52,7 @@ class Hyperparameter(ABC):
             bounded.
     """
 
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None):
+    def __init__(self, name: str, level: int, parent: Hyperparameter = None, activation_category: _CATEGORY = None):
         self.name = name
         self.configuration_number = 0
         self.level = level  # level within the search space
@@ -92,16 +88,15 @@ class Hyperparameter(ABC):
 
     def new_are_siblings(self, other: Hyperparameter) -> bool:
         """
-            Check whether current Hyperparameter is within the same region as another Hyperparameter.
-            :param other: Hyperparameter
-            :return: boolean
+        Check whether current Hyperparameter is within the same region as another Hyperparameter.
+        :param other: Hyperparameter
+        :return: boolean
         """
         return self.parent.__eq__(other.parent) and self.activation_category.__eq__(other.activation_category)
 
     #   --- Set of methods to operate the structure of the Search Space
     @abstractmethod
-    def add_child_hyperparameter(self, other: Hyperparameter,
-                                 activation_categories: Iterable[_CATEGORY]) -> Hyperparameter:
+    def add_child_hyperparameter(self, other: Hyperparameter, activation_categories: Iterable[_CATEGORY]) -> Hyperparameter:
         """
         Add child Hyperparameter, that will be activated if parent Hyperparameter was assigned to one of
         activation categories.
@@ -147,14 +142,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
     Currently only Categorical Hyperparameters could become Composite.
     """
 
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 categories: Iterable[_CATEGORY],
-                 default_value: _CATEGORY = None,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None
-                 ):
+    def __init__(self, name: str, level: int, categories: Iterable[_CATEGORY], default_value: _CATEGORY = None, parent: Hyperparameter = None, activation_category: _CATEGORY = None):
         super().__init__(name, level, parent, activation_category)
 
         # Each category could 'activate' children, so list of activated children is 'behind' each category.
@@ -166,10 +154,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
     def categories(self):
         return tuple(self._categories.keys())
 
-    def add_child_hyperparameter(self,
-                                 other: Hyperparameter,
-                                 activation_category: _CATEGORY = None
-                                 ) -> Hyperparameter:
+    def add_child_hyperparameter(self, other: Hyperparameter, activation_category: _CATEGORY = None) -> Hyperparameter:
         if activation_category is not None:
             self._add_to_category(activation_category, other)
         else:
@@ -252,12 +237,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
             search_space_size = self.get_size()
             if search_space_size == np.inf:
                 search_space_size = "Infinity"
-            serialization = dict(
-                size=search_space_size,
-                name=self.name,
-                boundaries=parameters,
-                root_parameters_list=root_parameters_list
-            )
+            serialization = dict(size=search_space_size, name=self.name, boundaries=parameters, root_parameters_list=root_parameters_list)
             return serialization
         else:
             return boundaries
@@ -275,14 +255,9 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
 
 
 class NumericHyperparameter(Hyperparameter, ABC):
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 lower: Union[int, float],
-                 upper: Union[int, float],
-                 default_value: Union[int, float] = None,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None):
+    def __init__(
+        self, name: str, level: int, lower: Union[int, float], upper: Union[int, float], default_value: Union[int, float] = None, parent: Hyperparameter = None, activation_category: _CATEGORY = None
+    ):
         super().__init__(name, level, parent, activation_category)
 
         self._lower = lower
@@ -292,11 +267,9 @@ class NumericHyperparameter(Hyperparameter, ABC):
         if self._upper < self._lower:
             raise ValueError(f"{self.name}: Upper boundary ({self._upper}) is higher than lower ({self._lower}).")
         if not self._lower <= self._default_value <= self._upper:
-            raise ValueError(f"{self.name}: Provided default value ({self._default_value}) is not within "
-                             f"lower ({self._lower}) and upper ({self._upper}) boundaries.")
+            raise ValueError(f"{self.name}: Provided default value ({self._default_value}) is not within " f"lower ({self._lower}) and upper ({self._upper}) boundaries.")
 
-    def add_child_hyperparameter(self, other: Hyperparameter,
-                                 activation_categories: Iterable[Union[str, int, float]]) -> Hyperparameter:
+    def add_child_hyperparameter(self, other: Hyperparameter, activation_categories: Iterable[Union[str, int, float]]) -> Hyperparameter:
         raise TypeError("Child Hyperparameters are only available in Composite Hyperparameter type.")
 
     def get_children(self) -> List[Hyperparameter]:
@@ -322,10 +295,7 @@ class NumericHyperparameter(Hyperparameter, ABC):
 
     def __eq__(self, other: NumericHyperparameter):
         result = super().__eq__(other)
-        if not isinstance(other, NumericHyperparameter) \
-                or self._lower != other._lower \
-                or self._upper != other._upper \
-                or self._default_value != other._default_value:
+        if not isinstance(other, NumericHyperparameter) or self._lower != other._lower or self._upper != other._upper or self._default_value != other._default_value:
             result = False
         return result
 
@@ -339,14 +309,9 @@ class NumericHyperparameter(Hyperparameter, ABC):
 
 class IntegerHyperparameter(NumericHyperparameter):
 
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 lower: Union[int, float],
-                 upper: Union[int, float],
-                 default_value: Union[int, float] = None,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None):
+    def __init__(
+        self, name: str, level: int, lower: Union[int, float], upper: Union[int, float], default_value: Union[int, float] = None, parent: Hyperparameter = None, activation_category: _CATEGORY = None
+    ):
         default_value = default_value or (upper - lower) // 2
         super().__init__(name, level, int(lower), int(upper), default_value, parent, activation_category)
         self.type = "Integer"
@@ -355,7 +320,7 @@ class IntegerHyperparameter(NumericHyperparameter):
         return self._upper - self._lower
 
     def transform(self, value) -> int:
-        return round(self._lower + value*(self._upper - self._lower))
+        return round(self._lower + value * (self._upper - self._lower))
 
     def __eq__(self, other):
         return super.__eq__(self, other)
@@ -366,14 +331,9 @@ class IntegerHyperparameter(NumericHyperparameter):
 
 class FloatHyperparameter(NumericHyperparameter):
 
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 lower: Union[int, float],
-                 upper: Union[int, float],
-                 default_value: Union[int, float] = None,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None):
+    def __init__(
+        self, name: str, level: int, lower: Union[int, float], upper: Union[int, float], default_value: Union[int, float] = None, parent: Hyperparameter = None, activation_category: _CATEGORY = None
+    ):
         default_value = default_value or (upper - lower) / 2
         super().__init__(name, level, float(lower), float(upper), default_value, parent, activation_category)
         self.type = "Float"
@@ -382,7 +342,7 @@ class FloatHyperparameter(NumericHyperparameter):
         return np.inf
 
     def transform(self, value) -> float:
-        return self._lower + value*(self._upper - self._lower)
+        return self._lower + value * (self._upper - self._lower)
 
     def __eq__(self, other):
         return super().__eq__(other)
@@ -392,23 +352,14 @@ class FloatHyperparameter(NumericHyperparameter):
 
 
 class OrdinalHyperparameter(CategoricalHyperparameter):
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 categories: Iterable[_CATEGORY],
-                 default_value: _CATEGORY = None,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None
-                 ):
+    def __init__(self, name: str, level: int, categories: Iterable[_CATEGORY], default_value: _CATEGORY = None, parent: Hyperparameter = None, activation_category: _CATEGORY = None):
         super().__init__(name, level, categories, default_value, parent, activation_category)
         self.type = "Ordinal"
 
     def __eq__(self, other: OrdinalHyperparameter):
         if type(other) is OrdinalHyperparameter:
             result = super().__eq__(other)
-            if result and not (isinstance(other, OrdinalHyperparameter)
-                               or self._default_value != other._default_value
-                               or self._categories != other._categories):
+            if result and not (isinstance(other, OrdinalHyperparameter) or self._default_value != other._default_value or self._categories != other._categories):
                 result = False
             return result
         else:
@@ -419,23 +370,14 @@ class OrdinalHyperparameter(CategoricalHyperparameter):
 
 
 class NominalHyperparameter(CategoricalHyperparameter):
-    def __init__(self,
-                 name: str,
-                 level: int,
-                 categories: Iterable[_CATEGORY],
-                 default_value: _CATEGORY = None,
-                 parent: Hyperparameter = None,
-                 activation_category: _CATEGORY = None
-                 ):
+    def __init__(self, name: str, level: int, categories: Iterable[_CATEGORY], default_value: _CATEGORY = None, parent: Hyperparameter = None, activation_category: _CATEGORY = None):
         super().__init__(name, level, categories, default_value, parent, activation_category)
         self.type = "Nominal"
 
     def __eq__(self, other: NominalHyperparameter):
         if type(other) is NominalHyperparameter:
             result = super().__eq__(other)
-            if result and not (isinstance(other, NominalHyperparameter)
-                               or self._default_value != other._default_value
-                               or self._categories.keys() != other._categories.keys()):
+            if result and not (isinstance(other, NominalHyperparameter) or self._default_value != other._default_value or self._categories.keys() != other._categories.keys()):
                 result = False
             elif result:
                 for cat in self._categories.keys():
@@ -478,7 +420,7 @@ class SearchSpace:
 
         self.reset_level()
 
-        self.hp_names = sum([[hp.name for hp in r]for r in self.regions], [])
+        self.hp_names = sum([[hp.name for hp in r] for r in self.regions], [])
 
     def reset_level(self):
         self.current_level.append(self.search_space_description)
@@ -518,10 +460,10 @@ class SearchSpace:
 
     def flatten(self, h: Hyperparameter):
         """
-         A recursive method, which constructs a flat representation of the search space.
-         :param h: hierarchical representation of the search space
-         :return: flattened representation of the search space
-         """
+        A recursive method, which constructs a flat representation of the search space.
+        :param h: hierarchical representation of the search space
+        :return: flattened representation of the search space
+        """
         flattened_search_space = []
         if h.get_type() in ("Nominal", "Ordinal"):
             children = h.get_children()
@@ -573,6 +515,7 @@ class SearchSpace:
     def initialize_flat_view(self) -> Hyperparameter:
         root = NominalHyperparameter(name="root", level=-1, categories=["root"], default_value="root")
         from copy import deepcopy
+
         flattened_parameters = self.flatten(self.hierarchical_view)
         # find unique names set([p.name for p in flattened_parameters])
         unique_parameter_names = set([p.name for p in flattened_parameters])
@@ -587,10 +530,7 @@ class SearchSpace:
 
         return root
 
-    def _inner_init(self, hyperparameter_description: dict,
-                    name: str,
-                    parent: Hyperparameter = None,
-                    activation_category: _CATEGORY = None) -> Hyperparameter:
+    def _inner_init(self, hyperparameter_description: dict, name: str, parent: Hyperparameter = None, activation_category: _CATEGORY = None) -> Hyperparameter:
         h_name: str = name
         h_type: str = hyperparameter_description["Type"]
         level: int = hyperparameter_description["Level"]
@@ -601,19 +541,9 @@ class SearchSpace:
             categories: List[_CATEGORY] = hyperparameter_description["Categories"]
 
             if h_type == "NominalHyperparameter":
-                h = NominalHyperparameter(name=h_name,
-                                          level=level,
-                                          categories=categories,
-                                          default_value=default_value,
-                                          parent=parent,
-                                          activation_category=activation_category)
+                h = NominalHyperparameter(name=h_name, level=level, categories=categories, default_value=default_value, parent=parent, activation_category=activation_category)
             else:
-                h = OrdinalHyperparameter(name=h_name,
-                                          level=level,
-                                          categories=categories,
-                                          default_value=default_value,
-                                          parent=parent,
-                                          activation_category=activation_category)
+                h = OrdinalHyperparameter(name=h_name, level=level, categories=categories, default_value=default_value, parent=parent, activation_category=activation_category)
 
             # declared children for each category
             for c in categories:
@@ -628,24 +558,13 @@ class SearchSpace:
             lower_bound = hyperparameter_description["Lower"]
             upper_bound = hyperparameter_description["Upper"]
             if h_type == "IntegerHyperparameter":
-                h = IntegerHyperparameter(name=h_name,
-                                          level=level,
-                                          lower=lower_bound,
-                                          upper=upper_bound,
-                                          default_value=default_value,
-                                          parent=parent,
-                                          activation_category=activation_category)
+                h = IntegerHyperparameter(name=h_name, level=level, lower=lower_bound, upper=upper_bound, default_value=default_value, parent=parent, activation_category=activation_category)
             else:
-                h = FloatHyperparameter(name=h_name,
-                                        level=level,
-                                        lower=lower_bound,
-                                        upper=upper_bound,
-                                        default_value=default_value,
-                                        parent=parent,
-                                        activation_category=activation_category)
+                h = FloatHyperparameter(name=h_name, level=level, lower=lower_bound, upper=upper_bound, default_value=default_value, parent=parent, activation_category=activation_category)
 
         else:
             import logging
+
             logging.debug(f"{hyperparameter_description}")
             raise TypeError(f"Hyperparameter {h_name} has unknown type: {h_type}.")
         return h
@@ -681,15 +600,12 @@ class SearchSpace:
         self.reset_level()
         return valid_parameters
 
+
 ################
 # Auxiliary methods
 ################
 
 
 def get_search_space_record(search_space: SearchSpace, experiment_id: str) -> Dict:
-    record = {
-        "Exp_unique_ID": experiment_id,
-        "Search_space_size": search_space.size,
-        "SearchspaceObject": pickle.dumps(search_space)
-    }
+    record = {"Exp_unique_ID": experiment_id, "Search_space_size": search_space.size, "SearchspaceObject": pickle.dumps(search_space)}
     return record

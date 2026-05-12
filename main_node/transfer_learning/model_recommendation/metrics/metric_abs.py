@@ -10,10 +10,5 @@ class ModelPerformanceMetric(ABC):
         self.logger = logging.getLogger(__name__)
 
     @abstractmethod
-    def compute(self,
-                improvement_curve: List,
-                prediction_infos: List,
-                start_index: int,
-                end_index: int,
-                multi_model: bool) -> Dict:
+    def compute(self, improvement_curve: List, prediction_infos: List, start_index: int, end_index: int, multi_model: bool) -> Dict:
         pass

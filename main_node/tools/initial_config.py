@@ -17,7 +17,5 @@ def load_experiment_setup(exp_desc_file_path: str) -> [Dict, SearchSpace]:
     experiment_description = load_json_file(exp_desc_file_path)
     search_space_description = experiment_description["Context"]["SearchSpace"]
     search_space = SearchSpace(search_space_description)
-    logging.getLogger(__name__).info(
-        f"The Experiment Description was loaded from {exp_desc_file_path}. "
-    )
+    logging.getLogger(__name__).info(f"The Experiment Description was loaded from {exp_desc_file_path}. ")
     return experiment_description, search_space

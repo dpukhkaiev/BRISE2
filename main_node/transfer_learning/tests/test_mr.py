@@ -13,7 +13,6 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from tools.initial_config import load_experiment_setup
 from tools.restore_db import RestoreDB
 
-
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
@@ -27,33 +26,30 @@ class TestMR:
         rdb.restore()
         experiment, search_space = self.initialize_experiment()
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
 
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -79,66 +75,49 @@ class TestMR:
                     "SamplingLandmarkBased": {
                         "MinNumberOfSamples": 10,
                         "Type": "sampling_landmark_based",
-                        "Comparator": {
-                            "NormDifference": {
-                                "Type": "norm_difference_comparator"
-                            }
-                        },
-                        "ExperimentsQuantity": {
-                            "FixedQuantity": {
-                                "NumberOfSimilarExperiments": 1
-                            }
-                        }
+                        "Comparator": {"NormDifference": {"Type": "norm_difference_comparator"}},
+                        "ExperimentsQuantity": {"FixedQuantity": {"NumberOfSimilarExperiments": 1}},
                     }
                 },
                 "ModelRecommendation": {
                     "DynamicModelsRecommendation": {
-                        "RecommendationGranularity": {
-                            "Infinite": {
-                                "Value": np.inf
-                            }
-                        },
-                        "PerformanceMetric": {
-                            "AverageRelativeImprovement": {}
-                        },
+                        "RecommendationGranularity": {"Infinite": {"Value": np.inf}},
+                        "PerformanceMetric": {"AverageRelativeImprovement": {}},
                         "Type": "dynamic_model_recommendation",
                         "ThresholdType": "Soft",
                         "TimeToBuildModelThreshold": 0.01,
-                        "TimeUnit": "seconds"
+                        "TimeUnit": "seconds",
                     }
-                }
+                },
             }
         }
 
         experiment, search_space = self.initialize_experiment(soft_constraint_skeleton)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
 
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -161,49 +140,36 @@ class TestMR:
                     "SamplingLandmarkBased": {
                         "MinNumberOfSamples": 10,
                         "Type": "sampling_landmark_based",
-                        "Comparator": {
-                            "NormDifference": {
-                                "Type": "norm_difference_comparator"
-                            }
-                        },
-                        "ExperimentsQuantity": {
-                            "FixedQuantity": {
-                                "NumberOfSimilarExperiments": 1
-                            }
-                        }
+                        "Comparator": {"NormDifference": {"Type": "norm_difference_comparator"}},
+                        "ExperimentsQuantity": {"FixedQuantity": {"NumberOfSimilarExperiments": 1}},
                     }
                 },
-                "ModelRecommendation": {
-                    "FewShotRecommendation": {
-                        "Type": "few_shot"
-                    }
-                }
+                "ModelRecommendation": {"FewShotRecommendation": {"Type": "few_shot"}},
             }
         }
         experiment, search_space = self.initialize_experiment(few_shot_skeleton)
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())

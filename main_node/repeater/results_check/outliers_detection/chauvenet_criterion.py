@@ -1,7 +1,5 @@
 import numpy as np
-from repeater.results_check.outliers_detection.outliers_detector_decorator import (
-    OutliersDetectionDecorator
-)
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 from scipy.special import erfc
 
 
@@ -26,13 +24,13 @@ class Chauvenet(OutliersDetectionDecorator):
 
     def chauvenet(self, y, mean=None, stdv=None):
         if mean is None:
-            mean = y.mean()          # Mean of incoming array y
+            mean = y.mean()  # Mean of incoming array y
         if stdv is None:
-            stdv = y.std()           # Its standard deviation
-        N = len(y)                   # Lenght of incoming arrays
-        criterion = 1.0/(2*N)        # Chauvenet's criterion
-        d = abs(y-mean)/stdv         # Distance of a value to mean in stdv's
-        d /= 2.0**0.5                # The left and right tail threshold values
-        prob = erfc(d)               # Area normal dist.
-        filter = prob >= criterion   # The 'accept' filter array with booleans
-        return filter                # Use boolean array outside this function
+            stdv = y.std()  # Its standard deviation
+        N = len(y)  # Lenght of incoming arrays
+        criterion = 1.0 / (2 * N)  # Chauvenet's criterion
+        d = abs(y - mean) / stdv  # Distance of a value to mean in stdv's
+        d /= 2.0**0.5  # The left and right tail threshold values
+        prob = erfc(d)  # Area normal dist.
+        filter = prob >= criterion  # The 'accept' filter array with booleans
+        return filter  # Use boolean array outside this function

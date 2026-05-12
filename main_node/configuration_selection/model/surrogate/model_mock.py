@@ -9,7 +9,7 @@ from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 class ModelMock(Surrogate):
     def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
         super().__init__(surrogate_description, region, objectives)
-        self.multi_objective = surrogate_description['Instance']['ModelMock']['MultiObjective']
+        self.multi_objective = surrogate_description["Instance"]["ModelMock"]["MultiObjective"]
 
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
         return True

@@ -13,7 +13,7 @@ class Optimizer(ABC):
     def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Dict):
         self.region = region
         self.objectives = objectives
-        self.feature_name = list(optimizer_description['Instance'].keys())[0]
+        self.feature_name = list(optimizer_description["Instance"].keys())[0]
         self.optimizer_description = optimizer_description
 
         # Configuration Transformers
@@ -23,8 +23,7 @@ class Optimizer(ABC):
             if "ConfigurationTransformer" in i[0]:
                 for ct in i[1].items():
                     relevant_parameters = tuple(filter(lambda r: r.type in ct[0], region))
-                    configuration_transformer = (self.configuration_transformer_orchestrator.
-                                                 get_configuration_transformer(ct, relevant_parameters))
+                    configuration_transformer = self.configuration_transformer_orchestrator.get_configuration_transformer(ct, relevant_parameters)
                     self.mapping_config_transformer_parameter[configuration_transformer] = relevant_parameters
 
         # Value Transformers
@@ -56,11 +55,9 @@ class Optimizer(ABC):
         inverse_transform_optimizer = False
         transform_surrogate = False
 
-        if (len(surrogate.mapping_config_transformer_parameter.keys()) == 0 and len(
-                self.mapping_config_transformer_parameter.keys()) > 0):
+        if len(surrogate.mapping_config_transformer_parameter.keys()) == 0 and len(self.mapping_config_transformer_parameter.keys()) > 0:
             inverse_transform_optimizer = True
-        elif (len(surrogate.mapping_config_transformer_parameter.keys()) > 0 and len(
-                self.mapping_config_transformer_parameter.keys()) == 0):
+        elif len(surrogate.mapping_config_transformer_parameter.keys()) > 0 and len(self.mapping_config_transformer_parameter.keys()) == 0:
             transform_surrogate = True
         elif not self.mapping_config_transformer_parameter.__eq__(surrogate.mapping_config_transformer_parameter):
             inverse_transform_optimizer = True
@@ -101,8 +98,7 @@ class Optimizer(ABC):
                     if new_hp_name not in new_f:
                         continue
                     else:
-                        inverse_transformed = ct.inverse_transform(
-                            optimized_features[ct.mapping_old_new_features[old_f]])
+                        inverse_transformed = ct.inverse_transform(optimized_features[ct.mapping_old_new_features[old_f]])
                         if result.empty:
                             result = inverse_transformed
                         elif inverse_transformed.columns[0] not in result.columns:

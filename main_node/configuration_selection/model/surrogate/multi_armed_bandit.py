@@ -13,8 +13,8 @@ class MultiArmedBandit(Surrogate):
     def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
         super().__init__(surrogate_description, region, objectives)
         self.objective = self.objectives[list(self.objectives.keys())[0]]  # FRAMAB is always single-objective
-        self.multi_objective = surrogate_description['Instance']['MultiArmedBandit']['MultiObjective']
-        self.c = surrogate_description['Instance']['MultiArmedBandit']['Parameters']['c']
+        self.multi_objective = surrogate_description["Instance"]["MultiArmedBandit"]["MultiObjective"]
+        self.c = surrogate_description["Instance"]["MultiArmedBandit"]["Parameters"]["c"]
 
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
         if self.objective["Minimization"]:
@@ -28,8 +28,7 @@ class MultiArmedBandit(Surrogate):
         # --- Validate input
         for hp in self.region:
             if not isinstance(hp, CategoricalHyperparameter):
-                msg = f"Multi Armed Bandit optimization supports only Categorical hyperparameters. " \
-                      f"The type of hyperparameter {hp.name} is {hp.type}"
+                msg = f"Multi Armed Bandit optimization supports only Categorical hyperparameters. " f"The type of hyperparameter {hp.name} is {hp.type}"
                 logging.getLogger(__name__).error(msg)
                 return False
 
@@ -46,25 +45,19 @@ class MultiArmedBandit(Surrogate):
                 # MAB could properly evaluate only those categories, which were probed at least once thus,
                 # we encourage to evaluate not evaluated yet categories
                 if category_used_times > 0:
-                    category_quality = sum(
-                        transformed_labels.iloc[category_features.index][objective_column]) / category_used_times
+                    category_quality = sum(transformed_labels.iloc[category_features.index][objective_column]) / category_used_times
                 else:
                     category_quality = np.inf
 
                 categories_info[hp.name][feature_category] = {
                     "times used": category_used_times,
                     "quality": category_quality,
-                    "UCB_value": 0  # will be calculated later, since it depends on quality of other categories
+                    "UCB_value": 0,  # will be calculated later, since it depends on quality of other categories
                 }
         # 3. calculate UCB value of each category in every hyperparameter
         for hp in self.region:
             for feature_category in hp.categories:
-                exploration_rate = np.sqrt(
-                    np.divide(
-                        2 * np.log(len(transformed_labels)),
-                        categories_info[hp.name][feature_category]["times used"]
-                    )
-                )
+                exploration_rate = np.sqrt(np.divide(2 * np.log(len(transformed_labels)), categories_info[hp.name][feature_category]["times used"]))
                 if np.isnan(exploration_rate):
                     # only one, but not this category was used (in previous formula nominator=inf and denominator=inf).
                     exploration_rate = np.inf

@@ -9,6 +9,7 @@ class QuantityBasedType(Repeater):
     """
     Repeats each Configuration fixed number of times, no evaluation performed.
     """
+
     def __init__(self, experiment_description: dict, experiment_id: str, experiment=None):
         """
         :param experiment_description: experiment description in json format

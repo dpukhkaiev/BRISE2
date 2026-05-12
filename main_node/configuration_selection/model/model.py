@@ -84,9 +84,9 @@ class Model:
         self.external_validator = None
         self.internal_validator = None
         for k in validator_description.keys():
-            if k == 'ExternalValidator':
+            if k == "ExternalValidator":
                 self.external_validator = self.validator_orchestrator.get_validator(validator_description[k], region, objectives)
-            elif k == 'InternalValidator':
+            elif k == "InternalValidator":
                 self.internal_validator = self.validator_orchestrator.get_validator(validator_description[k], region, objectives)
 
         # candidate selector
@@ -108,8 +108,7 @@ class Model:
         # handle multiple objectives
         names_of_parameters = [p.name for p in parameters]
 
-        data = pd.DataFrame(
-            [cfg.to_series()[names_of_parameters + list(self.objectives.keys())] for cfg in configurations])
+        data = pd.DataFrame([cfg.to_series()[names_of_parameters + list(self.objectives.keys())] for cfg in configurations])
 
         if data.empty:
             return pd.DataFrame()
@@ -132,13 +131,10 @@ class Model:
 
                 if self.internal_validator is not None:
                     # inner split
-                    inner_train_features, inner_train_labels, inner_test_features, inner_test_labels = (
-                        self.internal_validator.train_test_split(train_features[k], train_labels_filtered))
+                    inner_train_features, inner_train_labels, inner_test_features, inner_test_labels = self.internal_validator.train_test_split(train_features[k], train_labels_filtered)
 
-                    if (len(inner_train_features) == 1 and len(inner_train_labels) == 1 and len(
-                            inner_test_features) == 1 and len(inner_test_labels) == 1):
-                        if (inner_train_features[0].empty or inner_train_labels[0].empty or inner_test_features[0].
-                                empty or inner_test_labels[0].empty):
+                    if len(inner_train_features) == 1 and len(inner_train_labels) == 1 and len(inner_test_features) == 1 and len(inner_test_labels) == 1:
+                        if inner_train_features[0].empty or inner_train_labels[0].empty or inner_test_features[0].empty or inner_test_labels[0].empty:
                             continue
 
                     was_not_built_or_validated = False
@@ -162,8 +158,7 @@ class Model:
                     promising_surrogates[s] = considered_objectives
 
         surrogates_for_outer_validation = []
-        if (self.mo_handling_surrogate_type == "Compositional" or self.
-                mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio"):
+        if self.mo_handling_surrogate_type == "Compositional" or self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
             # extract MO surrogates
             for s, o in promising_surrogates.items():
                 if len(o.keys()) > 1:
@@ -235,8 +230,8 @@ class Model:
             for s in created_surrogates:
                 for optimizer, objective in self.mapping_optimizer_objective.items():  # always 1 optimizer in 2.6.0
                     self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions.append(
-                        {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives} | {
-                            "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective})
+                        {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives} | {"Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective}
+                    )
                     optimized = optimizer.optimize(s)
                     optimized_full = pd.concat([optimized_full, optimized])
         else:
@@ -245,8 +240,8 @@ class Model:
                 for optimizer, objective in self.mapping_optimizer_objective.items():
                     if s.objectives == objective:
                         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions.append(
-                            {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives} | {
-                                "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective})
+                            {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives} | {"Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective}
+                        )
                         optimized = optimizer.optimize(s)
                         optimized_full = pd.concat([optimized_full, optimized])
 

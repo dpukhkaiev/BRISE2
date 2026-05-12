@@ -3,7 +3,8 @@ import logging
 
 def test(task: dict):
     import random
-    return {'Y1': random.random(), 'Y2': random.random(), 'Y3': random.random(), 'Y4': random.random(), 'Y5': random.random()}
+
+    return {"Y1": random.random(), "Y2": random.random(), "Y3": random.random(), "Y4": random.random(), "Y5": random.random()}
 
 
 def energy_consumption(task: dict):
@@ -39,19 +40,13 @@ def energy_consumption(task: dict):
     }
 
     try:
-        logging.info(task['parameters']['frequency'])
-        data = Splitter("scenarios/energy_consumption/" + task['Scenario']['ws_file'])
-        data.search(frequency_parameter_mapping[task['parameters']['frequency']],
-                    threads_parameter_mapping[task['parameters']['threads']])
+        logging.info(task["parameters"]["frequency"])
+        data = Splitter("scenarios/energy_consumption/" + task["Scenario"]["ws_file"])
+        data.search(frequency_parameter_mapping[task["parameters"]["frequency"]], threads_parameter_mapping[task["parameters"]["threads"]])
         result = choice(data.new_data)
-        return {
-            'energy': float(result["EN"]),
-            'time': float(result['TIM'])
-        }
+        return {"energy": float(result["EN"]), "time": float(result["TIM"])}
     except Exception as error:
-        logging.getLogger(__name__).error(
-            "An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (
-                task['parameters'], error), exc_info=True)
+        logging.getLogger(__name__).error("An error occurred during performing 'energy_consumption' Task with parameters %s: %s" % (task["parameters"], error), exc_info=True)
 
 
 def genetic(task: dict):
@@ -64,47 +59,69 @@ def genetic(task: dict):
 
     logger = logging.getLogger(__name__)
     try:
-        generations = str(task['parameters']['generations'])
-        population_size = str(task['parameters']['population_size'])
-        num_top_level_components = str(task['Scenario']['numTopLevelComponents'])
-        avg_num_impl_sub_components = str(task['Scenario']['avgNumImplSubComponents'])
-        impl_sub_component_std_derivation = str(task['Scenario']['implSubComponentStdDerivation'])
-        avg_num_comp_sub_components = str(task['Scenario']['avgNumCompSubComponents'])
-        comp_sub_component_std_derivation = str(task['Scenario']['compSubComponentStdDerivation'])
-        component_depth = str(task['Scenario']['componentDepth'])
-        num_implementations = str(task['Scenario']['numImplementations'])
-        excess_compute_resource_ratio = str(task['Scenario']['excessComputeResourceRatio'])
-        num_requests = str(task['Scenario']['numRequests'])
-        num_cpus = str(task['Scenario']['numCpus'])
-        seed = str(task['Scenario']['seed'])
-        timeout_value = str(task['Scenario']['timeoutValue'])
-        timeout_unit = str(task['Scenario']['timeoutUnit'])
+        generations = str(task["parameters"]["generations"])
+        population_size = str(task["parameters"]["population_size"])
+        num_top_level_components = str(task["Scenario"]["numTopLevelComponents"])
+        avg_num_impl_sub_components = str(task["Scenario"]["avgNumImplSubComponents"])
+        impl_sub_component_std_derivation = str(task["Scenario"]["implSubComponentStdDerivation"])
+        avg_num_comp_sub_components = str(task["Scenario"]["avgNumCompSubComponents"])
+        comp_sub_component_std_derivation = str(task["Scenario"]["compSubComponentStdDerivation"])
+        component_depth = str(task["Scenario"]["componentDepth"])
+        num_implementations = str(task["Scenario"]["numImplementations"])
+        excess_compute_resource_ratio = str(task["Scenario"]["excessComputeResourceRatio"])
+        num_requests = str(task["Scenario"]["numRequests"])
+        num_cpus = str(task["Scenario"]["numCpus"])
+        seed = str(task["Scenario"]["seed"])
+        timeout_value = str(task["Scenario"]["timeoutValue"])
+        timeout_unit = str(task["Scenario"]["timeoutUnit"])
 
-        lambda_ = str(task['parameters']['lambda_'])
-        crossover_rate = str(task['parameters']['crossover_rate'])
-        mu = str(task['parameters']['mu'])
+        lambda_ = str(task["parameters"]["lambda_"])
+        crossover_rate = str(task["parameters"]["crossover_rate"])
+        mu = str(task["parameters"]["mu"])
         ###
-        selector_type = str(task['parameters']['selector_type']).split(".")[-1]
-        mutation_rate = str(task['parameters']['mutation_rate'])
-        resources_mutation_probability = str(task['parameters']['resources_mutation_probability'])
-        evaluator_validity_weight = str(task['parameters']['evaluator_validity_weight'])
-        evaluator_software_validity_weight = str(task['parameters']['evaluator_software_validity_weight'])
-        random_software_assignment_attempts = str(task['parameters']['random_software_assignment_attempts'])
-        populate_software_solution_attempts = str(task['parameters']['populate_software_solution_attempts'])
-        ws_file = "result_v{}_q{}_d{}_r{}.csv". \
-            format(num_implementations, num_requests, component_depth, excess_compute_resource_ratio)
+        selector_type = str(task["parameters"]["selector_type"]).split(".")[-1]
+        mutation_rate = str(task["parameters"]["mutation_rate"])
+        resources_mutation_probability = str(task["parameters"]["resources_mutation_probability"])
+        evaluator_validity_weight = str(task["parameters"]["evaluator_validity_weight"])
+        evaluator_software_validity_weight = str(task["parameters"]["evaluator_software_validity_weight"])
+        random_software_assignment_attempts = str(task["parameters"]["random_software_assignment_attempts"])
+        populate_software_solution_attempts = str(task["parameters"]["populate_software_solution_attempts"])
+        ws_file = "result_v{}_q{}_d{}_r{}.csv".format(num_implementations, num_requests, component_depth, excess_compute_resource_ratio)
 
         file_name = "results/scenarios/" + ws_file
 
         command = (
             "java -jar binaries/jastadd-mquat-solver-genetic-2.0.0-SNAPSHOT.jar \
                 %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
-            % (num_top_level_components, avg_num_impl_sub_components, impl_sub_component_std_derivation,
-               avg_num_comp_sub_components, comp_sub_component_std_derivation, component_depth, num_implementations,
-               excess_compute_resource_ratio, num_requests, num_cpus, seed, timeout_value, timeout_unit, ws_file,
-               generations, selector_type, population_size, lambda_, crossover_rate, mu, mutation_rate,
-               resources_mutation_probability, evaluator_validity_weight, evaluator_software_validity_weight,
-               random_software_assignment_attempts, populate_software_solution_attempts))
+            % (
+                num_top_level_components,
+                avg_num_impl_sub_components,
+                impl_sub_component_std_derivation,
+                avg_num_comp_sub_components,
+                comp_sub_component_std_derivation,
+                component_depth,
+                num_implementations,
+                excess_compute_resource_ratio,
+                num_requests,
+                num_cpus,
+                seed,
+                timeout_value,
+                timeout_unit,
+                ws_file,
+                generations,
+                selector_type,
+                population_size,
+                lambda_,
+                crossover_rate,
+                mu,
+                mutation_rate,
+                resources_mutation_probability,
+                evaluator_validity_weight,
+                evaluator_software_validity_weight,
+                random_software_assignment_attempts,
+                populate_software_solution_attempts,
+            )
+        )
         try:
             retcode = subprocess.call(command, shell=True)
             if retcode < 0:
@@ -118,17 +135,13 @@ def genetic(task: dict):
             data = Splitter(file_name)
             data.searchGA(file_name)
             result = choice(data.new_data)
-            return {
-                'Validity': int(result["Validity"])
-            }
+            return {"Validity": int(result["Validity"])}
         else:
             logger.error("java command: %s doesnt create result file" % command)
             raise Exception("java command: %s doesnt create result file" % command)
     except Exception as error:
         logger.error(f"An error occurred during performing 'genetic' Task with parameters {task['parameters']}: {error}")
-    return {
-        'Validity': 'NaN'
-    }
+    return {"Validity": "NaN"}
 
 
 def simulatedAnnealing(task: dict):
@@ -145,40 +158,53 @@ def simulatedAnnealing(task: dict):
     map_unimprovedMillisecondsSpentLimit = {"Context.SearchSpace.unimprovedMillisecondsSpentLimit.tenthousand": 10000}
     try:
         # params
-        subComponentUnassignedFactor = str(task['parameters']['subComponentUnassignedFactor'])
-        softwareComponentUnassignedFactor = str(task['parameters']['softwareComponentUnassignedFactor'])
-        hardScoreStartingTemperaturePercentage = str(task['parameters']['hardScoreStartingTemperaturePercentage'])
-        softScoreStartingTemperaturePercentage = str(task['parameters']['softScoreStartingTemperaturePercentage'])
-        acceptedCountLimit = str(task['parameters']['acceptedCountLimit'])
-        millisecondsSpentLimit = map_millisecondsSpentLimit[str(task['parameters']['millisecondsSpentLimit'])]
-        unimprovedMillisecondsSpentLimit = map_unimprovedMillisecondsSpentLimit[
-            str(task['parameters']['unimprovedMillisecondsSpentLimit'])]
+        subComponentUnassignedFactor = str(task["parameters"]["subComponentUnassignedFactor"])
+        softwareComponentUnassignedFactor = str(task["parameters"]["softwareComponentUnassignedFactor"])
+        hardScoreStartingTemperaturePercentage = str(task["parameters"]["hardScoreStartingTemperaturePercentage"])
+        softScoreStartingTemperaturePercentage = str(task["parameters"]["softScoreStartingTemperaturePercentage"])
+        acceptedCountLimit = str(task["parameters"]["acceptedCountLimit"])
+        millisecondsSpentLimit = map_millisecondsSpentLimit[str(task["parameters"]["millisecondsSpentLimit"])]
+        unimprovedMillisecondsSpentLimit = map_unimprovedMillisecondsSpentLimit[str(task["parameters"]["unimprovedMillisecondsSpentLimit"])]
 
         # scenario
 
         # ws_file = str(task['Scenario']['ws_file'])
-        numTopLevelComponents = str(task['Scenario']['numTopLevelComponents'])
-        avgNumImplSubComponents = str(task['Scenario']['avgNumImplSubComponents'])
-        implSubComponentStdDerivation = str(task['Scenario']['implSubComponentStdDerivation'])
-        avgNumCompSubComponents = str(task['Scenario']['avgNumCompSubComponents'])
-        compSubComponentStdDerivation = str(task['Scenario']['compSubComponentStdDerivation'])
-        componentDepth = str(task['Scenario']['componentDepth'])
-        numImplementations = str(task['Scenario']['numImplementations'])
-        excessComputeResourceRatio = str(task['Scenario']['excessComputeResourceRatio'])
-        numRequests = str(task['Scenario']['numRequests'])
-        numCpus = str(task['Scenario']['numCpus'])
-        seed = str(task['Scenario']['seed'])
-        ws_file = "result_v{}_q{}_d{}_r{}.csv".\
-            format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio.replace('.', '_'))
+        numTopLevelComponents = str(task["Scenario"]["numTopLevelComponents"])
+        avgNumImplSubComponents = str(task["Scenario"]["avgNumImplSubComponents"])
+        implSubComponentStdDerivation = str(task["Scenario"]["implSubComponentStdDerivation"])
+        avgNumCompSubComponents = str(task["Scenario"]["avgNumCompSubComponents"])
+        compSubComponentStdDerivation = str(task["Scenario"]["compSubComponentStdDerivation"])
+        componentDepth = str(task["Scenario"]["componentDepth"])
+        numImplementations = str(task["Scenario"]["numImplementations"])
+        excessComputeResourceRatio = str(task["Scenario"]["excessComputeResourceRatio"])
+        numRequests = str(task["Scenario"]["numRequests"])
+        numCpus = str(task["Scenario"]["numCpus"])
+        seed = str(task["Scenario"]["seed"])
+        ws_file = "result_v{}_q{}_d{}_r{}.csv".format(numImplementations, numRequests, componentDepth, excessComputeResourceRatio.replace(".", "_"))
         command = (
             "java -jar binaries/jastadd-mquat-solver-mh-1.0-SNAPSHOT.jar \
                 %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s"
-            % (subComponentUnassignedFactor, softwareComponentUnassignedFactor,
-                hardScoreStartingTemperaturePercentage, softScoreStartingTemperaturePercentage,
-                acceptedCountLimit, millisecondsSpentLimit, unimprovedMillisecondsSpentLimit,
-                numTopLevelComponents, avgNumImplSubComponents, implSubComponentStdDerivation,
-                avgNumCompSubComponents, compSubComponentStdDerivation, componentDepth, numImplementations,
-                excessComputeResourceRatio, numRequests, numCpus, seed))
+            % (
+                subComponentUnassignedFactor,
+                softwareComponentUnassignedFactor,
+                hardScoreStartingTemperaturePercentage,
+                softScoreStartingTemperaturePercentage,
+                acceptedCountLimit,
+                millisecondsSpentLimit,
+                unimprovedMillisecondsSpentLimit,
+                numTopLevelComponents,
+                avgNumImplSubComponents,
+                implSubComponentStdDerivation,
+                avgNumCompSubComponents,
+                compSubComponentStdDerivation,
+                componentDepth,
+                numImplementations,
+                excessComputeResourceRatio,
+                numRequests,
+                numCpus,
+                seed,
+            )
+        )
 
         logger.warning("Starting for %s", ws_file)
 
@@ -198,33 +224,28 @@ def simulatedAnnealing(task: dict):
             data.searchSA(ws_file)
             logger.debug("search sa ok")
             result = choice(data.new_data)
-            return {
-                'hardScoreImprovement': float(result["hardScoreImprovement"]),
-                'softScoreImprovement': float(result["softScoreImprovement"])
-            }
+            return {"hardScoreImprovement": float(result["hardScoreImprovement"]), "softScoreImprovement": float(result["softScoreImprovement"])}
         else:
             raise Exception("java command: %s didn't create result file" % command)
     except Exception:
-        logger.error("ERROR IN WORKER during performing SA with parameters: %s" % task['parameters'])
-    return {
-        'hardScoreImprovement': 'NaN',
-        'softScoreImprovement': 'NaN'
-    }
+        logger.error("ERROR IN WORKER during performing SA with parameters: %s" % task["parameters"])
+    return {"hardScoreImprovement": "NaN", "softScoreImprovement": "NaN"}
 
 
 def synthetic_problems(task: dict):
     import math
     import random as rd
+
     func = task["Scenario"]["function_name"]
     if func == "ackley":
-        x = task["parameters"]['x']
-        y = task["parameters"]['y']
+        x = task["parameters"]["x"]
+        y = task["parameters"]["y"]
         part_1 = -0.2 * math.sqrt(0.5 * (math.pow(x, 2) + math.pow(y, 2)))
         part_2 = 0.5 * (math.cos(2 * math.pi * x) + math.cos(2 * math.pi * y))
         result = -20 * math.exp(part_1) - math.exp(part_2) + math.exp(1) + 20
     elif func == "himmelblau":
-        x = task["parameters"]['x']
-        y = task["parameters"]['y']
+        x = task["parameters"]["x"]
+        y = task["parameters"]["y"]
         result = math.pow(math.pow(x, 2) + y + 11, 2) + math.pow(x + math.pow(y, 2) - 7, 2)
     else:
         raise TypeError(f"Unknown function name specified in scenario: {task['Scenario']}")
@@ -235,32 +256,27 @@ def synthetic_problems(task: dict):
 
 def tsp_hh(task: dict):
     from worker_tools.hh.llh_runner import LLHRunner
+
     logging.warning(task)
     framework = "jMetalPy" if "jMetalPy" in task["parameters"]["LLH"] else "jMetal"
 
     if framework == "jMetalPy":
         # Trick to force the meta-heuristic use only a default, or tuned parameters.
-        if task["Scenario"]["Hyperparameters"] == 'default':
-            from worker_tools.hh.llh_wrapper_jmetalpy import \
-                JMetalPyWrapperDefault as LLH_Wrapper
-        elif task["Scenario"]["Hyperparameters"] == 'tuned':
-            from worker_tools.hh.llh_wrapper_jmetalpy import \
-                JMetalPyWrapperTuned as LLH_Wrapper
+        if task["Scenario"]["Hyperparameters"] == "default":
+            from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapperDefault as LLH_Wrapper
+        elif task["Scenario"]["Hyperparameters"] == "tuned":
+            from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapperTuned as LLH_Wrapper
         else:
             # use provided hyperparameters
-            from worker_tools.hh.llh_wrapper_jmetalpy import \
-                JMetalPyWrapper as LLH_Wrapper
+            from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapper as LLH_Wrapper
 
     elif framework == "jMetal":
-        if task["Scenario"]["Hyperparameters"] == 'default':
-            from worker_tools.hh.llh_wrapper_jmetal import \
-                JMetalWrapperDefault as LLH_Wrapper
-        elif task["Scenario"]["Hyperparameters"] == 'tuned':
-            from worker_tools.hh.llh_wrapper_jmetal import \
-                JMetalWrapperTuned as LLH_Wrapper
+        if task["Scenario"]["Hyperparameters"] == "default":
+            from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapperDefault as LLH_Wrapper
+        elif task["Scenario"]["Hyperparameters"] == "tuned":
+            from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapperTuned as LLH_Wrapper
         else:
-            from worker_tools.hh.llh_wrapper_jmetal import \
-                JMetalWrapper as LLH_Wrapper
+            from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapper as LLH_Wrapper
     else:
         raise TypeError(f"Unknown framework: {framework}")
 
@@ -276,18 +292,18 @@ def hh(task: dict):
     framework = "jMetalPy" if "jMetalPy" in task["parameters"]["LLH"] else "jMetal"
 
     if framework == "jMetalPy":
-        if task["Scenario"]["Hyperparameters"] == 'default':
+        if task["Scenario"]["Hyperparameters"] == "default":
             from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapperDefault as LLH_Wrapper
-        elif task["Scenario"]["Hyperparameters"] == 'tuned':
+        elif task["Scenario"]["Hyperparameters"] == "tuned":
             from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapperTuned as LLH_Wrapper
         else:
             # use provided hyperparameters
             from worker_tools.hh.llh_wrapper_jmetalpy import JMetalPyWrapper as LLH_Wrapper
 
     elif framework == "jMetal":
-        if task["Scenario"]["Hyperparameters"] == 'default':
+        if task["Scenario"]["Hyperparameters"] == "default":
             from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapperDefault as LLH_Wrapper
-        elif task["Scenario"]["Hyperparameters"] == 'tuned':
+        elif task["Scenario"]["Hyperparameters"] == "tuned":
             from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapperTuned as LLH_Wrapper
         else:
             from worker_tools.hh.llh_wrapper_jmetal import JMetalWrapper as LLH_Wrapper
@@ -311,61 +327,53 @@ def openml_RF_sklearn(task: dict):
     # import a dataset from openml
     dataset = openml.datasets.get_dataset(task["Scenario"]["DatasetID"])
     X, y, _, _ = dataset.get_data(dataset_format="array", target=dataset.default_target_attribute)
-    criterion_parameter_mapping = {
-        "Context.SearchSpace.criterion.gini": "gini",
-        "Context.SearchSpace.criterion.entropy": "entropy"
-    }
+    criterion_parameter_mapping = {"Context.SearchSpace.criterion.gini": "gini", "Context.SearchSpace.criterion.entropy": "entropy"}
     max_features_parameter_mapping = {
         "Context.SearchSpace.criterion.gini.max_features.sqrt": "sqrt",
         "Context.SearchSpace.criterion.entropy.max_features.sqrt": "sqrt",
         "Context.SearchSpace.criterion.gini.max_features.log2": "log2",
-        "Context.SearchSpace.criterion.entropy.max_features.log2": "log2"
+        "Context.SearchSpace.criterion.entropy.max_features.log2": "log2",
     }
     # Build sklearn RF pipeline
-    clf = make_pipeline(StandardScaler(),
-                        RandomForestClassifier(criterion=criterion_parameter_mapping[task["parameters"]["criterion"]],
-                                               max_depth=task["parameters"]["max_depth"],
-                                               max_features=max_features_parameter_mapping[
-                                                   task["parameters"]["max_features"]],
-                                               min_samples_leaf=task["parameters"]["min_samples_leaf"],
-                                               min_samples_split=task["parameters"]["min_samples_split"],
-                                               n_estimators=task["parameters"]["n_estimators"]))
+    clf = make_pipeline(
+        StandardScaler(),
+        RandomForestClassifier(
+            criterion=criterion_parameter_mapping[task["parameters"]["criterion"]],
+            max_depth=task["parameters"]["max_depth"],
+            max_features=max_features_parameter_mapping[task["parameters"]["max_features"]],
+            min_samples_leaf=task["parameters"]["min_samples_leaf"],
+            min_samples_split=task["parameters"]["min_samples_split"],
+            n_estimators=task["parameters"]["n_estimators"],
+        ),
+    )
 
     # evaluate classifier with cross_validation
-    scores = cross_validate(clf, X, y,
-                            scoring=["f1_macro", "f1_weighted", "roc_auc"],
-                            cv=5,
-                            n_jobs=-1)
+    scores = cross_validate(clf, X, y, scoring=["f1_macro", "f1_weighted", "roc_auc"], cv=5, n_jobs=-1)
     fit_time = np.mean(scores["fit_time"])
     test_f1_macro = np.mean(scores["test_f1_macro"])
     test_f1_weighted = np.mean(scores["test_f1_weighted"])
     test_roc_auc = np.mean(scores["test_roc_auc"])
 
-    result = {
-        "fit_time": fit_time,
-        "test_f1_macro": test_f1_macro,
-        "test_f1_weighted": test_f1_weighted,
-        "test_roc_auc": test_roc_auc
-    }
+    result = {"fit_time": fit_time, "test_f1_macro": test_f1_macro, "test_f1_weighted": test_f1_weighted, "test_roc_auc": test_roc_auc}
     return result
 
 
 def moo_benchmarks(task: dict):
     import pygmo as pg
     import numpy as np
+
     logging.warning(task)
-    keys = task['Scenario']['BenchmarkSuite'].keys()
+    keys = task["Scenario"]["BenchmarkSuite"].keys()
     suite = list(filter(lambda x: x != "problemID", keys))[0]
 
-    problem_id = int(task['Scenario']['ProblemID'])
-    number_of_dimensions = len(task['parameters'])
-    number_of_objectives = len(task['result_structure'])
+    problem_id = int(task["Scenario"]["ProblemID"])
+    number_of_dimensions = len(task["parameters"])
+    number_of_objectives = len(task["result_structure"])
     logging.warning("number_of_dimensions: " + str(number_of_dimensions))
     logging.warning("number_of_objectives: " + str(number_of_objectives))
 
     if suite == "WFG":
-        user_defined_problem = pg.wfg(prob_id=problem_id, dim_dvs=number_of_dimensions, dim_obj=number_of_objectives,
-                                      dim_k=task['Scenario']['BenchmarkSuite']['WFG']['PositionRelatedParameters'])
+        user_defined_problem = pg.wfg(prob_id=problem_id, dim_dvs=number_of_dimensions, dim_obj=number_of_objectives, dim_k=task["Scenario"]["BenchmarkSuite"]["WFG"]["PositionRelatedParameters"])
 
     elif suite == "ZDT":
         user_defined_problem = pg.zdt(prob_id=problem_id, param=number_of_dimensions)
@@ -374,10 +382,7 @@ def moo_benchmarks(task: dict):
 
     problem = pg.problem(user_defined_problem)
 
-    parameters = np.array(list(task['parameters'].values()), dtype=np.float64)
+    parameters = np.array(list(task["parameters"].values()), dtype=np.float64)
     result = problem.fitness(parameters)
-    logging.warning('f1: ' + str(result[0]) + 'f2: ' + str(result[1]))
-    return {
-        'f1': result[0],
-        'f2': result[1]
-    }
+    logging.warning("f1: " + str(result[0]) + "f2: " + str(result[1]))
+    return {"f1": result[0], "f2": result[1]}

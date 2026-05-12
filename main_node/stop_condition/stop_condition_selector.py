@@ -13,12 +13,8 @@ def launch_stop_condition_threads(experiment_id: str, experiment: Experiment = N
     :return: activated stop condition entities
     """
     logger = logging.getLogger(__name__)
-    if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                           os.getenv("BRISE_DATABASE_PORT"),
-                           os.getenv("BRISE_DATABASE_NAME"),
-                           os.getenv("BRISE_DATABASE_USER"),
-                           os.getenv("BRISE_DATABASE_PASS"))
+    if os.environ.get("TEST_MODE") != "UNIT_TEST":
+        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS"))
 
         experiment_description = None
         while experiment_description is None:

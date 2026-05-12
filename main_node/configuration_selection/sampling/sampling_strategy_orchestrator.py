@@ -14,7 +14,6 @@ class SamplingStrategyOrchestrator:
         keys = list(sampling_strategy_description.keys())
         assert len(keys) == 1
         feature_name = keys[0]
-        sampling_strategy_class = reflective_class_import(class_name=sampling_strategy_description[feature_name]["Type"],
-                                                 folder_path="configuration_selection/sampling")
+        sampling_strategy_class = reflective_class_import(class_name=sampling_strategy_description[feature_name]["Type"], folder_path="configuration_selection/sampling")
 
         return sampling_strategy_class(sampling_strategy_description[feature_name], region)

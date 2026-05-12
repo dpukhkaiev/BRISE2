@@ -8,6 +8,7 @@ class API(metaclass=Singleton):
     """
     The singleton - enabled decorator for the API object with exposed `send` method instead emit.
     """
+
     # These should be kept updated according to the APIMessageBuilder functionality!
     SUPPORTED_MESSAGES = {
         "LOG": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -15,7 +16,7 @@ class API(metaclass=Singleton):
         "NEW": ["CONFIGURATION", "TASK"],
         "PREDICTIONS": ["CONFIGURATIONS"],
         "FINAL": ["CONFIGURATION"],
-        "EXPERIMENT": ["DESCRIPTION"]
+        "EXPERIMENT": ["DESCRIPTION"],
     }
 
     def __init__(self, api_object=None):
@@ -38,28 +39,31 @@ class API(metaclass=Singleton):
 
             self._api_object = DummyAPI()
         else:
-            object_methods = [method_name for method_name in dir(api_object)
-                              if callable(getattr(api_object, method_name))]
+            object_methods = [method_name for method_name in dir(api_object) if callable(getattr(api_object, method_name))]
             # check parameters of the API's emit() method (must be either correctly named or at least compatible by type)
             if "emit" in object_methods:
                 emit_method_parameters = inspect.signature(api_object.__class__.emit).parameters
-                if len(emit_method_parameters.keys()) > 3 \
-                        and str(emit_method_parameters[list(emit_method_parameters.keys())[1]].annotation) == "<class 'str'>" \
-                        and str(emit_method_parameters[list(emit_method_parameters.keys())[2]].annotation) == "<class 'str'>" \
-                        and str(emit_method_parameters[list(emit_method_parameters.keys())[3]].annotation) == "<class 'str'>":
+                if (
+                    len(emit_method_parameters.keys()) > 3
+                    and str(emit_method_parameters[list(emit_method_parameters.keys())[1]].annotation) == "<class 'str'>"
+                    and str(emit_method_parameters[list(emit_method_parameters.keys())[2]].annotation) == "<class 'str'>"
+                    and str(emit_method_parameters[list(emit_method_parameters.keys())[3]].annotation) == "<class 'str'>"
+                ):
 
-                    if 'message_type' not in emit_method_parameters.keys() \
-                            or 'message_subtype' not in emit_method_parameters.keys() \
-                            or 'message' not in emit_method_parameters.keys():
-                        self.logger.warning("Parameter names of the emit() method are untypical for your API object."
-                                            "It is advisable to check emit() parameters."
-                                            "Expected parameters are: 'message_type', 'message_subtype', 'message'")
+                    if "message_type" not in emit_method_parameters.keys() or "message_subtype" not in emit_method_parameters.keys() or "message" not in emit_method_parameters.keys():
+                        self.logger.warning(
+                            "Parameter names of the emit() method are untypical for your API object."
+                            "It is advisable to check emit() parameters."
+                            "Expected parameters are: 'message_type', 'message_subtype', 'message'"
+                        )
 
                     self._api_object = api_object
                 else:
-                    raise AttributeError("Provided API object has unsupported 'emit()' method."
-                                         "Its parameters do not correspond to the required!"
-                                         "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'")
+                    raise AttributeError(
+                        "Provided API object has unsupported 'emit()' method."
+                        "Its parameters do not correspond to the required!"
+                        "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'"
+                    )
             else:
                 raise AttributeError("Provided API object doesn't contain 'emit()' method")
 
@@ -73,25 +77,20 @@ class API(metaclass=Singleton):
         """
 
         try:
-            assert type(message_type) is str, \
-                "Wrong API message type object! Got: %s, should be string." % type(message_type)
+            assert type(message_type) is str, "Wrong API message type object! Got: %s, should be string." % type(message_type)
 
-            assert type(message_subtype) is str, \
-                "Wrong API message subtype object! Got: %s, should be string." % type(message_subtype)
+            assert type(message_subtype) is str, "Wrong API message subtype object! Got: %s, should be string." % type(message_subtype)
 
-            assert message_type.upper() in API.SUPPORTED_MESSAGES.keys(), \
-                "Message type is not supported! Got: %s, supported: %s" % \
-                (message_type, str(list(API.SUPPORTED_MESSAGES.keys())))
+            assert message_type.upper() in API.SUPPORTED_MESSAGES.keys(), "Message type is not supported! Got: %s, supported: %s" % (message_type, str(list(API.SUPPORTED_MESSAGES.keys())))
 
-            assert message_subtype.upper() in API.SUPPORTED_MESSAGES[message_type.upper()], \
-                "Message subtype is not supported! Got %s, supported: %s" % \
-                (message_subtype.upper(), str(API.SUPPORTED_MESSAGES[message_type.upper()]))
+            assert message_subtype.upper() in API.SUPPORTED_MESSAGES[message_type.upper()], "Message subtype is not supported! Got %s, supported: %s" % (
+                message_subtype.upper(),
+                str(API.SUPPORTED_MESSAGES[message_type.upper()]),
+            )
 
             # All is OK, sending the message.
             # --lowercase
-            return self._api_object.emit(message_type.lower(),
-                                         message_subtype.lower(),
-                                         APIMessageBuilder.build(message_type.upper(), **key_value_params))
+            return self._api_object.emit(message_type.lower(), message_subtype.lower(), APIMessageBuilder.build(message_type.upper(), **key_value_params))
 
         except AssertionError as error:
             self.logger.error(error)
@@ -128,7 +127,7 @@ class APIMessageBuilder:
             "PREDICTIONS": APIMessageBuilder._build_task_message,
             "DEFAULT": APIMessageBuilder._build_task_message,
             "FINAL": APIMessageBuilder._build_task_message,
-            "EXPERIMENT": APIMessageBuilder._build_experiment_message
+            "EXPERIMENT": APIMessageBuilder._build_experiment_message,
         }[message_type.upper()](**kwargs)
 
     @staticmethod
@@ -158,14 +157,11 @@ class APIMessageBuilder:
         # Validation of input.
         try:
             # Verify that all mandatory fields provided.
-            assert "configurations" in kwargs.keys() and isinstance(kwargs["configurations"], list), \
-                "The configurations(key parameter) are not provided or have invalid format!"
-            assert "results" in kwargs.keys() and isinstance(kwargs["results"], list), \
-                "The results(key parameter) are not provided or have invalid format!"
+            assert "configurations" in kwargs.keys() and isinstance(kwargs["configurations"], list), "The configurations(key parameter) are not provided or have invalid format!"
+            assert "results" in kwargs.keys() and isinstance(kwargs["results"], list), "The results(key parameter) are not provided or have invalid format!"
 
             # Verify that length of all parameters are the same.
-            assert all(len(kwargs[key]) == len(kwargs["configurations"]) for key in kwargs.keys()), \
-                "Different sizes of provided parameters!\n%s" % str(kwargs)
+            assert all(len(kwargs[key]) == len(kwargs["configurations"]) for key in kwargs.keys()), "Different sizes of provided parameters!\n%s" % str(kwargs)
         except AssertionError as error:
             getLogger(__name__).error(error)
             raise KeyError("Invalid parameters passed to send message via API: %s" % error)
@@ -199,8 +195,4 @@ class APIMessageBuilder:
             getLogger(__name__).error(error)
             raise KeyError("Invalid parameters passed to send message via API: %s" % error)
 
-        return {
-            "global_configuration": kwargs["global_config"],
-            "experiment_description": kwargs["experiment_description"],
-            "searchspace_description": kwargs["searchspace_description"]
-        }
+        return {"global_configuration": kwargs["global_config"], "experiment_description": kwargs["experiment_description"], "searchspace_description": kwargs["searchspace_description"]}

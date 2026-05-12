@@ -17,12 +17,11 @@ class StopConditionValidator:
     using user-defined pattern (StopConditionLogic in experiment description)
     and then execute it with numexpr (math-only functions analogue of eval)
     """
+
     def __init__(self, experiment_id: str, experiment_description: dict):
-        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                                os.getenv("BRISE_DATABASE_PORT"),
-                                os.getenv("BRISE_DATABASE_NAME"),
-                                os.getenv("BRISE_DATABASE_USER"),
-                                os.getenv("BRISE_DATABASE_PASS"))
+        self.database = MongoDB(
+            os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS")
+        )
 
         self.experiment_id = experiment_id
         self.logger = logging.getLogger(__name__)
@@ -35,11 +34,15 @@ class StopConditionValidator:
                 self.stop_condition_states[experiment_description["StopCondition"]["Instance"][sc_key]["Name"]] = False
 
         self.expression = self.expression.replace("or", "|").replace("and", "&")
-        self.repetition_interval = datetime.timedelta(**{
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
+        self.repetition_interval = datetime.timedelta(
+            **{
+                experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: experiment_description["StopCondition"]["StopConditionTriggerLogic"][
+                    "InspectionParameters"
+                ]["RepetitionPeriod"]
+            }
+        ).total_seconds()
 
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if os.environ.get("TEST_MODE") != "UNIT_TEST":
             self.connection_thread = EventServiceConnection(self)
             self.connection_thread.start()
             self.processing_thread = threading.Thread(target=self.self_evaluation, args=())
@@ -51,7 +54,7 @@ class StopConditionValidator:
         This function performs Search Space filling check periodically according to user-defined repetition interval.
         """
         counter = 0
-        listen_interval = self.repetition_interval/10
+        listen_interval = self.repetition_interval / 10
         while self.active:
             time.sleep(listen_interval)
             counter = counter + 1
@@ -64,15 +67,12 @@ class StopConditionValidator:
                     numb_of_measured_configurations = 0
                     self.logger.warning(f"No Experiment state is yet available for the experiment {self.experiment_id}")
                 if numb_of_measured_configurations > 0:
-                    search_space_size = \
-                        self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
+                    search_space_size = self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
                     if numb_of_measured_configurations >= search_space_size and self.active:
                         self.active = False
                         msg = "Entire Search Space was measured."
                         self.logger.info(msg)
-                        publish(exchange='stop_experiment_exchange',
-                                routing_key=self.experiment_id,
-                                body=msg)
+                        publish(exchange="stop_experiment_exchange", routing_key=self.experiment_id, body=msg)
 
     def validate_conditions(self, ch, method, properties, body):
         """
@@ -94,9 +94,7 @@ class StopConditionValidator:
                 self.logger.info(msg)
                 dictionary_dump = {"experiment_id": self.experiment_id}
                 body = json.dumps(dictionary_dump)
-                publish(exchange='stop_experiment_exchange',
-                        routing_key=self.experiment_id,
-                        body=msg)
+                publish(exchange="stop_experiment_exchange", routing_key=self.experiment_id, body=msg)
 
     def stop_thread(self, ch, method, properties, body):
         """
@@ -127,14 +125,9 @@ class EventServiceConnection(RabbitMQConnection):
         super().__init__(stop_condition_validator)
 
     def bind_and_consume(self):
-        self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+        self.termination_result = self.channel.queue_declare(queue="", exclusive=True)
         self.termination_queue_name = self.termination_result.method.queue
-        self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                queue=self.termination_queue_name,
-                                routing_key=self.experiment_id)
+        self.channel.queue_bind(exchange="experiment_termination_exchange", queue=self.termination_queue_name, routing_key=self.experiment_id)
 
-        self.channel.basic_consume(queue='check_stop_condition_expression_exchange' + self.experiment_id,
-                                   auto_ack=True,
-                                   on_message_callback=self.stop_condition_validator.validate_conditions)
-        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                   on_message_callback=self.stop_condition_validator.stop_thread)
+        self.channel.basic_consume(queue="check_stop_condition_expression_exchange" + self.experiment_id, auto_ack=True, on_message_callback=self.stop_condition_validator.validate_conditions)
+        self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True, on_message_callback=self.stop_condition_validator.stop_thread)

@@ -12,12 +12,12 @@ class JMetalWrapper(ILLHWrapper):
         super().__init__()
         self._call_arguments = []
 
-        self._call_arguments.append('binaries/jmetal-exec-5.8-jar-with-dependencies.jar')
-        self._call_arguments.append('paths_to_stdout=True')
+        self._call_arguments.append("binaries/jmetal-exec-5.8-jar-with-dependencies.jar")
+        self._call_arguments.append("paths_to_stdout=True")
         self._initial_solutions_file_name = "warm_startup_solutions.txt"
 
     def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
-        elitist = hyperparameters.get('elitist').split(".")[-1]
+        elitist = hyperparameters.get("elitist").split(".")[-1]
         self._call_arguments.append(f"mutation_probability={hyperparameters.get('mutation_probability')}")
         self._call_arguments.append(f"elitist={elitist}")
         self._call_arguments.append(f"mu={hyperparameters.get('mu')}")
@@ -44,8 +44,7 @@ class JMetalWrapper(ILLHWrapper):
             scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
             self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
         elif scenario["Problem"] == "Sphere" or scenario["Problem"] == "Rastrigin":
-            self._call_arguments.append(
-                f"numberOfVariables={scenario["InitializationParameters"]["number_of_variables"]}")
+            self._call_arguments.append(f"numberOfVariables={scenario["InitializationParameters"]["number_of_variables"]}")
         else:
             raise NotImplementedError("jMetal.EvolutionStrategy is not yet supported for the specified problem!")
 
@@ -79,17 +78,11 @@ class JMetalWrapper(ILLHWrapper):
                     break
                 else:
                     solutions.append(json.loads(output[pointer]))
-            pointer += 2    # "Paths END" -> "Path length:" -> length value
+            pointer += 2  # "Paths END" -> "Path length:" -> length value
             current_objective = float(output[pointer])
-            pointer += 2    # length value -> "Improvement:" -> improvement value
+            pointer += 2  # length value -> "Improvement:" -> improvement value
             improvement = float(output[pointer])
-            result = {
-                "objective": current_objective,
-                "improvement": improvement,
-                "parameter_control_info": {
-                    "solutions": solutions
-                }
-            }
+            result = {"objective": current_objective, "improvement": improvement, "parameter_control_info": {"solutions": solutions}}
 
         # cleanup
         if os.path.exists(self._initial_solutions_file_name):
@@ -98,9 +91,9 @@ class JMetalWrapper(ILLHWrapper):
         return result
 
     def _attach_initial_solutions(self, parameter_control_info: Mapping) -> None:
-        if parameter_control_info and 'solutions' in parameter_control_info.keys():
-            with open(self._initial_solutions_file_name, 'w') as f:
-                for solution in parameter_control_info['solutions']:
+        if parameter_control_info and "solutions" in parameter_control_info.keys():
+            with open(self._initial_solutions_file_name, "w") as f:
+                for solution in parameter_control_info["solutions"]:
                     f.write(json.dumps(solution))
                     f.write("\n")
             self._call_arguments.append(f"initial_solutions={self._initial_solutions_file_name}")

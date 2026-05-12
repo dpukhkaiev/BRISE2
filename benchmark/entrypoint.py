@@ -35,11 +35,9 @@ def run_benchmark():
         logging.error("Unable to create BRISEBenchmarkRunner instance: %s" % exception, exc_info=True)
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="The entry point of BRISE Benchmark service.")
-    parser.add_argument("--mode", choices=["analyse", "benchmark"],
-                        help="Mode in which Benchmarking functionality should be run.")
+    parser.add_argument("--mode", choices=["analyse", "benchmark"], help="Mode in which Benchmarking functionality should be run.")
     args = parser.parse_args()
 
     run_benchmark()

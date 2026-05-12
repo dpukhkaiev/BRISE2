@@ -6,9 +6,7 @@ import threading
 
 import pika
 import pika.exceptions
-from worker_tools.reflective_worker_method_import import (
-    get_worker_methods_as_dict
-)
+from worker_tools.reflective_worker_method_import import get_worker_methods_as_dict
 
 logging.basicConfig()
 
@@ -19,6 +17,7 @@ class WorkerMainThread(threading.Thread):
     connected to the `task_queue` as a consumer and sends messages when a task starts  to `taken_task_event_queue`
     and sends a result of task to `task_result_exchange` and `finished_task_event_queue`
     """
+
     def __init__(self, host, port):
         """
         :param host: ip address of rabbitmq service
@@ -29,8 +28,7 @@ class WorkerMainThread(threading.Thread):
 
         self.channel = self.connection.channel()
         self.channel.basic_qos(prefetch_count=1)  # prefetch_count is a parameter that limited number of taken task
-        self.channel.basic_consume(queue='task_queue',
-                                   on_message_callback=self.run_task)
+        self.channel.basic_consume(queue="task_queue", on_message_callback=self.run_task)
         self.task_dict = {}
         # Generate object with available executable methods
         self.worker_methods = get_worker_methods_as_dict()
@@ -41,7 +39,7 @@ class WorkerMainThread(threading.Thread):
         """
         :return: id of the respective thread
         """
-        if hasattr(self, '_thread_id'):
+        if hasattr(self, "_thread_id"):
             return self._thread_id
         for id, thread in threading._active.items():
             if thread is self:
@@ -53,8 +51,7 @@ class WorkerMainThread(threading.Thread):
         :return:
         """
         thread_id = self.get_id()
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
-                                                         ctypes.py_object(SystemExit))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
         self.connection.close()
@@ -65,13 +62,12 @@ class WorkerMainThread(threading.Thread):
         CURRENT_TASK_ID = task["task_id"]
         self.logger.info(f"Got task: {task['task_name']} ID: {task['task_id']}.")
 
-        if 'task_name' not in task.keys():
+        if "task_name" not in task.keys():
             self.logger.error(f"No task name provided in {task}")
         else:
-            if not task['task_name'] in self.worker_methods:
+            if not task["task_name"] in self.worker_methods:
                 # if worker don't have method
-                self.logger.error(f'Task {task["task_name"]} is not supported. '
-                                  f'Supported Tasks are: {list(self.worker_methods.keys())}.')
+                self.logger.error(f'Task {task["task_name"]} is not supported. ' f"Supported Tasks are: {list(self.worker_methods.keys())}.")
             else:
                 # pointer to method execution
                 w_method = self.worker_methods[task["task_name"]]
@@ -89,20 +85,9 @@ class WorkerMainThread(threading.Thread):
                 for key in task["result_structure"]:
                     if key not in result_from_worker:
                         result_from_worker[key] = None
-                res = {
-                    'id_measurement': task["id_measurement"],
-                    'task_result': {
-                        'task id': task["task_id"],
-                        'worker': f"{os.uname()[1]}",
-                        'result': result_from_worker
-                    }
-                }
-                self.channel.basic_publish(exchange='task_result_exchange',
-                                           routing_key=task["experiment_id"],
-                                           body=json.dumps(res))
-                self.channel.basic_publish(exchange='',
-                                           routing_key='finished_task_event_queue',
-                                           body=json.dumps(res))
+                res = {"id_measurement": task["id_measurement"], "task_result": {"task id": task["task_id"], "worker": f"{os.uname()[1]}", "result": result_from_worker}}
+                self.channel.basic_publish(exchange="task_result_exchange", routing_key=task["experiment_id"], body=json.dumps(res))
+                self.channel.basic_publish(exchange="", routing_key="finished_task_event_queue", body=json.dumps(res))
                 ch.basic_ack(delivery_tag=method.delivery_tag)  # acknowledge that task was finished
 
     def run(self):
@@ -122,6 +107,7 @@ class WorkerTerminationThread(threading.Thread):
     create a dynamic queue, bind the queue to `task_termination_sender`
     and consumes this queue and terminate worker process according to termination message
     """
+
     def __init__(self, host, port):
         """
         :param host: ip address of rabbitmq service
@@ -133,18 +119,17 @@ class WorkerTerminationThread(threading.Thread):
         self.channel = self.connection.channel()
         # subscribe for all massages in task_termination_sender exchange
         # need for broadcast messages between all workers
-        termination_reg_result = self.channel.queue_declare(queue='', exclusive=True)
+        termination_reg_result = self.channel.queue_declare(queue="", exclusive=True)
         termination_queue_name = termination_reg_result.method.queue
 
-        self.channel.queue_bind(exchange='task_termination_sender', queue=termination_queue_name)
-        self.channel.basic_consume(
-            queue=termination_queue_name, on_message_callback=self.terminate_task, auto_ack=True)
+        self.channel.queue_bind(exchange="task_termination_sender", queue=termination_queue_name)
+        self.channel.basic_consume(queue=termination_queue_name, on_message_callback=self.terminate_task, auto_ack=True)
 
     def get_id(self):
         """
         :return: id of the respective thread
         """
-        if hasattr(self, '_thread_id'):
+        if hasattr(self, "_thread_id"):
             return self._thread_id
         for id, thread in threading._active.items():
             if thread is self:
@@ -156,8 +141,7 @@ class WorkerTerminationThread(threading.Thread):
         :return:
         """
         thread_id = self.get_id()
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
-                                                         ctypes.py_object(SystemExit))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
 
@@ -178,8 +162,7 @@ CURRENT_TASK_ID = ""
 # Basic functionality
 while True:
     w_thread = WorkerMainThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
-    t_thread = WorkerTerminationThread(os.getenv("BRISE_EVENT_SERVICE_HOST"),
-                                       os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
+    t_thread = WorkerTerminationThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     try:
         w_thread.start()
         t_thread.start()

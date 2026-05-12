@@ -17,7 +17,7 @@ class Surrogate(ABC):
 
         self.feature_name = ""
         if "Instance" in surrogate_description.keys():  # Composite surrogates don't have an Instance as a top level feature
-            keys = list(surrogate_description['Instance'].keys())
+            keys = list(surrogate_description["Instance"].keys())
             assert len(keys) == 1
             self.feature_name = keys[0]
 
@@ -28,8 +28,7 @@ class Surrogate(ABC):
             if "ConfigurationTransformer" in i[0]:
                 for ct in i[1].items():
                     relevant_parameters = tuple(filter(lambda r: r.type in ct[0], region))
-                    configuration_transformer = (self.configuration_transformer_orchestrator.
-                                                 get_configuration_transformer(ct, relevant_parameters))
+                    configuration_transformer = self.configuration_transformer_orchestrator.get_configuration_transformer(ct, relevant_parameters)
                     self.mapping_config_transformer_parameter[configuration_transformer] = relevant_parameters
 
         # Value Transformers

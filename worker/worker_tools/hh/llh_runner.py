@@ -29,7 +29,7 @@ class LLHRunner:
             mongo_port=int(os.getenv("BRISE_DATABASE_PORT")),
             database_name=os.getenv("BRISE_DATABASE_NAME"),
             user=os.getenv("BRISE_DATABASE_USER"),
-            passwd=os.getenv("BRISE_DATABASE_PASS")
+            passwd=os.getenv("BRISE_DATABASE_PASS"),
         )
 
     def build(self) -> None:
@@ -43,17 +43,15 @@ class LLHRunner:
         :return: None
         """
         self.logger.debug("Fetching parameter control info.")
-        parameter_control_info_record = (
-            self.dao.get_last_record_by_experiment_id("Parameter_control_info", self._task["experiment_id"]))
+        parameter_control_info_record = self.dao.get_last_record_by_experiment_id("Parameter_control_info", self._task["experiment_id"])
 
         if not parameter_control_info_record:
             parameter_control_info = None
-            self.logger.warning(f"Solving optimization problem from scratch, since no starting solutions available for "
-                                f"experiment with ID: {self._task['experiment_id']}.")
+            self.logger.warning(f"Solving optimization problem from scratch, since no starting solutions available for " f"experiment with ID: {self._task['experiment_id']}.")
         else:
             parameter_control_info = parameter_control_info_record["parameter_control_info"]
         self.logger.debug("Constructing the LLH algorithm.")
-        self._llh_wrapper.construct(self._task['parameters'], self._task['Scenario'], parameter_control_info)
+        self._llh_wrapper.construct(self._task["parameters"], self._task["Scenario"], parameter_control_info)
         self.logger.debug("The LLH algorithm construction succeed.")
         self.status = LLHRunner.BUILT_SUCCESS
 

@@ -10,8 +10,7 @@ class MetricOrchestrator:
         """
         logger = logging.getLogger(__name__)
         metric = list(metric_description.keys())[0]
-        current_mr = reflective_class_import(class_name=metric,
-                                             folder_path="transfer_learning/model_recommendation/metrics")
+        current_mr = reflective_class_import(class_name=metric, folder_path="transfer_learning/model_recommendation/metrics")
         metric_class = current_mr(is_mimimization)
         logger.info(f"Assigned {metric} metric.")
 

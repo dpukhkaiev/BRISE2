@@ -16,7 +16,7 @@ def is_json_file_valid(validated_data: dict, schema_path):
     """
     schema = load_json_file(schema_path)
 
-    resolver = RefResolver('file:///' + abspath('.').replace("\\", "/") + '/', schema)
+    resolver = RefResolver("file:///" + abspath(".").replace("\\", "/") + "/", schema)
 
     try:
         return Draft4Validator(schema, resolver=resolver).validate(validated_data) is None
@@ -62,4 +62,4 @@ def get_missing_sc_entities(validated_data: dict):
 if __name__ == "__main__":
     # Basic unit test - load EnergyExperiment and check if it valid (should be valid).
     entity_description = load_json_file("Resources/EnergyExperiment.json")
-    print("Valid:", is_json_file_valid(entity_description, './Resources/schema/experiment.schema.json'))
+    print("Valid:", is_json_file_valid(entity_description, "./Resources/schema/experiment.schema.json"))

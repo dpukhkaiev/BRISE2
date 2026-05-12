@@ -78,22 +78,22 @@ class Configuration:
         self.parameter_control_info = {}  # additional information used in parameter control experiments, e.g., initial solution for a warm startup of an optimizer within the worker node
         self.experiment_id = experiment_id
         # Configuration status flags
-        self.status = {'enabled': True, 'evaluated': False, 'measured': False}
+        self.status = {"enabled": True, "evaluated": False, "measured": False}
 
     def __getstate__(self) -> Dict[str, Any]:
         space = self.__dict__.copy()
-        space['status'] = dict(space['status'])
-        space['type'] = int(space['type'])
+        space["status"] = dict(space["status"])
+        space["type"] = int(space["type"])
         space["_parameters"] = dict(space["_parameters"])
         space["_results"] = dict(space["_results"])
-        del space['logger']
+        del space["logger"]
         return deepcopy(space)
 
     def __setstate__(self, space: Dict[str, Any]) -> None:
         self.__dict__ = space
         self.logger = logging.getLogger(__name__)
-        self.status = OrderedDict(space['status'])
-        self.type = Configuration.Type(space['type'])
+        self.status = OrderedDict(space["status"])
+        self.type = Configuration.Type(space["type"])
         self._parameters = OrderedDict(space["_parameters"])
         self._results = OrderedDict(space["_results"])
 
@@ -107,10 +107,9 @@ class Configuration:
             raise TypeError(f"Parameters should be of instance {type(self._parameters)}.")
 
         if parameters.get("low level heuristic", "") == "jMetalPy.EvolutionStrategy":
-            if 'lambda_' in parameters and parameters['lambda_'] < parameters['mu']:
-                self.logger.warning(f"Values for 'lambda_'({parameters['lambda_']}( and 'mu'({parameters['mu']}) "
-                                    f"parameters was swapped due to specifics of MH!")
-                parameters['lambda_'], parameters['mu'] = parameters['mu'], parameters['lambda_']
+            if "lambda_" in parameters and parameters["lambda_"] < parameters["mu"]:
+                self.logger.warning(f"Values for 'lambda_'({parameters['lambda_']}( and 'mu'({parameters['mu']}) " f"parameters was swapped due to specifics of MH!")
+                parameters["lambda_"], parameters["mu"] = parameters["mu"], parameters["lambda_"]
         self._parameters = parameters
 
     @property
@@ -128,7 +127,7 @@ class Configuration:
         data = OrderedDict(self.parameters)
         if results:
             data.update(self.results)
-        return pd.Series(data, dtype='object')
+        return pd.Series(data, dtype="object")
 
     def add_predicted_result(self, *args, **kwargs) -> None:
         # the structure of predicted results should be revised to:
@@ -156,29 +155,30 @@ class Configuration:
         for task in self._tasks.values():
             from_one_task = OrderedDict()
             for domain in self.__class__.TaskConfiguration["Objectives"]:
-                from_one_task[domain] = (task['result'][domain])
+                from_one_task[domain] = task["result"][domain]
             from_all_tasks.append(from_one_task)
-            marks.append(task['ResultValidityCheckMark'])
+            marks.append(task["ResultValidityCheckMark"])
         return from_all_tasks, marks
 
     def get_standard_deviation(self):
         return self._standard_deviation.copy()
 
     def to_json(self) -> str:
-        dictionary_dump = {"configuration_id": self.unique_id,
-                           "parameters": self.parameters,
-                           "results": self.results,
-                           "tasks": self._tasks,
-                           "predicted_result": self.predicted_result,
-                           "prediction_info": self.prediction_info,
-                           "standard_deviation": self._standard_deviation,
-                           "type": self.type,
-                           "status": self.status,
-                           "number_of_failed_tasks": self.number_of_failed_tasks,
-                           "_task_number": self._task_number,
-                           "parameter_control_info": self.parameter_control_info,
-                           "experiment_id": self.experiment_id
-                           }
+        dictionary_dump = {
+            "configuration_id": self.unique_id,
+            "parameters": self.parameters,
+            "results": self.results,
+            "tasks": self._tasks,
+            "predicted_result": self.predicted_result,
+            "prediction_info": self.prediction_info,
+            "standard_deviation": self._standard_deviation,
+            "type": self.type,
+            "status": self.status,
+            "number_of_failed_tasks": self.number_of_failed_tasks,
+            "_task_number": self._task_number,
+            "parameter_control_info": self.parameter_control_info,
+            "experiment_id": self.experiment_id,
+        }
         return json.dumps(dictionary_dump)
 
     @staticmethod
@@ -246,8 +246,7 @@ class Configuration:
         elif all(obj_comp is False for obj_comp in objectives_comparison.values()):
             return False
         else:
-            self.logger.warning(f"Got non-dominating Configuration comparison: "
-                                f"{self} VS {other} -> {objectives_comparison}")
+            self.logger.warning(f"Got non-dominating Configuration comparison: " f"{self} VS {other} -> {objectives_comparison}")
             return False
 
     def __gt__(self, other: Configuration) -> bool:
@@ -268,10 +267,8 @@ class Configuration:
         task_index_size = len(results_tuples) - 1
         # delete marked bad/outliers values before average is calculated
         for task_index in range(task_index_size, -1, -1):
-            if marks[task_index] == 'Bad value' or \
-                    marks[task_index] == 'Outlier' or \
-                    marks[task_index] == 'Out of bounds':
-                del (results_tuples[task_index])
+            if marks[task_index] == "Bad value" or marks[task_index] == "Outlier" or marks[task_index] == "Out of bounds":
+                del results_tuples[task_index]
         # calculating the average over all result items
         ok_tasks_results = pd.DataFrame(results_tuples, columns=self.TaskConfiguration["Objectives"])
         self.results = OrderedDict(ok_tasks_results.mean())
@@ -282,13 +279,15 @@ class Configuration:
         """
         String representation of Configuration object.
         """
-        return f"Configuration(" \
-               f"Params: {str(dict(self.parameters))}, " \
-               f"Tasks: {len(self._tasks)}, " \
-               f"Outliers: {len(self._tasks) - self._task_number}, " \
-               f"Results: {str(dict(self.results))}, " \
-               f"STD: {str(self.get_standard_deviation())}" \
-               ")"
+        return (
+            f"Configuration("
+            f"Params: {str(dict(self.parameters))}, "
+            f"Tasks: {len(self._tasks)}, "
+            f"Outliers: {len(self._tasks) - self._task_number}, "
+            f"Results: {str(dict(self.results))}, "
+            f"STD: {str(self.get_standard_deviation())}"
+            ")"
+        )
 
     def disable_configuration(self):
         """
@@ -298,7 +297,7 @@ class Configuration:
             self.status["enabled"] = False
             temp_msg = f"Configuration {self} was disabled. It will not be added to the Experiment."
             self.logger.warning(temp_msg)
-            API().send('log', 'warning', message=temp_msg)
+            API().send("log", "warning", message=temp_msg)
 
     def increase_failed_tasks_number(self):
         """
@@ -317,10 +316,10 @@ class Configuration:
             if task["ResultValidityCheckMark"] == "Bad value" or task["ResultValidityCheckMark"] == "Out of bounds":
                 return False
             assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
-            assert task['worker'], "Worker is not specified: %s" % task
-            assert set(self.TaskConfiguration['Objectives']) <= set(task['result'].keys()), \
-                f"All required result fields are not obtained. " \
-                f"Expected: {self.TaskConfiguration['Objectives']}. Got: {task['result'].keys()}."
+            assert task["worker"], "Worker is not specified: %s" % task
+            assert set(self.TaskConfiguration["Objectives"]) <= set(task["result"].keys()), (
+                f"All required result fields are not obtained. " f"Expected: {self.TaskConfiguration['Objectives']}. Got: {task['result'].keys()}."
+            )
             return True
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))
@@ -351,6 +350,6 @@ class Configuration:
         """
         record = {}
         record["Configuration_ID"] = self.unique_id
-        record["Task_ID"] = task['task id']
+        record["Task_ID"] = task["task id"]
         record["Task"] = task
         return record

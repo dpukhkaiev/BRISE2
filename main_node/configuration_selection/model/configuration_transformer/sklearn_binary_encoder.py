@@ -17,7 +17,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
     Choices object should be hashable.
     """
 
-    def __init__(self, categories: Union[str, List[object]] = 'auto'):
+    def __init__(self, categories: Union[str, List[object]] = "auto"):
 
         self.__categories = categories
         self.__transformer = OrdinalEncoder(categories=self.__categories, dtype=np.int64)
@@ -28,8 +28,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
 
     def fit(self, df: pd.DataFrame, y=None):
         self.__transformer.fit(X=df, y=y)
-        self.__n_bits = {c_name: len(format(len(c_cats), 'b'))
-                         for c_name, c_cats in enumerate(self.__transformer.categories_)}
+        self.__n_bits = {c_name: len(format(len(c_cats), "b")) for c_name, c_cats in enumerate(self.__transformer.categories_)}
         # __n_bits reflects how many bits it is needed to encode categories of corresponding (by index) column
 
         # precompute binary encodings
@@ -37,7 +36,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
             self.__encode_mapping[idx] = dict()
             self.__decode_mapping[idx] = dict()
             for cat_idx, category in enumerate(column_categories):
-                encoding = tuple(float(x) for x in format(cat_idx, f'0{self.__n_bits[idx]}b'))
+                encoding = tuple(float(x) for x in format(cat_idx, f"0{self.__n_bits[idx]}b"))
                 self.__encode_mapping[idx][cat_idx] = encoding
                 self.__decode_mapping[idx][encoding] = cat_idx
 
@@ -45,8 +44,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
 
     def transform(self, df: pd.DataFrame) -> np.ndarray:
         if len(df.keys()) != len(self.__n_bits):
-            raise TypeError(f"Transformer was fit to data with {self.__n_bits} columns, "
-                            f"but given data with {len(df.keys())} columns.")
+            raise TypeError(f"Transformer was fit to data with {self.__n_bits} columns, " f"but given data with {len(df.keys())} columns.")
         # Convert to OrdinalEncoding
         pre_transformed = self.__transformer.transform(X=df)  # In OrdinalEncoding
         # Convert to BinaryEncoding
@@ -69,14 +67,9 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
             columns_idxs = slice(left_pointer, left_pointer + self.__n_bits[column])
             left_pointer += self.__n_bits[column]
             bin_columns_raw = df.iloc[:, columns_idxs].to_numpy()
-            bin_columns_real = np.apply_along_axis(self._closest_euclidean,
-                                                   axis=1,
-                                                   arr=bin_columns_raw,
-                                                   vectors=self.__decode_mapping[column].keys())
+            bin_columns_real = np.apply_along_axis(self._closest_euclidean, axis=1, arr=bin_columns_raw, vectors=self.__decode_mapping[column].keys())
 
-            ord_column = np.apply_along_axis(lambda enc: self.__decode_mapping[column][tuple(enc)],
-                                             axis=1,
-                                             arr=bin_columns_real)
+            ord_column = np.apply_along_axis(lambda enc: self.__decode_mapping[column][tuple(enc)], axis=1, arr=bin_columns_real)
 
             ordinal_encoded[column] = ord_column
         # convert back from OrdinalEncoding to original one
@@ -91,7 +84,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
         :param vectors:
         :return:
         """
-        min_found_distance = float('inf')
+        min_found_distance = float("inf")
         closest_vector = None
         for existing_vector in vectors:
             dist = sum(((x - y) ** 2 for x, y in zip(vector, existing_vector)))

@@ -19,10 +19,10 @@ class BRISELogConfigurator:
 
         config = self.load_dict_from_yaml(self.__config_file_path)
 
-        debug_log_folder = config['handlers']['debug_file_handler']['filename']
-        error_log_folder = config['handlers']['error_file_handler']['filename']
-        self.__create_logging_folder(debug_log_folder[:debug_log_folder.rfind("/")])
-        self.__create_logging_folder(error_log_folder[:error_log_folder.rfind("/")])
+        debug_log_folder = config["handlers"]["debug_file_handler"]["filename"]
+        error_log_folder = config["handlers"]["error_file_handler"]["filename"]
+        self.__create_logging_folder(debug_log_folder[: debug_log_folder.rfind("/")])
+        self.__create_logging_folder(error_log_folder[: error_log_folder.rfind("/")])
         self.__configure_logging(dict_configuration=config)
         self.__enable_logging_uncaught_exceptions()
 
@@ -38,8 +38,7 @@ class BRISELogConfigurator:
             logging.config.dictConfig(dict_configuration)
             return True
         except ValueError as error:
-            logging.error("Unable to configure the logging system!"
-                          "An error occurs: %s" % error, exc_info=True)
+            logging.error("Unable to configure the logging system!" "An error occurs: %s" % error, exc_info=True)
             logging.basicConfig(level=logging.DEBUG)
             return False
 
@@ -55,6 +54,7 @@ class BRISELogConfigurator:
             logging.getLogger().error("UNCAUGHT EXCEPTION IN BRISE:", exc_info=(exception_class, exception_value, traceback))
             sys.__excepthook__(exception_class, exception_value, traceback)
             return
+
         sys.excepthook = exceptions_handler
 
     @staticmethod
@@ -69,9 +69,8 @@ class BRISELogConfigurator:
             try:
                 config = yaml.safe_load(f.read())
             except YAMLError or OSError as error:
-                config = {'version': 1}
-                logging.error("Unable to read the logging configuration file!"
-                              "An error occurs: %s" % error, exc_info=True)
+                config = {"version": 1}
+                logging.error("Unable to read the logging configuration file!" "An error occurs: %s" % error, exc_info=True)
                 logging.basicConfig(level=logging.DEBUG)
         return config
 
@@ -102,6 +101,7 @@ class BRISELogConfigurator:
 
 
 if __name__ == "__main__":
+
     def a(logger):
         logger.info("info")
         logger.debug("info")

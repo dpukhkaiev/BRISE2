@@ -22,7 +22,7 @@ class MOEA(Optimizer):
         # transform and get boundaries
         self.bounds: Tuple[List, List] = ([], [])
         self.params: List[str] = []
-        self.masked_params: Dict[str: Tuple[float, int]] = {}  # if lower bound == upper bound nsga2 and moead don't work
+        self.masked_params: Dict[str : Tuple[float, int]] = {}  # if lower bound == upper bound nsga2 and moead don't work
 
         i = 0  # number of masked parameters within the region influencing indexing of subsequent masked parameters
         for hp in region:
@@ -31,7 +31,7 @@ class MOEA(Optimizer):
                 lower_hp = pd.DataFrame([lower], columns=[hp.name])
                 upper = hp.transform(1)
                 upper_hp = pd.DataFrame([upper], columns=[hp.name])
-                hps = pd.merge(lower_hp, upper_hp, how='outer')
+                hps = pd.merge(lower_hp, upper_hp, how="outer")
 
                 transformed_hps = self._transform_configuration(hps)
 
@@ -83,16 +83,14 @@ class MOEA(Optimizer):
         """
         A custom Pygmo problem, where the surrogate is utilized to evaluate the objective function.
         """
-        def __init__(self,
-                     optimizer,
-                     surrogate: Surrogate):
+
+        def __init__(self, optimizer, surrogate: Surrogate):
             self._surrogate = surrogate
             self._optimizer: MOEA = optimizer
             self._bounds = self._optimizer.bounds
             self._objectives = self._optimizer.objectives
             self._params = self._optimizer.params
-            self._transform_surrogate, self._inverse_transform_optimizer = (
-                self._optimizer._resolve_configuration_transformers(surrogate))
+            self._transform_surrogate, self._inverse_transform_optimizer = self._optimizer._resolve_configuration_transformers(surrogate)
 
         def fitness(self, x):
             temp_params = self._params.copy()

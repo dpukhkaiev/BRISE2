@@ -10,11 +10,9 @@ class Repeater(ABC):
 
         self.repeater_configuration = experiment_description["RepetitionManager"]
         self.experiment_id = experiment_id
-        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                                os.getenv("BRISE_DATABASE_PORT"),
-                                os.getenv("BRISE_DATABASE_NAME"),
-                                os.getenv("BRISE_DATABASE_USER"),
-                                os.getenv("BRISE_DATABASE_PASS"))
+        self.database = MongoDB(
+            os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS")
+        )
 
     @abstractmethod
     def evaluate(self, current_configuration: Configuration):

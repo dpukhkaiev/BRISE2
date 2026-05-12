@@ -26,7 +26,7 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
         raise TypeError(f"class_name parameter should be non-empty string, not {type(class_name)}.")
 
     # Finding a Module
-    selected_module_file_name = ''
+    selected_module_file_name = ""
     cutoff = 1
     files = os.listdir(folder_path)
     if not files:
@@ -37,7 +37,7 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
         selected_module_file_name = difflib.get_close_matches(class_name, files, n=1, cutoff=cutoff)
         cutoff -= reduction_step
     logger.debug("'%s' module was selected with cutoff=%f for name=%s." % (selected_module_file_name, cutoff, class_name))
-    module_path = '%s.%s' % (folder_path.replace("./", "").replace("/", "."), selected_module_file_name[0][:-3])
+    module_path = "%s.%s" % (folder_path.replace("./", "").replace("/", "."), selected_module_file_name[0][:-3])
     try:
         found_module = importlib.import_module(module_path)
     except ImportError as error:
@@ -46,8 +46,7 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
         raise ImportError(msg)
 
     # Getting the Class
-    classes_in_module = inspect.getmembers(found_module,
-                                           lambda member: inspect.isclass(member) and member.__module__ == module_path)
+    classes_in_module = inspect.getmembers(found_module, lambda member: inspect.isclass(member) and member.__module__ == module_path)
     # classes_in_module is a tuple of lists (class_name:str, class_obj:class)
     if len(classes_in_module) == 1:
         selected_class_name = [pair[0] for pair in classes_in_module][0]
@@ -55,21 +54,18 @@ def reflective_class_import(class_name: str, folder_path: str, reduction_step=0.
     elif len(classes_in_module) > 1:
         # If there is more than one class defined in a module, find a closest one by name.
         cutoff = 1
-        selected_class_name = ''
+        selected_class_name = ""
         all_found_class_names = [x[0] for x in classes_in_module]
         while not selected_class_name:
             selected_class_name = difflib.get_close_matches(class_name, all_found_class_names, n=1, cutoff=cutoff)
             cutoff -= reduction_step
         selected_class_name = selected_class_name[0]
         selected_class = classes_in_module[all_found_class_names.index(selected_class_name)][1]
-        logger.warning("In the Module '%s' more than one Class provided '%s'. Selected by the most similar name: '%s'."
-                       % (found_module, all_found_class_names, selected_class_name))
+        logger.warning("In the Module '%s' more than one Class provided '%s'. Selected by the most similar name: '%s'." % (found_module, all_found_class_names, selected_class_name))
     else:
         msg = "The Module file '%s' does not contain any classes!" % found_module
         logger.error(msg)
         raise NameError(msg)
-    where_import_was_called = inspect.stack()[1].filename[inspect.stack()[1].filename.rfind("/"):] + ":" + \
-        inspect.stack()[1].function
-    logger.debug("The '%s' Class from the '%s' Module was imported into '%s'."
-                 % (selected_class_name, module_path, where_import_was_called))
+    where_import_was_called = inspect.stack()[1].filename[inspect.stack()[1].filename.rfind("/") :] + ":" + inspect.stack()[1].function
+    logger.debug("The '%s' Class from the '%s' Module was imported into '%s'." % (selected_class_name, module_path, where_import_was_called))
     return selected_class

@@ -1,7 +1,5 @@
 import numpy as np
-from repeater.results_check.outliers_detection.outliers_detector_decorator import (
-    OutliersDetectionDecorator
-)
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 
 
 class Mad(OutliersDetectionDecorator):
@@ -38,7 +36,7 @@ class Mad(OutliersDetectionDecorator):
         # find median value of dataset
         median = np.median(points, axis=0)
         # find deviations from median
-        diff = np.sum((points - median)**2, axis=-1)
+        diff = np.sum((points - median) ** 2, axis=-1)
         diff = np.sqrt(diff)
         # find median of deviations
         med_abs_deviation = np.median(diff)

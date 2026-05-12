@@ -16,6 +16,7 @@ class WorkerServiceThread(threading.Thread):
     connected to the `taken_task_event_queue` and 'finished_task_event_queue' as consumer
     and sends termination command via `task_termination_sender` to all dynamic queues that create during worker start.
     """
+
     def __init__(self, host, port):
         """
         :param host: ip address of rabbitmq service
@@ -27,11 +28,9 @@ class WorkerServiceThread(threading.Thread):
         self.logger = logging.getLogger(__name__)
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host, port))
         self.channel = self.connection.channel()
-        self.channel.basic_consume(queue='taken_task_event_queue', auto_ack=True,
-                                   on_message_callback=self.task_start_func)
+        self.channel.basic_consume(queue="taken_task_event_queue", auto_ack=True, on_message_callback=self.task_start_func)
 
-        self.channel.basic_consume(queue='finished_task_event_queue', auto_ack=True,
-                                   on_message_callback=self.task_finished_func)
+        self.channel.basic_consume(queue="finished_task_event_queue", auto_ack=True, on_message_callback=self.task_finished_func)
 
         self.task_dict = {}
         self._is_interrupted = False
@@ -47,15 +46,12 @@ class WorkerServiceThread(threading.Thread):
         for key in tasks_snapshot.keys():
             if tasks_snapshot[key]["termination_time"] < datetime.datetime.now():
                 try:
-                    del (self.task_dict[key])
+                    del self.task_dict[key]
                     self.logger.debug("Terminating Task {id_task}.".format(id_task=key))
                     if self.connection.is_open and not self._is_interrupted:
-                        with pika.BlockingConnection(
-                                pika.ConnectionParameters(host=self._host, port=self._port)) as connection:
+                        with pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port)) as connection:
                             channel = connection.channel()
-                            channel.basic_publish(exchange='task_termination_sender',
-                                                  routing_key='',
-                                                  body=json.dumps(key))
+                            channel.basic_publish(exchange="task_termination_sender", routing_key="", body=json.dumps(key))
                 except KeyError:
                     self.logger.info("Termination after finish")
 
@@ -72,8 +68,7 @@ class WorkerServiceThread(threading.Thread):
         if task_description["time_for_run"] == float("inf"):
             task_description["termination_time"] = datetime.datetime.max
         else:
-            task_description["termination_time"] = datetime.datetime.now() + datetime.timedelta(
-                seconds=task_description["time_for_run"])
+            task_description["termination_time"] = datetime.datetime.now() + datetime.timedelta(seconds=task_description["time_for_run"])
         self.task_dict[task_description["task_id"]] = task_description
 
     def task_finished_func(self, channel, method, properties, body):
@@ -86,7 +81,7 @@ class WorkerServiceThread(threading.Thread):
         """
         task_response = json.loads(body.decode())
         try:
-            del (self.task_dict[task_response["task_result"]["task id"]])
+            del self.task_dict[task_response["task_result"]["task id"]]
         except KeyError:
             self.logger.info("The old task was received")
 
@@ -112,8 +107,7 @@ class WorkerServiceThread(threading.Thread):
 
 
 def run():
-    workers_service_thread = WorkerServiceThread(os.getenv("BRISE_EVENT_SERVICE_HOST"),
-                                                 os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
+    workers_service_thread = WorkerServiceThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     workers_service_thread.start()
     workers_service_thread.join()
     workers_service_thread.stop()

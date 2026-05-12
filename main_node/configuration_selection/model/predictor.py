@@ -24,10 +24,8 @@ class Predictor:
         - provide data and data description for underlying models about current level.
         - select underlying model for each level
     """
-    def __init__(self,
-                 experiment_id: str,
-                 experiment_description: Mapping,
-                 search_space: SearchSpace):
+
+    def __init__(self, experiment_id: str, experiment_description: Mapping, search_space: SearchSpace):
         self.experiment_id = experiment_id
         self.predictor_config = experiment_description["ConfigurationSelection"]["Predictor"]
         self.task_config = experiment_description["Context"]["TaskConfiguration"]
@@ -51,9 +49,7 @@ class Predictor:
 
         self.mapping_region_sampling_strategy = {}
         for r in self.search_space.regions:
-            sampling_strategy = (self.sampling_strategy_orchestrator.
-                                 get_sampling_strategy
-                                 (experiment_description["ConfigurationSelection"]["SamplingStrategy"], r))
+            sampling_strategy = self.sampling_strategy_orchestrator.get_sampling_strategy(experiment_description["ConfigurationSelection"]["SamplingStrategy"], r)
             self.mapping_region_sampling_strategy[r] = sampling_strategy
 
         self.hierarchical_models_dumps = []
@@ -96,17 +92,12 @@ class Predictor:
 
                     # filter according to the considered activation category for the current region
                     if considered_parent_hp_name != "root":
-                        considered_configs = list(filter(lambda cfg:
-                               cfg.parameters[considered_parent_hp_name] == considered_activation_category,
-                               considered_configs))
+                        considered_configs = list(filter(lambda cfg: cfg.parameters[considered_parent_hp_name] == considered_activation_category, considered_configs))
                     # filter according to the region
                     if len(considered_configs) > 0 and considered_parent_hp_name != "root":
                         logging.info("Considered Configs: " + " ".join([c.__str__() for c in considered_configs]))
                         logging.info("REGION: " + str(region.__str__()))
-                    considered_configs = list(filter(
-                        lambda cfg: any(map(lambda x: x in considered_hp_names_in_region, list(cfg.parameters.keys()))),
-                        considered_configs  # Input data for filter
-                    ))
+                    considered_configs = list(filter(lambda cfg: any(map(lambda x: x in considered_hp_names_in_region, list(cfg.parameters.keys()))), considered_configs))  # Input data for filter
                     partial_configuration = self.mapping_region_model[region].predict(list(region), considered_configs)
 
                     if partial_configuration.empty:
@@ -146,8 +137,8 @@ class Predictor:
                 region_index = str(self.search_space.regions.index(region))
                 prediction_info[region_index] = {
                     "Model": self.mapping_region_model[region].created_surrogates_descriptions_and_objectives_and_optimizer_descriptions,
-                    "time_to_build": self.mapping_region_model[region].time_to_build
-                    if self.mapping_region_model[region].time_to_build is not None else 0}
+                    "time_to_build": self.mapping_region_model[region].time_to_build if self.mapping_region_model[region].time_to_build is not None else 0,
+                }
                 if self.mapping_region_model[region].time_to_build is not None:
                     model_dump.append(pickle.dumps(self.mapping_region_model[region]))
 
@@ -177,20 +168,11 @@ class Predictor:
 
     def store_model_dumps_to_db(self):
         # initialize connection to the database
-        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                           os.getenv("BRISE_DATABASE_PORT"),
-                           os.getenv("BRISE_DATABASE_NAME"),
-                           os.getenv("BRISE_DATABASE_USER"),
-                           os.getenv("BRISE_DATABASE_PASS"))
+        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS"))
         if database.get_last_record_by_experiment_id("Transfer_learning_info", self.experiment_id) is None:
-            database.write_one_record("Transfer_learning_info",
-                                      {"Exp_unique_ID": self.experiment_id,
-                                       "Models_dumps": self.hierarchical_models_dumps})
+            database.write_one_record("Transfer_learning_info", {"Exp_unique_ID": self.experiment_id, "Models_dumps": self.hierarchical_models_dumps})
         else:
-            database.update_record(
-                "Transfer_learning_info",
-                {"Exp_unique_ID": self.experiment_id},
-                {"Models_dumps": self.hierarchical_models_dumps})
+            database.update_record("Transfer_learning_info", {"Exp_unique_ID": self.experiment_id}, {"Models_dumps": self.hierarchical_models_dumps})
 
     def update_mapping_region_model(self, transferred_mapping_region_model):
         """

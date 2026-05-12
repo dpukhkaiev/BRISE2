@@ -18,9 +18,9 @@ class MultiTaskLearningOrchestrator:
 
         filter_descriptions = list(experiment_description["TransferLearning"]["MultiTaskLearning"]["Filters"].keys())
         for f in filter_descriptions:
-            filter_class = (
-                reflective_class_import(class_name=experiment_description["TransferLearning"]["MultiTaskLearning"]["Filters"][f]["Type"],
-                                        folder_path="transfer_learning/multi_task_learning"))
+            filter_class = reflective_class_import(
+                class_name=experiment_description["TransferLearning"]["MultiTaskLearning"]["Filters"][f]["Type"], folder_path="transfer_learning/multi_task_learning"
+            )
             base_mtl = filter_class(experiment_description, experiment_id, base_mtl)
             logger.info(f"Assigned {f} multi task learning approach.")
 

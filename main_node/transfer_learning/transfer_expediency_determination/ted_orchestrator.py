@@ -17,8 +17,7 @@ class TEDOrchestrator:
         assert len(keys) == 1
         feature_name = keys[0]
 
-        ted_class = reflective_class_import(class_name=ted_description[feature_name]["Type"],
-                                            folder_path="transfer_learning/transfer_expediency_determination")
+        ted_class = reflective_class_import(class_name=ted_description[feature_name]["Type"], folder_path="transfer_learning/transfer_expediency_determination")
         ted = ted_class(ted_description, experiment_id)
         logger.info(f"Assigned {feature_name} expediency determination approach.")
 

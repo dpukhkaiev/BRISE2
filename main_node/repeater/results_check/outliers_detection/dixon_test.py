@@ -1,7 +1,5 @@
 import numpy as np
-from repeater.results_check.outliers_detection.outliers_detector_decorator import (
-    OutliersDetectionDecorator
-)
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 
 
 class Dixon(OutliersDetectionDecorator):
@@ -13,11 +11,36 @@ class Dixon(OutliersDetectionDecorator):
         if self.lower_threshold <= len(inputs) <= self.upper_threshold:
             if len(inputs) <= 30:
                 # Dixon table values for 3 different confidence intervals
-                q95 = [0.97, 0.829, 0.71, 0.625, 0.568, 0.526, 0.493, 0.466,
-                       0.444, 0.426, 0.41, 0.396, 0.384, 0.374, 0.365, 0.356,
-                       0.349, 0.342, 0.337, 0.331, 0.326, 0.321, 0.317, 0.312,
-                       0.308, 0.305, 0.301, 0.29
-                       ]
+                q95 = [
+                    0.97,
+                    0.829,
+                    0.71,
+                    0.625,
+                    0.568,
+                    0.526,
+                    0.493,
+                    0.466,
+                    0.444,
+                    0.426,
+                    0.41,
+                    0.396,
+                    0.384,
+                    0.374,
+                    0.365,
+                    0.356,
+                    0.349,
+                    0.342,
+                    0.337,
+                    0.331,
+                    0.326,
+                    0.321,
+                    0.317,
+                    0.312,
+                    0.308,
+                    0.305,
+                    0.301,
+                    0.29,
+                ]
 
                 # q90 = [0.941, 0.765, 0.642, 0.56, 0.507, 0.468, 0.437,
                 #        0.412, 0.392, 0.376, 0.361, 0.349, 0.338, 0.329,
@@ -57,15 +80,15 @@ class Dixon(OutliersDetectionDecorator):
         for i in range(0, len(data)):
             # Dixon test could detect only 1 outlier per iteration
             # It could be left-side (lowest values) or right-side (highest values)
-            assert (left or right), 'At least one of the variables, `left` or `right`, must be True.'
+            assert left or right, "At least one of the variables, `left` or `right`, must be True."
             if len(data) >= 3:
                 sdata = sorted(data)
                 Q_mindiff, Q_maxdiff = (0, 0), (0, 0)
                 # Check left side for outliers
                 if left:
-                    Q_min = (sdata[1] - sdata[0])
+                    Q_min = sdata[1] - sdata[0]
                     try:
-                        Q_min /= (sdata[-1] - sdata[0])
+                        Q_min /= sdata[-1] - sdata[0]
                     except ZeroDivisionError:
                         pass
                     Q_mindiff = (Q_min - q_dict[len(data)], sdata[0])

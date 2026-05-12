@@ -4,7 +4,8 @@ import pytest
 from tools.front_API import API, APIMessageBuilder
 from tools.rabbit_API_class import RabbitApi
 
-os.environ["TEST_MODE"] = 'UNIT_TEST'
+os.environ["TEST_MODE"] = "UNIT_TEST"
+
 
 class TestFrontApi:
     # this test set is aimed to cover the functionality of the 'front_API' tools and the 'singleton'
@@ -16,7 +17,7 @@ class TestFrontApi:
         # Expected result: the message of type 'string' is built independently on its content
         expected_result = "This is log"
         msg = "This is log"
-        actual_result = APIMessageBuilder.build('LOG', message=msg)
+        actual_result = APIMessageBuilder.build("LOG", message=msg)
         assert actual_result == expected_result
 
     def test_1_build_log_message_of_multiple_parts(self):
@@ -25,31 +26,31 @@ class TestFrontApi:
         expected_result = "This is log"
         msg1 = "This is "
         msg2 = "log"
-        actual_result = APIMessageBuilder.build('LOG', message1=msg1, message2=msg2)
+        actual_result = APIMessageBuilder.build("LOG", message1=msg1, message2=msg2)
         assert actual_result == expected_result
 
     def test_2_build_empty_log_message(self):
         # Test #2. Build log message according to the API message format. Message is empty
         # Expected result: the single empty message of type 'string' is built
         expected_result = ""
-        actual_result = APIMessageBuilder.build('LOG')
+        actual_result = APIMessageBuilder.build("LOG")
         assert actual_result == expected_result
 
     def test_3_build_new_task_message(self):
         # Test #3. Build task message according to the API message format. The 'result' is an empty list
         # Expected result: the task message of type 'list' is built. It contains the "configuration-result" pair as a dictionary.
-        expected_result = [{'configurations': [2200.0, 8], 'results': None}]
+        expected_result = [{"configurations": [2200.0, 8], "results": None}]
         configurations = [[2200.0, 8]]
-        actual_result = APIMessageBuilder.build('NEW', configurations=configurations, results=[None])
+        actual_result = APIMessageBuilder.build("NEW", configurations=configurations, results=[None])
         assert actual_result == expected_result
 
     def test_4_build_task_message_with_result(self):
         # Test #4. Build task message according to the API message format. Use different supported message types
         # Expected result: the task message of type 'list' is built. It contains the "configuration-result" pair as a dictionary.
-        expected_result = [{'configurations': [2200.0, 8], 'results': 123}]
+        expected_result = [{"configurations": [2200.0, 8], "results": 123}]
         configurations = [[2200.0, 8]]
         results = [123]
-        message_types = ['DEFAULT', 'PREDICTIONS', 'FINAL']
+        message_types = ["DEFAULT", "PREDICTIONS", "FINAL"]
         for message_type in message_types:
             actual_result = APIMessageBuilder.build(message_type, configurations=configurations, results=results)
             assert actual_result == expected_result
@@ -57,20 +58,18 @@ class TestFrontApi:
     def test_5_build_invalid_task_message(self):
         # Test #5. Build task message with the invalid values according to the API message format
         # Expected result: error is raised, that invalid parameters are passed
-        expected_result = ("Invalid parameters passed to send message via API: "
-                           "The configurations(key parameter) are not provided or have invalid format!")
+        expected_result = "Invalid parameters passed to send message via API: " "The configurations(key parameter) are not provided or have invalid format!"
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('NEW', configurations="Invalid string", results="Invalid string")
+            APIMessageBuilder.build("NEW", configurations="Invalid string", results="Invalid string")
         assert expected_result in str(excinfo.value)
 
     def test_6_build_incomplete_task_message(self):
         # Test #6. Build task message with incomplete parameters (without 'results')
         # Expected result: error is raised
         configurations = [[2200.0, 8]]
-        expected_result = ("Invalid parameters passed to send message via API: "
-                           "The results(key parameter) are not provided or have invalid format!")
+        expected_result = "Invalid parameters passed to send message via API: " "The results(key parameter) are not provided or have invalid format!"
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('NEW', configurations=configurations)
+            APIMessageBuilder.build("NEW", configurations=configurations)
         assert expected_result in str(excinfo.value)
 
     def test_7_build_inconsistent_task_message(self):
@@ -80,7 +79,7 @@ class TestFrontApi:
         results = [123, 234]
         expected_result = "Different sizes of provided parameters!"
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('NEW', configurations=configurations, results=results)
+            APIMessageBuilder.build("NEW", configurations=configurations, results=results)
         assert expected_result in str(excinfo.value)
 
     @pytest.mark.skip(reason="Global config is deprecated, return when the Frontend is enabled")
@@ -88,12 +87,10 @@ class TestFrontApi:
         # Test #8. Build experiment message according to the API message format
         # Expected result: the message of type 'dictionary' is built and contains all needed fields
         from tools.initial_config import load_experiment_setup
-        experiment_description, searchspace_description = \
-            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
+
+        experiment_description, searchspace_description = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         global_config = experiment_description["General"]
-        actual_result = APIMessageBuilder.build('EXPERIMENT', global_config=global_config,
-                                                experiment_description=experiment_description,
-                                                searchspace_description=searchspace_description)
+        actual_result = APIMessageBuilder.build("EXPERIMENT", global_config=global_config, experiment_description=experiment_description, searchspace_description=searchspace_description)
         assert actual_result["global_configuration"]
         assert actual_result["metric_description"]
         assert actual_result["searchspace_description"]
@@ -103,11 +100,12 @@ class TestFrontApi:
         # Test #9. Build experiment message from incomplete parameters
         # Expected result: error is raised
         from tools.initial_config import load_experiment_setup
+
         expected_result = "Invalid parameters passed to send message via API: The search space description is not provided!"
         experiment_description, _ = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         global_config = experiment_description["General"]
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('EXPERIMENT', global_config=global_config, experiment_description=experiment_description)
+            APIMessageBuilder.build("EXPERIMENT", global_config=global_config, experiment_description=experiment_description)
         assert expected_result in str(excinfo.value)
 
     def test_10_send_valid_message(self):
@@ -131,7 +129,7 @@ class TestFrontApi:
         # Expected result: error is raised, that message type is not supported
         expected_result = "Message type is not supported!"
         msg = "This is msg"
-        TestFrontApi.api.send('DUMMY', 'INFO', message=msg)
+        TestFrontApi.api.send("DUMMY", "INFO", message=msg)
         for record in caplog.records:
             assert record.levelname == "ERROR"
             assert expected_result in str(record)
@@ -143,7 +141,7 @@ class TestFrontApi:
         msg = "This is msg"
         msg_types = ["LOG", "NEW", "DEFAULT", "PREDICTIONS", "FINAL", "EXPERIMENT"]
         for msg_type in msg_types:
-            TestFrontApi.api.send(msg_type, 'dummy', message=msg)
+            TestFrontApi.api.send(msg_type, "dummy", message=msg)
             for record in caplog.records:
                 assert record.levelname == "ERROR"
                 assert expected_result in str(record)
@@ -153,7 +151,7 @@ class TestFrontApi:
         # Expected result: error is raised
         expected_result = "Wrong API message type object!"
         msg = "This is msg"
-        TestFrontApi.api.send(['LOG'], 'dummy', message=msg)
+        TestFrontApi.api.send(["LOG"], "dummy", message=msg)
         for record in caplog.records:
             assert record.levelname == "ERROR"
             assert expected_result in str(record)
@@ -180,6 +178,7 @@ class TestFrontApi:
         class BadAPI:
             def no_emit(self):
                 pass
+
         expected_result = "Provided API object doesn't contain 'emit()' method"
         # cleanup
         API._instance = None
@@ -193,9 +192,12 @@ class TestFrontApi:
         class BadAPI:
             def emit(self, message_type: dict, message_subtype: dict, message: dict):
                 pass
-        expected_result = ("Provided API object has unsupported 'emit()' method."
-                           "Its parameters do not correspond to the required!"
-                           "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'")
+
+        expected_result = (
+            "Provided API object has unsupported 'emit()' method."
+            "Its parameters do not correspond to the required!"
+            "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'"
+        )
         # cleanup
         API._instance = None
         with pytest.raises(AttributeError) as excinfo:
@@ -206,14 +208,18 @@ class TestFrontApi:
         # Test #18. Try to create an instance of the API class, with wrong api object emit() parameters' names
         # Expected result: object is created, but user is warned about the advisable parameters' names
         import logging
+
         caplog.set_level(logging.WARNING)
 
         class BadAPI:
             def emit(self, dummy: str, message_subtype: str, message: str):
                 pass
-        expected_result = ("Parameter names of the emit() method are untypical for your API object."
-                           "It is advisable to check emit() parameters."
-                           "Expected parameters are: 'message_type', 'message_subtype', 'message'")
+
+        expected_result = (
+            "Parameter names of the emit() method are untypical for your API object."
+            "It is advisable to check emit() parameters."
+            "Expected parameters are: 'message_type', 'message_subtype', 'message'"
+        )
         # cleanup
         API._instance = None
         API(BadAPI())
@@ -227,9 +233,12 @@ class TestFrontApi:
         class BadAPI:
             def emit(self, message_type: str, message_subtype: str):
                 pass
-        expected_result = ("Provided API object has unsupported 'emit()' method."
-                           "Its parameters do not correspond to the required!"
-                           "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'")
+
+        expected_result = (
+            "Provided API object has unsupported 'emit()' method."
+            "Its parameters do not correspond to the required!"
+            "Expected parameters are: 'message_type: str', 'message_subtype: str', 'message: str'"
+        )
         # cleanup
         API._instance = None
         with pytest.raises(AttributeError) as excinfo:
@@ -242,6 +251,7 @@ class TestFrontApi:
         class GoodAPI:
             def emit(self, message_type: str, message_subtype: str, message: str):
                 pass
+
         API._instance = None
         test_api = API(GoodAPI())
         assert isinstance(test_api, API)

@@ -8,8 +8,7 @@ from transfer_learning.multi_task_learning.mtl_decorator import MultiTaskLearnin
 class OldNewRatioDecorator(MultiTaskLearningDecorator):
     def __init__(self, experiment_description: Dict, experiment_id, base_mtl: MultiTaskLearning):
         super().__init__(experiment_description, experiment_id, base_mtl)
-        self.old_new_configs_ratio = self.experiment_description["TransferLearning"]["MultiTaskLearning"]["Filters"][
-            "OldNewRatio"]["OldNewConfigsRatio"]
+        self.old_new_configs_ratio = self.experiment_description["TransferLearning"]["MultiTaskLearning"]["Filters"]["OldNewRatio"]["OldNewConfigsRatio"]
 
     def transfer_configurations(self, similar_experiments: List) -> List[Configuration]:
         """

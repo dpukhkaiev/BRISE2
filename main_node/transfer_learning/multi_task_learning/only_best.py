@@ -10,8 +10,7 @@ class OnlyBestDecorator(MultiTaskLearningDecorator):
     def __init__(self, experiment_description: Dict, experiment_id, base_mtl: MultiTaskLearning):
         super().__init__(experiment_description, experiment_id, base_mtl)
         self.objective_name = list(experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys())[0]  # SO only
-        self.is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][self.objective_name][
-            "Minimization"]
+        self.is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][self.objective_name]["Minimization"]
 
     def transfer_configurations(self, similar_experiments: List) -> List[Configuration]:
         """

@@ -10,11 +10,9 @@ class Comparator(ABC):
         self.logger = logging.getLogger(__name__)
         self.experiment_description = experiment_description
         self.experiment_id = experiment_id
-        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                                os.getenv("BRISE_DATABASE_PORT"),
-                                os.getenv("BRISE_DATABASE_NAME"),
-                                os.getenv("BRISE_DATABASE_USER"),
-                                os.getenv("BRISE_DATABASE_PASS"))
+        self.database = MongoDB(
+            os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS")
+        )
 
     def get_similar_experiments(self, source_experiments: list):
         """

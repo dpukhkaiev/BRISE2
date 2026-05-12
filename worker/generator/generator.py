@@ -9,17 +9,16 @@ from jinja2 import Environment, FileSystemLoader
 
 def generate_worker_function(experiment_description_path):
     """
-        The method takes a path to an experiment description and appends scenario skeleton to worker/worker.py
-        :experiment_description_path : sting path to a experiment description json file.
-        """
+    The method takes a path to an experiment description and appends scenario skeleton to worker/worker.py
+    :experiment_description_path : sting path to a experiment description json file.
+    """
     logger = logging.getLogger(__name__)
     try:
-        file_loader = FileSystemLoader(os.path.dirname(__file__) + '/templates')
+        file_loader = FileSystemLoader(os.path.dirname(__file__) + "/templates")
         env = Environment(loader=file_loader)
-        template = env.get_template('worker_f_template')
+        template = env.get_template("worker_f_template")
     except IOError as error:
-        logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}",
-                     exc_info=True)
+        logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}", exc_info=True)
         raise error
     try:
         with open(experiment_description_path) as json_file:
@@ -30,12 +29,12 @@ def generate_worker_function(experiment_description_path):
     except json.JSONDecodeError as error:
         logger.error(f"Error with decoding {experiment_description_path} json file: {error}")
         raise error
-    task_name = data['TaskConfiguration']
+    task_name = data["TaskConfiguration"]
     output = template.render(task=task_name)
     with open("./worker/worker.py", "r") as f:
         file = f.read()
         f.close()
-    if output.partition('\n')[0] not in file:
+    if output.partition("\n")[0] not in file:
         with open("./worker/worker.py", "a+") as f:
             f.write(output)
             f.close()

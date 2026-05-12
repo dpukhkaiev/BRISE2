@@ -8,13 +8,11 @@ class TimeBased(StopCondition):
 
     def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
         super().__init__(stop_condition_parameters, experiment_description, experiment_id)
-        self.interval = datetime.timedelta(**{
-            stop_condition_parameters["Parameters"]["TimeUnit"]:
-            stop_condition_parameters["Parameters"]["MaxRunTime"]}).total_seconds()
+        self.interval = datetime.timedelta(**{stop_condition_parameters["Parameters"]["TimeUnit"]: stop_condition_parameters["Parameters"]["MaxRunTime"]}).total_seconds()
         temp_msg = f"Timeout set to {self.interval} seconds."
         self.logger.info(temp_msg)
         self.time_started = datetime.datetime.now()
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if os.environ.get("TEST_MODE") != "UNIT_TEST":
             self.start_threads()
 
     def is_finish(self):

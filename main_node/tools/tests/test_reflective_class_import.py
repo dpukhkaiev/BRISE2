@@ -62,7 +62,7 @@ class TestReflectiveClassImport:
         import os
 
         # create an empty folder for test
-        os.makedirs('./test_folder/', exist_ok=True)
+        os.makedirs("./test_folder/", exist_ok=True)
         expected_result = "Specified directory 'test_folder' is empty."
         with pytest.raises(NameError) as excinfo:
             reflective_class_import(class_name="SomeClass", folder_path="test_folder")
@@ -76,6 +76,7 @@ class TestReflectiveClassImport:
         # Expected result: class with the most similar name is imported, warning is emmited
         # only 1 class is being found in module, if classes are in different files!
         import logging
+
         caplog.set_level(logging.WARNING)
         expected_result = "more than one Class provided"
         expected_class = "API"

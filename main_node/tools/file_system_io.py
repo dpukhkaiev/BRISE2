@@ -15,16 +15,16 @@ def load_json_file(path_to_file):
     logger = logging.getLogger(__name__)
     front_api = API()
     try:
-        with open(path_to_file, 'r') as File:
+        with open(path_to_file, "r") as File:
             jsonFile = json.loads(File.read())
             return jsonFile
     except IOError as error:
         msg = "Unable to read a json file '%s'. Error information: %s" % (path_to_file, error)
         logger.error(msg, exc_info=True)
-        front_api.send('log', 'error', message=msg)
+        front_api.send("log", "error", message=msg)
         raise error
     except json.JSONDecodeError as error:
         msg = "Unable to decode a json file '%s'. Error information: %s" % (path_to_file, error)
         logger.error(msg, exc_info=True)
-        front_api.send('log', 'error', message=msg)
+        front_api.send("log", "error", message=msg)
         raise error

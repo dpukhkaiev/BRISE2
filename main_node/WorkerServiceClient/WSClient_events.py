@@ -18,11 +18,7 @@ class WSClient:
         # Properties that holds general task configuration (shared between task runs).
         self.logger = logging.getLogger(__name__)
         self.experiment_id = experiment_id
-        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                           os.getenv("BRISE_DATABASE_PORT"),
-                           os.getenv("BRISE_DATABASE_NAME"),
-                           os.getenv("BRISE_DATABASE_USER"),
-                           os.getenv("BRISE_DATABASE_PASS"))
+        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS"))
 
         experiment_description = None
         while experiment_description is None:
@@ -32,8 +28,7 @@ class WSClient:
         self.parameter_names = []
         self._objectives = task_configuration["Objectives"]
         self._scenario = task_configuration["Scenario"]
-        self._time_for_one_task_running = task_configuration[
-            "MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
+        self._time_for_one_task_running = task_configuration["MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
         # Properties that holds current task data.
         self.measurement = {}
         # Create a connection and channel for sending configurations
@@ -59,8 +54,8 @@ class WSClient:
         :param id_measurement: ID of measurement to send
         :param measurement: measurement description
         """
-        number_ready_task = len(measurement['tasks_results'])
-        for i, task_parameter in enumerate(measurement['tasks_to_send']):
+        number_ready_task = len(measurement["tasks_results"])
+        for i, task_parameter in enumerate(measurement["tasks_to_send"]):
             if i >= number_ready_task:
                 self.logger.info("Sending task: %s" % task_parameter)
                 task_description = dict()
@@ -74,9 +69,7 @@ class WSClient:
                 task_description["Scenario"] = self._scenario
                 task_description["result_structure"] = self._objectives
                 task_description["parameters"] = task_parameter
-                publish(exchange='',
-                        routing_key='task_queue',
-                        body=json.dumps(task_description))
+                publish(exchange="", routing_key="task_queue", body=json.dumps(task_description))
 
     def work(self, ch, method, properties, body) -> None:
         """
@@ -95,11 +88,7 @@ class WSClient:
         self._send_measurement(measurement_id, self.measurement[measurement_id])
 
     def get_number_of_workers(self) -> int:
-        result = self.channel.queue_declare(
-            queue="task_queue",
-            durable=True,
-            passive=True
-        )
+        result = self.channel.queue_declare(queue="task_queue", durable=True, passive=True)
         return result.method.consumer_count  # number of consumer for task_queue is number of workers
 
     def get_number_of_needed_configurations(self, ch=None, method=None, properties=None, body=None):
@@ -121,9 +110,7 @@ class WSClient:
                 worker_capacity = 0
         dictionary_dump = {"worker_capacity": worker_capacity}
         body = json.dumps(dictionary_dump)
-        publish(exchange='get_new_configuration_exchange',
-                routing_key=self.experiment_id,
-                body=body)
+        publish(exchange="get_new_configuration_exchange", routing_key=self.experiment_id, body=body)
 
     def is_all_tasks_finish(self, id_measurement):
         """
@@ -131,8 +118,7 @@ class WSClient:
         :param id_measurement: id specific measurement
         :return: True or False
         """
-        if len(self.measurement[id_measurement]['tasks_results']) == len(
-                self.measurement[id_measurement]['tasks_to_send']):
+        if len(self.measurement[id_measurement]["tasks_results"]) == len(self.measurement[id_measurement]["tasks_to_send"]):
             return True
         else:
             return False
@@ -147,18 +133,17 @@ class WSClient:
         """
         task_result = json.loads(body.decode())
         try:
-            self.measurement[task_result['id_measurement']]['tasks_results'].append(
-                task_result['task_result'])
+            self.measurement[task_result["id_measurement"]]["tasks_results"].append(task_result["task_result"])
             # We should decouple one from another.
-            if self.is_all_tasks_finish(task_result['id_measurement']):
-                publish(exchange='measurement_results_exchange',
-                        routing_key=self.experiment_id,
-                        body=json.dumps(self.measurement[task_result['id_measurement']]))
+            if self.is_all_tasks_finish(task_result["id_measurement"]):
+                publish(exchange="measurement_results_exchange", routing_key=self.experiment_id, body=json.dumps(self.measurement[task_result["id_measurement"]]))
 
-                self.logger.debug("Results for {task_param} : {task_res}".format(
-                    task_param=str(self.measurement[task_result['id_measurement']]['tasks_to_send']),
-                    task_res=str(self.measurement[task_result['id_measurement']]['tasks_results'])))
-                del self.measurement[task_result['id_measurement']]
+                self.logger.debug(
+                    "Results for {task_param} : {task_res}".format(
+                        task_param=str(self.measurement[task_result["id_measurement"]]["tasks_to_send"]), task_res=str(self.measurement[task_result["id_measurement"]]["tasks_results"])
+                    )
+                )
+                del self.measurement[task_result["id_measurement"]]
         except KeyError:
             self.logger.info("The old task was received")  # in case of restart main without cleaning all queues
 
@@ -178,18 +163,12 @@ class WSClient:
             super().__init__(ws_client)
 
         def bind_and_consume(self):
-            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_result = self.channel.queue_declare(queue="", exclusive=True)
             self.termination_queue_name = self.termination_result.method.queue
-            self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                    queue=self.termination_queue_name,
-                                    routing_key=self.experiment_id)
-            self.channel.basic_consume(queue='task_result_exchange' + self.experiment_id, auto_ack=True,
-                                       on_message_callback=self.ws_client.get_task_results)
-            self.channel.basic_consume(queue='process_tasks_exchange' + self.experiment_id, auto_ack=True,
-                                       on_message_callback=self.ws_client.work)
-            self.channel.basic_consume(queue='get_worker_capacity_exchange' + self.experiment_id, auto_ack=True,
-                                       on_message_callback=self.ws_client.get_number_of_needed_configurations)
-            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                       on_message_callback=self.stop)
+            self.channel.queue_bind(exchange="experiment_termination_exchange", queue=self.termination_queue_name, routing_key=self.experiment_id)
+            self.channel.basic_consume(queue="task_result_exchange" + self.experiment_id, auto_ack=True, on_message_callback=self.ws_client.get_task_results)
+            self.channel.basic_consume(queue="process_tasks_exchange" + self.experiment_id, auto_ack=True, on_message_callback=self.ws_client.work)
+            self.channel.basic_consume(queue="get_worker_capacity_exchange" + self.experiment_id, auto_ack=True, on_message_callback=self.ws_client.get_number_of_needed_configurations)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True, on_message_callback=self.stop)
 
             self.sender_lock = threading.Lock()  # only one thread can use a channel for sending message

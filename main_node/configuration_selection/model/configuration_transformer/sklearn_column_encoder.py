@@ -68,22 +68,21 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, df: pd.DataFrame, y=None) -> pd.DataFrame:
         df = df.copy(deep=True)
-        df['temp_index'] = range(1, len(df) + 1)
+        df["temp_index"] = range(1, len(df) + 1)
         # Select needed columns
         df_to_transform = df[self.input_column_names]
         transformed_raw = self.transformer.transform(df_to_transform)
 
         # Replace data in columns
         if df_to_transform.shape != transformed_raw.shape:
-            self.out_column_names = ["_".join(self.input_column_names) + self._enc_suffix + str(x) for x in
-                                     range(transformed_raw.shape[1])]
+            self.out_column_names = ["_".join(self.input_column_names) + self._enc_suffix + str(x) for x in range(transformed_raw.shape[1])]
         else:
             self.out_column_names = [name + self._enc_suffix for name in self.input_column_names]
         transformed_df = pd.DataFrame(transformed_raw, columns=self.out_column_names)
-        transformed_df['temp_index'] = range(1, len(transformed_df) + 1)
+        transformed_df["temp_index"] = range(1, len(transformed_df) + 1)
         df = df.merge(transformed_df, on="temp_index")
         df = df.drop(columns=self.input_column_names)
-        df = df.drop(columns='temp_index')
+        df = df.drop(columns="temp_index")
 
         return df
 

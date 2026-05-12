@@ -4,14 +4,7 @@ from typing import Mapping
 
 class MongoDB_mock:
     def __init__(self):
-        self.collections_names = [
-            "Experiment_description",
-            "Search_space",
-            "Configuration",
-            "Experiment_state",
-            "Task",
-            "Parameter_control_info"
-        ]
+        self.collections_names = ["Experiment_description", "Search_space", "Configuration", "Experiment_state", "Task", "Parameter_control_info"]
         self.collections = {}
         for collection in self.collections_names:
             self.init_collection(collection)

@@ -12,15 +12,6 @@ def dump(database: MongoDB, collections: List):
 
 
 if __name__ == "__main__":
-    database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                       os.getenv("BRISE_DATABASE_PORT"),
-                       os.getenv("BRISE_DATABASE_NAME"),
-                       os.getenv("BRISE_DATABASE_USER"),
-                       os.getenv("BRISE_DATABASE_PASS"))
-    collections = ["Configuration",
-                   "Experiment_description",
-                   "Experiment_state",
-                   "Parameter_control_info",
-                   "Search_space", "Task",
-                   "Transfer_learning_info"]
+    database = MongoDB(os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS"))
+    collections = ["Configuration", "Experiment_description", "Experiment_state", "Parameter_control_info", "Search_space", "Task", "Transfer_learning_info"]
     dump(database, collections)

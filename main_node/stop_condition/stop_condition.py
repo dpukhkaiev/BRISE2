@@ -13,19 +13,21 @@ from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 class StopCondition(ABC):
 
     def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
-        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
-                                os.getenv("BRISE_DATABASE_PORT"),
-                                os.getenv("BRISE_DATABASE_NAME"),
-                                os.getenv("BRISE_DATABASE_USER"),
-                                os.getenv("BRISE_DATABASE_PASS"))
+        self.database = MongoDB(
+            os.getenv("BRISE_DATABASE_HOST"), os.getenv("BRISE_DATABASE_PORT"), os.getenv("BRISE_DATABASE_NAME"), os.getenv("BRISE_DATABASE_USER"), os.getenv("BRISE_DATABASE_PASS")
+        )
 
         self.experiment_id = experiment_id
         self.stop_condition_type = stop_condition_parameters["Name"]
         self.decision = False
         self.logger = logging.getLogger(stop_condition_parameters["Name"])
-        self.repetition_interval = datetime.timedelta(**{
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
+        self.repetition_interval = datetime.timedelta(
+            **{
+                experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]: experiment_description["StopCondition"]["StopConditionTriggerLogic"][
+                    "InspectionParameters"
+                ]["RepetitionPeriod"]
+            }
+        ).total_seconds()
 
     def start_threads(self):
         """
@@ -69,22 +71,17 @@ class StopCondition(ABC):
         :param stop_condition_type: Stop Condition identificator
         :param decision: Stop Condition decision (boolean)
         """
-        dictionary_dump = {"experiment_id": self.experiment_id,
-                           "stop_condition_type": stop_condition_type,
-                           "decision": decision
-                           }
+        dictionary_dump = {"experiment_id": self.experiment_id, "stop_condition_type": stop_condition_type, "decision": decision}
         body = json.dumps(dictionary_dump)
-        publish(exchange='check_stop_condition_expression_exchange',
-                routing_key=self.experiment_id,
-                body=body)
+        publish(exchange="check_stop_condition_expression_exchange", routing_key=self.experiment_id, body=body)
 
     def self_evaluation(self):
         """
         This function performs self-evaluation of Stop Condition periodically according to user-defined repetition interval.
         """
         counter = 0
-        listen_interval = self.repetition_interval/10
-        previous_decision = self.decision   # for sending the update only when decision changes
+        listen_interval = self.repetition_interval / 10
+        previous_decision = self.decision  # for sending the update only when decision changes
         while self.active:
             # time.sleep blocks thread execution for whole time specified in function argument
             # and stop message from main-node could be delivered only after this timer ends.
@@ -95,19 +92,16 @@ class StopCondition(ABC):
                 counter = 0
                 numb_of_measured_configurations = 0
                 try:
-                    numb_of_measured_configurations = \
-                        self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)["Number_of_measured_configs"]
+                    numb_of_measured_configurations = self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id)["Number_of_measured_configs"]
                 except TypeError:
                     self.logger.warning(f"No Experiment state is yet available for the experiment {self.experiment_id}")
                 if numb_of_measured_configurations > 0:
-                    search_space_size = \
-                        self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
+                    search_space_size = self.database.get_last_record_by_experiment_id("Search_space", self.experiment_id)["Search_space_size"]
                     if numb_of_measured_configurations >= search_space_size:
                         break
                     self.is_finish()
                     if previous_decision != self.decision:
-                        msg = f"{self.__class__.__name__} Stop Condition decision: " \
-                              f"{'stop' if self.decision else 'continue'} running Experiment."
+                        msg = f"{self.__class__.__name__} Stop Condition decision: " f"{'stop' if self.decision else 'continue'} running Experiment."
                         self.logger.info(msg)
                         previous_decision = self.decision
                         self.update_expression(self.stop_condition_type, self.decision)
@@ -117,9 +111,7 @@ class StopCondition(ABC):
         This function sends stop_experiment message to main node. It could be triggered only if
         Stop Condition initialization fails.
         """
-        publish(exchange='stop_experiment_exchange',
-                routing_key=self.experiment_id,
-                body="Stop condition is not able to initialize.")
+        publish(exchange="stop_experiment_exchange", routing_key=self.experiment_id, body="Stop condition is not able to initialize.")
 
     class _EventServiceConnection(RabbitMQConnection):
         """
@@ -136,10 +128,7 @@ class StopCondition(ABC):
             super().__init__(stop_condition)
 
         def bind_and_consume(self):
-            self.termination_result = self.channel.queue_declare(queue='', exclusive=True)
+            self.termination_result = self.channel.queue_declare(queue="", exclusive=True)
             self.termination_queue_name = self.termination_result.method.queue
-            self.channel.queue_bind(exchange='experiment_termination_exchange',
-                                    queue=self.termination_queue_name,
-                                    routing_key=self.stop_condition.experiment_id)
-            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
-                                       on_message_callback=self.stop_condition.stop_threads)
+            self.channel.queue_bind(exchange="experiment_termination_exchange", queue=self.termination_queue_name, routing_key=self.stop_condition.experiment_id)
+            self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True, on_message_callback=self.stop_condition.stop_threads)

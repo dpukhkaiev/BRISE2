@@ -20,7 +20,5 @@ class EnergyValidator(Validator):
         else:
             return False, 0
 
-    def train_test_split(self,
-                         features: pd.DataFrame,
-                         labels: pd.DataFrame) -> Tuple[List[pd.DataFrame], List[pd.DataFrame], List[pd.DataFrame], List[pd.DataFrame]]:
+    def train_test_split(self, features: pd.DataFrame, labels: pd.DataFrame) -> Tuple[List[pd.DataFrame], List[pd.DataFrame], List[pd.DataFrame], List[pd.DataFrame]]:
         return [features], [labels], [features], [labels]

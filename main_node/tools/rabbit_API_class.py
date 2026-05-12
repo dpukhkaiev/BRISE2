@@ -20,7 +20,7 @@ class RabbitApi(metaclass=Singleton):
         """
         self._host = host
         self._port = port
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+        if os.environ.get("TEST_MODE") != "UNIT_TEST":
             self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
         self.sender_lock = threading.Lock()
 
@@ -32,18 +32,14 @@ class RabbitApi(metaclass=Singleton):
         :param message: String. Body of the message, built by PIMessageBuilder class
         :return:
         """
-        while (True):
+        while True:
             try:
                 with self.sender_lock:
                     with self.connection.channel() as channel:
-                        channel.basic_publish(exchange=f"event_{message_type}_sender",
-                                              routing_key='',
-                                              properties=pika.BasicProperties(
-                                                  headers={'message_subtype': message_subtype}
-                                              ),
-                                              body=json.dumps(message))
+                        channel.basic_publish(
+                            exchange=f"event_{message_type}_sender", routing_key="", properties=pika.BasicProperties(headers={"message_subtype": message_subtype}), body=json.dumps(message)
+                        )
                     break
             except (pika.exceptions.ConnectionClosedByBroker, pika.exceptions.StreamLostError):
-                self.connection = pika.BlockingConnection(
-                    pika.ConnectionParameters(host=self._host, port=self._port))  # Recreate terminated connection
+                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))  # Recreate terminated connection
                 continue

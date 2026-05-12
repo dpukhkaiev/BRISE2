@@ -21,8 +21,7 @@ class NormDifferenceComparator(Comparator):
                         target_labels.append(measured_config["Results"][list(measured_config["Results"].keys())[0]])  # single objective only
                         source_labels.append(config["results"][list(config["results"].keys())[0]])
         except KeyError:
-            self.logger.debug(
-                "Some experiment-records in the database are corrupted (experiments were probably not completed)")
+            self.logger.debug("Some experiment-records in the database are corrupted (experiments were probably not completed)")
         return source_labels, target_labels
 
     def compute_metric(self, source_labels: list, target_labels: list):

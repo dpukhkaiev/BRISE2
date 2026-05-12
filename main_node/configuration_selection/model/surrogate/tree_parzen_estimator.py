@@ -33,12 +33,7 @@ import numpy as np
 import statsmodels.api as sm
 from typing import Dict, Tuple
 
-from core_entities.search_space import (
-    Hyperparameter,
-    NominalHyperparameter,
-    NumericHyperparameter,
-    OrdinalHyperparameter
-)
+from core_entities.search_space import Hyperparameter, NominalHyperparameter, NumericHyperparameter, OrdinalHyperparameter
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 
 
@@ -92,16 +87,16 @@ class TreeParzenEstimator(Surrogate):
 
             if isinstance(hyperparameter, NumericHyperparameter):
                 # - c : continuous hyperparameter
-                self.kde_vartypes += 'c'
+                self.kde_vartypes += "c"
                 self.varsizes += [0]
             else:
                 # categorical hyperparameter
                 if isinstance(hyperparameter, NominalHyperparameter):
                     # - u : unordered discrete hyperparameter
-                    self.kde_vartypes += 'u'
+                    self.kde_vartypes += "u"
                 elif isinstance(hyperparameter, OrdinalHyperparameter):
                     # - o : ordered discrete hyperparameter
-                    self.kde_vartypes += 'o'
+                    self.kde_vartypes += "o"
                 else:
                     raise TypeError(f"Unknown type of Hyperparameter: {type(hyperparameter)}")
                 self.varsizes.append(len(hyperparameter.categories))
@@ -112,7 +107,7 @@ class TreeParzenEstimator(Surrogate):
         # 'cv_ml' - cross validation maximum likelihood
         # 'cv_ls' - cross validation the least squares, more expensive cross validation method
         # 'normal_reference' - default, quick, rule of thumb
-        bw_estimation = 'normal_reference'
+        bw_estimation = "normal_reference"
 
         good_kde = sm.nonparametric.KDEMultivariate(data=t_features_good, var_type=self.kde_vartypes, bw=bw_estimation)
         bad_kde = sm.nonparametric.KDEMultivariate(data=t_features_bad, var_type=self.kde_vartypes, bw=bw_estimation)
@@ -120,10 +115,7 @@ class TreeParzenEstimator(Surrogate):
         good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth, None)
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth, None)
 
-        self.model = {
-            'good': good_kde,
-            'bad': bad_kde
-        }
+        self.model = {"good": good_kde, "bad": bad_kde}
 
         is_built = True
         return is_built
@@ -141,13 +133,12 @@ class TreeParzenEstimator(Surrogate):
             transformed_configuration = configuration
 
         # Get accumulated probabilities for provided vectors.
-        good_pdf = self.model['good'].pdf
-        bad_pdf = self.model['bad'].pdf
+        good_pdf = self.model["good"].pdf
+        bad_pdf = self.model["bad"].pdf
 
         predicted_probability_good = max(1e-32, good_pdf(transformed_configuration))
         predicted_probability_bad = max(1e-32, bad_pdf(transformed_configuration))
 
-        result = pd.DataFrame({self.objective["Name"] + "_probability_good": predicted_probability_good,
-                               self.objective["Name"] + "_probability_bad": predicted_probability_bad}, index=[0])
+        result = pd.DataFrame({self.objective["Name"] + "_probability_good": predicted_probability_good, self.objective["Name"] + "_probability_bad": predicted_probability_bad}, index=[0])
 
         return result

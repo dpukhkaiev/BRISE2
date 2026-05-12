@@ -20,7 +20,7 @@ class QualityValidator(Validator):
         self.splitter = None
         if self.split == "HoldOut":
             self.training_set_size = self.validator_description["Split"][self.split]["TrainingSet"]
-            self.splitter = ShuffleSplit(n_splits=1, test_size=1-self.training_set_size)
+            self.splitter = ShuffleSplit(n_splits=1, test_size=1 - self.training_set_size)
         elif self.split == "KFold":
             self.splitter = KFold(self.validator_description["Split"][self.split]["NumberOfFolds"])
 

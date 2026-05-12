@@ -17,8 +17,7 @@ def get_worker_methods(found_module):
 
     try:
         # Getting the functions
-        methods_in_module = inspect.getmembers(found_module,
-                                               lambda member: inspect.isfunction(member))
+        methods_in_module = inspect.getmembers(found_module, lambda member: inspect.isfunction(member))
         # methods_in_module is a list of tuples (function_name:str, function_obj:function)
     except Exception as error:
         msg = "Error occurred when looking for a worker methods. Following exception occurred: %s" % (error)
@@ -37,9 +36,9 @@ def get_worker_module():
     logger = logging.getLogger(__name__)
 
     # Finding a Module
-    selected_module_file_name = ''
+    selected_module_file_name = ""
     cutoff = 1
-    module_name = 'worker'
+    module_name = "worker"
     reduction_step = 0.1
     files = os.listdir()
     if not files:
@@ -49,8 +48,7 @@ def get_worker_module():
     while not selected_module_file_name:
         selected_module_file_name = difflib.get_close_matches(module_name, files, n=1, cutoff=cutoff)
         cutoff -= reduction_step
-    logger.debug("'%s' module was selected with cutoff=%f for name=%s." %
-                 (selected_module_file_name, cutoff, module_name))
+    logger.debug("'%s' module was selected with cutoff=%f for name=%s." % (selected_module_file_name, cutoff, module_name))
     module_path = selected_module_file_name[0][:-3]
     try:
         found_module = importlib.import_module(module_path)

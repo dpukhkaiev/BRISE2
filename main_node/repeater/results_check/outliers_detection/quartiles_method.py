@@ -1,7 +1,5 @@
 import numpy as np
-from repeater.results_check.outliers_detection.outliers_detector_decorator import (
-    OutliersDetectionDecorator
-)
+from repeater.results_check.outliers_detection.outliers_detector_decorator import OutliersDetectionDecorator
 
 
 class Quartiles(OutliersDetectionDecorator):

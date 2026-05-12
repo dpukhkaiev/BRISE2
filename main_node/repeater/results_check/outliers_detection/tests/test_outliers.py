@@ -1,7 +1,5 @@
 import pytest
-from repeater.results_check.outliers_detection.outliers_detector_selector import (
-    get_outlier_detectors
-)
+from repeater.results_check.outliers_detection.outliers_detector_selector import get_outlier_detectors
 from repeater.results_check.task_errors_check import error_check
 
 
@@ -77,8 +75,7 @@ class TestOutliers:
         assert actual_results == expected_results
         assert outlier_detectors_used == 0
 
-    def result_check_block(self, tasks_sample: list, experiment_description: dict,
-                           outliers_num: int, broken_num: int, disabled_num: int, disabled_type: int):
+    def result_check_block(self, tasks_sample: list, experiment_description: dict, outliers_num: int, broken_num: int, disabled_num: int, disabled_type: int):
         """
         Test function for result_check submodule of Repeater.
         Main steps:
@@ -102,9 +99,9 @@ class TestOutliers:
         # 1. Generate required number of outlier and broken results (if required).
         for i in range(0, outliers_num + broken_num):
             if i < outliers_num:
-                tasks_sample[i]["result"]["energy"] = (i+1) * 50000
+                tasks_sample[i]["result"]["energy"] = (i + 1) * 50000
             else:
-                tasks_sample[i]["result"]["energy"] = 'Bad value'
+                tasks_sample[i]["result"]["energy"] = "Bad value"
 
         # 2. Change Experiment Description parameters (if required).
         for i in range(0, disabled_num):
@@ -118,30 +115,28 @@ class TestOutliers:
 
         # 3. Generate expected results.
         expected_results = []
-        expected_results.append('energy')
+        expected_results.append("energy")
         for index in range(0, len(tasks_sample)):
-            if tasks_sample[index]['result']['energy'] == 'Bad value':
-                expected_results.append('Bad value')
-            elif (tasks_sample[index]['result']['energy'] > 10000
-                    and disabled_num != len(experiment_description["OutliersDetection"]["Detectors"])):
-                expected_results.append('Outlier')
+            if tasks_sample[index]["result"]["energy"] == "Bad value":
+                expected_results.append("Bad value")
+            elif tasks_sample[index]["result"]["energy"] > 10000 and disabled_num != len(experiment_description["OutliersDetection"]["Detectors"]):
+                expected_results.append("Outlier")
             else:
-                expected_results.append('OK')
+                expected_results.append("OK")
 
         # 4. Check for errors.
         objectives = experiment_description["TaskConfiguration"]["Objectives"]
         expected_values_range = experiment_description["TaskConfiguration"]["ExpectedValuesRange"]
         expected_data_type = experiment_description["TaskConfiguration"]["ObjectivesDataTypes"]
         for index, parameter in enumerate(objectives):
-            tasks_sample_error_checked = error_check(tasks_sample, parameter,
-                                                     expected_values_range[index], expected_data_type[index])
+            tasks_sample_error_checked = error_check(tasks_sample, parameter, expected_values_range[index], expected_data_type[index])
 
         # 5. Check for outliers.
         outlier_detectors = get_outlier_detectors(experiment_description["OutliersDetection"])
         results_WO_outliers, outlier_detectors_used = outlier_detectors.outlier_detection(tasks_sample_error_checked, objectives)
         actual_results = []
-        actual_results.append('energy')
+        actual_results.append("energy")
         for task in results_WO_outliers:
-            actual_results.append(task['ResultValidityCheckMark'])
+            actual_results.append(task["ResultValidityCheckMark"])
 
         return expected_results, actual_results, outlier_detectors_used

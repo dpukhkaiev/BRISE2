@@ -10,16 +10,16 @@ class SklearnWrapper(Surrogate):
     def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
         super().__init__(surrogate_description, region, objectives)
 
-        self.multi_objective = surrogate_description['Instance'][self.feature_name]['MultiObjective']
+        self.multi_objective = surrogate_description["Instance"][self.feature_name]["MultiObjective"]
 
-        full_path = surrogate_description['Instance'][self.feature_name]['Class']
-        module_name, class_name = full_path.rsplit('.', 1)
+        full_path = surrogate_description["Instance"][self.feature_name]["Class"]
+        module_name, class_name = full_path.rsplit(".", 1)
 
         module = importlib.import_module(module_name)
         surrogate_class = getattr(module, class_name)
 
-        if 'Parameters' in surrogate_description['Instance'][self.feature_name].keys():
-            self.surrogate_instance = surrogate_class(**surrogate_description['Instance'][self.feature_name]['Parameters'])
+        if "Parameters" in surrogate_description["Instance"][self.feature_name].keys():
+            self.surrogate_instance = surrogate_class(**surrogate_description["Instance"][self.feature_name]["Parameters"])
         else:
             self.surrogate_instance = surrogate_class()
 

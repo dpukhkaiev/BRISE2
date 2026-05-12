@@ -26,12 +26,12 @@ def test_tsp_hh(task: dict) -> dict:
 
     def result_in_iteration(i, b):
         base_result = 3000000
-        return base_result - sum((b * 100000/math.exp(x / 10) for x in range(i)))
+        return base_result - sum((b * 100000 / math.exp(x / 10) for x in range(i)))
 
     mh_name = task["parameters"]["low level heuristic"]
-    iteration = task['parameter_control_info']['iteration'] if 'iteration' in task['parameter_control_info'].keys() else 0
+    iteration = task["parameter_control_info"]["iteration"] if "iteration" in task["parameter_control_info"].keys() else 0
     # by changing the boost, the favor should move from one MH to another.
-    if mh_name == 'jMetalPy.SimulatedAnnealing':
+    if mh_name == "jMetalPy.SimulatedAnnealing":
         boost = rd.uniform(0.9, 1.2)
     elif mh_name == "jMetalPy.GeneticAlgorithm":
         boost = rd.uniform(0.9, 1.2)
@@ -44,11 +44,5 @@ def test_tsp_hh(task: dict) -> dict:
 
     current_result = result_in_iteration(iteration, boost)
     previous_result = result_in_iteration(iteration - 1, boost)
-    result = {
-        "objective": current_result,
-        "improvement": (previous_result - current_result) / previous_result,
-        "parameter_control_info": {
-            "iteration": iteration + 1
-        }
-    }
+    result = {"objective": current_result, "improvement": (previous_result - current_result) / previous_result, "parameter_control_info": {"iteration": iteration + 1}}
     return result

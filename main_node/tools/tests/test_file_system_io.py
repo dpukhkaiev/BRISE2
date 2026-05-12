@@ -8,6 +8,7 @@ class TestFileSystemIO:
         # Test #0. Load content of a valid json file
         # Expected result: json file is loaded and can be treated as a python dictionary (get value from key)
         from tools.file_system_io import load_json_file
+
         input_file = "./Resources/SettingsBRISE.json"
         expected_result = "./Results/"
         actual_result = load_json_file(input_file)
@@ -19,6 +20,7 @@ class TestFileSystemIO:
         import json
 
         from tools.file_system_io import load_json_file
+
         expected_result = "Expecting value"
         input_file = "./tools/file_system_io.py"
         with pytest.raises(json.JSONDecodeError) as excinfo:
@@ -29,6 +31,7 @@ class TestFileSystemIO:
         # Test #2. Try to load content of non-existing file
         # Expected result: an error is raised, that file doesn't exist
         from tools.file_system_io import load_json_file
+
         expected_result = "No such file or directory"
         input_file = "./Resources/no_such_file.json"
         with pytest.raises(IOError) as excinfo:
@@ -39,6 +42,7 @@ class TestFileSystemIO:
         # Test #3. Try to load content if passed file parameter is None
         # Expected result: an error is raised
         from tools.file_system_io import load_json_file
+
         input_file = None
         expected_result = "expected str, bytes or os.PathLike object, not NoneType"
         with pytest.raises(TypeError) as excinfo:

@@ -9,7 +9,6 @@ from transfer_learning.transfer_learning_module import TransferLearningOrchestra
 from tools.initial_config import load_experiment_setup
 from tools.restore_db import RestoreDB
 
-
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
@@ -22,28 +21,27 @@ class TestMTL:
         rdb.restore()
         experiment, search_space = self.initialize_exeriment()
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -64,52 +62,37 @@ class TestMTL:
                     "SamplingLandmarkBased": {
                         "MinNumberOfSamples": 10,
                         "Type": "sampling_landmark_based",
-                        "Comparator": {
-                            "NormDifference": {
-                                "Type": "norm_difference_comparator"
-                            }
-                        },
-                        "ExperimentsQuantity": {
-                            "FixedQuantity": {
-                                "NumberOfSimilarExperiments": 1
-                            }
-                        }
+                        "Comparator": {"NormDifference": {"Type": "norm_difference_comparator"}},
+                        "ExperimentsQuantity": {"FixedQuantity": {"NumberOfSimilarExperiments": 1}},
                     }
                 },
-                "MultiTaskLearning": {
-                    "Filters": {
-                        "FewShotMultiTask": {
-                            "Type": "few_shot"
-                        }
-                    }
-                }
+                "MultiTaskLearning": {"Filters": {"FewShotMultiTask": {"Type": "few_shot"}}},
             }
         }
         experiment, search_space = self.initialize_exeriment(few_shot_skeleton)
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -131,53 +114,38 @@ class TestMTL:
                     "SamplingLandmarkBased": {
                         "MinNumberOfSamples": 10,
                         "Type": "sampling_landmark_based",
-                        "Comparator": {
-                            "NormDifference": {
-                                "Type": "norm_difference_comparator"
-                            }
-                        },
-                        "ExperimentsQuantity": {
-                            "FixedQuantity": {
-                                "NumberOfSimilarExperiments": 1
-                            }
-                        }
+                        "Comparator": {"NormDifference": {"Type": "norm_difference_comparator"}},
+                        "ExperimentsQuantity": {"FixedQuantity": {"NumberOfSimilarExperiments": 1}},
                     }
                 },
-                "MultiTaskLearning": {
-                    "Filters": {
-                        "ShuffleConfigurations": {
-                            "Type": "shuffle"
-                        }
-                    }
-                }
+                "MultiTaskLearning": {"Filters": {"ShuffleConfigurations": {"Type": "shuffle"}}},
             }
         }
         experiment, search_space = self.initialize_exeriment(shuffle_skeleton)
 
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -199,63 +167,45 @@ class TestMTL:
                     "SamplingLandmarkBased": {
                         "MinNumberOfSamples": 10,
                         "Type": "sampling_landmark_based",
-                        "Comparator": {
-                            "NormDifference": {
-                                "Type": "norm_difference_comparator"
-                            }
-                        },
-                        "ExperimentsQuantity": {
-                            "FixedQuantity": {
-                                "NumberOfSimilarExperiments": 1
-                            }
-                        }
+                        "Comparator": {"NormDifference": {"Type": "norm_difference_comparator"}},
+                        "ExperimentsQuantity": {"FixedQuantity": {"NumberOfSimilarExperiments": 1}},
                     }
                 },
                 "MultiTaskLearning": {
                     "Filters": {
-                        "OldNewRatio": {
-                            "OldNewConfigsRatio": 0.1,
-                            "Type": "old_new_ratio"
-                        },
-                        "ShuffleConfigurations": {
-                            "Type": "shuffle"
-                        },
-                        "OnlyBestConfigurations": {
-                            "Type": "only_best"
-                        },
-                        "FewShotMultiTask": {
-                            "Type": "few_shot"
-                        }
+                        "OldNewRatio": {"OldNewConfigsRatio": 0.1, "Type": "old_new_ratio"},
+                        "ShuffleConfigurations": {"Type": "shuffle"},
+                        "OnlyBestConfigurations": {"Type": "only_best"},
+                        "FewShotMultiTask": {"Type": "few_shot"},
                     }
-                }
+                },
             }
         }
         experiment, search_space = self.initialize_exeriment(shuffle_skeleton)
 
         cs = ConfigurationSelection(experiment)
-        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
-                                          experiment_description=experiment.description)
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = get_configurations_2_float[0]['Result']
+        results = get_configurations_2_float[0]["Result"]
         del results["Y3"]
         del results["Y4"]
         del results["Y5"]
         predicted[0].results = results
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         experiment.default_configuration = predicted[0]
 
         for i in range(1, 10):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
 
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
 
             experiment.measured_configurations.append(predicted[0])
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -265,7 +215,6 @@ class TestMTL:
 
         transferred_configs = tl.transfer_submodules["Configuration_transfer"].transfer_configurations(similar_experiments)
         assert len(transferred_configs) == 1
-
 
     def initialize_exeriment(self, skeleton: Dict = None) -> Tuple[Experiment, SearchSpace]:
         experiment_description, search_space = load_experiment_setup(experiment_description_file)

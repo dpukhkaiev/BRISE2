@@ -18,8 +18,7 @@ class ModelRecommendationOrchestrator:
         assert len(keys) == 1
         feature_name = keys[0]
 
-        mr_class = reflective_class_import(class_name=experiment_description["TransferLearning"]["ModelRecommendation"][feature_name]["Type"],
-                                           folder_path="transfer_learning/model_recommendation")
+        mr_class = reflective_class_import(class_name=experiment_description["TransferLearning"]["ModelRecommendation"][feature_name]["Type"], folder_path="transfer_learning/model_recommendation")
         mr = mr_class(experiment_description, experiment_id)
         logger.info(f"Assigned {feature_name} model recommendation approach.")
 

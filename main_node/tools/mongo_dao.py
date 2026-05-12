@@ -10,13 +10,11 @@ class MongoDB(metaclass=Singleton):
     This class plays a role of the Data Access Object (DAO) for MongoDB.
     It contains main CRUD operations (Create, Read, Update and Delete), used by BRISE to operate with a database
     """
+
     def __init__(self, mongo_host: str, mongo_port: int, database_name: str, user: str, passwd: str):
         self.logger = logging.getLogger(__name__)
         # if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-        self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port),
-                                          username=user, password=passwd,
-                                          authSource=database_name
-                                          )
+        self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port), username=user, password=passwd, authSource=database_name)
         self.database = self.client[database_name]
         self.logger.info(f"New DB connection: {database_name} {user}")
         # else:

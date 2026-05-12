@@ -9,6 +9,7 @@ class BasicDefaultConfigurationHandler(DefaultConfigurationHandler):
     """
     Extracts a user-defined default configuration from the search space description
     """
+
     def __init__(self, default_configuration_handler_description: dict, experiment: Experiment):
         super().__init__(default_configuration_handler_description, experiment)
 

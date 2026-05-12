@@ -6,6 +6,7 @@ import time
 from threading import Thread
 
 import pika
+
 # USER
 from logger.default_logger import BRISELogConfigurator
 from main import MainThread
@@ -53,11 +54,9 @@ class ConsumerThread(Thread):
             if main_thread_state != MainThread.State.SHUTTING_DOWN:
                 break
         if main_thread_state == MainThread.State.IDLE:
-            result['MAIN_PROCESS'] = {"main process": bool(False),
-                                      "status": 'none'}
+            result["MAIN_PROCESS"] = {"main process": bool(False), "status": "none"}
         elif main_thread_state == MainThread.State.RUNNING:
-            result['MAIN_PROCESS'] = {"main process": bool(True),
-                                      "status": 'running'}
+            result["MAIN_PROCESS"] = {"main process": bool(True), "status": "running"}
         return result
 
     def main_start(self, channel, method, properties, body):
@@ -73,10 +72,10 @@ class ConsumerThread(Thread):
 
         If main process is already running - just return its status. (To terminate process - use relevant method).
         """
-        if properties.headers['body_type'] == 'pickle':
+        if properties.headers["body_type"] == "pickle":
             self.MAIN_THREAD = MainThread(experiment_setup=pickle.loads(body))
             self.MAIN_THREAD.start()
-        elif properties.headers['body_type'] == 'json':
+        elif properties.headers["body_type"] == "json":
             request = json.loads(body)
             if self.MAIN_THREAD.get_state() == MainThread.State.IDLE:
                 if request["Method"] == "POST":
@@ -87,10 +86,7 @@ class ConsumerThread(Thread):
                     self.MAIN_THREAD.start()
         time.sleep(0.1)
         result = self.main_process_status()
-        self.channel.basic_publish(exchange='',
-                                   routing_key=properties.reply_to,
-                                   properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-                                   body=json.dumps(result))
+        self.channel.basic_publish(exchange="", routing_key=properties.reply_to, properties=pika.BasicProperties(correlation_id=properties.correlation_id), body=json.dumps(result))
         self.channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def main_status(self, channel, method, properties, body):
@@ -99,10 +95,7 @@ class ConsumerThread(Thread):
         If more processes will be added - could be modified to display relevant info.
         """
         result = self.main_process_status()
-        self.channel.basic_publish(exchange='',
-                                   routing_key=properties.reply_to,
-                                   properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-                                   body=json.dumps(result))
+        self.channel.basic_publish(exchange="", routing_key=properties.reply_to, properties=pika.BasicProperties(correlation_id=properties.correlation_id), body=json.dumps(result))
         self.channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def main_stop(self, channel, method, properties, body):
@@ -113,31 +106,26 @@ class ConsumerThread(Thread):
         """
         if self.MAIN_THREAD.get_state() == MainThread.State.RUNNING:
             msg = "Stop comand from API received."
-            self.channel.basic_publish(exchange='',
-                                       routing_key='stop_experiment_queue',
-                                       body=msg)
+            self.channel.basic_publish(exchange="", routing_key="stop_experiment_queue", body=msg)
 
         result = self.main_process_status()
-        self.channel.basic_publish(exchange='',
-                                   routing_key=properties.reply_to,
-                                   properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-                                   body=json.dumps(result))
+        self.channel.basic_publish(exchange="", routing_key=properties.reply_to, properties=pika.BasicProperties(correlation_id=properties.correlation_id), body=json.dumps(result))
         self.channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def download_dump_request_queue(self, channel, method, properties, body):
         """
-       RPC function that returns a base64 encoded dump of the latest experiment.
-       body['format']: specifies file extension of dump
+        RPC function that returns a base64 encoded dump of the latest experiment.
+        body['format']: specifies file extension of dump
 
-       result["status"]: contains a status of a response, "ok" or "error"
-       result["body"]: contains a base64 encoded dump
-       result["file_name"]: contains a file name
-       """
+        result["status"]: contains a status of a response, "ok" or "error"
+        result["body"]: contains a base64 encoded dump
+        result["file_name"]: contains a file name
+        """
         body = json.loads(body)
         result = {"status": None, "body": None, "file_name": None}
-        dump_name = os.environ.get('EXP_DUMP_NAME')
+        dump_name = os.environ.get("EXP_DUMP_NAME")
         try:
-            if dump_name == 'undefined':
+            if dump_name == "undefined":
                 result["status"] = "missing experiment file"
                 API().send("log", "error", message=result["body"])
             else:
@@ -147,12 +135,9 @@ class ConsumerThread(Thread):
                     result["body"] = str(base64.b64encode(file.read()), "utf-8")
                     result["file_name"] = f"{dump_name}.{body['format']}"
         except Exception as error:
-            result["status"] = 'Download dump file of the experiment: %s' % error
+            result["status"] = "Download dump file of the experiment: %s" % error
             API().send("log", "error", message=result["status"])
-        self.channel.basic_publish(exchange='',
-                                   routing_key=properties.reply_to,
-                                   properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-                                   body=json.dumps(result))
+        self.channel.basic_publish(exchange="", routing_key=properties.reply_to, properties=pika.BasicProperties(correlation_id=properties.correlation_id), body=json.dumps(result))
         self.channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def run(self):
@@ -160,14 +145,10 @@ class ConsumerThread(Thread):
         Point of entry to the server part of PRC,
         listening of queues with PRC requests
         """
-        self.channel.basic_consume(queue='main_start_queue', auto_ack=False,
-                                   on_message_callback=self.main_start)
-        self.channel.basic_consume(queue='main_status_queue', auto_ack=False,
-                                   on_message_callback=self.main_status)
-        self.channel.basic_consume(queue='main_stop_queue', auto_ack=False,
-                                   on_message_callback=self.main_stop)
-        self.channel.basic_consume(queue='main_download_dump_queue', auto_ack=False,
-                                   on_message_callback=self.download_dump_request_queue)
+        self.channel.basic_consume(queue="main_start_queue", auto_ack=False, on_message_callback=self.main_start)
+        self.channel.basic_consume(queue="main_status_queue", auto_ack=False, on_message_callback=self.main_status)
+        self.channel.basic_consume(queue="main_stop_queue", auto_ack=False, on_message_callback=self.main_stop)
+        self.channel.basic_consume(queue="main_download_dump_queue", auto_ack=False, on_message_callback=self.download_dump_request_queue)
 
         try:
             while self.channel._consumer_infos:
@@ -184,7 +165,7 @@ class ConsumerThread(Thread):
         self._is_interrupted = True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     consumer_thread = ConsumerThread(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT"))
     consumer_thread.start()
     consumer_thread.join()

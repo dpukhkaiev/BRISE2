@@ -29,29 +29,26 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(0)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_2_float[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_2_float[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         cs = ConfigurationSelection(experiment)
-        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
-                              0], TreeParzenEstimator)
+        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0], TreeParzenEstimator)
         configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_2_float[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_2_float[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
@@ -62,8 +59,7 @@ class TestConfigurationSelection:
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # Scalar
-        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
-                              0].surrogate_instance, GaussianProcessRegressor)
+        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].surrogate_instance, GaussianProcessRegressor)
         experiment.dump("Results")
 
     def test_1(self, get_experiment, get_workers, get_configurations_float_nom):
@@ -79,13 +75,13 @@ class TestConfigurationSelection:
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
             # Update to 2-Objectives
-            results = get_configurations_float_nom[i]['Result']
+            results = get_configurations_float_nom[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
@@ -97,10 +93,10 @@ class TestConfigurationSelection:
 
     def test_2(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
-         'surr.vt.none', 'surr.ct',  'optimizer.nsga2-moead', 'opt.ct',, 'opt.vt.none'
-         'validator.quality', 'validator.internal.none' , 'cs.random',
-         'ted.none', 'mr.none', 'mtl.none', 'sc.guaranteed', 'rm.quality', 'dch.random', 'ss.sobol']
+        ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
+        'surr.vt.none', 'surr.ct',  'optimizer.nsga2-moead', 'opt.ct',, 'opt.vt.none'
+        'validator.quality', 'validator.internal.none' , 'cs.random',
+        'ted.none', 'mr.none', 'mtl.none', 'sc.guaranteed', 'rm.quality', 'dch.random', 'ss.sobol']
         """
         experiment_description, search_space = get_experiment(2)
         experiment = Experiment(experiment_description, search_space)
@@ -109,9 +105,9 @@ class TestConfigurationSelection:
         hierarchical_configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            predicted[0].results = get_configurations_all_types[i]['Result']
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].results = get_configurations_all_types[i]["Result"]
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             hierarchical_configs = hierarchical_configs + measured
             assert len(configs) == i + 1
@@ -127,10 +123,10 @@ class TestConfigurationSelection:
 
     def test_3(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
-         'surr.vt.none', 'surr.ct', 'optimizer.gaco', 'optimizer.gaco', 'optimizer.gaco',
-         'optimizer.gaco', 'optimizer.gaco', 'opt.vt', 'opt.ct','validator.mock', 'validator.internal.none',
-         'cs.best', 'ted.none', 'mr.none', 'mtl.none', 'sc.bad', 'rm.experiment_aware', 'dch.none', 'ss.mersenne']
+        ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
+        'surr.vt.none', 'surr.ct', 'optimizer.gaco', 'optimizer.gaco', 'optimizer.gaco',
+        'optimizer.gaco', 'optimizer.gaco', 'opt.vt', 'opt.ct','validator.mock', 'validator.internal.none',
+        'cs.best', 'ted.none', 'mr.none', 'mtl.none', 'sc.bad', 'rm.experiment_aware', 'dch.none', 'ss.mersenne']
         """
         experiment_description, search_space = get_experiment(3)
         experiment = Experiment(experiment_description, search_space)
@@ -139,9 +135,9 @@ class TestConfigurationSelection:
         hierarchical_configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            predicted[0].results = get_configurations_all_types[i]['Result']
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].results = get_configurations_all_types[i]["Result"]
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             hierarchical_configs = hierarchical_configs + measured
             assert len(configs) == i + 1
@@ -166,27 +162,25 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(4)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_float_nom[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_float_nom[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_float_nom[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -196,11 +190,11 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_float_nom[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         assert predicted[0].type is Configuration.Type.TRANSFERRED
@@ -227,9 +221,9 @@ class TestConfigurationSelection:
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = get_configurations_2_float[10]['Result']
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = get_configurations_2_float[10]["Result"]
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         experiment.evaluated_configurations.append(default_configuration)
         experiment.measured_configurations.append(default_configuration)
@@ -238,13 +232,13 @@ class TestConfigurationSelection:
         hierarchical_configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = get_configurations_2_float[i]['Result']
+            results = get_configurations_2_float[i]["Result"]
             del results["Y3"]
             del results["Y4"]
             del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             hierarchical_configs = hierarchical_configs + measured
             assert len(configs) == i + 1
@@ -255,12 +249,11 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 11  # DynamicCompositional
         assert any([c.type is Configuration.Type.PREDICTED for c in configs])
 
-
     def test_6(self, get_experiment, get_workers, get_configurations_float_nom):
         """
-         ['1 float 1 nom', 'flat', '5-mo', 'pf', 'gpr', 'lr', 'mock', 'surr.vt.none',
-         'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct','validator.quality', 'validator.internal',
-         'cs.random', 'ted.none', 'mr.none', 'mtl.none', 'sc.guaranteed', 'rm.quality', 'dch.none', 'ss.mersenne']
+        ['1 float 1 nom', 'flat', '5-mo', 'pf', 'gpr', 'lr', 'mock', 'surr.vt.none',
+        'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct','validator.quality', 'validator.internal',
+        'cs.random', 'ted.none', 'mr.none', 'mtl.none', 'sc.guaranteed', 'rm.quality', 'dch.none', 'ss.mersenne']
         """
         experiment_description, search_space = get_experiment(6)
         experiment = Experiment(experiment_description, search_space)
@@ -268,14 +261,13 @@ class TestConfigurationSelection:
         configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            predicted[0].results = get_configurations_float_nom[i]['Result']
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].results = get_configurations_float_nom[i]["Result"]
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
-            assert len(configs) == i+1
+            assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
             experiment.measured_configurations.append(predicted[0])
-
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 17  # Portfolio 5 Obj 3 Surr 2 MO 15 + 2
@@ -283,9 +275,9 @@ class TestConfigurationSelection:
 
     def test_7(self, get_experiment, get_workers, get_configurations_2_float):
         """
-         ['2 float', 'flat', '5-mo', 'pure', 'sklearn', 'surr.vt.none', 'surr.ct', 'optimizer.nsga2', 'opt.ct',
-         'validator.quality', 'validator.internal.none','cs.random', 'ted.none', 'mr.none', 'mtl.none',
-         'sc.guaranteed', 'rm.experiment_aware', 'dch.random', 'ss.sobol']
+        ['2 float', 'flat', '5-mo', 'pure', 'sklearn', 'surr.vt.none', 'surr.ct', 'optimizer.nsga2', 'opt.ct',
+        'validator.quality', 'validator.internal.none','cs.random', 'ted.none', 'mr.none', 'mtl.none',
+        'sc.guaranteed', 'rm.experiment_aware', 'dch.random', 'ss.sobol']
         """
         experiment_description, search_space = get_experiment(7)
         experiment = Experiment(experiment_description, search_space)
@@ -294,23 +286,22 @@ class TestConfigurationSelection:
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = get_configurations_2_float[10]['Result']
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = get_configurations_2_float[10]["Result"]
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.evaluated_configurations.append(default_configuration)
         experiment.measured_configurations.append(default_configuration)
 
         configs = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            predicted[0].results = get_configurations_2_float[i]['Result']
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].results = get_configurations_2_float[i]["Result"]
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
-            assert len(configs) == i+1
+            assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
             experiment.measured_configurations.append(predicted[0])
-
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # Pure
@@ -318,10 +309,10 @@ class TestConfigurationSelection:
 
     def test_8(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
-         'surr.vt', 'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct.none',
-         'validator.mock-q', 'validator.internal.none-y', 'cs.best', 'ted.none',
-         'mr.none', 'mtl.none', 'sc.time', 'rm.quality', 'dch.none', 'ss.sobol']
+        ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
+        'surr.vt', 'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct.none',
+        'validator.mock-q', 'validator.internal.none-y', 'cs.best', 'ted.none',
+        'mr.none', 'mtl.none', 'sc.time', 'rm.quality', 'dch.none', 'ss.sobol']
         """
         experiment_description, search_space = get_experiment(8)
         experiment = Experiment(experiment_description, search_space)
@@ -338,14 +329,14 @@ class TestConfigurationSelection:
             if i > 19:
                 j = i - 20
             predicted, _ = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = get_configurations_all_types[j]['Result']
+            results = get_configurations_all_types[j]["Result"]
             if not i > 19:
                 del results["Y3"]
                 del results["Y4"]
                 del results["Y5"]
             predicted[0].results = results
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
@@ -365,16 +356,14 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(9)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_float_nom[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
@@ -384,11 +373,11 @@ class TestConfigurationSelection:
         #                   ModelMock)
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_float_nom[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_float_nom[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -398,11 +387,11 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_float_nom[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         assert predicted[0].type is Configuration.Type.TRANSFERRED
@@ -410,7 +399,6 @@ class TestConfigurationSelection:
         # assert isinstance(list(cs.predictor.mapping_region_model[
         #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
         #                   TreeParzenEstimator)
-
 
         experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
         experiment.send_state_to_db()
@@ -430,29 +418,26 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(10)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_2_float[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_2_float[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
-        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
-                              0].surrogate_instance, GradientBoostingRegressor)
+        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].surrogate_instance, GradientBoostingRegressor)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_2_float[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_2_float[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -462,16 +447,15 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_2_float[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_2_float[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         experiment.add_configuration(predicted[0])
-        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
-                              0].surrogate_instance, GaussianProcessRegressor)
+        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].surrogate_instance, GaussianProcessRegressor)
         experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
         experiment.send_state_to_db()
 
@@ -491,27 +475,25 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(11)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_all_types[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_all_types[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_all_types[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -521,11 +503,11 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_all_types[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         experiment.add_configuration(predicted[0])
@@ -548,27 +530,25 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(12)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_all_types[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_all_types[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_all_types[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -578,11 +558,11 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_all_types[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         experiment.add_configuration(predicted[0])
@@ -604,27 +584,25 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(13)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_all_types[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_all_types[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_all_types[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -634,11 +612,11 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_all_types[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         experiment.add_configuration(predicted[0])
@@ -660,29 +638,26 @@ class TestConfigurationSelection:
         experiment_description, search_space = get_experiment(14)
         experiment = Experiment(experiment_description, search_space)
         experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-        experiment.database.write_one_record(
-            "Search_space", get_search_space_record(search_space, experiment.unique_id)
-        )
+        experiment.database.write_one_record("Search_space", get_search_space_record(search_space, experiment.unique_id))
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
         assert isinstance(default_configuration, Configuration)
-        default_configuration.results = {"Y1": get_configurations_2_float[10]['Result']["Y1"]}
-        default_configuration.status['measured'] = True
-        default_configuration.status['evaluated'] = True
+        default_configuration.results = {"Y1": get_configurations_2_float[10]["Result"]["Y1"]}
+        default_configuration.status["measured"] = True
+        default_configuration.status["evaluated"] = True
         experiment.default_configuration = default_configuration
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
-        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
-                              0].surrogate_instance, LinearRegression)
+        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].surrogate_instance, LinearRegression)
         configs = []
         for i in range(0, 9):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = {"Y1": get_configurations_2_float[i]['Result']["Y1"]}
+            results = {"Y1": get_configurations_2_float[i]["Result"]["Y1"]}
             predicted[0].results = results
-            predicted[0].status['enabled'] = True
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].status["enabled"] = True
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type is Configuration.Type.FROM_SELECTOR
@@ -692,16 +667,15 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_2_float[10]['Result']["Y1"]}
+        results = {"Y1": get_configurations_2_float[10]["Result"]["Y1"]}
         predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
+        predicted[0].status["enabled"] = True
+        predicted[0].status["measured"] = True
+        predicted[0].status["evaluated"] = True
         configs = configs + predicted
         assert len(configs) == 10
         experiment.add_configuration(predicted[0])
-        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
-                              0].surrogate_instance, GaussianProcessRegressor)
+        assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].surrogate_instance, GaussianProcessRegressor)
         experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
         experiment.send_state_to_db()
 
@@ -719,9 +693,9 @@ class TestConfigurationSelection:
         configs = []
         for i in range(30):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            predicted[0].results = get_energy_configurations[i]['Result']
-            predicted[0].status['measured'] = True
-            predicted[0].status['evaluated'] = True
+            predicted[0].results = get_energy_configurations[i]["Result"]
+            predicted[0].status["measured"] = True
+            predicted[0].status["evaluated"] = True
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
