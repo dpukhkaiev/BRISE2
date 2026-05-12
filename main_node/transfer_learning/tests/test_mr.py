@@ -30,7 +30,7 @@ class TestMR:
             "Search_space", get_search_space_record(search_space, experiment.unique_id)
         )
 
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -115,7 +115,7 @@ class TestMR:
             "Search_space", get_search_space_record(search_space, experiment.unique_id)
         )
 
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -180,7 +180,7 @@ class TestMR:
             }
         }
         experiment, search_space = self.initialize_experiment(few_shot_skeleton)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)

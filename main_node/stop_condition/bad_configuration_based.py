@@ -4,7 +4,7 @@ from stop_condition.stop_condition import StopCondition
 
 class BadConfigurationBasedType(StopCondition):
 
-    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
+    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str, isMock: bool = False):
         super().__init__(stop_condition_parameters, experiment_description, experiment_id)
         self.threshold = stop_condition_parameters["Parameters"]["MaxBadConfigurations"]
         self.start_threads()

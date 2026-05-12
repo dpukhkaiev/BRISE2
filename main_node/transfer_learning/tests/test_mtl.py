@@ -20,7 +20,7 @@ class TestMTL:
         """
         rdb.restore()
         experiment, search_space = self.initialize_exeriment()
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -85,7 +85,7 @@ class TestMTL:
             }
         }
         experiment, search_space = self.initialize_exeriment(few_shot_skeleton)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
 
@@ -153,7 +153,7 @@ class TestMTL:
         }
         experiment, search_space = self.initialize_exeriment(shuffle_skeleton)
 
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
 
@@ -231,7 +231,7 @@ class TestMTL:
         }
         experiment, search_space = self.initialize_exeriment(shuffle_skeleton)
 
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
 

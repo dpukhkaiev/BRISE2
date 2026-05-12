@@ -27,7 +27,7 @@ class TestTED:
         rdb.restore()
         experiment_description_file = "./Resources/tests/test_cases_product_configurations/EnergyExperimentWithTL.json"
         experiment, search_space = self.initialize_exeriment(experiment_description_file)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         predicted, measured = cs.send_new_configurations_to_measure("","","", get_workers)
         results = get_energy_configurations[0]['Result']
         predicted[0].results = results
@@ -53,7 +53,7 @@ class TestTED:
     def test_2(self, get_workers, get_configurations_2_float):
         """similar experiment found"""
         experiment, search_space = self.initialize_exeriment(experiment_description_file)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
         results = get_configurations_2_float[0]['Result']
         del results["Y3"]
@@ -106,7 +106,7 @@ class TestTED:
             }
         }
         experiment, search_space = self.initialize_exeriment(experiment_description_file, rgpe_skeleton)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         assert isinstance(tl.ted_module.comparator, RgpeComparator)
@@ -167,7 +167,7 @@ class TestTED:
             }
         }
         experiment, search_space = self.initialize_exeriment(experiment_description_file, clustering_skeleton)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
         results = get_configurations_2_float[0]['Result']
         del results["Y3"]
@@ -227,7 +227,7 @@ class TestTED:
             }
         }
         experiment, search_space = self.initialize_exeriment(experiment_description_file, clustering_skeleton)
-        cs = ConfigurationSelection(experiment)
+        cs = ConfigurationSelection(experiment, isMock=True)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
         results = get_configurations_2_float[0]['Result']
         del results["Y3"]
