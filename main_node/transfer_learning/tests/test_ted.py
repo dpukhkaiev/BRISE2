@@ -1,3 +1,5 @@
+import pytest
+from unittest.mock import MagicMock
 from typing import Tuple, Dict
 from copy import deepcopy
 
@@ -15,6 +17,13 @@ from transfer_learning.transfer_expediency_determination.clustering.mean_shift_c
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
+@pytest.fixture(autouse=True)
+def mock_configurationselection_dependencies(monkeypatch):
+    mock_connection_thread = MagicMock()
+    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
+    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
+    return mock_connection_thread
+
 class TestTED:
     def test_0(self):
         """empty db"""
@@ -27,7 +36,7 @@ class TestTED:
         rdb.restore()
         experiment_description_file = "./Resources/tests/test_cases_product_configurations/EnergyExperimentWithTL.json"
         experiment, search_space = self.initialize_exeriment(experiment_description_file)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         predicted, measured = cs.send_new_configurations_to_measure("","","", get_workers)
         results = get_energy_configurations[0]['Result']
         predicted[0].results = results
@@ -53,7 +62,7 @@ class TestTED:
     def test_2(self, get_workers, get_configurations_2_float):
         """similar experiment found"""
         experiment, search_space = self.initialize_exeriment(experiment_description_file)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
         results = get_configurations_2_float[0]['Result']
         del results["Y3"]
@@ -106,7 +115,7 @@ class TestTED:
             }
         }
         experiment, search_space = self.initialize_exeriment(experiment_description_file, rgpe_skeleton)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         assert isinstance(tl.ted_module.comparator, RgpeComparator)
@@ -167,7 +176,7 @@ class TestTED:
             }
         }
         experiment, search_space = self.initialize_exeriment(experiment_description_file, clustering_skeleton)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
         results = get_configurations_2_float[0]['Result']
         del results["Y3"]
@@ -227,7 +236,7 @@ class TestTED:
             }
         }
         experiment, search_space = self.initialize_exeriment(experiment_description_file, clustering_skeleton)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
         results = get_configurations_2_float[0]['Result']
         del results["Y3"]

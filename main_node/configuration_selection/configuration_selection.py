@@ -17,10 +17,9 @@ class ConfigurationSelection:
     Orchestration class for Configuration Selection module.
     """
 
-    def __init__(self, experiment: Experiment, isMock=False):
+    def __init__(self, experiment: Experiment):
         self.sub = API()
         self.experiment = experiment
-        self.isMock = isMock
 
         self.predictor: Predictor = Predictor(
             self.experiment.unique_id,
