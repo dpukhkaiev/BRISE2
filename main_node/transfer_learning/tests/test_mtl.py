@@ -1,5 +1,7 @@
 from typing import Dict, Tuple
 from copy import deepcopy
+import pytest
+from unittest.mock import MagicMock
 
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
@@ -13,6 +15,12 @@ from tools.restore_db import RestoreDB
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
+@pytest.fixture(autouse=True)
+def mock_configurationselection_dependencies(monkeypatch):
+    mock_connection_thread = MagicMock()
+    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
+    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
+    return mock_connection_thread
 
 class TestMTL:
     def test_0(self, get_workers, get_configurations_2_float):
@@ -21,7 +29,7 @@ class TestMTL:
         """
         rdb.restore()
         experiment, search_space = self.initialize_exeriment()
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -86,7 +94,7 @@ class TestMTL:
             }
         }
         experiment, search_space = self.initialize_exeriment(few_shot_skeleton)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
 
@@ -154,7 +162,7 @@ class TestMTL:
         }
         experiment, search_space = self.initialize_exeriment(shuffle_skeleton)
 
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
 
@@ -232,7 +240,7 @@ class TestMTL:
         }
         experiment, search_space = self.initialize_exeriment(shuffle_skeleton)
 
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
 

@@ -1,3 +1,5 @@
+import pytest
+from unittest.mock import MagicMock
 from typing import Dict, Tuple
 from copy import deepcopy
 
@@ -17,6 +19,12 @@ from tools.restore_db import RestoreDB
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
+@pytest.fixture(autouse=True)
+def mock_configurationselection_dependencies(monkeypatch):
+    mock_connection_thread = MagicMock()
+    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
+    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
+    return mock_connection_thread
 
 class TestMR:
     def test_0(self, get_workers, get_configurations_2_float):
@@ -31,7 +39,7 @@ class TestMR:
             "Search_space", get_search_space_record(search_space, experiment.unique_id)
         )
 
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -116,7 +124,7 @@ class TestMR:
             "Search_space", get_search_space_record(search_space, experiment.unique_id)
         )
 
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
@@ -181,7 +189,7 @@ class TestMR:
             }
         }
         experiment, search_space = self.initialize_experiment(few_shot_skeleton)
-        cs = ConfigurationSelection(experiment, isMock=True)
+        cs = ConfigurationSelection(experiment)
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
