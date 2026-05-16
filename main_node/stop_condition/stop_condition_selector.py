@@ -6,33 +6,27 @@ from tools.mongo_dao import MongoDB
 from tools.reflective_class_import import reflective_class_import
 
 
-def launch_stop_condition_threads(experiment_id: str, experiment: Experiment = None, isMock: bool = False):
+def launch_stop_condition_threads(experiment_id: str, experiment: Experiment = None):
     """
     :param experiment_id: the unique ID of the Experiment
     :param experiment: Experiment class instance, (!)used only in tests
-    :param isMock: Flag indicating if the stop condition is in mock mode
     :return: activated stop condition entities
     """
     logger = logging.getLogger(__name__)
-    if not isMock:
-        database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+    database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                            os.getenv("BRISE_DATABASE_PORT"),
                            os.getenv("BRISE_DATABASE_NAME"),
                            os.getenv("BRISE_DATABASE_USER"),
                            os.getenv("BRISE_DATABASE_PASS"))
 
-        experiment_description = None
-        while experiment_description is None:
-            experiment_description = database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
-    else:
-        database = MongoDB("test", 0, "test", "user", "pass")
-        test_experiment = experiment
-        experiment_description = test_experiment.description
+    experiment_description = None
+    while experiment_description is None:
+        experiment_description = database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
 
     parameters = experiment_description["StopCondition"]
 
     stop_condition_validator_class = reflective_class_import(class_name="StopConditionValidator", folder_path="stop_condition")
-    stop_condition_validator_class(experiment_id, experiment_description, isMock)
+    stop_condition_validator_class(experiment_id, experiment_description)
     logger.debug("Assigned Stop Condition validator.")
 
     activated_scs = []
@@ -41,7 +35,7 @@ def launch_stop_condition_threads(experiment_id: str, experiment: Experiment = N
         sc_type = parameters["Instance"][sc]["Type"]
         if sc_name in experiment_description["StopCondition"]["StopConditionTriggerLogic"]["Expression"]:
             stop_condition_class = reflective_class_import(class_name=sc_type, folder_path="stop_condition")
-            temp = stop_condition_class(parameters["Instance"][sc], experiment_description, experiment_id, isMock)
+            temp = stop_condition_class(parameters["Instance"][sc], experiment_description, experiment_id)
             activated_scs.append(temp)
             logger.debug(f"Assigned {sc_name} Stop Condition of type {sc_type}.")
         else:

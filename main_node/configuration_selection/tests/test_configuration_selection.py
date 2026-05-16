@@ -14,13 +14,12 @@ from tools.restore_db import RestoreDB
 rdb = RestoreDB()
 
 @pytest.fixture(autouse=True)
-def mock_configurationselection_dependencies(monkeypatch):
+def mock_configurationselection_event_service(monkeypatch):
     mock_connection_thread = MagicMock()
     monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
     monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
     return mock_connection_thread
 
-@pytest.mark.skip("Skip tmeporarly")
 class TestConfigurationSelection:
 
     def test_0(self, get_experiment, get_workers, get_configurations_2_float):

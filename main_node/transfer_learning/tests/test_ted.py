@@ -18,7 +18,7 @@ experiment_description_file = "./Resources/tests/test_cases_product_configuratio
 rdb = RestoreDB()
 
 @pytest.fixture(autouse=True)
-def mock_configurationselection_dependencies(monkeypatch):
+def mock_configurationselection_event_service(monkeypatch):
     mock_connection_thread = MagicMock()
     monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
     monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())

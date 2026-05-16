@@ -13,8 +13,7 @@ class AdaptiveType(StopCondition):
         if math.isfinite(search_space_size):
             self.max_configs = \
                 round(stop_condition_parameters["Parameters"]["SearchSpacePercentage"] / 100 * float(search_space_size))
-            if not super().isMock:
-                self.start_threads()
+            self.start_threads()
         else:
             temp_msg = ("Unable to use Adaptive Stop Condition when size of Search Space is infinite. "
                         "Experiment will be stopped in a few seconds. "

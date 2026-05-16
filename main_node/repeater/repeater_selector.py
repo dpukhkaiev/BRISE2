@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-
+import inspect
 from core_entities.configuration import Configuration
 from repeater.results_check.outliers_detection.outliers_detector_selector import (
     get_outlier_detectors
@@ -21,30 +21,25 @@ class RepeaterOrchestration:
     and configuration status management.
     """
 
-    def __init__(self, experiment_id: str, experiment=None, isMock = False):
+    def __init__(self, experiment_id: str, experiment=None):
         """
         :param experiment_id: ID of experiment, required to get experiment description from DB
         :param experiment: Experiment class instance, (!)used only in tests
-        :param isMock: Flag indicating if the repeater is in mock mode
         """
         self.logger = logging.getLogger(__name__)
         self.experiment_id = experiment_id
-        self.isMock = isMock
 
-        if not isMock:
-            self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                     os.getenv("BRISE_DATABASE_PORT"),
                                     os.getenv("BRISE_DATABASE_NAME"),
                                     os.getenv("BRISE_DATABASE_USER"),
                                     os.getenv("BRISE_DATABASE_PASS"))
 
-            self.experiment_description = None
-            while self.experiment_description is None:
-                self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
-        else:
-            self.database = MongoDB("test", 0, "test", "user", "pass")
-            self.experiment = experiment
-            self.experiment_description = experiment.description
+        self.experiment_description = None
+        self.experiment = None
+        while self.experiment_description is None:
+            self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
+          
         self.performed_measurements = 0
 
         keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
@@ -69,10 +64,10 @@ class RepeaterOrchestration:
         self.logger.info("Outliers detection module is disabled")
 
         self._type = self.get_repeater(True)
-        if not self.isMock:
-            self.connection_thread = self._EventServiceConnection(self)
-            self.channel = self.connection_thread.channel
-            self.connection_thread.start()
+       
+        self.connection_thread = self._EventServiceConnection(self)
+        self.channel = self.connection_thread.channel
+        self.connection_thread.start()
 
     def get_repeater(self, is_default_configuration: bool = False):
         """
@@ -95,10 +90,18 @@ class RepeaterOrchestration:
 
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
-        if not self.isMock:
-            return repeater_class(self.experiment_description, self.experiment_id, self.isMock)
+
+        sig = inspect.signature(repeater_class.__init__)
+        logger.error('experiment' in sig.parameters)
+        logger.error(self.experiment)
+        logger.error(repeater_class)
+
+        if not self.experiment:
+        #if not self.experiment: # experiment is only set in tests
+            return repeater_class(self.experiment_description, self.experiment_id, None)
         else:
-            return repeater_class(self.experiment_description, self.experiment_id, self.experiment, self.isMock)
+            return repeater_class(self.experiment_description, self.experiment_id, self.experiment)
+        
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """
@@ -119,20 +122,22 @@ class RepeaterOrchestration:
             else:
                 return 0
 
-    def measure_configurations(self, channel, method, properties, body):
+    def measure_configurations(self, channel, method, properties, body, noDecode = False):
         """
         Callback function for the result of measuring
         :param ch: pika.Channel
         :param method:  pika.spec.Basic.GetOk
         :param properties: pika.spec.BasicProperties
         :param body: result of a configurations in bytes format
+        :param noDecode: dont decode body, since its run as unit test
         """
-        if self.isMock:
+        if noDecode:
             result = json.loads(body)
         else:
             result = json.loads(body.decode())
+        
         configuration = Configuration.from_json(result["configuration"])
-        if configuration.status['evaluated'] and not self.isMock:
+        if configuration.status['evaluated'] and not noDecode:
             tasks_to_send = result["tasks_to_send"]
             tasks_results = result["tasks_results"]
             for index, objective in enumerate(self._objectives):
@@ -188,7 +193,7 @@ class RepeaterOrchestration:
                         }
                     )
 
-        if self.isMock:
+        if noDecode:
             return configuration, needed_tasks_count
 
         elif configuration.status['measured']:

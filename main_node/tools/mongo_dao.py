@@ -12,7 +12,7 @@ class MongoDB(metaclass=Singleton):
     """
     def __init__(self, mongo_host: str, mongo_port: int, database_name: str, user: str, passwd: str):
         self.logger = logging.getLogger(__name__)
-        # if os.environ.get('TEST_MODE') != 'UNIT_TEST': # DEPRECATED - use isMock flag for classes now
+        # if os.environ.get('TEST_MODE') != 'UNIT_TEST': # DEPRECATED
         self.client = pymongo.MongoClient(mongo_host + ":" + str(mongo_port),
                                           username=user, password=passwd,
                                           authSource=database_name
