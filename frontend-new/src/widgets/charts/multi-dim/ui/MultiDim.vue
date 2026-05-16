@@ -68,7 +68,7 @@ function zip(keys: Array<any>, values: Array<any>) {
     }
     return result
 }
-async function chose(configuration: any) {
+async function chose() {
     currentDiagram.value = experiment
     let index = rootParam.value.indexOf(currentDiagram.value)
     if (index === -1) {
@@ -118,7 +118,7 @@ function initMainEvents() {
             let configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
                 if (configuration) {
-                    chose(configuration)
+                    chose()
                     if (!parameter_names.value) return
                     defaultPoint = configuration
                     let alphas = new Array();;
@@ -152,7 +152,7 @@ function initMainEvents() {
             let configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
                 if (configuration) {
-                    chose(configuration)
+                    chose()
                     if (!parameter_names.value) return
                     var alphas = new Array();;
                     parameter_names.value.forEach((key: any) => {

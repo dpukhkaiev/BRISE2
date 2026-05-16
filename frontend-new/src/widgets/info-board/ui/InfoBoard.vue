@@ -95,7 +95,9 @@ function initMainEvents(): void {
     watch(experiment_description, () => {
         console.log('experiment_description:', JSON.stringify(experiment_description.value, null, 2))
         refresh()
-        searchspace.value['size'] = parseFloat(searchspace.value['size'])
+        /* if (searchspace.value && searchspace.value['size']) {
+             searchspace.value['size'] = parseFloat(searchspace.value['size'])
+         }*/
         let temp = {
             'time': Date.now(),
             'message': 'The main configurations of the experiment are obtained. Let\'s go! '
@@ -209,7 +211,7 @@ function formatPercent(value: number): string {
                         <span>{{ solution['performed_measurements'] }}</span>
                     </v-list-item>
 
-                    <v-list-item v-if="searchspace['size'] != 'Infinity'">
+                    <!--  <v-list-item v-if="searchspace['size'] != 'Infinity'">
                         <span class="desc">Saved efforts: </span>
                         <span>
                             {{
@@ -221,7 +223,7 @@ function formatPercent(value: number): string {
                                 ) }} %
                         </span>
 
-                    </v-list-item>
+                    </v-list-item> -->
                 </v-list>
             </v-expansion-panel-text>
         </v-expansion-panel>

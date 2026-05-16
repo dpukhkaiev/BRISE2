@@ -6,10 +6,9 @@ import { firstValueFrom } from 'rxjs';
 // return a promise
 
 const rxStompRPC = new RxStompRPC(stompClient)
-export function startMain(): void {
-
+export function startMain(description: any): void {
     const myServiceEndPoint = 'main_start_queue';
-    const request = '{"Method": "GET"}'
+    const request = JSON.stringify({ "Method": "GET", "Description": description })
     const headers = { 'body_type': 'json' }
     // stompClient.publish({destination: myServiceEndPoint, body: request, headers})  
     // firstValueFrom instead of toPromise (deprecated) 
@@ -44,6 +43,8 @@ export async function downloadDump(format = 'pkl'): Promise<any> {
     }
     return object
 }
+
+
 // namespace export for importing functions all at once
 export const MainClientApi = {
     startMain,

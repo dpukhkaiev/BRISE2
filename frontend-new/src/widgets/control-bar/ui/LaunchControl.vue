@@ -22,6 +22,7 @@ const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
 
 const showDownload = ref(false)
 
+
 function openDownloadOption(): void {
     showDownload.value = true
 }
@@ -29,10 +30,11 @@ function openDownloadOption(): void {
 function startMainControl(): any {
     if (isRunning.value === false) {
         stopMainControl();
-        MainClientApi.startMain();
+        MainClientApi.startMain(JSON.parse(JSON.stringify(experiment_description.value)));
         isRunning.value = true
         isFinish.value = false
     }
+    console.log('sending:', experiment_description.value)
 }
 
 function stopMainControl(): any {
@@ -42,6 +44,8 @@ function stopMainControl(): any {
     }
 
 }
+
+
 
 function initMainEvents(): void {
     store.onEvent(MainEvent.FINAL)?.subscribe(() => {
@@ -61,14 +65,15 @@ const uploadFile = async () => {
 
     const reader = new FileReader()
     reader.onload = () => {
-        const clean = (reader.result as string).replace(/:\s*Infinity/g, ': null')
+        const clean = (reader.result as string).replace(/:\s*Infinity/g, ': 1e308')
         const parsed = JSON.parse(clean)
-        store.experiment_description = parsed.experiment_description
-        store.searchspace = parsed.searchspace_description
-        store.globalConfig = parsed.global_configuration
+        store.experiment_description = parsed
+        store.searchspace = store.searchspace = parsed["Context"]["SearchSpace"]
+
     }
 
     reader.readAsText(file)
+
 }
 
 onMounted(() => {
@@ -89,7 +94,7 @@ onMounted(() => {
                 <div class="info-row">
                     <span class="label">Scenario</span>
                     <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
-                        }}</span>
+                    }}</span>
                 </div>
             </v-card-item>
             <v-card-actions>
@@ -105,13 +110,22 @@ onMounted(() => {
                     append-icon="mdi-content-save" color="#B8C9F4" style="color: #2E3F8B;" variant="outlined">
                     Save Experiment
                 </v-btn>
+                <v-file-input v-model="selectedFile">
 
-                <v-file-input label="Select Experiment" density="compact" v-model="selectedFile"
-                    placeholder="Select an experiment" color="deep-green-accent-2" variant="outlined"
-                    style="position:relative">
                 </v-file-input>
-                <v-btn :ripple="false" color="#A8D5A2" style="color: #2D6A27;" @click="uploadFile">Select </v-btn>
+                <v-btn @click="uploadFile">
+                    Upload Experiment
+                </v-btn>
+                <!--     <v-select v-model="selectedExperiment" :items="experiments">
+                </v-select>
+                <v-menu open-on-hover>
 
+               </v-menu>
+                <v-list>
+                    <v-list-item v-for="(item, index) in experiments" :key="index" :value="index">
+                        <v-list-item-title>{{ item }}</v-list-item-title>
+                    </v-list-item>
+                </v-list>-->
             </v-card-actions>
 
             <v-progress-linear v-if="isRunning" indeterminate color="#FF9800" height="4"
