@@ -1,11 +1,7 @@
 import json
 import logging
 import os
-import inspect
 from core_entities.configuration import Configuration
-from repeater.results_check.outliers_detection.outliers_detector_selector import (
-    get_outlier_detectors
-)
 from repeater.results_check.task_errors_check import error_check
 from tools.front_API import API
 from tools.mongo_dao import MongoDB
@@ -91,17 +87,10 @@ class RepeaterOrchestration:
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
 
-        sig = inspect.signature(repeater_class.__init__)
-        logger.error('experiment' in sig.parameters)
-        logger.error(self.experiment)
-        logger.error(repeater_class)
-
-        if not self.experiment:
-        #if not self.experiment: # experiment is only set in tests
+        if not self.experiment: # experiment is only set in tests
             return repeater_class(self.experiment_description, self.experiment_id, None)
         else:
             return repeater_class(self.experiment_description, self.experiment_id, self.experiment)
-        
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """
