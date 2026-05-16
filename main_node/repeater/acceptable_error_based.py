@@ -1,3 +1,4 @@
+import logging
 import os
 from math import exp, sqrt
 
@@ -12,17 +13,15 @@ class AcceptableErrorBasedType(Repeater):
     the quality of each Configuration (better Configuration - better quality)
     and deviation of all Tasks are taken into account.
     """
-    def __init__(self, experiment_description: dict, experiment_id: str, experiment=None, isMock = False):
+    def __init__(self, experiment_description: dict, experiment_id: str, experiment=None):
         """
         :param experiment_description: experiment description in json format
         :param experiment_id: ID of experiment, processed by this module
         :param experiment: Experiment class instance, (!)used only in tests
-        :param isMock: Flag indicating if the repeater is in mock mode
         """
         super().__init__(experiment_description, experiment_id)
         # self.objectives_minimization = metric_description["TaskConfiguration"]["ObjectivesMinimization"]
         self.objectives = experiment_description["Context"]["TaskConfiguration"]["Objectives"]
-        self.isMock = isMock
 
         minimizations = []
         for k in self.objectives:
@@ -50,9 +49,6 @@ class AcceptableErrorBasedType(Repeater):
             self.max_acceptable_errors = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ExperimentAware"]["MaxAcceptableError"]
             if not self.base_acceptable_errors <= self.max_acceptable_errors:
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
-
-        if self.isMock:
-            self.experiment = experiment
 
     def evaluate(self, current_configuration: Configuration):
         """

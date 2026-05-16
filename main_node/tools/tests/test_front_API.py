@@ -1,8 +1,16 @@
 import os
+from unittest.mock import MagicMock
 
 import pytest
 from tools.front_API import API, APIMessageBuilder
 from tools.rabbit_API_class import RabbitApi
+
+
+@pytest.fixture(autouse=True)
+def mock_pika_connection(monkeypatch):
+    mock_conn = MagicMock()
+    monkeypatch.setattr("pika.BlockingConnection", lambda parameters: mock_conn)
+    return mock_conn
 
 class TestFrontApi:
     # this test set is aimed to cover the functionality of the 'front_API' tools and the 'singleton'
@@ -169,7 +177,7 @@ class TestFrontApi:
         # Expected result: only a single instance exists (due to the singleton)
         API._instance = None
         api1 = API()
-        api2 = API(api_object=RabbitApi("event-service", 49153, isMock=True))
+        api2 = API(api_object=RabbitApi("event-service", 49153))
         assert api1 is api2
 
     def test_16_api_without_emit(self):
