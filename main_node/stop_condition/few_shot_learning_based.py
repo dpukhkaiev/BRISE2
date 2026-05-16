@@ -5,7 +5,7 @@ from core_entities.configuration import Configuration
 
 class FewShotLearningBased(StopCondition):
 
-    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str, isMock: bool = False):
+    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
         super().__init__(stop_condition_parameters, experiment_description, experiment_id)
         self.start_threads()
 

@@ -1,5 +1,3 @@
-import logging
-import os
 from math import exp, sqrt
 
 from core_entities.configuration import Configuration

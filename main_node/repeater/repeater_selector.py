@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+
 from core_entities.configuration import Configuration
 from repeater.results_check.task_errors_check import error_check
 from tools.front_API import API
@@ -17,9 +18,11 @@ class RepeaterOrchestration:
     and configuration status management.
     """
 
-    def __init__(self, experiment_id: str):
+    def __init__(self, experiment_id: str, experiment=None, isMock = False):
         """
         :param experiment_id: ID of experiment, required to get experiment description from DB
+        :param experiment: Experiment class instance, (!)used only in tests
+        :param isMock: Flag indicating if the repeater is in mock mode
         """
         self.logger = logging.getLogger(__name__)
         self.experiment_id = experiment_id
@@ -30,10 +33,13 @@ class RepeaterOrchestration:
                                     os.getenv("BRISE_DATABASE_USER"),
                                     os.getenv("BRISE_DATABASE_PASS"))
 
-        self.experiment_description = None
-        while self.experiment_description is None:
-            self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
-          
+            self.experiment_description = None
+            while self.experiment_description is None:
+                self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
+        else:
+            self.database = MongoDB("test", 0, "test", "user", "pass")
+            self.experiment = experiment
+            self.experiment_description = experiment.description
         self.performed_measurements = 0
 
         keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
@@ -84,8 +90,10 @@ class RepeaterOrchestration:
 
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
-
-        return repeater_class(self.experiment_description, self.experiment_id)
+        if not self.isMock:
+            return repeater_class(self.experiment_description, self.experiment_id, self.isMock)
+        else:
+            return repeater_class(self.experiment_description, self.experiment_id, self.experiment, self.isMock)
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """
@@ -106,18 +114,37 @@ class RepeaterOrchestration:
             else:
                 return 0
 
-    def measure_configurations(self, channel, method, properties, body):
+    def measure_configurations(self, channel, method, properties, body, noDecode = False):
         """
         Callback function for the result of measuring
         :param ch: pika.Channel
         :param method:  pika.spec.Basic.GetOk
         :param properties: pika.spec.BasicProperties
         :param body: result of a configurations in bytes format
+        :param noDecode: dont decode body, since its run as unit test
         """
-        result = self._decode_for_measure_configurations(body)
-        
+        if self.isMock:
+            result = json.loads(body)
+        else:
+            result = json.loads(body.decode())
         configuration = Configuration.from_json(result["configuration"])
-        self._send_configuration_and_tasks(configuration, result)
+        if configuration.status['evaluated'] and not self.isMock:
+            tasks_to_send = result["tasks_to_send"]
+            tasks_results = result["tasks_results"]
+            for index, objective in enumerate(self._objectives):
+                tasks_results = error_check(tasks_results,
+                                            objective,
+                                            self._expected_values_range[index],
+                                            self._objectives_data_types[index])
+
+            # Sending data to API and adding Tasks to Configuration
+            for parameters, task in zip(tasks_to_send, tasks_results):
+                if configuration.parameters == parameters:
+                    if configuration.is_valid_task(task):
+                        configuration.add_task(task)
+                        self.database.write_one_record("Task", configuration.get_task_record(task))
+
+                API().send('new', 'task', configurations=[parameters], results=[task])
 
         # Evaluating configuration
         if configuration.number_of_failed_tasks <= self.repeater_parameters['MaxFailedTasksPerConfiguration']:
@@ -157,32 +184,10 @@ class RepeaterOrchestration:
                         }
                     )
 
-        return self._publish_configuration(configuration, tasks_to_send, needed_tasks_count)
-            
-    def _decode_for_measure_configurations(self, body) -> any:
-        return json.loads(body.decode())
-    
-    def _send_configuration_and_tasks(self, configuration: Configuration, result):
-        if configuration.status['evaluated']:
-            tasks_to_send = result["tasks_to_send"]
-            tasks_results = result["tasks_results"]
-            for index, objective in enumerate(self._objectives):
-                tasks_results = error_check(tasks_results,
-                                            objective,
-                                            self._expected_values_range[index],
-                                            self._objectives_data_types[index])
+        if self.isMock:
+            return configuration, needed_tasks_count
 
-            # Sending data to API and adding Tasks to Configuration
-            for parameters, task in zip(tasks_to_send, tasks_results):
-                if configuration.parameters == parameters:
-                    if configuration.is_valid_task(task):
-                        configuration.add_task(task)
-                        self.database.write_one_record("Task", configuration.get_task_record(task))
-
-                API().send('new', 'task', configurations=[parameters], results=[task])
-      
-    def _publish_configuration(self, configuration: Configuration, tasks_to_send: list, needed_tasks_count: int):
-        if configuration.status['measured']:
+        elif configuration.status['measured']:
             if configuration.type == Configuration.Type.DEFAULT:
                 self._type = self.get_repeater()
                 publish(exchange='default_configuration_results_exchange',
