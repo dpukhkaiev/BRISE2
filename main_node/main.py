@@ -87,9 +87,6 @@ class MainThread(threading.Thread):
                 self.sub.send('log', 'warning', message=log_msg)
             experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
         else:
-            print("experiment_setup type:", type(self.experiment_setup))
-            print("Context keys:", list(self.experiment_setup["Context"].keys()))
-            print("SearchSpace:", self.experiment_setup["Context"]["SearchSpace"])
             experiment_description = self.experiment_setup
             search_space = SearchSpace(self.experiment_setup["Context"]["SearchSpace"])
 

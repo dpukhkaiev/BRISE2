@@ -85,7 +85,6 @@ class ConsumerThread(Thread):
                     self.MAIN_THREAD.start()
                 else:
                     if "Description" in request:
-                        print("Keys:", list(request["Description"].keys()))
                         self.MAIN_THREAD = MainThread(experiment_setup=(request["Description"]))
                         self.MAIN_THREAD.start()
                     else:
