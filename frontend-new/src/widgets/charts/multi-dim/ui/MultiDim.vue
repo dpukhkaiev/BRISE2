@@ -33,7 +33,7 @@ let defaultPoint: any
 
 let solution: Solution | null = null
 
-let renderPending = false
+
 let renderTimer: ReturnType<typeof setTimeout> | null = null
 
 function resetRes() {
@@ -146,7 +146,7 @@ function initMainEvents() {
     // New task results
     store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
-            if (!rootParam.value.length || !experiment) {
+            if (!rootParam.value || !rootParam.value.length || !experiment) {
                 return
             }
             let configs = JSON.parse(message.body)
@@ -193,7 +193,9 @@ function initMainEvents() {
 }
 
 function render() {
-
+    console.log('currentDiagram:', currentDiagram.value)
+    console.log('rootParam:', rootParam.value)
+    console.log('element found:', document.getElementById(currentDiagram.value))
     const element = document.getElementById(currentDiagram.value)
     if (!element) {
         console.warn('element not found', currentDiagram.value)

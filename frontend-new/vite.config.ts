@@ -13,5 +13,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['@stomp/stompjs', '@stomp/rx-stomp']
   }
-
 })

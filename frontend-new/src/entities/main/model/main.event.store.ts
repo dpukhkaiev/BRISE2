@@ -28,7 +28,9 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
    // starts the subsription to Experiment event
    function initEvent() {
+      console.log('initEvent called, subscribing to EXPERIMENT queue')
       onEvent(MainEvent.EXPERIMENT)?.subscribe((message: any) => {
+         console.log('EXPERIMENT message received:', message.headers['message_subtype'])
          if (message.headers['message_subtype'] === 'description') {
             console.log(message.body)
             const clean = message.body.replace(/:\s*Infinity/g, ': null')
