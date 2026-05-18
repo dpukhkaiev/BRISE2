@@ -1,6 +1,7 @@
 import pytest
 import time
 import json
+import copy
 
 from core_entities.experiment import Experiment
 from configuration_selection.configuration_selection import ConfigurationSelection
@@ -91,12 +92,18 @@ class TestReconfigurationModule:
         assert len(cs.predictor.mapping_region_sampling_strategy) == 1
         assert isinstance(cs.predictor.mapping_region_sampling_strategy.popitem()[1], SobolSequence)
 
-        reconf_module.change_variant("SamplingStrategy", {"MersenneTwister": {"Seed": 1, "Type": "mersenne_twister"}})
+        desc = {"MersenneTwister": {"Seed": 1, "Type": "mersenne_twister"}}
+        reconf_module.change_variant("SamplingStrategy", desc)
         reconf_module.done().reconfigure()
 
         # Assert the sampling strategy changed
         assert len(cs.predictor.mapping_region_sampling_strategy) == 1
         assert isinstance(cs.predictor.mapping_region_sampling_strategy.popitem()[1], MersenneTwister)
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["SamplingStrategy"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_optimizer(self, reconf_module:ReconfigurationModule):
         """Test that the reconfiguration changes the optimizer"""
@@ -110,19 +117,24 @@ class TestReconfigurationModule:
         assert isinstance(model.mapping_optimizer_objective.popitem()[0], MOEA)
 
         # Change
-        sampling_size = 96
-        reconf_module.change_variant("Optimizer", {"Instance": { "RandomSearch": {
-            "SamplingSize": sampling_size,
+        desc = {"Instance": { "RandomSearch": {
+            "SamplingSize": 96,
             "MultiObjective": False,
             "Type": "random_search"
-        }}})
+        }}}
+        reconf_module.change_variant("Optimizer", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
         assert len(model.mapping_optimizer_objective) == 1
         optimizer = model.mapping_optimizer_objective.popitem()[0]
         assert isinstance(optimizer, RandomSearch)
-        assert optimizer.sampling_size == sampling_size
+        assert optimizer.sampling_size == desc["Instance"]["RandomSearch"]["SamplingSize"]
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model"]["Optimizer"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_validator(self, reconf_module:ReconfigurationModule):
         cs = reconf_module.configuration_selection
@@ -135,7 +147,7 @@ class TestReconfigurationModule:
         assert isinstance(model.external_validator, MockValidator)
 
         # Change
-        reconf_module.change_variant("Validator", {"ExternalValidator": {
+        desc = {"ExternalValidator": {
                     "QualityValidator": {
                         "Split": {
                             "HoldOut": {
@@ -156,12 +168,18 @@ class TestReconfigurationModule:
                         "QualityThreshold": 0.65,
                         "Type": "quality_validator"
                     }
-                }})
+                }}
+        reconf_module.change_variant("Validator", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
         assert isinstance(model.internal_validator, QualityValidator)
         assert isinstance(model.external_validator, QualityValidator)
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model"]["Validator"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_candidate_selector(self, reconf_module:ReconfigurationModule):
         cs = reconf_module.configuration_selection
@@ -173,16 +191,22 @@ class TestReconfigurationModule:
         assert isinstance(model.candidate_selector, BestMultiPoint)
 
         # Change
-        point_amount = 3
-        reconf_module.change_variant("CandidateSelector", {"RandomMultiPointProposal": {
-                        "NumberOfPoints": point_amount,
+        number_of_points = 3
+        desc = {"RandomMultiPointProposal": {
+                        "NumberOfPoints": number_of_points,
                         "Type": "random_multi_point"
-                    }})
+                    }}
+        reconf_module.change_variant("CandidateSelector", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
         assert isinstance(model.candidate_selector, RandomMultiPoint)
-        assert model.candidate_selector.number_of_points == point_amount
+        assert model.candidate_selector.number_of_points == number_of_points
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model"]["CandidateSelector"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_surrogate(self, reconf_module:ReconfigurationModule):
         cs = reconf_module.configuration_selection
@@ -194,19 +218,25 @@ class TestReconfigurationModule:
         assert isinstance(model.mapping_surrogate_objective.popitem()[0], TreeParzenEstimator)
 
         # Change
-        reconf_module.change_variant("Surrogate", {"Instance": {
+        desc = {"Instance": {
                         "LinearRegression": {
                             "MultiObjective": False,
                             "Type": "sklearn_model_wrapper",
                             "Class": "sklearn.linear_model.LinearRegression"
                         }
-                    }})
+                    }}
+        reconf_module.change_variant("Surrogate", desc)
         reconf_module.done().reconfigure()
         
         # Assert change was successful
         surrogate = model.mapping_surrogate_objective.popitem()[0]
         assert isinstance(surrogate, SklearnWrapper)
         assert surrogate.feature_name == "LinearRegression"
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model"]["Surrogate"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_predictor(self, reconf_module:ReconfigurationModule):
         cs = reconf_module.configuration_selection
@@ -216,7 +246,7 @@ class TestReconfigurationModule:
 
         # Change
         window_size = 0.5
-        reconf_module.change_variant("Predictor", {"WindowSize": window_size,
+        desc = {"WindowSize": window_size,
             "Model": {
                 "Surrogate": {
                     "ConfigurationTransformers": {
@@ -283,7 +313,8 @@ class TestReconfigurationModule:
                     }
                 }
             }
-        })
+        }
+        reconf_module.change_variant("Predictor", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
@@ -293,6 +324,11 @@ class TestReconfigurationModule:
         assert isinstance(model.candidate_selector, RandomMultiPoint)
         assert cs.predictor.window_size == window_size
         assert old_predictor != cs.predictor
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_stop_condition(self, reconf_module:ReconfigurationModule):
         """Test that stop condition are changed"""
@@ -310,7 +346,7 @@ class TestReconfigurationModule:
 
         # Change
         max_run_time_in_s = 10
-        reconf_module.change_variant("StopCondition", {"Instance": {
+        desc = {"Instance": {
                         "TimeBasedSC": {
                             "Parameters": {
                                 "MaxRunTime": max_run_time_in_s,
@@ -326,7 +362,8 @@ class TestReconfigurationModule:
                             "RepetitionPeriod": 1,
                             "TimeUnit": "seconds"
                         }
-                    }})
+                    }}
+        reconf_module.change_variant("StopCondition", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
@@ -342,7 +379,11 @@ class TestReconfigurationModule:
 
         for sc in old_scs:
             assert sc.active == False
-        
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["StopCondition"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_repetition_manager(self, reconf_module:ReconfigurationModule):
         experiment = reconf_module.experiment
@@ -360,7 +401,7 @@ class TestReconfigurationModule:
         # Change
         max_tasks = 7
         min_tasks = 2
-        reconf_module.change_variant("RepetitionManager", {"MaxFailedTasksPerConfiguration": 1,
+        desc = {"MaxFailedTasksPerConfiguration": 1,
                 "Instance": {
                     "AcceptableErrorBased": {
                         "MinTasksPerConfiguration": min_tasks,
@@ -374,7 +415,8 @@ class TestReconfigurationModule:
                             "MinTasksPerUnderperformingConfiguration": 1
                         }
                     }
-                }})
+                }}
+        reconf_module.change_variant("RepetitionManager", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
@@ -382,6 +424,11 @@ class TestReconfigurationModule:
         assert isinstance(repeater, AcceptableErrorBasedType)
         assert repeater.min_tasks_per_configuration == min_tasks
         assert repeater.max_tasks_per_configuration == max_tasks
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["RepetitionManager"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_transfer_learning(self, reconf_module:ReconfigurationModule):
         cs = reconf_module.configuration_selection
@@ -394,7 +441,7 @@ class TestReconfigurationModule:
 
         # Change 1
         min_number_samples = 20
-        reconf_module.change_variant("TransferLearning", {"TransferExpediencyDetermination": {
+        desc = {"TransferExpediencyDetermination": {
             "SamplingLandmarkBased": {
                 "MinNumberOfSamples": min_number_samples,
                 "Type": "sampling_landmark_based",
@@ -416,7 +463,8 @@ class TestReconfigurationModule:
                     "Type": "few_shot"
                 }
             }
-        }})
+        }}
+        reconf_module.change_variant("TransferLearning", desc)
         reconf_module.done().reconfigure()
 
         # Assert change was successful
@@ -429,6 +477,11 @@ class TestReconfigurationModule:
 
         assert isinstance(cs.transfer_learning_orchestrator.ted_module, SamplingLandmarkBased)
         assert cs.transfer_learning_orchestrator.ted_module.min_number_of_samples == min_number_samples
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["TransferLearning"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
         # Change 2
         reconf_module.change_variant("TransferLearning", {})
@@ -450,7 +503,7 @@ class TestReconfigurationModule:
         assert any([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
 
         # Change Model 1
-        reconf_module.change_variant("Model_1", {
+        desc = {
             "MultiObjectiveHandling": {
                     "SurrogateType": {
                         "Scalar": {}
@@ -499,13 +552,19 @@ class TestReconfigurationModule:
                         "Type": "best_multi_point"
                     }
                 }
-        })
+        }
+        reconf_module.change_variant("Model_1", desc)
         reconf_module.done().reconfigure()
         #print([e.vp + " " + str(e.identifiers) for e in Effector.get_all()])
 
         # Assert that the change worked
         assert len(cs.predictor.mapping_region_model) == 3
         assert all([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
+
+        # Assert that model was changed correctly
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model_1"] = desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_single_optimizer(self, get_experiment):
         """Test to change a single optimizer"""
@@ -521,13 +580,14 @@ class TestReconfigurationModule:
         assert all([isinstance(optimizer, MOEA) for optimizer in list(model.mapping_optimizer_objective.keys())])
         
         # Change
-        reconf_module.change_variant("Optimizer_0", {"Instance": {
+        optimizer_desc = {"Instance": {
                         "RandomSearch": {
                             "SamplingSize": 500,
                             "MultiObjective": True,
                             "Type": "random_search"
                         }
-                    }})
+                    }}
+        reconf_module.change_variant("Optimizer_0", optimizer_desc)
         reconf_module.done().reconfigure()
 
         # Assert that the change worked
@@ -547,11 +607,9 @@ class TestReconfigurationModule:
         assert random_count == 1
 
         # Assert that model was changed correctly
-        desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["Model"]
-        assert "RandomSearch" in desc["Optimizer_0"]["Instance"] # Single changed optimizer
-
-        for i in range(1, 5):
-            assert "MOEA" in desc["Optimizer_" + str(i)]["Instance"] # Others are untouched
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model"]["Optimizer_0"] = optimizer_desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_single_surrogate_on_multiple_models(self, get_experiment):
         """Test to change a single surrogate on a experiment with multiple models"""
@@ -570,12 +628,12 @@ class TestReconfigurationModule:
                 assert s.feature_name in surrogate_types
         
         # Change
-        reconf_module.change_variant("Surrogate_0", {"Instance": {
-                        "ModelMock": {
+        surrogate_desc = {"Instance": {"ModelMock": {
                             "MultiObjective": True,
                             "Type": "model_mock"
                         }
-                    }}, ["Model_1"])
+                    }}
+        reconf_module.change_variant("Surrogate_0", surrogate_desc, ["Model_1"])
         reconf_module.done().reconfigure()
         
         # Assert that change was correct
@@ -585,15 +643,9 @@ class TestReconfigurationModule:
                 assert s.feature_name in surrogate_types
 
         # Assert that model was changed correctly
-        desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]
-        org_desc = reconf_module.experiment.description["ConfigurationSelection"]["Predictor"]
-
-        assert desc["Model_0"] == org_desc["Model_0"] # Model 0 stays the same
-
-        assert "ModelMock" in desc["Model_1"]["Surrogate_0"]["Instance"] # Changed
-        assert "GradientBoostingRegressor" in desc["Model_1"]["Surrogate_1"]["Instance"] # Unchanged
-        assert "BayesianRidgeRegression" in desc["Model_1"]["Surrogate_2"]["Instance"] # Unchanged
-        assert "ModelMock" in desc["Model_1"]["Surrogate_3"]["Instance"] # Unchanged
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model_1"]["Surrogate_0"] = surrogate_desc
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_component_on_multiple_models(self, get_experiment):
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=12)
@@ -603,32 +655,35 @@ class TestReconfigurationModule:
         assert all([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
 
         # Case 1: Change of all models
-        reconf_module.change_variant("CandidateSelector", {"RandomMultiPointProposal": {
+        candidate_selector_desc_1 = {"RandomMultiPointProposal": {
                         "NumberOfPoints": 1,
                         "Type": "random_multi_point"
-                    }})
+                    }}
+        reconf_module.change_variant("CandidateSelector", candidate_selector_desc_1)
         reconf_module.done().reconfigure()
 
         assert all([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
 
         # Assert that the internal model is correct
-        desc = reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]
-        assert "RandomMultiPointProposal" in desc["Model_0"]["CandidateSelector"]
-        assert "RandomMultiPointProposal" in desc["Model_1"]["CandidateSelector"]
+        expected_desc = copy.deepcopy(reconf_module.experiment.description)
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model_0"]["CandidateSelector"] = candidate_selector_desc_1
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model_1"]["CandidateSelector"] = candidate_selector_desc_1
+        assert reconf_module._new_experiment_description == expected_desc
 
         # Case 2: Change of one model
-        reconf_module.change_variant("CandidateSelector", {"BestMultiPointProposal": {
+        candidate_selector_desc_2 = {"BestMultiPointProposal": {
                         "NumberOfPoints": 1,
                         "Type": "best_multi_point"
-                    }}, ["Model_1"])
+                    }}
+        reconf_module.change_variant("CandidateSelector", candidate_selector_desc_2, ["Model_1"])
         reconf_module.done().reconfigure()
 
         assert any([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
         assert any([isinstance(model.candidate_selector, RandomMultiPoint) for model in cs.predictor.mapping_region_model.values()])
 
-        # Assert that the internla model is correct
-        assert "RandomMultiPointProposal" in desc["Model_0"]["CandidateSelector"] # Model 0 must be remain unchanged
-        assert "BestMultiPointProposal" in desc["Model_1"]["CandidateSelector"]
+        # Assert that the internal model is correct
+        expected_desc["ConfigurationSelection"]["Predictor"]["Model_1"]["CandidateSelector"] = candidate_selector_desc_2
+        assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_values(self, reconf_module:ReconfigurationModule):
         """Test that the `change_variables` method works correctly"""
