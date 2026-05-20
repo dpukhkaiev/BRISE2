@@ -97,7 +97,6 @@ def measure_task(db_client: MongoDB, configurations_sample: list, tasks_sample: 
 
     :return: list of configuration status and number of tasks to measure.
     """
-    global current_experiment
     experiment = Experiment(experiment_description, search_space)
     seed_test_experiment(db_client, experiment)
 
@@ -125,6 +124,6 @@ def measure_task(db_client: MongoDB, configurations_sample: list, tasks_sample: 
     dummy_method = None
     dummy_properties = None
 
-    results_measurement = orchestrator.measure_configurations(dummy_channel, dummy_method, dummy_properties, task, noDecode=True)
+    results_measurement = orchestrator.measure_configurations(dummy_channel, dummy_method, dummy_properties, task)
 
     return results_measurement
