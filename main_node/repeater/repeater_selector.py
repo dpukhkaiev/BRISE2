@@ -111,38 +111,18 @@ class RepeaterOrchestration:
             else:
                 return 0
 
-    def measure_configurations(self, channel, method, properties, body, noDecode = False):
+    def measure_configurations(self, channel, method, properties, body):
         """
         Callback function for the result of measuring
         :param ch: pika.Channel
         :param method:  pika.spec.Basic.GetOk
         :param properties: pika.spec.BasicProperties
         :param body: result of a configurations in bytes format
-        :param noDecode: dont decode body, since its run as unit test
         """
-        if noDecode:
-            result = json.loads(body)
-        else:
-            result = json.loads(body.decode())
+        result = self._decode_for_measure_configurations(body)
         
         configuration = Configuration.from_json(result["configuration"])
-        if configuration.status['evaluated'] and not noDecode:
-            tasks_to_send = result["tasks_to_send"]
-            tasks_results = result["tasks_results"]
-            for index, objective in enumerate(self._objectives):
-                tasks_results = error_check(tasks_results,
-                                            objective,
-                                            self._expected_values_range[index],
-                                            self._objectives_data_types[index])
-
-            # Sending data to API and adding Tasks to Configuration
-            for parameters, task in zip(tasks_to_send, tasks_results):
-                if configuration.parameters == parameters:
-                    if configuration.is_valid_task(task):
-                        configuration.add_task(task)
-                        self.database.write_one_record("Task", configuration.get_task_record(task))
-
-                API().send('new', 'task', configurations=[parameters], results=[task])
+        self._send_configuration_and_tasks(configuration, result)
 
         # Evaluating configuration
         if configuration.number_of_failed_tasks <= self.repeater_parameters['MaxFailedTasksPerConfiguration']:
@@ -182,10 +162,32 @@ class RepeaterOrchestration:
                         }
                     )
 
-        if noDecode:
-            return configuration, needed_tasks_count
+        return self._publish_configuration(configuration, tasks_to_send, needed_tasks_count)
+            
+    def _decode_for_measure_configurations(self, body) -> any:
+        return json.loads(body.decode())
+    
+    def _send_configuration_and_tasks(self, configuration: Configuration, result):
+        if configuration.status['evaluated']:
+            tasks_to_send = result["tasks_to_send"]
+            tasks_results = result["tasks_results"]
+            for index, objective in enumerate(self._objectives):
+                tasks_results = error_check(tasks_results,
+                                            objective,
+                                            self._expected_values_range[index],
+                                            self._objectives_data_types[index])
 
-        elif configuration.status['measured']:
+            # Sending data to API and adding Tasks to Configuration
+            for parameters, task in zip(tasks_to_send, tasks_results):
+                if configuration.parameters == parameters:
+                    if configuration.is_valid_task(task):
+                        configuration.add_task(task)
+                        self.database.write_one_record("Task", configuration.get_task_record(task))
+
+                API().send('new', 'task', configurations=[parameters], results=[task])
+      
+    def _publish_configuration(self, configuration: Configuration, tasks_to_send: list, needed_tasks_count: int):
+        if configuration.status['measured']:
             if configuration.type == Configuration.Type.DEFAULT:
                 self._type = self.get_repeater()
                 publish(exchange='default_configuration_results_exchange',
