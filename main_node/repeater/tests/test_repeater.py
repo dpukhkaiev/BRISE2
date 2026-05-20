@@ -49,6 +49,20 @@ def mock_configurationselection_event_service(monkeypatch):
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: mock_db)
     monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: mock_db)
 
+    # Patch repeater_selector funs
+    def mock_repeater0(self, body):
+        return json.loads(body)
+    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._decode_for_measure_configurations', mock_repeater0)
+
+    def mock_repeater1(self, configuration: Configuration, result):
+        return 
+    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._send_configuration_and_tasks', mock_repeater1)
+    
+    def mock_repeater2(self, configuration: Configuration, tasks_to_send: list, needed_tasks_count: int):
+        return configuration, needed_tasks_count
+
+    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._publish_configuration', mock_repeater2)
+
     # Add experiment to RepeaterOrchestration after init
     original_init_rep_orc = RepeaterOrchestration.__init__
     def new_init_rep_orc(self, experiment_id: str, experiment=None):
@@ -181,6 +195,6 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     dummy_method = None
     dummy_properties = None
 
-    results_measurement = orchestrator.measure_configurations(dummy_channel, dummy_method, dummy_properties, task, noDecode=True)
+    results_measurement = orchestrator.measure_configurations(dummy_channel, dummy_method, dummy_properties, task)
 
     return results_measurement
