@@ -94,6 +94,9 @@ function initMainEvents() {
         rootParam.value = searchspace.value["root_parameters_list"]
         console.log('rootParam after:', rootParam.value)
         experiment = searchspace.value["name"]
+
+        // call chose here when searchspace.boundaries exist
+        chose()
         // ObjectPriorities does not exist on received data, updated new path 
         let priorities = experiment_description.value?.Context?.TaskConfiguration?.Objectives
 
@@ -118,7 +121,7 @@ function initMainEvents() {
             let configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
                 if (configuration) {
-                    chose()
+                    //chose()
                     if (!parameter_names.value) return
                     defaultPoint = configuration
                     let alphas = new Array();;
@@ -152,7 +155,7 @@ function initMainEvents() {
             let configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
                 if (configuration) {
-                    chose()
+                    //chose()
                     if (!parameter_names.value) return
                     var alphas = new Array();;
                     parameter_names.value.forEach((key: any) => {

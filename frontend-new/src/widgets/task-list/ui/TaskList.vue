@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch, onUnmounted } from 'vue'
+import { onMounted, ref, computed, watch, onUnmounted, shallowRef } from 'vue'
 import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
 
 import { MainEvent } from '../../../entities/main'
 import { Task } from '../../../entities/task/model/task-data.model';
@@ -8,20 +9,26 @@ import { Task } from '../../../entities/task/model/task-data.model';
 import { useMainEventStore } from '../../../entities/main'
 
 
-const result = ref<Task[]>([])
+const result = shallowRef<Task[]>([])
 
 const update = ref(false)
 
-// task object for expanding a row in a table
-
+// subscription object for saving and unmounting subscriptions
+const subs = new Subscription()
+let stopWatch: () => void = () => { }
 
 // initialize store
 const store = useMainEventStore()
+
+// cache average result calculations
+const avgResultCache = new Map<string, any[]>()
+
 // destructure reactive value from main.event.store
 const { experiment_description } = storeToRefs(store)
 function refresh() {
     result.value = []
     update.value = true
+    avgResultCache.clear()
 }
 
 const filterValue = ref('')
@@ -29,6 +36,14 @@ const filterValue = ref('')
 //batching for improving the performance
 const pendingTasks: Task[] = []
 let intervalId: ReturnType<typeof setInterval>
+
+function cachedAvg(config: Record<string, any>): any[] {
+    const key = JSON.stringify(config)
+    if (avgResultCache.has(key)) return avgResultCache.get(key)!
+    const avg = getAverageResult(config)
+    avgResultCache.set(key, avg)
+    return avg
+}
 
 function applyFilter(value: string) {
     filterValue.value = value.trim().toLocaleLowerCase()
@@ -133,7 +148,7 @@ function getAverageResult(search: Record<string, any>) {
 }
 
 function initMainEvents(): void {
-    store.onEvent(MainEvent.NEW)?.subscribe((message) => {
+    subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message) => {
         if (message.headers['message_subtype'] === 'task') {
             var fresh: Task = new Task(JSON.parse(message.body))
             var params_array = Object.values(fresh.config)
@@ -142,9 +157,9 @@ function initMainEvents(): void {
             //  !result.value.includes(fresh, -1) && result.value.push(fresh);
             pendingTasks.push(fresh) // only collect, not render yet
         }
-    });
+    }));
 
-    watch(experiment_description, () => {
+    stopWatch = watch(experiment_description, () => {
 
         update.value = false
         refresh()
@@ -169,6 +184,8 @@ onMounted(() => {
 
 onUnmounted(() => {
     clearInterval(intervalId)
+    subs.unsubscribe()
+    stopWatch()
 })
 const expanded = ref<string[]>([])
 </script>
@@ -199,21 +216,25 @@ const expanded = ref<string[]>([])
 
                 <!-- Expanded Content Column -->
                 <template #expanded-row="{ item }">
+                    <div v-memo="[item.id, expanded.includes(item.id)]">
 
-                    <v-chip v-for="(value, key) in item.config" :key="key">
-                        {{ key }}: {{ value }}
-                    </v-chip>
-
+                        <v-chip v-for="(value, key) in item.config" :key="key">
+                            {{ key }}: {{ value }}
+                        </v-chip>
+                    </div>
 
                     <v-list>
                         <v-list-item>Worker: {{ item.meta.worker }}</v-list-item>
                         <v-list-item>Repetitions {{ searchTasks(item.config).length }}</v-list-item>
                         <v-list-item>
                             Average result:
-                            <span v-for="(res, index) in getAverageResult(item.config)" :key="index">
+
+                            <span v-for="(res, index) in cachedAvg(item.config)" :key="index">
                                 {{ res.toFixed(2) }}
-                                <span v-if="index < getAverageResult(item.config).length - 1"> ; </span>
+                                <span v-if="index < cachedAvg(item.config).length - 1"> ; </span>
                             </span>
+
+
                         </v-list-item>
                     </v-list>
                 </template>
