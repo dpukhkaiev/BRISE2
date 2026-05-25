@@ -7,6 +7,7 @@ const props = defineProps<{
   type: string
   data: {
     label: string
+    name: string
   }
 
 }>()
@@ -16,7 +17,9 @@ const props = defineProps<{
 <template>
   <div :class="['node-base', type]">
     {{ props.data.label }}
+    <div v-if="props.data.name" style="color: black; font-size: 14px;">{{ props.data.name }}</div>
     <Handle type="source" :position="Position.Bottom" />
+
   </div>
 
 </template>
@@ -27,6 +30,11 @@ const props = defineProps<{
   border: 1px solid;
   border-radius: 6px;
   font-weight: 600;
+}
+
+.node-name {
+  color: black,
+
 }
 
 .float {

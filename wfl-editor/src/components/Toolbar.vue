@@ -5,7 +5,7 @@ const { addNodes } = useVueFlow()
 
 // define node types
 const nodeTypes = [
-  { type: 'float',   label: 'FloatHyperParameter'},
+  { type: 'float', label: 'FloatHyperParameter' },
   { type: 'ordinal', label: 'OrdinalHyperParameter' },
   { type: 'nominal', label: 'NominalHyperParameter' },
   { type: 'integer', label: 'IntegerHyperParameter' },
@@ -13,27 +13,24 @@ const nodeTypes = [
 
 // add nodes with parameters
 function addNode(nodeConfig: { type: string, label: string }) {
-   
+  const id = Date.now().toString()
+  const categories = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? [] : undefined
   addNodes({
-    id: Date.now().toString(),
+    id: id,
     type: nodeConfig.type,
     position: { x: Math.random() * 500, y: Math.random() * 500 },
-    data: { label: nodeConfig.label }
-})
+    data: { label: nodeConfig.label, name: '', categories: categories ? [] : undefined }
+  })
+  console.log('id: ', id)
 }
 </script>
 
 <template>
-    <div class="toolbar">
-          <button  class="btn"
-      v-for="node in nodeTypes" 
-      :key="node.type"
-     :class="node.type"
-      @click="addNode(node)"
-    >
+  <div class="toolbar">
+    <button class="btn" v-for="node in nodeTypes" :key="node.type" :class="node.type" @click="addNode(node)">
       {{ node.label }}
-       </button>
-    </div>
+    </button>
+  </div>
 </template>
 
 <style scoped>
@@ -53,7 +50,7 @@ function addNode(nodeConfig: { type: string, label: string }) {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s ease; 
+  transition: all 0.2s ease;
 }
 
 
@@ -76,9 +73,9 @@ function addNode(nodeConfig: { type: string, label: string }) {
   border-color: #f97316;
 }
 
-.integer { 
-    background-color: #e0f2fe; 
-    color: #0369a1; 
-    border-color: #0284c7; 
+.integer {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border-color: #0284c7;
 }
 </style>

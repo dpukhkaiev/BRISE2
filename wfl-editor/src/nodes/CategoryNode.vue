@@ -2,10 +2,11 @@
 import { Position, Handle } from '@vue-flow/core'
 
 // define node structure
-defineProps<{
+const props = defineProps<{
   type: string
   data: {
     label: string
+    name: string
   }
 
 }>()
@@ -13,7 +14,8 @@ defineProps<{
 
 <template>
   <div :class="['node-base', type]">
-    {{ data.label }}
+    {{ props.data.label }}
+    {{ props.data.name }}
     <Handle type="source" :position="Position.Bottom" />
   </div>
 </template>
