@@ -26,6 +26,7 @@ from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
 
 from reconfiguration.reconfiguration_module import ReconfigurationModule
+from reconfiguration.reconfiguration_behaviour_mock import ReconfigurationBehaviourMock
 
 logging.getLogger("pika").setLevel(logging.WARNING)
 
@@ -157,6 +158,7 @@ class MainThread(threading.Thread):
 
         # Create reconfiguration module
         self.reconf = ReconfigurationModule(self.experiment, self.configuration_selection)
+        self.behaviour_mock = ReconfigurationBehaviourMock(self.reconf)
 
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
@@ -226,8 +228,11 @@ class MainThread(threading.Thread):
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
 
+                # Behaviour mock for benchmarking
+                self.behaviour_mock.new_configuration_measured(configuration)
+
                 # Reconfiguration
-                #self.reconf.check_for_reconfiguration()
+                self.reconf.check_for_reconfiguration()
 
                 # For Testing
                 if len(self.experiment.evaluated_configurations) <= 3:

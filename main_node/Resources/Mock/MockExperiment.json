@@ -115,5 +115,45 @@
                 "TimeUnit": "seconds"
             }
         }
+    },
+    "Reconfiguration": {
+        "AfterDefault": {
+            "vp": "SamplingStrategy",
+            "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
+        },
+        "AfterXConfigurations_0": {
+            "amount": 5,
+            "performAmount": 1,
+            "vp": "CandidateSelector",
+            "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
+        },
+        "AfterXConfigurations_1": {
+            "amount": 10,
+            "performAmount": 3,
+            "vp": "CandidateSelector",
+            "description": {"BestMultiPointProposal": {"NumberOfPoints": 1, "Type": "best_multi_point"}}
+        },
+        "TimeLeft": {
+            "time": 10,
+            "vp": "StopCondition",
+            "description": {"Instance": {
+                "TimeBasedSC": {
+                    "Parameters": {
+                            "MaxRunTime": 20,
+                            "TimeUnit": "seconds"
+                        },
+                        "Type": "time_based",
+                        "Name": "t"
+                    }
+                },
+                "StopConditionTriggerLogic": {
+                    "Expression": "t",
+                    "InspectionParameters": {
+                        "RepetitionPeriod": 1,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
+        }
     }
 }
