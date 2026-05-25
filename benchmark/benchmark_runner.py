@@ -600,6 +600,46 @@ class BRISEBenchmarkRunner:
         self.execute_experiment(experiment_description, number_of_repetitions=1)
 
         return self.counter
+    
+    @_benchmarkable
+    def reconf_benchmark(self):
+        #TODO: Create experiments to benchmark
+        """IDEAS:
+        - Simple changes
+        - Multi Surrogate/optimizers
+        - Replace Model
+        - Replace Predictor
+
+        - Get every test experiment and replace the stop condition, candidateSelector and sampling strategy
+        """
+        self._experiment_timeout = 2 * 60
+
+        reconf_sampling_and_candidate = {
+            "Reconfiguration": {
+                "AfterXConfigurations_0": {
+                    "amount": 5,
+                    "performAmount": 1,
+                    "vp": "SamplingStrategy",
+                    "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
+                },
+                "AfterXConfigurations_1": {
+                    "amount": 10,
+                    "performAmount": 1,
+                    "vp": "CandidateSelector",
+                    "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
+                }
+            }
+        }
+
+        # Change sampling strategy and candidate selector during the experiment for all test cases
+        for exp_num in range(15):
+            self._base_experiment_description, self._base_search_space = \
+                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_" + str(exp_num) + ".json")
+            experiment_description = self.base_experiment_description
+            experiment_description.update(deepcopy(reconf_sampling_and_candidate))
+            self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        return self.counter
 
 
 class MainAPIClient:
@@ -667,7 +707,7 @@ class MainAPIClient:
             queue="main_responses",
             on_message_callback=self.on_response,
             auto_ack=True)
-        self.customer_thread = self.ConsumerThread('event-service', 49153, self)
+        self.customer_thread = self.ConsumerThread('localhost', 49153, self)
         self.customer_thread.start()
         self.response = None
         self.corr_id = None
