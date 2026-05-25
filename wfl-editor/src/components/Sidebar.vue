@@ -20,10 +20,11 @@ function addCategory() {
         showError.value = true
         return
     }
-    else if (newCategory.value) {
-        props.node.data.categories.push(newCategory.value)
-        newCategory.value = ''
-    }
+    showError.value = false
+
+    props.node.data.categories.push(newCategory.value)
+    newCategory.value = ''
+
 }
 
 </script>
