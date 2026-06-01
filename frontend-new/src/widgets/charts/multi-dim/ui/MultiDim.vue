@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // Plotly
@@ -18,6 +18,10 @@ import { useMainEventStore } from '../../../../entities/main'
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
 const { experiment_description, searchspace } = storeToRefs(store)
+
+
+//const experiment_description = computed(() => store.experiment_description)
+//const searchspace = computed(() => store.searchspace)
 
 // experiment configuration
 const parameter_names = ref()
@@ -269,6 +273,7 @@ onUnmounted(() => {
     const element = document.getElementById(currentDiagram.value)
     if (element) Plotly.purge(element)
 })
+
 </script>
 
 <template>

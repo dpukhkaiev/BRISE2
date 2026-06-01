@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch, onUnmounted, shallowRef } from 'vue'
+import { onMounted, ref, computed, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Subscription } from 'rxjs'
 
@@ -9,7 +9,7 @@ import { Task } from '../../../entities/task/model/task-data.model';
 import { useMainEventStore } from '../../../entities/main'
 
 
-const result = shallowRef<Task[]>([])
+const result = ref<Task[]>([])
 
 const update = ref(false)
 
@@ -29,6 +29,7 @@ function refresh() {
     result.value = []
     update.value = true
     avgResultCache.clear()
+    pendingTasks.length = 0
 }
 
 const filterValue = ref('')
@@ -116,17 +117,17 @@ function searchTasks(search: Record<string, any>) {
     return select
 }
 
-function replaceNones(config: Record<string, any>) {
-    let res_config = new Array<any>()
-    Array.prototype.forEach.call(config, param => {
+function replaceNones(config: any[]) {
+
+    return config.map(param => {
         if (param == '' || param == null) {
-            res_config.push('None')
+            return 'None'
         }
-        else {
-            res_config.push(param)
-        }
+
+        return param
+
     });
-    return res_config
+
 }
 
 function getAverageResult(search: Record<string, any>) {
@@ -161,10 +162,9 @@ function initMainEvents(): void {
 
     stopWatch = watch(experiment_description, () => {
 
-        update.value = false
         refresh()
     },
-        // reactive object from store, need deep to tracl properties of the object
+        // reactive object from store, need deep to track properties of the object
         {
             deep: true,
             immediate: true
@@ -188,6 +188,11 @@ onUnmounted(() => {
     stopWatch()
 })
 const expanded = ref<string[]>([])
+
+
+defineExpose({
+    replaceNones
+})
 </script>
 
 <template>
@@ -196,6 +201,7 @@ const expanded = ref<string[]>([])
             <v-card-title>
                 <h5>Result <span class="length">({{ result.length }})</span></h5>
             </v-card-title>
+            <!--search bar-->
             <v-text-field variant="outlined" @keyup="(e: any) => applyFilter(e.target.value)" placeholder="Filter">
             </v-text-field>
 

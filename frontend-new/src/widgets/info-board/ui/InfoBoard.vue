@@ -88,6 +88,7 @@ function initMainEvents(): void {
                 dc = []
             } else {
                 dc = Object.values(default_configuration.results)
+                sol = Object.values(s?.results ?? {})
             }
             config = config.replace(",,", ",None,")
             solutionState.value = {

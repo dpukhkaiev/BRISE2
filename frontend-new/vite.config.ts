@@ -1,11 +1,13 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+import vuetify from 'vite-plugin-vuetify'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(),
+  vuetify({ autoImport: true }),
   visualizer({
     open: true,
     filename: 'dist/stats.html'
@@ -28,6 +30,15 @@ export default defineConfig({
             return 'plotly-bundle';
           }
         }
+      }
+    }
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    server: {
+      deps: {
+        inline: ['vuetify']  // ← wichtig! sonst crasht Vuetify im Test
       }
     }
   }

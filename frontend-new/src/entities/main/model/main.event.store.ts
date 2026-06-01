@@ -6,6 +6,10 @@ import type { ExperimentDescription } from '../../experiment/model/experiment.mo
 import type { IMessage } from '@stomp/stompjs'
 import type { Observable } from 'rxjs'
 
+const isConnected = ref(false)
+stompClient.connectionState$.subscribe(state => {
+   isConnected.value = state === 1
+})
 
 export const useMainEventStore = defineStore('mainEvent', () => {
    const experiment_description = ref<ExperimentDescription | null>(null)
@@ -35,6 +39,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
             console.log(message.body)
             const clean = message.body.replace(/:\s*Infinity/g, ': null')
             const body = JSON.parse(clean) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any }
+            console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)
             experiment_description.value = body.experiment_description
             searchspace.value = body.searchspace_description
             globalConfig.value = body.global_configuration
@@ -43,5 +48,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
       })
    }
 
-   return { globalConfig, searchspace, experiment_description, onEvent, initEvent }
+
+
+   return { globalConfig, searchspace, experiment_description, isConnected, onEvent, initEvent }
 })

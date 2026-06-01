@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@mdi/font/css/materialdesignicons.css'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 // services
 import { useMainEventStore } from '../../../entities/main'
@@ -18,10 +18,9 @@ const isFinish = ref(false)
 // create a store 
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
+const { experiment_description, searchspace, globalConfig, isConnected } = storeToRefs(store)
 
 const showDownload = ref(false)
-
 
 function openDownloadOption(): void {
     showDownload.value = true
@@ -29,10 +28,12 @@ function openDownloadOption(): void {
 
 function startMainControl(): any {
     if (isRunning.value === false) {
-        stopMainControl();
+        //  stopMainControl();
         MainClientApi.startMain(JSON.parse(JSON.stringify(experiment_description.value)));
         isRunning.value = true
         isFinish.value = false
+
+
     }
     console.log('sending:', experiment_description.value)
 }
@@ -44,8 +45,6 @@ function stopMainControl(): any {
     }
 
 }
-
-
 
 function initMainEvents(): void {
     store.onEvent(MainEvent.FINAL)?.subscribe(() => {
@@ -98,7 +97,7 @@ onMounted(() => {
                 </div>
             </v-card-item>
             <v-card-actions>
-                <v-btn :ripple="false" :disabled="isRunning" @click="startMainControl" color="#A8D5A2"
+                <v-btn :disabled="isRunning || !isConnected" :ripple="false" @click="startMainControl" color="#A8D5A2"
                     style="color: #2D6A27;" variant="elevated" prepend-icon="mdi-play">
                     Start
                 </v-btn>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // Plotly
@@ -134,9 +134,10 @@ function initMainEvents() {
                         }
 
                     }
-                    bestRes.value.push(temp) // add the best availbale point(result)      
+
 
                 })
+                bestRes.value.push(temp) // add the best availbale point(result) 
                 bestRes.value.length > 2 && render()
             })
         }
@@ -146,12 +147,13 @@ function initMainEvents() {
 
 
 
-function render() {
+async function render() {
     // DOM element. Render point
 
     const element = impr.value
 
     isVisible.value = true
+    await nextTick()
     // X-axis data
     const xBest = Array.from(bestRes.value).map((i: any) => i['measured points']);
     // Results
