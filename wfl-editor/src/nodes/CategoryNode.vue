@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Position, Handle } from '@vue-flow/core'
+import { Position, Handle, Edge } from '@vue-flow/core'
 
 // define node structure
 const props = defineProps<{

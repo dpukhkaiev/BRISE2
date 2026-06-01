@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Position, Handle } from '@vue-flow/core'
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { VueFlow, useVueFlow, Edge } from '@vue-flow/core'
 
 const props = defineProps<{
   id: string

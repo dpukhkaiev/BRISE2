@@ -35,10 +35,17 @@ function addNode(nodeConfig: { type: string, label: string }) {
 
 <style scoped>
 .toolbar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+
   height: 50px;
   background-color: #1e293b;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 15px;
   padding: 0 20px;
   color: white;
