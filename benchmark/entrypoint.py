@@ -10,7 +10,7 @@ BRISELogConfigurator()  # Configuring logging
 
 def run_benchmark():
     # Container creation performs --volume on `./results/` folder. Change wisely results_storage.
-    host_event_service = "localhost"
+    host_event_service = "localhost" # TODO: Change to event-service and make it work
     port_event_service = 49153
     results_storage = "./results/serialized/"
     try:
