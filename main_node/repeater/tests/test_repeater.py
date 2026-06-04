@@ -16,7 +16,7 @@ rdb.restore()
 current_experiment = None
 
 @pytest.fixture(autouse=True)
-def mock_configurationselection_event_service(monkeypatch):
+def mock_configuration_selection_event_service(monkeypatch):
     """Mock MongoDB, API, and other dependencies for input tests."""
     global current_experiment
     
@@ -49,7 +49,8 @@ def mock_configurationselection_event_service(monkeypatch):
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: mock_db)
     monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: mock_db)
 
-    # Patch repeater_selector funs
+@pytest.fixture(autouse=True)
+def mock_repeator_selection(monkeypatch):
     def mock_repeater0(self, body):
         return json.loads(body)
     monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._decode_for_measure_configurations', mock_repeater0)
@@ -65,21 +66,21 @@ def mock_configurationselection_event_service(monkeypatch):
 
     # Add experiment to RepeaterOrchestration after init
     original_init_rep_orc = RepeaterOrchestration.__init__
-    def new_init_rep_orc(self, experiment_id: str, experiment=None):
-        original_init_rep_orc(self, experiment_id, experiment)
+    def new_init_rep_orc(self, experiment_id: str):
+        original_init_rep_orc(self, experiment_id)
     monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration.__init__', new_init_rep_orc)
-                        
-    # Mock EventService
-    mock_connection_instance = MagicMock()
-    mock_connection_instance.channel = MagicMock()
-    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._EventServiceConnection', MagicMock(return_value=mock_connection_instance))
 
     # Add experiment to AcceptableErrorBasedType after init
     original_init_acc_err = AcceptableErrorBasedType.__init__
-    def new_init_acc_err(self, experiment_description: dict, experiment_id: str, experiment=None):
+    def new_init_acc_err(self, experiment_description: dict, experiment_id: str):
         original_init_acc_err(self, experiment_description, experiment_id)
-        self.experiment = experiment
     monkeypatch.setattr('repeater.acceptable_error_based.AcceptableErrorBasedType.__init__', new_init_acc_err)
+
+@pytest.fixture(autouse=True)
+def mock_event_service(monkeypatch):
+    mock_connection_instance = MagicMock()
+    mock_connection_instance.channel = MagicMock()
+    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._EventServiceConnection', MagicMock(return_value=mock_connection_instance))
 
 def test_0(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Default Configuration
@@ -176,7 +177,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     configuration.status = config_status
     for i in range(0, measured_tasks):
         configuration.add_task(tasks_sample[i])
-    orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
+    orchestrator = RepeaterOrchestration(experiment.unique_id)
     if config_type == Configuration.Type.DEFAULT:
         orchestrator._type = orchestrator.get_repeater(True)
     else:
