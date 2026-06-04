@@ -17,10 +17,9 @@ class RepeaterOrchestration:
     and configuration status management.
     """
 
-    def __init__(self, experiment_id: str, experiment=None):
+    def __init__(self, experiment_id: str):
         """
         :param experiment_id: ID of experiment, required to get experiment description from DB
-        :param experiment: Experiment class instance, (!)used only in tests
         """
         self.logger = logging.getLogger(__name__)
         self.experiment_id = experiment_id
@@ -32,7 +31,6 @@ class RepeaterOrchestration:
                                     os.getenv("BRISE_DATABASE_PASS"))
 
         self.experiment_description = None
-        self.experiment = None
         while self.experiment_description is None:
             self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
           
@@ -87,10 +85,7 @@ class RepeaterOrchestration:
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
 
-        if not self.experiment: # experiment is only set in tests
-            return repeater_class(self.experiment_description, self.experiment_id, None)
-        else:
-            return repeater_class(self.experiment_description, self.experiment_id, self.experiment)
+        return repeater_class(self.experiment_description, self.experiment_id)
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """

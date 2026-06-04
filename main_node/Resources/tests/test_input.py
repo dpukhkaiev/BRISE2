@@ -11,7 +11,6 @@ from stop_condition.stop_condition_selector import launch_stop_condition_threads
 from stop_condition.bad_configuration_based import BadConfigurationBasedType
 from stop_condition.guaranteed import GuaranteedType
 from stop_condition.time_based import TimeBased
-from stop_condition.quantity_based import QuantityBasedType as SCQuantityBasedType
 from stop_condition.guaranteed import GuaranteedType
 from stop_condition.few_shot_learning_based import FewShotLearningBased
 from configuration_selection.configuration_selection import ConfigurationSelection
@@ -81,7 +80,13 @@ def mock_database(monkeypatch):
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: mock_db)
     monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: mock_db)
     
-    # Mock EventService 
+@pytest.fixture(autouse=True)
+def mock_stop_condition(monkeypatch):
+    mock_thread_instance = MagicMock()
+    monkeypatch.setattr('threading.Thread', MagicMock(return_value=mock_thread_instance))
+
+@pytest.fixture(autouse=True)
+def mock_event_service(monkeypatch):
     mock_connection_thread = MagicMock()
     monkeypatch.setattr('configuration_selection.configuration_selection.ConfigurationSelection._EventServiceConnection', 
                        MagicMock(return_value=mock_connection_thread))
@@ -91,12 +96,7 @@ def mock_database(monkeypatch):
     mock_connection_instance.channel = MagicMock()
     monkeypatch.setattr('stop_condition.stop_condition_validator.EventServiceConnection', 
                         MagicMock(return_value=mock_connection_instance))
-    
-    # Stop Condition Validator - Mock Threading
-    mock_thread_instance = MagicMock()
-    monkeypatch.setattr('threading.Thread', MagicMock(return_value=mock_thread_instance))
 
-@pytest.mark.skip(reason="Disable temporarly")
 class TestInput:
     """
     Test whether all corresponding entities are created correctly. W.o. the inner functionality
@@ -123,7 +123,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -169,7 +169,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -210,7 +210,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -250,7 +250,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -288,7 +288,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -330,7 +330,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
@@ -368,7 +368,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -406,7 +406,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -448,7 +448,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -485,7 +485,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -531,7 +531,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -572,7 +572,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -619,7 +619,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -661,7 +661,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -700,7 +700,7 @@ class TestInput:
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[

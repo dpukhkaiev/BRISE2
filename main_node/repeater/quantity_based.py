@@ -9,11 +9,10 @@ class QuantityBasedType(Repeater):
     """
     Repeats each Configuration fixed number of times, no evaluation performed.
     """
-    def __init__(self, experiment_description: dict, experiment_id: str, experiment=None):
+    def __init__(self, experiment_description: dict, experiment_id: str):
         """
         :param experiment_description: experiment description in json format
         :param experiment_id: ID of experiment, processed by this module
-        :param experiment: Experiment class instance, (!)used only in tests
         """
         super().__init__(experiment_description, experiment_id)
         feature_name = list(self.repeater_configuration["Instance"].keys())[0]
