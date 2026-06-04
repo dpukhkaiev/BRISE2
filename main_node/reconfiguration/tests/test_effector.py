@@ -202,6 +202,24 @@ class TestEffector:
         assert len(Effector.get_all()) == 1
         assert Effector.get_all()[0].vp == "dynamic-vp"
 
+    def test_kwargs(self):
+        """Test the storing of the kwargs"""
+        class TestClass:
+            def __init__(self):
+                self._init_test_variability_point({}, arg_1=None, arg_2=2)
+
+            @Effector.effector("test-vp")
+            def _init_test_variability_point(self, description, arg_1=None, arg_2=None):
+                self.value = description
+
+        test_class = TestClass()
+
+        assert len(Effector.get_all()) == 1
+        effector = Effector.get_all()[0]
+        
+        assert effector.args.get("arg_1") is None
+        assert effector.args.get("arg_2") == 2
+
     ### Helper methods ###
     def change_vp(self, vp:str, new_description):
         """Call the change method on a given variability point"""
