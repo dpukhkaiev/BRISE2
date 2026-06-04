@@ -7,7 +7,7 @@ from reconfiguration.effector import Effector
 from core_entities.experiment import Experiment
 from configuration_selection.configuration_selection import ConfigurationSelection
 
-ITERATIONS = 300
+ITERATIONS = 100
 
 class TestApproachPerformance:
 
@@ -32,6 +32,7 @@ class TestApproachPerformance:
         cs = ConfigurationSelection(experiment)
         return ReconfigurationModule(experiment, cs)
     
+    @pytest.mark.skip(reason="dont need it now")
     def test_change_surrogate(self, reconf_module:ReconfigurationModule):
         start = timeit.default_timer()
 

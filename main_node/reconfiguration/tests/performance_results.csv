@@ -1,3 +1,4 @@
+Name, changes, duration
 single_surrogate, 200, 5.805938735997188
 single_optimizer, 200, 5.428299724997487
 single_optimizer_multi_model, 200, 26.05428481200215
@@ -7,3 +8,9 @@ single_optimizer_multi_model, 400, 49.614685675001965
 single_surrogate, 600, 17.698196815999836
 single_optimizer, 600, 18.30045858399899
 single_optimizer_multi_model, 600, 79.17905663700003
+single_surrogate, 600, 16.863781061001646
+single_optimizer, 600, 18.119670763000613
+single_optimizer_multi_model, 600, 105.75382350600194
+single_surrogate, 200, 4.905962544999056
+single_optimizer, 200, 5.846830957998463
+single_optimizer_multi_model, 200, 33.30943618400124
