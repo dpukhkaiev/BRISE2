@@ -1,0 +1,97 @@
+<script setup lang="ts">
+import { ref, markRaw, watch } from 'vue'
+// Vueflow
+import type { Node, Edge } from '@vue-flow/core'
+import { VueFlow, Panel, useVueFlow } from '@vue-flow/core'
+// components
+import Toolbar from './Toolbar.vue'
+import NumberNode from '../nodes/NumberNode.vue'
+import CategoryNode from '../nodes/CategoryNode.vue'
+import Sidebar from './Sidebar.vue'
+
+//store
+import { useGraphStore } from '../store.ts'
+
+// desctructure nodes, edges here (no need of ref([]))
+const { nodes: flowNodes, addEdges, onConnect, edges: flowEdges } = useVueFlow()
+
+const graphStore = useGraphStore()
+
+// bind types with .vue components
+const myNodeTypes = {
+    float: markRaw(NumberNode),
+    integer: markRaw(NumberNode),
+    nominal: markRaw(CategoryNode),
+    ordinal: markRaw(CategoryNode)
+}
+
+
+// sidebar state
+const isSidebarOpen = ref(false)
+
+onConnect((connection) => {
+    addEdges(connection)
+    graphStore.setEdges(flowEdges.value)
+})
+
+// for store to track changes of the nodes
+watch(flowNodes, (newNodes) => {
+    graphStore.setNodes(newNodes)
+}, { deep: true })
+
+function onNodeClick(event: any) {
+    // event.node.id is saved in store
+    graphStore.activeNodeId = event.node.id
+    isSidebarOpen.value = true
+}
+
+function onPaneClick() {
+    isSidebarOpen.value = false
+    graphStore.activeNodeId.value = null
+}
+
+function validateEdges(connection: any) {
+
+    // find target and source nodes
+    const sourceNode = graphStore.nodes.value.find((node: any) => node.id === connection.source)
+
+    // check if they exist
+    if (sourceNode) {
+
+        if (sourceNode.type === 'float') {
+            return false
+        }
+        if (sourceNode.type === 'integer') {
+            return false
+        }
+    }
+    return true
+}
+
+
+</script>
+
+<template>
+    <div style="height: 100vh; width: 100%; display: flex; flex-direction: column;">
+        <VueFlow :nodes="graphStore.nodes" :edges="graphStore.edges" :node-types="myNodeTypes"
+            :is-valid-connection="validateEdges" @node-click="onNodeClick" @pane-click="onPaneClick">
+            <Panel position="top-right" class="custom-center-panel">
+                <Toolbar />
+            </Panel>
+        </VueFlow>
+
+        <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false" />
+    </div>
+</template>
+
+<style>
+.custom-center-panel {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    right: auto !important;
+    transform: translateX(-50%);
+    margin: 0;
+    z-index: 50;
+}
+</style>

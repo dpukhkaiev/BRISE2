@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useGraphStore } from '../store.ts'
+import { storeToRefs } from 'pinia'
+import type { Node } from '@vue-flow/core'
 const props = defineProps<{
-    node: any | null
     isOpen: boolean
 }>()
+
+const graphStore = useGraphStore()
+
+const { activeNodeId } = storeToRefs(graphStore)
+const activeNode = computed(() => graphStore.activeNode as any)
 
 const newCategory = ref('')
 
 const emit = defineEmits(['close'])
 
 const showError = ref(false)
-
-function validateInput() {
-    // TODO
-}
 
 function addCategory() {
     if (!newCategory.value.trim()) {
@@ -22,7 +25,10 @@ function addCategory() {
     }
     showError.value = false
 
-    props.node.data.categories.push(newCategory.value)
+
+    if (!activeNodeId.value) return
+
+    graphStore.addCategoryToNode(activeNodeId.value, newCategory.value)
     newCategory.value = ''
 
 }
@@ -34,43 +40,50 @@ function addCategory() {
 
         <button class="close-btn" @click="emit('close')">✕</button>
 
-        <div v-if="props.node" class="sidebar-content">
-            <h3>{{ props.node.data.label }}</h3>
-            <p class="node-id">ID: {{ props.node.id }}</p>
+        <div v-if="activeNode" class="sidebar-content">
+            <h3>{{ activeNode.data.name || activeNode.data.label }}</h3>
+            <p class="node-id">ID: {{ activeNodeId }}</p>
             <hr />
-            <span :class="['dot', props.node.type]"></span>
+            <span :class="['dot', activeNode?.type]"></span>
             <!-- nummerical parameters -->
-            <div v-if="props.node.type === 'float' || props.node.type === 'integer'">
+            <div v-if="activeNode?.type === 'float' || activeNode?.type === 'integer'">
                 <label>Name</label>
-                <input v-model="props.node.data.name" class="styled-input" />
+                <input v-model="activeNode.data.name" class="styled-input" />
 
                 <label>Upper</label>
-                <input type="number" :step="props.node.type === 'float' ? '0.1' : '1'" v-model="props.node.data.upper"
+                <input type="number" :step="activeNode?.type === 'float' ? '0.1' : '1'" v-model="activeNode.data.upper"
                     class="styled-input" />
 
                 <label>Lower</label>
-                <input type="number" v-model="props.node.data.lower" class="styled-input" />
+                <input type="number" v-model="activeNode.data.lower" class="styled-input" />
 
                 <label>Default</label>
-                <input type="number" v-model="props.node.data.default" :min="props.node.data.lower"
-                    :max="props.node.data.upper" class="styled-input" />
+                <input type="number" v-model="activeNode.data.default" :min="activeNode?.data.lower"
+                    :max="activeNode?.data.upper" class="styled-input" />
 
                 <label>Level</label>
-                <input type="number" v-model="props.node.data.level" placeholder="0" class="styled-input" />
+                <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
             </div>
 
             <!-- categorical parameters -->
-            <div v-else-if="props.node.type === 'nominal' || props.node.type === 'ordinal'">
+            <div v-else-if="activeNode?.type === 'nominal' || activeNode?.type === 'ordinal'">
                 <label>Name</label>
-                <input type="text" v-model="props.node.data.name" class="styled-input" />
+                <input type="text" v-model="activeNode.data.name" class="styled-input" />
 
                 <label>Categories</label>
                 <ul>
-                    <li v-for="(category, index) in props.node.data.categories" :key="index">
+
+                    <li v-for="(category, index) in activeNode?.data.categories.slice(0, 5)" :key="index">
                         {{ category }}
-                        <button @click="props.node.data.categories.splice(index, 1)">x</button>
+                        <button @click="activeNode?.data.categories.splice(index, 1)">x</button>
                     </li>
+                    <div v-if="activeNode.data.categories.length > 5">
+                        <button type="button" @click="emit('open-category-table')">
+                            + {{ activeNode.data.categories.length - 5 }} ↗
+                        </button>
+                    </div>
                 </ul>
+
                 <input type="text" v-model="newCategory" class="styled-input" />
                 <p v-if="showError" style="color: red; font-size: 12px;">Category cannot be empty</p>
                 <div>
@@ -78,11 +91,11 @@ function addCategory() {
                         category</button>
                 </div>
                 <label>Default</label>
-                <input type="number" v-model="props.node.data.default" :min="props.node.data.lower"
-                    :max="props.node.data.upper" class="styled-input" />
+                <input type="number" v-model="activeNode.data.default" :min="activeNode?.data.lower"
+                    :max="activeNode?.data.upper" class="styled-input" />
 
                 <label>Level</label>
-                <input type="number" v-model="props.node.data.level" placeholder="0" class="styled-input" />
+                <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
             </div>
         </div>
 
