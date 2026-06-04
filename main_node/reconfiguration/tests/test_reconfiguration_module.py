@@ -573,7 +573,7 @@ class TestReconfigurationModule:
 
         # Assert that config was loaded correctly
         assert len(cs.predictor.mapping_region_model) == 1
-
+        
         model = cs.predictor.mapping_region_model.popitem()[1]
         assert len(model.mapping_optimizer_objective) == 5
         
@@ -618,7 +618,7 @@ class TestReconfigurationModule:
 
         # Assert that config was loaded correctly
         assert len(cs.predictor.mapping_region_model) == 3
-
+        #print([e.vp + " " + str(e.identifiers) for e in Effector.get_all()])
         model_ones = [model for model in cs.predictor.mapping_region_model.values() if model.model_name == "Model_1"]
         assert len(model_ones) == 2
 

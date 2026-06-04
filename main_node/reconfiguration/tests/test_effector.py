@@ -192,11 +192,10 @@ class TestEffector:
         """Test that it is possible to register dynamically named VPs by setting the var right before the registration"""
         class TestClass:
             def __init__(self):
-                self.vp_name = "dynamic-vp"
-                self._init_test_variability_point({})
+                self._init_test_variability_point({}, vpoint="dynamic-vp")
 
-            @Effector.effector("ATTR:vp_name")
-            def _init_test_variability_point(self, description):
+            @Effector.effector("Defined by vpoint arg")
+            def _init_test_variability_point(self, description, vpoint=None):
                 self.value = description
 
         test_class = TestClass()

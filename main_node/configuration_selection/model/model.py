@@ -24,10 +24,10 @@ class Model:
 
         self.surrogate_orchestrator = SurrogateOrchestrator()
 
-        self._init_model(model_description)
+        self._init_model(model_description, vpoint=model_name)
 
-    @Effector.effector("ATTR:model_name")
-    def _init_model(self, model_description):
+    @Effector.effector("Model") # VP Name definied by vpoint arg!
+    def _init_model(self, model_description, vpoint=None):
         self.model_description = model_description
         self.mo_handling_surrogate_type = None
         
@@ -40,7 +40,7 @@ class Model:
 
         # optimizer
         self.optimizer_orchestrator = OptimizerOrchestrator()
-        self._init_optimizer(self._get_descriptions(model_description, "Optimizer"))
+        self._init_optimizers(self._get_descriptions(model_description, "Optimizer"))
 
         # validator
         self.validator_orchestrator = ValidatorOrchestrator()
@@ -57,38 +57,67 @@ class Model:
         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
         self.model_dumps = None
 
-    @Effector.effector("Surrogate", identifiers="model_name")
+    # Maybe call this "surrogates"? There is probably no point in using surrogate to change multiple. This will not work this is model granularity
+    # Probably just leave it out!!
+    @Effector.effector("SurrogateS", identifiers="model_name")
     def _init_surrogates(self, surrogate_descriptions):
         # Convert single element to list
         if not isinstance(surrogate_descriptions, list):
             surrogate_descriptions = [surrogate_descriptions]
 
         self.mapping_surrogate_objective: Mapping[Surrogate, Dict] = {}
+        self._surrogate_map: Mapping[str, Surrogate] = {}
 
         if self.mo_handling_surrogate_type == "Compositional":
             i = 0
             for key, value in self.objectives.items():
-                temp_o = {key: value}
-                surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[i], self.region, temp_o)
-                self.mapping_surrogate_objective[surrogate] = temp_o
+                #temp_o = {key: value}
+                self._init_surrogate(surrogate_descriptions[i], region=self.region, objectives={key: value},
+                                     vpoint="Surrogate_" + str(i))
+                #surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[i], self.region, temp_o)
+                #self.mapping_surrogate_objective[surrogate] = temp_o
                 i += 1
         elif self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
             for o_name in self.objectives.keys():
-                for s in surrogate_descriptions:
-                    surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, {o_name: self.objectives[o_name]})
-                    self.mapping_surrogate_objective[surrogate] = {o_name: self.objectives[o_name]}
+                for i, s in enumerate(surrogate_descriptions):
+                    self._init_surrogate(s, region=self.region, objectives={o_name: self.objectives[o_name]},
+                                         vpoint="Surrogate_" + str(i))
+                    #surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, {o_name: self.objectives[o_name]})
+                    #self.mapping_surrogate_objective[surrogate] = {o_name: self.objectives[o_name]}
             # Does this not overwrite some parts of the above logic?
-            for s in surrogate_descriptions:
-                surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, self.objectives)
-                if surrogate.multi_objective:
-                    self.mapping_surrogate_objective[surrogate] = self.objectives
+            for i, s in enumerate(surrogate_descriptions):
+                self._init_surrogate(s, region=self.region, objectives=self.objectives, only_on_mo=True,
+                                     vpoint="Surrogate_" + str(i))
+                #surrogate = self.surrogate_orchestrator.get_surrogate(s, self.region, self.objectives)
+                #if surrogate.multi_objective:
+                #    self.mapping_surrogate_objective[surrogate] = self.objectives
 
         else:  # Scalar Pure None
-            surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[0], self.region, self.objectives)
-            self.mapping_surrogate_objective[surrogate] = self.objectives
+            #surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_descriptions[0], self.region, self.objectives)
+            #self.mapping_surrogate_objective[surrogate] = self.objectives
+            self._init_surrogate(surrogate_descriptions[0], region=self.region, objectives=self.objectives,
+                                 vpoint="Surrogate")
 
-    @Effector.effector("Optimizer", identifiers="model_name")
-    def _init_optimizer(self, optimizer_descriptions):
+    # Real VP name provided by kwarg vpoint!
+    @Effector.effector("Surrogate", identifiers="model_name")
+    def _init_surrogate(self, description, region=None, objectives=None, only_on_mo=False, vpoint=None):
+        surrogate = self.surrogate_orchestrator.get_surrogate(description, region, objectives)
+        
+        # Remove old surrogate
+        old_surrogate = self._surrogate_map.get(vpoint)
+        if old_surrogate is not None and old_surrogate in self.mapping_surrogate_objective:
+            del self.mapping_surrogate_objective[old_surrogate]
+
+        if only_on_mo is True and not surrogate.multi_objective:
+            return
+        
+        # Save created surrogate
+        self._surrogate_map[vpoint] = surrogate
+        
+        self.mapping_surrogate_objective[surrogate] = objectives
+
+    @Effector.effector("OptimizerS", identifiers="model_name")
+    def _init_optimizers(self, optimizer_descriptions):
         """:param optimizer_descriptions: list of optimizer descriptions or single description"""
 
         # Convert single element to list
@@ -96,16 +125,38 @@ class Model:
             optimizer_descriptions = [optimizer_descriptions]
 
         self.mapping_optimizer_objective: Mapping[Optimizer, dict] = {}
+        self._optimizer_map: Mapping[str, Optimizer] = {}
+        
         if self.mo_handling_surrogate_type == "Compositional":
             i = 0
             for key, value in self.objectives.items():
-                temp_o = {key: value}
-                optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[i], self.region, temp_o)
-                self.mapping_optimizer_objective[optimizer] = temp_o
+                #temp_o = {key: value}
+                #optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[i], self.region, temp_o)
+                #self.mapping_optimizer_objective[optimizer] = temp_o
+
+                self._init_optimizer(optimizer_descriptions[i], region=self.region, objectives={key: value},
+                                     vpoint="Optimizer_" + str(i))
                 i += 1
         else:
-            optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[0], self.region, self.objectives)
-            self.mapping_optimizer_objective[optimizer] = self.objectives
+            #optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_descriptions[0], self.region, self.objectives)
+            #self.mapping_optimizer_objective[optimizer] = self.objectives
+            self._init_optimizer(optimizer_descriptions[0], region=self.region, objectives=self.objectives,
+                                 vpoint="Optimizer")
+
+    # Real VP name provided by kwarg vpoint!
+    @Effector.effector("Optimizer", identifiers="model_name")
+    def _init_optimizer(self, description, region=None, objectives=None, vpoint=None):
+        optimizer = self.optimizer_orchestrator.get_optimizer(description, region, objectives)
+
+        # Remove old optimizer
+        old_optimizer = self._optimizer_map.get(vpoint)
+        if old_optimizer is not None and old_optimizer in self.mapping_optimizer_objective:
+            del self.mapping_optimizer_objective[old_optimizer]
+
+        # Save created surrogate
+        self._optimizer_map[vpoint] = optimizer
+        
+        self.mapping_optimizer_objective[optimizer] = objectives
 
     @Effector.effector("Validator", identifiers="model_name")
     def _init_validators(self, description:dict):

@@ -1,0 +1,27 @@
+--- single_surrogate ---
+Changes: 200
+Time: 5.805938735997188 seconds
+--- single_optimizer ---
+Changes: 200
+Time: 5.428299724997487 seconds
+--- single_optimizer_multi_model ---
+Changes: 200
+Time: 26.05428481200215 seconds
+--- single_surrogate ---
+Changes: 400
+Time: 12.203795574998367 seconds
+--- single_optimizer ---
+Changes: 400
+Time: 11.445888195001316 seconds
+--- single_optimizer_multi_model ---
+Changes: 400
+Time: 49.614685675001965 seconds
+--- single_surrogate ---
+Changes: 600
+Time: 17.698196815999836 seconds
+--- single_optimizer ---
+Changes: 600
+Time: 18.30045858399899 seconds
+--- single_optimizer_multi_model ---
+Changes: 600
+Time: 79.17905663700003 seconds

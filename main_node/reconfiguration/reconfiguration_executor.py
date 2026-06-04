@@ -29,12 +29,12 @@ class ReconfigurationExecutor():
         """Change the component for the given variability point according to the ``new_description``"""
         if variability_point not in self.effectors:
             # Go to the "upper" VP for surrogate and optimizer
-            if "_" in variability_point and variability_point.startswith("Surrogate") or variability_point.startswith("Optimizer"):
-                variability_point = variability_point.split("_")[0] # Use coarse grained VP
+            #if "_" in variability_point and variability_point.startswith("Surrogate") or variability_point.startswith("Optimizer"):
+            #    variability_point = variability_point.split("_")[0] # Use coarse grained VP
                 # Give a list of all surrogates or optimizers as the description
-                new_description = self._get_descriptions(variability_point, full_description, identifiers)
-            else:
-                raise KeyError("No effector for the variability point " + variability_point + " found!")
+            #    new_description = self._get_descriptions(variability_point, full_description, identifiers)
+            #else:
+            raise KeyError("No effector for the variability point " + variability_point + " found!")
         
         for e in self.effectors[variability_point]:
             # Check for identifiers

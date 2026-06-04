@@ -1,0 +1,9 @@
+single_surrogate, 200, 5.805938735997188
+single_optimizer, 200, 5.428299724997487
+single_optimizer_multi_model, 200, 26.05428481200215
+single_surrogate, 400, 12.203795574998367
+single_optimizer, 400, 11.445888195001316
+single_optimizer_multi_model, 400, 49.614685675001965
+single_surrogate, 600, 17.698196815999836
+single_optimizer, 600, 18.30045858399899
+single_optimizer_multi_model, 600, 79.17905663700003
