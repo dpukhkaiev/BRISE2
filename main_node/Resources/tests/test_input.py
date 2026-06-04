@@ -82,7 +82,13 @@ def mock_database(monkeypatch):
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: mock_db)
     monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: mock_db)
     
-    # Mock EventService 
+@pytest.fixture(autouse=True)
+def mock_stop_condition(monkeypatch):
+    mock_thread_instance = MagicMock()
+    monkeypatch.setattr('threading.Thread', MagicMock(return_value=mock_thread_instance))
+
+@pytest.fixture(autouse=True)
+def mock_event_service(monkeypatch):
     mock_connection_thread = MagicMock()
     monkeypatch.setattr('configuration_selection.configuration_selection.ConfigurationSelection._EventServiceConnection', 
                        MagicMock(return_value=mock_connection_thread))
@@ -92,12 +98,7 @@ def mock_database(monkeypatch):
     mock_connection_instance.channel = MagicMock()
     monkeypatch.setattr('stop_condition.stop_condition_validator.EventServiceConnection', 
                         MagicMock(return_value=mock_connection_instance))
-    
-    # Stop Condition Validator - Mock Threading
-    mock_thread_instance = MagicMock()
-    monkeypatch.setattr('threading.Thread', MagicMock(return_value=mock_thread_instance))
 
-@pytest.mark.skip(reason="Disable temporarly")
 class TestInput:
     """
     Test whether all corresponding entities are created correctly. W.o. the inner functionality
