@@ -98,6 +98,7 @@ class BRISEBenchmarkRunner:
             self.experiments_to_be_performed.extend([experiment_id] * need_to_execute)
         else:
             self.counter += number_of_available_repetitions
+            self.logger.error("Avail rep: %s reps: %s", number_of_available_repetitions, number_of_repetitions)
             while number_of_available_repetitions < number_of_repetitions:
                 self.logger.info(f"Executing Experiment #{self.counter} out of "
                                  f"{len(self.experiments_to_be_performed) * number_of_repetitions}. "
@@ -105,6 +106,7 @@ class BRISEBenchmarkRunner:
                 if self.main_api_client.perform_experiment(experiment_description,
                                                            search_space,
                                                            wait_for_results=self._experiment_timeout):
+                    self.logger.error("Experiment performed!")
                     number_of_available_repetitions += 1
                     self.counter += 1
             return number_of_repetitions
@@ -150,7 +152,7 @@ class BRISEBenchmarkRunner:
             """
         self._base_experiment_description, self._base_search_space = \
             load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
-        self._experiment_timeout = 5 * 60
+        self._experiment_timeout = 10 * 60
         basic_skeleton = {
             "TransferLearning": {
                 "TransferExpediencyDetermination": {
@@ -403,7 +405,7 @@ class BRISEBenchmarkRunner:
 
     @_benchmarkable
     def fill_db(self):
-        self._experiment_timeout = 1 * 60
+        self._experiment_timeout = 5 * 60
         time_based_sc_skeleton = {
             "StopCondition": {
                 "Instance": {
@@ -561,7 +563,7 @@ class BRISEBenchmarkRunner:
                 }
             }
         }
-        #TODO: Test to remove all other code and let it run (due to benchmarkable decorator)
+        
         # test case with 2 float parameters
         self._base_experiment_description, self._base_search_space = \
             load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
@@ -994,6 +996,7 @@ class MainAPIClient:
             :param properties: pika.spec.BasicProperties
             :param body: result of a configurations in bytes format
             """
+            self.logger.error("Got final event!")
             self.main_client.download_latest_dump()
             self.main_client.isBusy = False
             self.consume_channel.basic_ack(delivery_tag=method.delivery_tag)

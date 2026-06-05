@@ -148,7 +148,8 @@ class DynamicModelRecommendation(ModelRecommendation):
                         models_types.append(i)
                 for r_index_str, model_description in resulting_best_combination.items():
                     r_index = int(r_index_str)
-                    mapping_region_model[search_space.regions[r_index]] = Model(models_types[r_index],
+                    mapping_region_model[search_space.regions[r_index]] = Model(models_types[r_index][0],
+                                                                                models_types[r_index][1],
                                                                                 search_space.regions[r_index],
                                                                                 self.experiment_description["Context"]
                                                                                 ["TaskConfiguration"]["Objectives"])
