@@ -149,7 +149,7 @@ class BRISEBenchmarkRunner:
             :return: int, number of Experiments that were executed and experiment dumps are stored.
             """
         self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_0.json")
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
         self._experiment_timeout = 5 * 60
         basic_skeleton = {
             "TransferLearning": {

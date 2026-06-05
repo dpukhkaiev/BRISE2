@@ -36,35 +36,7 @@ class Model:
             if "MultiObjectiveHandling" in i[0]:
                 self.mo_handling_surrogate_type = list(i[1]["SurrogateType"])[0]
 
-        self._init_surrogates(self._get_descriptions(model_description, "Surrogate"))
-
-        # optimizer
-        self.optimizer_orchestrator = OptimizerOrchestrator()
-        self._init_optimizers(self._get_descriptions(model_description, "Optimizer"))
-
-        # validator
-        self.validator_orchestrator = ValidatorOrchestrator()
-        validator_description = model_description["Validator"]
-        self._init_validators(validator_description)
-
-        # candidate selector
-        self.candidate_selector_orchestrator = CandidateSelectorOrchestrator()
-        candidate_selector_description = model_description["CandidateSelector"]
-        self._init_candiate_selector(candidate_selector_description)
-
-        # transfer learning
-        self.time_to_build = None
-        self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
-        self.model_dumps = None
-
-    # Maybe call this "surrogates"? There is probably no point in using surrogate to change multiple. This will not work this is model granularity
-    # Probably just leave it out!!
-    @Effector.effector("SurrogateS", identifiers="model_name")
-    def _init_surrogates(self, surrogate_descriptions):
-        # Convert single element to list
-        if not isinstance(surrogate_descriptions, list):
-            surrogate_descriptions = [surrogate_descriptions]
-
+        surrogate_descriptions = self._get_descriptions(model_description, "Surrogate")
         self.mapping_surrogate_objective: Mapping[Surrogate, Dict] = {}
         self._surrogate_map: Mapping[str, Surrogate] = {}
 
@@ -98,32 +70,10 @@ class Model:
             self._init_surrogate(surrogate_descriptions[0], region=self.region, objectives=self.objectives,
                                  vpoint="Surrogate")
 
-    # Real VP name provided by kwarg vpoint!
-    @Effector.effector("Surrogate", identifiers="model_name")
-    def _init_surrogate(self, description, region=None, objectives=None, only_on_mo=False, vpoint=None):
-        surrogate = self.surrogate_orchestrator.get_surrogate(description, region, objectives)
+        # optimizer
+        self.optimizer_orchestrator = OptimizerOrchestrator()
+        optimizer_descriptions = self._get_descriptions(model_description, "Optimizer")
         
-        # Remove old surrogate
-        old_surrogate = self._surrogate_map.get(vpoint)
-        if old_surrogate is not None and old_surrogate in self.mapping_surrogate_objective:
-            del self.mapping_surrogate_objective[old_surrogate]
-
-        if only_on_mo is True and not surrogate.multi_objective:
-            return
-        
-        # Save created surrogate
-        self._surrogate_map[vpoint] = surrogate
-        
-        self.mapping_surrogate_objective[surrogate] = objectives
-
-    @Effector.effector("OptimizerS", identifiers="model_name")
-    def _init_optimizers(self, optimizer_descriptions):
-        """:param optimizer_descriptions: list of optimizer descriptions or single description"""
-
-        # Convert single element to list
-        if not isinstance(optimizer_descriptions, list):
-            optimizer_descriptions = [optimizer_descriptions]
-
         self.mapping_optimizer_objective: Mapping[Optimizer, dict] = {}
         self._optimizer_map: Mapping[str, Optimizer] = {}
         
@@ -142,6 +92,39 @@ class Model:
             #self.mapping_optimizer_objective[optimizer] = self.objectives
             self._init_optimizer(optimizer_descriptions[0], region=self.region, objectives=self.objectives,
                                  vpoint="Optimizer")
+
+        # validator
+        self.validator_orchestrator = ValidatorOrchestrator()
+        validator_description = model_description["Validator"]
+        self._init_validators(validator_description)
+
+        # candidate selector
+        self.candidate_selector_orchestrator = CandidateSelectorOrchestrator()
+        candidate_selector_description = model_description["CandidateSelector"]
+        self._init_candiate_selector(candidate_selector_description)
+
+        # transfer learning
+        self.time_to_build = None
+        self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
+        self.model_dumps = None
+
+    # Real VP name provided by kwarg vpoint!
+    @Effector.effector("Surrogate", identifiers="model_name")
+    def _init_surrogate(self, description, region=None, objectives=None, only_on_mo=False, vpoint=None):
+        surrogate = self.surrogate_orchestrator.get_surrogate(description, region, objectives)
+        
+        # Remove old surrogate
+        old_surrogate = self._surrogate_map.get(vpoint)
+        if old_surrogate is not None and old_surrogate in self.mapping_surrogate_objective:
+            del self.mapping_surrogate_objective[old_surrogate]
+
+        if only_on_mo is True and not surrogate.multi_objective:
+            return
+        
+        # Save created surrogate
+        self._surrogate_map[vpoint] = surrogate
+        
+        self.mapping_surrogate_objective[surrogate] = objectives
 
     # Real VP name provided by kwarg vpoint!
     @Effector.effector("Optimizer", identifiers="model_name")
@@ -173,13 +156,9 @@ class Model:
     def _init_candiate_selector(self, description):
         self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(description)
 
-    def _get_descriptions(self, model_description, type_name):
+    def _get_descriptions(self, model_description:dict, type_name:str):
         """Return a list with all descriptions of a special type like Optimizer, Surrogate, etc."""
-        descriptions = []
-        for key, description in model_description.items():
-            if type_name in key:
-                descriptions.append(description)
-        return descriptions
+        return [description for key, description in model_description.items() if type_name in key]
 
     def predict(self, parameters: List[Hyperparameter], configurations: List[Configuration]) -> pd.DataFrame:
         """
