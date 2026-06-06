@@ -1,4 +1,5 @@
 import logging
+import os
 import pytest
 
 from contextlib import ExitStack
@@ -25,6 +26,15 @@ def mock_start_threads():
         mocks = [stack.enter_context(patch(p, return_value=None)) for p in paths]
         yield mocks
 
+@pytest.fixture(scope="session")
+def db_client_instance():
+    """Initializes the database"""
+    client = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+                                    os.getenv("BRISE_DATABASE_PORT"),
+                                    os.getenv("BRISE_DATABASE_NAME"),
+                                    os.getenv("BRISE_DATABASE_USER"),
+                                    os.getenv("BRISE_DATABASE_PASS"))
+    return client
 
 @pytest.fixture(autouse=True)
 def replace_db(db_client_instance, monkeypatch):
@@ -36,6 +46,35 @@ def replace_db(db_client_instance, monkeypatch):
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: db_client_instance)
     monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: db_client_instance)
     yield db_client_instance
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_after_input_tests():
+    """
+    Remove experiments from Database after the tests are finsihed
+    """
+    # Setup
+    yield 
+    # Teardown
+
+    try:
+        db_client = MongoDB() 
+        
+        if hasattr(db_client, 'cleanup_database'):
+            db_client.cleanup_database()
+        else:
+            db_client.db["Configuration"].drop()
+            db_client.db["Experiment_description"].drop()
+            db_client.db["Experiment_state"].drop()
+            db_client.db["Search_space"].drop()
+            
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to clear database during teardown: {e}")
+
+@pytest.fixture(autouse=True)
+def mock_stop_condition(monkeypatch):
+    mock_thread_instance = MagicMock()
+    monkeypatch.setattr('threading.Thread', MagicMock(return_value=mock_thread_instance))
 
 @pytest.fixture(autouse=True)
 def mock_event_service(monkeypatch):
