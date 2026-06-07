@@ -14,7 +14,7 @@ from tools.restore_db import RestoreDB
 rdb = RestoreDB()
 
 @pytest.fixture(autouse=True)
-def mock_configurationselection_event_service(monkeypatch):
+def mock_configuration_selection_event_service(monkeypatch):
     mock_connection_thread = MagicMock()
     monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
     monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
