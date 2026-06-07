@@ -2,9 +2,22 @@ from unittest.mock import MagicMock
 from repeater.acceptable_error_based import AcceptableErrorBasedType
 from core_entities.configuration import Configuration
 from repeater.repeater_selector import RepeaterOrchestration
+from tools.mongo_dao import MongoDB
 
+import logging
+import os
 import pytest
 import json
+
+@pytest.fixture(scope="session")
+def db_client_instance():
+    """Initializes the database"""
+    client = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+                                    os.getenv("BRISE_DATABASE_PORT"),
+                                    os.getenv("BRISE_DATABASE_NAME"),
+                                    os.getenv("BRISE_DATABASE_USER"),
+                                    os.getenv("BRISE_DATABASE_PASS"))
+    return client
 
 @pytest.fixture(autouse=True)
 def replace_db(db_client_instance, monkeypatch):
@@ -13,6 +26,30 @@ def replace_db(db_client_instance, monkeypatch):
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: db_client_instance)
     monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: db_client_instance)
     yield db_client_instance
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_after_input_tests():
+    """
+    Remove experiments from Database after the tests are finsihed
+    """
+    # Setup
+    yield 
+    # Teardown
+
+    try:
+        db_client = MongoDB() 
+        
+        if hasattr(db_client, 'cleanup_database'):
+            db_client.cleanup_database()
+        else:
+            db_client.db["Configuration"].drop()
+            db_client.db["Experiment_description"].drop()
+            db_client.db["Experiment_state"].drop()
+            db_client.db["Search_space"].drop()
+            
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to clear database during teardown: {e}")
 
 @pytest.fixture(autouse=True)
 def mock_repeator_selection(monkeypatch):
