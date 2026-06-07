@@ -1,90 +1,14 @@
 import json
-
-from unittest.mock import MagicMock
-from repeater.acceptable_error_based import AcceptableErrorBasedType
-import pytest
+from tools.mongo_dao import MongoDB
 
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 from core_entities.search_space import SearchSpace
 from repeater.repeater_selector import RepeaterOrchestration
-from tools.restore_db import RestoreDB
 
-rdb = RestoreDB()
-rdb.restore()
-
-current_experiment = None
-
-@pytest.fixture(autouse=True)
-def mock_configuration_selection_event_service(monkeypatch):
-    """Mock MongoDB, API, and other dependencies for input tests."""
-    global current_experiment
-    
-    # Mock Database & get_last_record_by_experiment_id
-    mock_db = MagicMock()
-    def mock_get_last_record(collection, experiment_id):
-        if current_experiment is None:
-            return None
-        if collection == "Experiment_description":
-            return current_experiment.description
-        if collection == "Experiment_state":
-
-            results = {}
-            if current_experiment.default_configuration and current_experiment.default_configuration.results:
-                results = current_experiment.default_configuration.results
-
-            return {
-                "Current_solution": {
-                    "Results": results
-                },
-                "Number_of_measured_configs": 1
-            }
-        if collection == "Search_space":
-            return {"Search_space_size": current_experiment.search_space.size}
-        return {}
-    
-    mock_db.get_last_record_by_experiment_id = mock_get_last_record
-   
-    # Patch MockDatabase
-    monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: mock_db)
-    monkeypatch.setattr('repeater.repeater.MongoDB', lambda *args, **kwargs: mock_db)
-
-@pytest.fixture(autouse=True)
-def mock_repeator_selection(monkeypatch):
-    def mock_repeater0(self, body):
-        return json.loads(body)
-    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._decode_for_measure_configurations', mock_repeater0)
-
-    def mock_repeater1(self, configuration: Configuration, result):
-        return 
-    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._send_configuration_and_tasks', mock_repeater1)
-    
-    def mock_repeater2(self, configuration: Configuration, tasks_to_send: list, needed_tasks_count: int):
-        return configuration, needed_tasks_count
-
-    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._publish_configuration', mock_repeater2)
-
-    # Add experiment to RepeaterOrchestration after init
-    original_init_rep_orc = RepeaterOrchestration.__init__
-    def new_init_rep_orc(self, experiment_id: str):
-        original_init_rep_orc(self, experiment_id)
-    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration.__init__', new_init_rep_orc)
-
-    # Add experiment to AcceptableErrorBasedType after init
-    original_init_acc_err = AcceptableErrorBasedType.__init__
-    def new_init_acc_err(self, experiment_description: dict, experiment_id: str):
-        original_init_acc_err(self, experiment_description, experiment_id)
-    monkeypatch.setattr('repeater.acceptable_error_based.AcceptableErrorBasedType.__init__', new_init_acc_err)
-
-@pytest.fixture(autouse=True)
-def mock_event_service(monkeypatch):
-    mock_connection_instance = MagicMock()
-    mock_connection_instance.channel = MagicMock()
-    monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._EventServiceConnection', MagicMock(return_value=mock_connection_instance))
-
-def test_0(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_0(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Default Configuration
-    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      0, Configuration.Type.DEFAULT,
                                                      {'enabled': True, 'evaluated': False, 'measured': False})
@@ -93,9 +17,9 @@ def test_0(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count > 0
 
 
-def test_1(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_1(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Default Configuration
-    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      10, Configuration.Type.DEFAULT,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -104,9 +28,9 @@ def test_1(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count == 0
 
 
-def test_2(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_2(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Predicted Configuration
-    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      0, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': False, 'measured': False})
@@ -115,9 +39,9 @@ def test_2(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count > 0
 
 
-def test_3(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_3(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with low relative error in results.
-    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      2, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -126,9 +50,9 @@ def test_3(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count == 0
 
 
-def test_4(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_4(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with high relative error in results.
-    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      8, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -137,9 +61,9 @@ def test_4(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count > 0
 
 
-def test_5(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_5(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with number of measured tasks = threshold.
-    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      10, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -147,8 +71,11 @@ def test_5(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert configuration.status == {'enabled': True, 'evaluated': True, 'measured': True}
     assert needed_tasks_count == 0
 
-
-def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict,
+def seed_test_experiment(db_client: MongoDB, experiment: Experiment):
+    """Insert the test experiments into the database"""
+    db_client.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+    
+def measure_task(db_client: MongoDB, configurations_sample: list, tasks_sample: list, experiment_description: dict,
                  search_space: SearchSpace, measured_tasks: int,
                  config_type: Configuration.Type, config_status: dict):
     """
@@ -159,6 +86,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     2. Create instance of current measurement.
     3. Call Repeater function.
 
+    :param db_client: the test Database client
     :param configurations_sample: a sample of measured configurations
     :param tasks_sample: a sample of measured tasks
     :param experiment_description: experiment description in json format
@@ -169,9 +97,9 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
 
     :return: list of configuration status and number of tasks to measure.
     """
-    global current_experiment
     experiment = Experiment(experiment_description, search_space)
-    current_experiment = experiment
+    seed_test_experiment(db_client, experiment)
+
     Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
     configuration = Configuration(configurations_sample[1]["Params"], config_type, experiment.unique_id)
     configuration.status = config_status

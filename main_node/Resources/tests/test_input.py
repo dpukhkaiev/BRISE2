@@ -1,5 +1,4 @@
 from tools.mongo_dao import MongoDB
-import pytest
 
 from core_entities.experiment import Configuration
 from core_entities.experiment import Experiment
@@ -26,21 +25,6 @@ from transfer_learning.multi_task_learning.old_new_ratio import OldNewRatioDecor
 from transfer_learning.multi_task_learning.few_shot import FewShotDecorator
 from transfer_learning.model_recommendation.dynamic_model_recommendation import DynamicModelRecommendation
 from transfer_learning.model_recommendation.few_shot import FewShotRecommendation
-
-def seed_test_experiment(db_client: MongoDB, experiment: Experiment):
-    """Insert the test experiments into the database"""
-    db_client.write_one_record("Experiment_description", experiment.get_experiment_description_record())
-    
-    db_client.write_one_record("Experiment_state", {
-        "Exp_unique_ID": experiment.unique_id,
-        "Current_solution": {"Results": {}},
-        "Number_of_measured_configs": 0
-    })
-    
-    db_client.write_one_record("Search_space", {
-        "Exp_unique_ID": experiment.unique_id,
-        "Search_space_size": experiment.search_space.size
-    })
 
 class TestInput:
     """
@@ -667,3 +651,8 @@ class TestInput:
         assert isinstance(tl.ted_module, SamplingLandmarkBased)
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], FewShotRecommendation)
+
+def seed_test_experiment(db_client: MongoDB, experiment: Experiment):
+    """Insert the test experiments into the database"""
+    db_client.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+    
