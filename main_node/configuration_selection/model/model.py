@@ -1,6 +1,7 @@
 import itertools
 import time
 import pandas as pd
+import logging
 
 from typing import List, Mapping, Tuple, Dict
 from core_entities.search_space import Hyperparameter
@@ -336,25 +337,45 @@ class Model:
             objectives_optimizer = s_o_opt["Objectives_optimizer"]
             surrogates.append(self.surrogate_orchestrator.get_surrogate(surrogate, self.region, objectives_surrogate))
             optimizers.append(self.optimizer_orchestrator.get_optimizer(optimizer, self.region, objectives_optimizer))
-
+        
         surrogate_to_be_replaced = []
         for s, o in self.mapping_surrogate_objective.items():
             for s_transferred in surrogates:
                 if o.__eq__(s_transferred.objectives):
                     surrogate_to_be_replaced.append(s)
+
+                    # Update surrogate map
+                    self.__replace_in_vp_map(self._surrogate_map, s, s_transferred)
                     continue
+        
+        # Remove surrogate
         for s in surrogate_to_be_replaced:
             del self.mapping_surrogate_objective[s]
+        
         for s_transferred in surrogates:
             self.mapping_surrogate_objective[s_transferred] = s_transferred.objectives
-
+        
         optimizer_to_be_replaced = []
         for opt, o in self.mapping_optimizer_objective.items():
             for opt_transferred in optimizers:
                 if o.__eq__(opt_transferred.objectives):
                     optimizer_to_be_replaced.append(opt)
+
+                    # Update surrogate map
+                    self.__replace_in_vp_map(self._optimizer_map, opt, opt_transferred)
                     continue
         for opt in optimizer_to_be_replaced:
             del self.mapping_optimizer_objective[opt]
         for opt_transferred in optimizers:
             self.mapping_optimizer_objective[opt_transferred] = opt_transferred.objectives
+
+    def __replace_in_vp_map(self, map:Mapping, obj_old, obj_new):
+        """Replace a surrogate or optimizer that is transfered in the according map to be able to remove it on reconfiguration"""
+        vp_match = None
+        for vp, o in map.items():
+            if o == obj_old:
+                vp_match = vp
+                break
+            
+        if vp_match is not None:
+            map[vp_match] = obj_new

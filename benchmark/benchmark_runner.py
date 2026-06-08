@@ -66,13 +66,13 @@ class BRISEBenchmarkRunner:
             self.is_calculating_number_of_experiments = True
             logging_level = self.logger.level
             self.logger.setLevel(logging.WARNING)
-            benchmarking_function(self, *args, *kwargs)
+            benchmarking_function(self, *args, **kwargs)
             self.logger.setLevel(logging_level)
             logging.info(
                 "Benchmark is going to run %s unique Experiments (please, take into account the repetitions as well)."
                 % len(self.experiments_to_be_performed))
             self.is_calculating_number_of_experiments = False
-            benchmarking_function(self, *args, *kwargs)
+            benchmarking_function(self, *args, **kwargs)
         return wrapper
 
     def execute_experiment(self,
@@ -996,7 +996,6 @@ class MainAPIClient:
             :param properties: pika.spec.BasicProperties
             :param body: result of a configurations in bytes format
             """
-            self.logger.error("Got final event!")
             self.main_client.download_latest_dump()
             self.main_client.isBusy = False
             self.consume_channel.basic_ack(delivery_tag=method.delivery_tag)

@@ -57,7 +57,7 @@ class ReconfigurationBehaviourMock:
 
             if self._reconf_actions[trigger.split("_")[0]](action) is True:
                 self.__perform_action(action)
-                #print("Performed action:", action)
+                print("Performed action:", action)
                 #time.sleep(2)
 
         # Finish the reconfiguration process if any change was requested
