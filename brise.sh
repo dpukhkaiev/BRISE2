@@ -143,7 +143,7 @@ up() {
         done
   elif [[ "${mode}" == "test" ]]; then
         log "Building and deploying TEST-BRISE to docker-compose."
-        services=("mongo-db-test" "waffle")
+        services=("mongo-db-test")
         docker compose build --build-arg BRISE_DATABASE_HOST=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.Address' ) \
                              --build-arg BRISE_DATABASE_PORT=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.Port' ) \
                              --build-arg BRISE_DATABASE_NAME=$( cat deployment_settings/TestDeployment.json | jq -r '.Database.DatabaseName' ) \
