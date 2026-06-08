@@ -33,7 +33,12 @@ class ConfigurationTransformer(ABC):
         for old_f, new_f in self.mapping_old_new_features.items():
             if any([f in transformed_features.columns for f in new_f]) is False:
                 continue  # some parameters within the mapping can be irrelevant and are skipped
-            transformed = mapping_old_feature_pipeline[old_f].inverse_transform(transformed_features[new_f])
+
+            transformer = mapping_old_feature_pipeline[old_f]
+            if hasattr(transformer, "steps") and len(getattr(transformer, "steps", [])) == 1:
+                transformer = transformer.steps[0][1]
+
+            transformed = transformer.inverse_transform(transformed_features[new_f])
             if result.empty:
                 result = transformed
             else:
