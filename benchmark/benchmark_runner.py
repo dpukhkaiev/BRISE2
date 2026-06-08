@@ -571,8 +571,8 @@ class BRISEBenchmarkRunner:
         experiment_description.update(deepcopy(time_based_sc_skeleton))
         experiment_description.update(deepcopy(flat_2float_model_skeleton))
         self.execute_experiment(experiment_description, number_of_repetitions=1)
-        return self.counter
-        """# test case with float nom parameters
+        
+        # test case with float nom parameters
         self._base_experiment_description, self._base_search_space = \
             load_experiment_setup("./Resources/test/test_cases_product_configurations/test_case_4.json")
         experiment_description = self.base_experiment_description
@@ -602,7 +602,7 @@ class BRISEBenchmarkRunner:
         experiment_description.update(deepcopy(time_based_sc_skeleton))
         self.execute_experiment(experiment_description, number_of_repetitions=1)
 
-        return self.counter"""
+        return self.counter
     
     @_benchmarkable
     def reconf_benchmark(self):
