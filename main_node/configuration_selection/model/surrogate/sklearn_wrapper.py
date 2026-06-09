@@ -27,11 +27,7 @@ class SklearnWrapper(Surrogate):
 
         transformed_features = self._transform_configuration(features)
         transformed_labels = self._transform_values(labels)
-
-        # force labels to be 1d-array, otherwise pd.dataframe is 2d object with one column
         y = transformed_labels
-        if isinstance(transformed_labels, pd.DataFrame) and transformed_labels.shape[1] == 1:
-            y = transformed_labels.iloc[:, 0].values.ravel()
 
         self.surrogate_instance.fit(transformed_features, y)
         return True
@@ -53,3 +49,12 @@ class SklearnWrapper(Surrogate):
             result = pd.DataFrame(predicted, columns=["Y"])
 
         return result
+
+    def _transform_values(self, labels: pd.DataFrame) -> pd.DataFrame:
+        # flatten labels to be 1d-array
+        transformed_labels = super()._transform_values(labels)
+        
+        if isinstance(transformed_labels, pd.DataFrame) and transformed_labels.shape[1] == 1:
+            return transformed_labels.iloc[:, 0].values.ravel()
+            
+        return transformed_labels
