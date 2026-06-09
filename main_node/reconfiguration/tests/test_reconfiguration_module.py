@@ -700,6 +700,92 @@ class TestReconfigurationModule:
         assert cs.predictor.window_size == new_size
         assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size
 
+    def test_update_surrogate_and_optimizers_with_reconfiguration(self, get_experiment):
+        """Test that the update_surrogate_and_optimizers() in model.py works with the reconfiguration"""
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
+        cs = reconf_module.configuration_selection
+
+        # Assert that config was loaded correctly
+        assert len(cs.predictor.mapping_region_model) == 1
+        
+        model = cs.predictor.mapping_region_model.popitem()[1]
+        assert len(model.mapping_optimizer_objective) == 5
+        
+        assert all([isinstance(optimizer, MOEA) for optimizer in list(model.mapping_optimizer_objective.keys())])
+
+        # Mock change via update_method
+        surrogate_desc = {
+            "Instance": {
+                "TreeParzenEstimator": {
+                    "MultiObjective": False,
+                    "Parameters": {
+                        "top_n_percent": 20,
+                        "random_fraction": 0.0,
+                        "bandwidth_factor": 1.0,
+                        "min_bandwidth": 0.001
+                    },
+                    "Type": "tree_parzen_estimator"
+                }
+            }
+        }
+
+        optimizer_desc = {"Instance": {
+                        "RandomSearch": {
+                            "SamplingSize": 500,
+                            "MultiObjective": True,
+                            "Type": "random_search"
+                        }
+                    }}
+
+        update_list = [{
+            "Surrogate": surrogate_desc,
+            "Objectives_surrogate": self.__get_first_elem(model.mapping_surrogate_objective),
+            "Optimizer": optimizer_desc,
+            "Objectives_optimizer": self.__get_first_elem(model.mapping_optimizer_objective)
+        }]
+        model.update_surrogates_and_optimizers(update_list)
+        
+        # Assert the update worked
+        assert len(model.mapping_optimizer_objective) == 5
+
+        moea_count = 0
+        random_count = 0
+        for optimizer in list(model.mapping_optimizer_objective.keys()):
+            if isinstance(optimizer, MOEA):
+                moea_count += 1
+                continue
+
+            if isinstance(optimizer, RandomSearch):
+                random_count += 1
+
+        assert moea_count == 4
+        assert random_count == 1
+
+        # Reconfigure
+        optimizer_desc = {
+            "Instance": {
+                "MOEA": {
+                    "Generations": 5,
+                    "PopulationSize": 80,
+                    "Algorithms": {
+                        "GACO": {
+                            "MultiObjective": False
+                        }
+                    },
+                    "Type": "moea"
+                }
+            }
+        }
+
+        reconf_module.change_variant("Optimizer_0", optimizer_desc)
+        reconf_module.done().reconfigure()
+
+        # Assert that change was successful
+        assert len(model.mapping_optimizer_objective) == 5
+        assert all([isinstance(optimizer, MOEA) for optimizer in list(model.mapping_optimizer_objective.keys())])
+        assert len(model._optimizer_map) == 5
+        assert len(model._surrogate_map) == 5
+
     def test_request_change_method(self, reconf_module:ReconfigurationModule):
         """Test the callback for the queue"""
         # Test the redirect to change_variant
@@ -742,3 +828,10 @@ class TestReconfigurationModule:
 
         with pytest.raises(ValueError):
             reconf_module.request_change(None, None, None, json.dumps(event_invalid).encode())
+
+    ## Helper
+    def __get_first_elem(self, map):
+        if len(map) == 0:
+            return None
+        
+        return map[list(map.keys())[0]]
