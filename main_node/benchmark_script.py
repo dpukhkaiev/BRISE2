@@ -195,34 +195,13 @@ class Runner:
                 "AfterXConfigurations": {
                     "amount": 2,
                     "performAmount": 1,
-                    "vp": "Optimizer_0",
+                    "vp": "Optimizer",
                     "identifiers": ["Model_1"],
                     "description": {
-                        "ConfigurationTransformers": {
-                            "OrdinalTransformer": {
-                                "SklearnOrdinalEncoder": {
-                                    "Type": "sklearn_ordinal_transformer",
-                                    "Class": "sklearn.OrdinalEncoder"
-                                }
-                            },
-                            "NominalTransformer": {
-                                "SklearnBinaryEncoder": {
-                                    "Type": "sklearn_binary_transformer",
-                                    "Class": "sklearn.OrdinalEncoder"
-                                }
-                            }
-                        },
-                        "ValueTransformers": {
-                            "AcquisitionFunction": {
-                                "TPE_EI": {
-                                    "Type": "tpe_ei"
-                                }
-                            }
-                        },
                         "Instance": {
                             "RandomSearch": {
-                            "SamplingSize": 100,
-                            "MultiObjective": False,
+                            "SamplingSize": 300,
+                            "MultiObjective": True,
                             "Type": "random_search"
                             }
                         }
@@ -413,13 +392,13 @@ class Runner:
 
         try:
             # Change optimizer, validator, surrogate, etc. during experiment - Passed
-            """self._base_experiment_description, self._base_search_space = \
+            self._base_experiment_description, self._base_search_space = \
                 load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
             experiment_description = self.base_experiment_description
             
             for reconf_skeleton in [reconf_optimizer, reconf_validator, reconf_surrogate, reconf_rep_manager]:
                 experiment_description.update(deepcopy(reconf_skeleton))
-                self.execute_experiment(experiment_description, number_of_repetitions=1)"""
+                self.execute_experiment(experiment_description, number_of_repetitions=1)
             
             # Change sampling strategy, candidate selector and stop condition during the experiment for all test cases - Passed
             for reconf_skeleton in [reconf_sampling_and_candidate, reconf_stop_condition]:
@@ -440,14 +419,13 @@ class Runner:
                 experiment_description.update(deepcopy(reconf_skeleton))
                 self.execute_experiment(experiment_description, number_of_repetitions=1)
             
-            """#TODO: Select working experiment
             # Change single optimizer
             self._base_experiment_description, self._base_search_space = \
-                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_3.json")
+                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
             experiment_description = self.base_experiment_description
             experiment_description.update(deepcopy(reconf_single_optimizer))
             experiment_description.update(deepcopy(one_min_stop))
-            self.execute_experiment(experiment_description, number_of_repetitions=1)"""
+            self.execute_experiment(experiment_description, number_of_repetitions=1)
             
             # Change entire model and single surrogate - Passed
             self._base_experiment_description, self._base_search_space = \
