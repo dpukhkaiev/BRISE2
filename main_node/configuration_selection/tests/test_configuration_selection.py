@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import MagicMock
+
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -12,13 +11,6 @@ from core_entities.search_space import get_search_space_record
 from tools.restore_db import RestoreDB
 
 rdb = RestoreDB()
-
-@pytest.fixture(autouse=True)
-def mock_configuration_selection_event_service(monkeypatch):
-    mock_connection_thread = MagicMock()
-    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
-    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
-    return mock_connection_thread
 
 class TestConfigurationSelection:
 
