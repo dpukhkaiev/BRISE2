@@ -1,9 +1,7 @@
-import logging
 import pytest
 
 from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
-from tools.mongo_dao import MongoDB
 
 @pytest.fixture(autouse=True)
 def mock_start_threads():

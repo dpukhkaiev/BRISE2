@@ -103,7 +103,10 @@ jobs:
           curl -sSL --fail "$url" -o badge-data/coverage.svg
       # Commit updated badge svg
       - name: Commit badge data
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "Update coverage badge"
-          file_pattern: badge-data/coverage.svg
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add badge-data/coverage.svg
+          git commit -m "Update coverage badge" --allow-empty
+          git push
+        continue-on-error: true
