@@ -65,7 +65,7 @@ class MultiArmedBandit(Surrogate):
                 if n < 1 or ni == 0:
                     exploration_rate = np.inf
                 else:
-                    exploration_rate = np.sqrt((2 * np.log(n)) / ni)
+                    exploration_rate = np.sqrt(np.divide((2 * np.log(n)), ni))
 
                 exploitation_rate = categories_info[hp.name][feature_category]["quality"]
                 if isinstance(self.c, (int, float)):
