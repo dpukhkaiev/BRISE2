@@ -1,5 +1,5 @@
 import datetime
-import time
+import logging
 
 from reconfiguration.reconfiguration_module import ReconfigurationModule
 from stop_condition.stop_condition_selector import StopConditionSelector
@@ -39,6 +39,12 @@ class ReconfigurationBehaviourMock:
         self.__configuration_count = 0
         self.__performed_actions = []
 
+        self.logger = logging.getLogger(__name__)
+
+    @property
+    def reconfiguration_action_amount(self):
+        return len(self.__performed_actions)
+
     def new_configuration_measured(self, configuration):
         """Called by main loop after a new configuration has been evaluated. Check for any specified reconfigurations"""
         # No reconfigurations specified
@@ -57,8 +63,7 @@ class ReconfigurationBehaviourMock:
 
             if self._reconf_actions[trigger.split("_")[0]](action) is True:
                 self.__perform_action(action)
-                print("Performed action:", action)
-                #time.sleep(2)
+                self.logger.info("Performed reconfiguration action: %s", action)
 
         # Finish the reconfiguration process if any change was requested
         if self.reconf_module.unfinished_configuration():
@@ -95,6 +100,6 @@ class ReconfigurationBehaviourMock:
         elif "variables" in action:
             self.reconf_module.change_variables(action["variables", desc, identifiers])
         else:
-            print("Action can not be performed neither \"vp\" nor \"variables\" key was specified! Action:", action)
+            self.logger.error("Action can not be performed neither \"vp\" nor \"variables\" key was specified! Action: %s", action)
 
         self.__performed_actions.append(action)

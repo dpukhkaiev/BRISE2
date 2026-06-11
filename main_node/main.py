@@ -255,8 +255,15 @@ class MainThread(threading.Thread):
             self.logger.info(f"Terminating experiment. Reason: {body}")
             self._state = self.State.SHUTTING_DOWN
             self._is_interrupted = True
-            optimal_configuration = self.experiment.get_final_report_and_result()
+            optimal_configuration = self.experiment.get_final_report_and_result(
+                reconf_actions=self.behaviour_mock.reconfiguration_action_amount,
+                reconf_amount=self.reconf.performed_reconfigurations)
             self._state = self.State.IDLE
+
+            # Log reconfigurations
+            self.logger.info("Performed reconfiguration actions: %s", self.behaviour_mock.reconfiguration_action_amount)
+            self.logger.info("Performed reconfigurations: %s", self.reconf.performed_reconfigurations)
+
             self.consume_channel.basic_publish(exchange='experiment_termination_exchange',
                                                routing_key=self.experiment.unique_id,
                                                body='')

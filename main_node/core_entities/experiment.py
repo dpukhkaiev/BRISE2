@@ -227,7 +227,7 @@ class Experiment:
         """
         return configuration in self.evaluated_configurations
 
-    def get_final_report_and_result(self):
+    def get_final_report_and_result(self, reconf_actions:int, reconf_amount:int):
         self.end_time = datetime.datetime.now()
         if self.measured_configurations:
             performed_measurements = \
@@ -247,7 +247,7 @@ class Experiment:
                 all_features.append(configuration.parameters)
             results_folder = './Results/'
             self.dump(folder_path=results_folder)  # Store instance of Experiment
-            self.write_csv(folder_path=results_folder)  # Store Experiment metrics
+            self.write_csv(folder_path=results_folder, reconf_actions=reconf_actions, reconf_amount=reconf_amount)  # Store Experiment metrics
             self.summarize_results_to_file(report_format="yaml", folder_path=results_folder)
             self.api.send('final', 'configuration',
                           configurations=[self.get_current_solution().parameters],
@@ -363,7 +363,7 @@ class Experiment:
                              for config in self.measured_configurations],
                  "Current_best_curve": self.current_best_curve})
 
-    def write_csv(self, folder_path: str) -> None:
+    def write_csv(self, folder_path: str, reconf_actions:int, reconf_amount:int) -> None:
         """save .csv file with main metrics of the experiment
         Args:
             folder_path (str, optional): Path to folder, where to store the csv report.
@@ -387,7 +387,9 @@ class Experiment:
             'search space coverage': search_space_coverage,
             'number of repetitions': len(self.get_all_repetition_tasks()),
             'execution time': (self.get_running_time()).seconds,
-            'repeater': self.description['RepetitionManager']["Instance"]
+            'repeater': self.description['RepetitionManager']["Instance"],
+            "reconfiguration_actions": reconf_actions,
+            "reconfigurations": reconf_amount
         })
 
         file_path = '{0}{1}.csv'.format(folder_path, self.name)

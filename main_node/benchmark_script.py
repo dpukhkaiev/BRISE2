@@ -1,5 +1,7 @@
 import os
 import json
+import time
+
 from copy import deepcopy
 
 from tools.initial_config import load_experiment_setup
@@ -10,6 +12,7 @@ class Runner:
         self._base_experiment_description = None
         self._base_search_space = None
 
+        self.counter = 0 # Mocked
         self.error_count = 0
         self.distinct_experiements = 0
 
@@ -36,6 +39,8 @@ class Runner:
             print("Experiment finished with code", code)
             if code != 0:
                 self.error_count += 1
+
+                os.remove("temp_exp.json")
                 exit()
 
         print("Clean up")
@@ -46,8 +51,7 @@ class Runner:
 
     def clear_results(self):
         for file in os.listdir("./Results"):
-            if os.path.isfile(".Results/" + file):
-                print("Remove", file)
+            if os.path.isfile("./Results/" + file):
                 os.remove("./Results/" + file)
 
         print("Removed all previous results")
@@ -57,7 +61,9 @@ class Runner:
         print("Errors:", self.error_count)
         print("See result folder for further details")
 
-    def run_benchmark(self):
+    def dynamic_reconf_stresstest(self):
+        """Test that no crashes or failures happen due to the reconfiguration"""
+
         reconf_sampling_and_candidate = {
                 "Reconfiguration": {
                     "AfterXConfigurations_0": {
@@ -390,57 +396,163 @@ class Runner:
 
         # Only run using docker!!
 
-        try:
-            # Change optimizer, validator, surrogate, etc. during experiment - Passed
-            self._base_experiment_description, self._base_search_space = \
-                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
-            experiment_description = self.base_experiment_description
-            
-            for reconf_skeleton in [reconf_optimizer, reconf_validator, reconf_surrogate, reconf_rep_manager]:
-                experiment_description.update(deepcopy(reconf_skeleton))
-                self.execute_experiment(experiment_description, number_of_repetitions=1)
-            
-            # Change sampling strategy, candidate selector and stop condition during the experiment for all test cases - Passed
-            for reconf_skeleton in [reconf_sampling_and_candidate, reconf_stop_condition]:
-                for exp_num in [1, 5]:
-                    self._base_experiment_description, self._base_search_space = \
-                        load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_" + str(exp_num) + ".json")
-                    experiment_description = self.base_experiment_description
-                    experiment_description.update(deepcopy(reconf_skeleton))
-                    self.execute_experiment(experiment_description, number_of_repetitions=1)
-            
-            # Turn of transfer learning, and predictor - Passed
-            self._base_experiment_description, self._base_search_space = \
-                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
-            experiment_description = self.base_experiment_description
-            experiment_description.update(deepcopy(one_min_stop))
-            
-            for reconf_skeleton in [reconf_transfer_learning, reconf_predictor]:
-                experiment_description.update(deepcopy(reconf_skeleton))
-                self.execute_experiment(experiment_description, number_of_repetitions=1)
-            
-            # Change single optimizer
-            self._base_experiment_description, self._base_search_space = \
-                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
-            experiment_description = self.base_experiment_description
-            experiment_description.update(deepcopy(reconf_single_optimizer))
-            experiment_description.update(deepcopy(one_min_stop))
+        # Change optimizer, validator, surrogate, etc. during experiment - Passed
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
+        experiment_description = self.base_experiment_description
+        
+        for reconf_skeleton in [reconf_optimizer, reconf_validator, reconf_surrogate, reconf_rep_manager]:
+            experiment_description.update(deepcopy(reconf_skeleton))
             self.execute_experiment(experiment_description, number_of_repetitions=1)
-            
-            # Change entire model and single surrogate - Passed
-            self._base_experiment_description, self._base_search_space = \
-                load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
-            experiment_description = self.base_experiment_description
-            experiment_description.update(deepcopy(one_min_stop))
-
-            for reconf_skeleton in [reconf_model, reconf_single_surrogate]:
+        
+        # Change sampling strategy, candidate selector and stop condition during the experiment for all test cases - Passed
+        for reconf_skeleton in [reconf_sampling_and_candidate, reconf_stop_condition]:
+            for exp_num in [1, 5]:
+                self._base_experiment_description, self._base_search_space = \
+                    load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_" + str(exp_num) + ".json")
+                experiment_description = self.base_experiment_description
                 experiment_description.update(deepcopy(reconf_skeleton))
                 self.execute_experiment(experiment_description, number_of_repetitions=1)
-        except KeyboardInterrupt:
-            print("Stopped the benchmark!")
+        
+        # Turn of transfer learning, and predictor - Passed
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(one_min_stop))
+        
+        for reconf_skeleton in [reconf_transfer_learning, reconf_predictor]:
+            experiment_description.update(deepcopy(reconf_skeleton))
+            self.execute_experiment(experiment_description, number_of_repetitions=1)
+        
+        # Change single optimizer
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(reconf_single_optimizer))
+        experiment_description.update(deepcopy(one_min_stop))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
+        
+        # Change entire model and single surrogate - Passed
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(one_min_stop))
+
+        for reconf_skeleton in [reconf_model, reconf_single_surrogate]:
+            experiment_description.update(deepcopy(reconf_skeleton))
+            self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        return self.counter
+
+    def dynamic_reconf_scaling_benchmark(self):
+        """Benchmark the scaling of the dynamic reconfiguration"""
+
+        config_amount = 100
+        exp_rep_amount = 5
+        scalings = [1, 10, 20, 40, 50, 60, 80, 100]
+
+        reconf_sampling_strategy = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "SamplingStrategy",
+                    "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
+                }
+            }
+        }
+
+        reconf_candidate = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "CandidateSelector",
+                    "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
+                }
+            }
+        }
+
+        reconf_single_surrogate = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "Surrogate_0",
+                    "identifiers": ["Model_1"],
+                    "description": {
+                        "Instance": {
+                            "ModelMock": {
+                                "MultiObjective": True,
+                                "Type": "model_mock"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        quanity_based_stop = {"StopCondition": {
+                "Instance": {
+                    "QuantityBasedSC": {
+                        "Parameters": {
+                            "MaxConfigs": config_amount
+                        },
+                        "Type": "quantity_based",
+                        "Name": "Q"
+                    }
+                },
+                "StopConditionTriggerLogic": {
+                    "Expression": "Q",
+                    "InspectionParameters": {
+                        "RepetitionPeriod": 1,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
+        }
+
+        # Create experiment descriptions #
+        # Change sampling strategy and candidiate selector
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
+        experiment_description_1 = self.base_experiment_description
+        
+        del experiment_description_1["TransferLearning"]
+        experiment_description_1["RepetitionManager"]["Instance"]["QuantityBased"]["MaxTasksPerConfiguration"] = 4
+        experiment_description_1.update(deepcopy(quanity_based_stop))
+
+        # Change single surrogate in multiple models
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
+        experiment_description_2 = self.base_experiment_description
+        experiment_description_2.update(deepcopy(quanity_based_stop))
+
+        # Data structure to define which descriptions are used to test what scalings
+        reconf_data = [(experiment_description_1, [reconf_sampling_strategy, reconf_candidate]),
+                       (experiment_description_2, [reconf_single_surrogate])]
+
+        for experiment_description, reconf_skeletons in reconf_data:
+            for reconf_skeleton in reconf_skeletons:
+                for s in scalings:
+                    # Update how often the reconfiguration occurs
+                    new_amount = int(config_amount / s) if s != 1 else int(config_amount / 2)
+                    reconf_skeleton["Reconfiguration"]["AfterXConfigurations"]["amount"] = new_amount
+                    reconf_skeleton["Reconfiguration"]["AfterXConfigurations"]["performAmount"] = s
+
+                    print("")
+                    print("New amount:", reconf_skeleton["Reconfiguration"]["AfterXConfigurations"]["amount"])
+                    print("PeformAmount:", reconf_skeleton["Reconfiguration"]["AfterXConfigurations"].get("performAmount"))
+                    print("")
+                    
+                    #time.sleep(1)
+                    experiment_description.update(deepcopy(reconf_skeleton))
+                    self.execute_experiment(experiment_description, number_of_repetitions=exp_rep_amount)
+
+        return self.counter
 
 if __name__ == "__main__":
     runner = Runner()
     runner.clear_results()
-    runner.run_benchmark()
+    runner.dynamic_reconf_scaling_benchmark()
     runner.show_results()

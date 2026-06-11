@@ -31,6 +31,8 @@ class ReconfigurationModule():
         self.experiment = experiment
         self.configuration_selection = configuration_selection
 
+        self.performed_reconfigurations = 0
+
         # Current feature selection
         self._new_experiment_description = deepcopy(experiment.description)
 
@@ -67,7 +69,8 @@ class ReconfigurationModule():
         # Update the feature selection
         for parent_keys in parent_keys_list:
             self._update_feature_selection(parent_keys, variability_point, new_feature)
-        #print("New feature selection", self._new_experiment_description)
+        
+        #self.logger.debug("New feature selection: %s", self._new_experiment_description)
 
         self._requested_changes[variability_point] = {"description": new_feature, "identifiers": parent_nodes}
 
@@ -120,10 +123,7 @@ class ReconfigurationModule():
         for vp, changes in self._requested_changes.items():
             self.executor.change(vp, changes["description"], self._new_experiment_description, changes["identifiers"])
 
-        # Update experiment description (so the stop condition and repeatition management can use the description??)
-        # Make it not read only??
-        #self.experiment.description = self._new_experiment_description
-
+        self.performed_reconfigurations += 1
         self.state = State.IDLE
 
     def check_for_reconfiguration(self) -> bool:
