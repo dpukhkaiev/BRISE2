@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import MagicMock
 from typing import Dict, Tuple
 from copy import deepcopy
 
@@ -18,13 +16,6 @@ from tools.restore_db import RestoreDB
 
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
-
-@pytest.fixture(autouse=True)
-def mock_configuration_selection_event_service(monkeypatch):
-    mock_connection_thread = MagicMock()
-    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
-    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
-    return mock_connection_thread
 
 class TestMR:
     def test_0(self, get_workers, get_configurations_2_float):

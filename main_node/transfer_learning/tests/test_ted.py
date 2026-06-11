@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import MagicMock
 from typing import Tuple, Dict
 from copy import deepcopy
 
@@ -16,13 +14,6 @@ from transfer_learning.transfer_expediency_determination.clustering.mean_shift_c
 
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
-
-@pytest.fixture(autouse=True)
-def mock_configuration_selection_event_service(monkeypatch):
-    mock_connection_thread = MagicMock()
-    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
-    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
-    return mock_connection_thread
 
 class TestTED:
     def test_0(self):
