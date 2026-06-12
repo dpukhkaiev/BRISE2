@@ -10,7 +10,7 @@ const vuetify = createVuetify({ components, directives })
 
 const app = createApp(App)
 
-app.config.performance = true
+app.config.performance = true;
 
 app.use(createPinia())
 app.use(vuetify)

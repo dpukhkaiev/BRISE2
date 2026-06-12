@@ -3,7 +3,7 @@ import { ref, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // Plotly
-import Plotly from 'plotly.js-dist-min'
+//import Plotly from 'plotly.js-dist-min'
 
 import { MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model';
@@ -22,9 +22,14 @@ const store = useMainEventStore()
 // destructure reactive value from main.event.store
 const { experiment_description } = storeToRefs(store)
 
+
+const isChartInitialized = ref(false)
+
 let solution: Solution
 
 const isVisible = ref(false)
+
+let plotlyInstance: typeof import('plotly.js-dist-min') | null = null
 
 //best point 
 const bestRes = ref<PointExp[]>([])
@@ -33,9 +38,21 @@ const allRes = ref<PointExp[]>([])
 
 const impr = ref<HTMLElement | null>(null)
 
+// lazy loading plotly
+async function getPlotly() {
+    if (!plotlyInstance) {
+        plotlyInstance = await import('plotly.js-dist-min')
+    }
+    return plotlyInstance
+}
+
+// save as variable
+const Plotly = await getPlotly()
+
 onMounted(() => {
     initMainEvents()
 })
+
 
 function initMainEvents() {
     watch(experiment_description, () => {
@@ -68,7 +85,9 @@ function initMainEvents() {
                 allRes.value.push(temp)
                 bestRes.value.push(temp)
             })
-            render() // render chart when all points got
+            // render when chart is initialized
+            render().then(() => { isChartInitialized.value = true })
+            // render() // render chart when all points got
         }
     })
 
@@ -97,6 +116,21 @@ function initMainEvents() {
     store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
+
+            // new x/y values for both traces
+            const newAllX: number[] = [], newAllY: number[] = [], newAllText: string[] = []
+            const newBestX: number[] = [], newBestY: number[] = []
+
+            // check the best availbale point
+            const descr = experiment_description.value
+
+            let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
+            if (!objectives) return
+            const firstObjectiveKey = Object.keys(objectives)[0]
+            console.log('TaskConfig', descr?.['TaskConfiguration'])
+            const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
+
+
             configs.forEach((configuration: any) => {
                 const min = new Date().getMinutes();
                 const sec = new Date().getSeconds();
@@ -114,32 +148,42 @@ function initMainEvents() {
                     'measured points': allRes.value.length
                 }
 
-                // check the best availbale point
-                const descr = experiment_description.value
-                bestRes.value && bestRes.value.forEach(function (resItem) {
-                    let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
-                    if (!objectives) return
-                    const firstObjectiveKey = Object.keys(objectives)[0]
-                    console.log('TaskConfig', descr?.['TaskConfiguration'])
-                    const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
-                    if (isMinimization === true) {
-                        if (temp.results[0] > resItem.results[0]) { // check FIRST result from array!
-                            temp.results = resItem.results;
-                            temp.configurations = resItem.configurations;
-                        } else {
-                            if (temp.results[0] < resItem.results[0]) { // check FIRST result from array!
-                                temp.results = resItem.results;
-                                temp.configurations = resItem.configurations;
-                            }
-                        }
-
+                // compare to the last best point
+                const lastBest = bestRes.value.at(-1)
+                if (lastBest) {
+                    const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
+                    if (!isBetter) {
+                        temp.results = lastBest.results
+                        temp.configurations = lastBest.configurations
                     }
+                }
 
-
-                })
                 bestRes.value.push(temp) // add the best availbale point(result) 
-                bestRes.value.length > 2 && render()
+
+
+                // bestRes.value.length > 2 && render()
+
+                newAllX.push(allRes.value.length)
+                newAllY.push(configuration.results[0])
+                newAllText.push(String(Object.values(configuration.configurations)))
+
+                newBestX.push(temp['measured points'])
+                newBestY.push(temp.results[0])
             })
+            if (!isChartInitialized.value || bestRes.value.length <= 2) return
+            Plotly.extendTraces(impr.value!, {
+                x: [newAllX, newBestX, [] as number[]],
+                y: [newAllY, newBestY, [] as number[]],
+                text: [newAllText, [], []] as any
+            }, [0, 1, 2])
+
+            // startEndPoint update
+            const xBest = bestRes.value.map(i => i['measured points'])
+            const yBest = bestRes.value.map(i => i['results'][0])
+            Plotly.restyle(impr.value!, {
+                x: [[xBest[0], xBest[xBest.length - 1]]],
+                y: [[yBest[0], yBest[yBest.length - 1]]]
+            }, [2])
         }
 
     })
@@ -162,7 +206,7 @@ async function render() {
     const allResultSet = { // Data for all results
         x: Array.from(allRes.value).map((i: any) => i['measured points']),
         y: Array.from(allRes.value).map((i: any) => i['results'][0]),
-        type: 'scatter' as const,
+        type: 'scattergl' as const,
         mode: 'lines+markers' as const,
         line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline' as const, dash: 'dot' as const },
         text: Array.from(allRes.value).map((i: any) => String(i['configurations'])),
@@ -176,7 +220,7 @@ async function render() {
     const bestPointSet = { // Data for the best available results
         x: xBest,
         y: yBest,
-        type: 'scatter' as const,
+        type: 'scattergl' as const,
         mode: 'lines+markers' as const,
         line: { color: 'rgba(67,67,67,1)', width: 2, shape: 'spline' as const },
         name: 'best point',
@@ -186,7 +230,7 @@ async function render() {
     const startEndPoint = { // Start & Finish markers
         x: [xBest[0], xBest[xBest.length - 1]],
         y: [yBest[0], yBest[yBest.length - 1]],
-        type: 'scatter' as const,
+        type: 'scattergl' as const,
         mode: 'markers' as const,
         hoverinfo: 'none' as const,
         showlegend: false,

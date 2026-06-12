@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
+//import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
 // Plotly
-import Plotly from 'plotly.js-dist-min'
+//import Plotly from 'plotly.js-dist-min'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 
 import { MainEvent } from '../../../../entities/main'
@@ -74,33 +75,37 @@ const isModelType = computed(() => {
     return 'unknown'
 })
 
-function zParser(data: Map<String, any>): Array<Array<any>> {
+async function zParser(data: Map<String, any>): Promise<Array<Array<any>>> {
     // Parse the answears in to array of Y rows
     const z: any = []
-    x.value &&
-        y.value &&
-        y.value.forEach((y: any) => { // y - parameter2
-            const row: any = [];
-            x.value.forEach((x: any) => { // x - parameter1
-                const results = data.get(String([y, x])); // To get horizontal orientation - change to [x,y], vertical - [y,x]
-                row.push(results && results[0]); // Get the first result from an array or mark it as undefined.
+    for (const yVal of y.value) {
+        const row: any = [];
+        for (const xVal of x.value) {
+            const results = data.get(String([yVal, xVal])); // To get horizontal orientation - change to [x,y], vertical - [y,x]
+            row.push(results && results[0]); // Get the first result from an array or mark it as undefined.
+        }
+        z.push(row);
+        // breaking a long task in a lot of short ones
+        if ('scheduler' in window && typeof scheduler.yield === 'function') {
+            await scheduler.yield();
+        }
 
-            });
-            z.push(row);
-        });
+    }
+
     return z;
 }
 
 
-function render(): void {
-
+async function render(): Promise<void> {
+    const Plotly = await import('plotly.js-dist-min')
     // if (isModelType.value !== 'regression') return
 
     if (isModelType.value === 'regression') {
+        const zData = await zParser(result.value);
         const element = map.value
         const data: any[] = [
             { // defined X and Y axises with data, type and color
-                z: zParser(result.value),
+                z: zData,
                 x: x.value.map(String),
                 y: y.value.map(String),
                 type: theme.value.type,
@@ -183,6 +188,7 @@ function initMainEvents() {
                 console.log('Empty configuration');
             }
         });
+        // collect all configs first, then render once after Vue's DOM update
         nextTick(() => render())
     })
 
