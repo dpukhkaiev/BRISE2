@@ -19,7 +19,7 @@ function addNode(nodeConfig: { type: string, label: string }) {
     id: id,
     type: nodeConfig.type,
     position: { x: Math.random() * 500, y: Math.random() * 500 },
-    data: { label: nodeConfig.label, name: '', categories: categories ? [] : undefined }
+    data: { label: nodeConfig.label, name: '', categories: categories ? [] : undefined, children: categories ? [] : undefined }
   })
   console.log('id: ', id)
 }

@@ -15,7 +15,7 @@ const props = defineProps<{
 <template>
   <div :class="['node-base', type]">
     {{ props.data.label }}
-    {{ props.data.name }}
+    <div v-if="props.data.name" style="color: black; font-size: 14px;">{{ props.data.name }}</div>
     <Handle type="source" :position="Position.Bottom" />
   </div>
 </template>

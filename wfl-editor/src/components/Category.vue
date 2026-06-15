@@ -4,22 +4,78 @@ import { useGraphStore } from '../store.ts'
 import { storeToRefs } from 'pinia'
 import type { Node } from '@vue-flow/core'
 
+const props = defineProps<{
+    isOpen: boolean
+}>()
 
+const emit = defineEmits(['close', 'isOpen'])
 const graphStore = useGraphStore()
 
 const { activeNodeId } = storeToRefs(graphStore)
 const activeNode = computed(() => graphStore.activeNode as any)
 
+
 // for expanding table 
 const isVisible = ref(false)
 
 
+const connectedChildren = computed(() => {
+    const children = activeNode.value?.data.childrenIds || []
+    return children
+        .map((id: string) => graphStore.nodes.find((n: any) => n.id === id))
+        .filter(Boolean) // filter null/undefined for the case if nodes deleted
+})
+
+function removeChild(id: string) {
+
+}
+
+const allCategories = computed(() => {
+    const manual = activeNode.value?.data.categories || [];
+    const children = connectedChildren.value.map(c => c.data.name);
+    return [...manual, ...children];
+});
+
 </script>
 
 <template>
-    <div :class="['category', { 'category-closed': !isVisible }]">
-
+    <div v-if="props.isOpen" class="category-overlay">
+        <div class="category-modal">
+            <button class="cat-btn" @click="emit('close')">x</button>
+            <h3>All Categories</h3>
+            <ul>
+                <li v-for="(cat, index) in allCategories" :key="index">
+                    {{ cat }}
+                </li>
+            </ul>
+        </div>
     </div>
+
+
 </template>
 
-<style></style>
+<style scoped>
+.category-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.category-modal {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    min-width: 300px;
+}
+
+.btn-cat {
+    background-color: #40E0D0;
+}
+</style>

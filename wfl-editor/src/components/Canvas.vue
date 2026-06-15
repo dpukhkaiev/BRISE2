@@ -8,6 +8,7 @@ import Toolbar from './Toolbar.vue'
 import NumberNode from '../nodes/NumberNode.vue'
 import CategoryNode from '../nodes/CategoryNode.vue'
 import Sidebar from './Sidebar.vue'
+import Category from './Category.vue'
 
 //store
 import { useGraphStore } from '../store.ts'
@@ -25,13 +26,31 @@ const myNodeTypes = {
     ordinal: markRaw(CategoryNode)
 }
 
-
 // sidebar state
 const isSidebarOpen = ref(false)
 
+// categories popup window state
+const isCategoryTableOpen = ref(false)
+
 onConnect((connection) => {
+
+    const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
+    const targetNode = flowNodes.value.find((node: any) => node.id === connection.target)
+
+
+    if (sourceNode && targetNode) {
+        const isSourceCategory = sourceNode.type === 'nominal' || sourceNode.type === 'ordinal'
+        const isTargetNumber = targetNode.type
+
+        if (isSourceCategory && isTargetNumber) {
+            graphStore.addChildToNode(connection.source, connection.target)
+        }
+    }
+
     addEdges(connection)
     graphStore.setEdges(flowEdges.value)
+
+
 })
 
 // for store to track changes of the nodes
@@ -47,13 +66,13 @@ function onNodeClick(event: any) {
 
 function onPaneClick() {
     isSidebarOpen.value = false
-    graphStore.activeNodeId.value = null
+    graphStore.clearActiveNode()
 }
 
 function validateEdges(connection: any) {
 
     // find target and source nodes
-    const sourceNode = graphStore.nodes.value.find((node: any) => node.id === connection.source)
+    const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
 
     // check if they exist
     if (sourceNode) {
@@ -69,6 +88,8 @@ function validateEdges(connection: any) {
 }
 
 
+
+
 </script>
 
 <template>
@@ -80,7 +101,11 @@ function validateEdges(connection: any) {
             </Panel>
         </VueFlow>
 
-        <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false" />
+        <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false"
+            @open-category-table="isCategoryTableOpen = true" />
+
+        <Category :is-open="isCategoryTableOpen" @close="isCategoryTableOpen = false" />
+
     </div>
 </template>
 

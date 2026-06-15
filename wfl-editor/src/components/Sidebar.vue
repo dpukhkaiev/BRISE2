@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useGraphStore } from '../store.ts'
 import { storeToRefs } from 'pinia'
 import type { Node } from '@vue-flow/core'
+
 const props = defineProps<{
     isOpen: boolean
 }>()
@@ -14,7 +15,7 @@ const activeNode = computed(() => graphStore.activeNode as any)
 
 const newCategory = ref('')
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'open-category-table'])
 
 const showError = ref(false)
 
@@ -25,13 +26,28 @@ function addCategory() {
     }
     showError.value = false
 
-
     if (!activeNodeId.value) return
 
     graphStore.addCategoryToNode(activeNodeId.value, newCategory.value)
     newCategory.value = ''
 
 }
+const connectedChildren = computed(() => {
+    const children = activeNode.value?.data.childrenIds || []
+    return children
+        .map((id: string) => graphStore.nodes.find((n: any) => n.id === id))
+        .filter(Boolean) // filter null/undefined for the case if nodes deleted
+})
+
+function removeChild(id: string) {
+
+}
+
+const allCategories = computed(() => {
+    const manual = activeNode.value?.data.categories || [];
+    const children = connectedChildren.value.map((c: any) => c.data.name);
+    return [...manual, ...children];
+});
 
 </script>
 
@@ -73,29 +89,34 @@ function addCategory() {
                 <label>Categories</label>
                 <ul>
 
-                    <li v-for="(category, index) in activeNode?.data.categories.slice(0, 5)" :key="index">
-                        {{ category }}
-                        <button @click="activeNode?.data.categories.splice(index, 1)">x</button>
+                    <li v-for="(item, index) in allCategories.slice(0, 5)" :key="index">
+                        {{ item }}
+                        <button class="btn btn-danger" @click="removeChild(item)">x</button>
                     </li>
-                    <div v-if="activeNode.data.categories.length > 5">
-                        <button type="button" @click="emit('open-category-table')">
-                            + {{ activeNode.data.categories.length - 5 }} ↗
+
+                    <div v-if="allCategories.length > 5">
+                        <button type="button" class="btn-link" @click="emit('open-category-table')">
+                            + {{ allCategories.length - 5 }} ↗
                         </button>
                     </div>
                 </ul>
 
-                <input type="text" v-model="newCategory" class="styled-input" />
+
+
+                <input type="text" v-model="newCategory" @input="showError = false" class="styled-input" />
                 <p v-if="showError" style="color: red; font-size: 12px;">Category cannot be empty</p>
                 <div>
-                    <button @click="addCategory()">Add
+                    <button class="btn btn-primary" @click="addCategory()">Add
                         category</button>
                 </div>
+
                 <label>Default</label>
                 <input type="number" v-model="activeNode.data.default" :min="activeNode?.data.lower"
                     :max="activeNode?.data.upper" class="styled-input" />
 
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
+
             </div>
         </div>
 
@@ -129,6 +150,18 @@ function addCategory() {
     margin-top: 20px;
 }
 
+.sidebar-content ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-content li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
 
 .close-btn {
     position: absolute;
@@ -178,5 +211,64 @@ function addCategory() {
     margin-top: 6px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
+}
+
+/* Standard Button Style */
+.btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    background-color: #e2e8f0;
+    border-color: #94a3b8;
+}
+
+
+.btn-primary {
+    background-color: #0f172a;
+    color: white;
+    border: none;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-primary:hover {
+    background-color: #334155;
+}
+
+
+.btn-danger {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    padding: 2px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.btn-danger:hover {
+    background-color: #fecaca;
+}
+
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.btn-link:hover {
+    color: #1d4ed8;
 }
 </style>
