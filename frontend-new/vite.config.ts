@@ -38,7 +38,7 @@ export default defineConfig({
     globals: true,
     server: {
       deps: {
-        inline: ['vuetify']  // ← wichtig! sonst crasht Vuetify im Test
+        inline: ['vuetify']
       }
     }
   }
