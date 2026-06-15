@@ -11,6 +11,7 @@ from tools.front_API import API
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 from transfer_learning.transfer_learning_module import TransferLearningOrchestrator
 
+from reconfiguration.effector import Effector
 
 class ConfigurationSelection:
     """
@@ -21,23 +22,33 @@ class ConfigurationSelection:
         self.sub = API()
         self.experiment = experiment
 
-        self.predictor: Predictor = Predictor(
-            self.experiment.unique_id,
-            self.experiment.description,
-            self.experiment.search_space
-        )
-        # check if TL is available
-        if "TransferLearning" in self.experiment.description.keys():
-            self.transfer_is_enabled = True
-            self.transfer_learning_orchestrator = TransferLearningOrchestrator(self.experiment.description,
-                                                                               self.experiment.unique_id)
-        else:
-            self.transfer_is_enabled = False
+        self._init_predictor(self.experiment.description)
+        self._init_transfer_learning(self.experiment.description)
 
         self.logger = logging.getLogger(__name__)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             self.connection_thread = self._EventServiceConnection(self)
             self.connection_thread.start()
+
+    @Effector.effector("Predictor", full_description=True)
+    def _init_predictor(self, experiment_description):
+        self.predictor: Predictor = Predictor(
+            self.experiment.unique_id,
+            experiment_description,
+            self.experiment.search_space
+        )
+
+    @Effector.effector("TransferLearning", full_description=True)
+    def _init_transfer_learning(self, experiment_description):
+        # check if TL is available
+        if "TransferLearning" in experiment_description.keys() and\
+            len(experiment_description["TransferLearning"]) != 0:
+            self.transfer_is_enabled = True
+            self.transfer_learning_orchestrator = TransferLearningOrchestrator(experiment_description,
+                                                                               self.experiment.unique_id)
+        else:
+            self.transfer_is_enabled = False
+            self.transfer_learning_orchestrator = None
 
     def send_new_configurations_to_measure(self, ch, method, properties, body) -> Tuple[
             List[Configuration], List[Configuration]]:

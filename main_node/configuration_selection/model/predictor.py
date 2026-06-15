@@ -12,6 +12,7 @@ from core_entities.search_space import SearchSpace
 from tools.mongo_dao import MongoDB
 from configuration_selection.model.model import Model
 
+from reconfiguration.effector import Effector
 
 class Predictor:
     """
@@ -32,8 +33,9 @@ class Predictor:
         self.predictor_config = experiment_description["ConfigurationSelection"]["Predictor"]
         self.task_config = experiment_description["Context"]["TaskConfiguration"]
         self.search_space = search_space
-        self.window_size = self.predictor_config["WindowSize"]
         self.sampling_strategy_orchestrator = SamplingStrategyOrchestrator()
+
+        self._init_values(self.predictor_config)
 
         self.logger = logging.getLogger(__name__)
 
@@ -46,37 +48,27 @@ class Predictor:
         for r in self.search_space.regions:
             level = r[0].level
             type = models_types[level]
-            model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
+            model = Model(model_name=type[0], model_description=type[1], region=r, objectives=self.task_config["Objectives"])
             self.mapping_region_model[r] = model
 
-        self.mapping_region_sampling_strategy = {}
-        for r in self.search_space.regions:
-            sampling_strategy = (self.sampling_strategy_orchestrator.
-                                 get_sampling_strategy
-                                 (experiment_description["ConfigurationSelection"]["SamplingStrategy"], r))
-            print("Got Strategy:", experiment_description["ConfigurationSelection"]["SamplingStrategy"])
-            self.mapping_region_sampling_strategy[r] = sampling_strategy
+        self._init_mapping_region_sampling_strategy(experiment_description["ConfigurationSelection"]["SamplingStrategy"])
 
         self.hierarchical_models_dumps = []
 
         self.logger = logging.getLogger(__name__)
-        print("SAMPLING STRATEGY")
-        print(sampling_strategy, sampling_strategy.names)
 
-    def change_sampling_startegy(self, sampling_strategy:tuple):
+    @Effector.effector("Predictor_Values")
+    def _init_values(self, description):
+        self.window_size = description["WindowSize"]
+
+    @Effector.effector("SamplingStrategy")
+    def _init_mapping_region_sampling_strategy(self, description):
+        self.mapping_region_sampling_strategy = {}
         for r in self.search_space.regions:
             sampling_strategy = (self.sampling_strategy_orchestrator.
-                                 get_sampling_strategy(sampling_strategy, r))
-            print("NEW STRATEGY:", sampling_strategy)
+                                 get_sampling_strategy
+                                 (description, r))
             self.mapping_region_sampling_strategy[r] = sampling_strategy
-
-    def change_candidate_selector(self, selector_description):
-        for model in self.mapping_region_model.values():
-            model.change_candidate_selector(selector_description)
-
-    def change_validator(self, validator_description):
-        for model in self.mapping_region_model.values():
-            model.change_validator(validator_description)
 
     def predict(self, measured_configurations: List[Configuration], sample: bool = False) -> List[Configuration]:
         """

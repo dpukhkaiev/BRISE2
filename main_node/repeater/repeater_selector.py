@@ -12,6 +12,8 @@ from tools.mongo_dao import MongoDB
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 from tools.reflective_class_import import reflective_class_import
 
+from reconfiguration.effector import Effector
+
 logging.getLogger("pika").propagate = False
 
 
@@ -44,10 +46,8 @@ class RepeaterOrchestration:
             self.experiment_description = experiment.description
         self.performed_measurements = 0
 
-        keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
-        assert len(keys) == 1
-        feature_name = keys[0]
-        self.repeater_parameters = {**self.experiment_description["RepetitionManager"]["Instance"][feature_name], **self.experiment_description["RepetitionManager"]}
+        self.default_config_evaluated = False
+        self._init_experiment_description(self.experiment_description)
 
         objectives = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["Name"]
                  for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
@@ -65,11 +65,22 @@ class RepeaterOrchestration:
 
         self.logger.info("Outliers detection module is disabled")
 
-        self._type = self.get_repeater(True)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             self.connection_thread = self._EventServiceConnection(self)
             self.channel = self.connection_thread.channel
             self.connection_thread.start()
+
+    @Effector.effector("RepetitionManager", full_description=True)
+    def _init_experiment_description(self, experiment_description):
+        # Set the (new) experiment description, this will be used in other parts of the component
+        self.experiment_description = experiment_description # On first init it will not change the logic above
+
+        keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
+        assert len(keys) == 1
+        feature_name = keys[0]
+        self.repeater_parameters = {**self.experiment_description["RepetitionManager"]["Instance"][feature_name], **self.experiment_description["RepetitionManager"]}
+
+        self._type = self.get_repeater(not self.default_config_evaluated)
 
     def get_repeater(self, is_default_configuration: bool = False):
         """
@@ -190,6 +201,7 @@ class RepeaterOrchestration:
 
         elif configuration.status['measured']:
             if configuration.type == Configuration.Type.DEFAULT:
+                self.default_config_evaluated = True
                 self._type = self.get_repeater()
                 publish(exchange='default_configuration_results_exchange',
                         routing_key=self.experiment_id,

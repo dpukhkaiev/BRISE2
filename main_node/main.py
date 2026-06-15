@@ -18,14 +18,15 @@ from core_entities.search_space import Hyperparameter, get_search_space_record
 
 from logger.default_logger import BRISELogConfigurator
 from repeater.repeater_selector import RepeaterOrchestration
-from stop_condition.stop_condition_selector import (
-    launch_stop_condition_threads
-)
+from stop_condition.stop_condition_selector import StopConditionSelector
 from tools.front_API import API
 from tools.initial_config import load_experiment_setup
 
 from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
+
+from reconfiguration.reconfiguration_module import ReconfigurationModule
+from reconfiguration.reconfiguration_behaviour_mock import ReconfigurationBehaviourMock
 
 logging.getLogger("pika").setLevel(logging.WARNING)
 
@@ -80,7 +81,7 @@ class MainThread(threading.Thread):
             if len(argv) > 1:
                 exp_desc_file_path = argv[1]
             else:
-                exp_desc_file_path = './Resources/EnergyExperiment/EnergyExperiment.json'
+                exp_desc_file_path = './Resources/Mock/MockExperiment.json'
                 log_msg = f"The Experiment Setup was not provided and the path to an experiment file was not specified." \
                           f" The default one will be executed: {exp_desc_file_path}"
                 self.logger.warning(log_msg)
@@ -144,8 +145,9 @@ class MainThread(threading.Thread):
         self.logger.debug("Experiment description and global configuration sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
-        launch_stop_condition_threads(self.experiment.unique_id)
-
+        self.sc_selector = StopConditionSelector() # Create and save instance to avoid that the effector is cleaned up!
+        self.sc_selector.launch_stop_condition_threads(self.experiment.unique_id)
+        
         # Instantiate client for Worker Service, establish connection.
         self.wsc_client = WSClient(self.experiment.unique_id)
 
@@ -153,7 +155,11 @@ class MainThread(threading.Thread):
         RepeaterOrchestration(experiment_id=self.experiment.unique_id, experiment=self.experiment)
 
         self.configuration_selection = ConfigurationSelection(self.experiment)
-        
+
+        # Create reconfiguration module
+        self.reconf = ReconfigurationModule(self.experiment, self.configuration_selection)
+        self.behaviour_mock = ReconfigurationBehaviourMock(self.reconf)
+
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
         temp_msg = "Measuring default Configuration."
@@ -222,15 +228,12 @@ class MainThread(threading.Thread):
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
 
-                #exit()
-                # Change Strategies here?
+                # Behaviour mock for benchmarking
+                self.behaviour_mock.new_configuration_measured(configuration)
 
-                # Both working
-                #self.configuration_selection.predictor.change_sampling_startegy({'Sobol': {'Seed': 1, 'Type': 'sobol'}})
-                #self.configuration_selection.predictor.change_sampling_startegy({'MerseneTwister': {'Seed': 1, 'Type': 'mersenne_twister'}})
+                # Reconfiguration
+                self.reconf.check_for_reconfiguration()
 
-                self.configuration_selection.predictor.change_candidate_selector({'RandomMultiPointProposal': {'NumberOfPoints': 1, 'Type': 'random_multi_point'}})
-                exit()
                 self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
                                                    routing_key=self.experiment.unique_id,
                                                    body='')
@@ -252,8 +255,15 @@ class MainThread(threading.Thread):
             self.logger.info(f"Terminating experiment. Reason: {body}")
             self._state = self.State.SHUTTING_DOWN
             self._is_interrupted = True
-            optimal_configuration = self.experiment.get_final_report_and_result()
+            optimal_configuration = self.experiment.get_final_report_and_result(
+                reconf_actions=self.behaviour_mock.reconfiguration_action_amount,
+                reconf_amount=self.reconf.performed_reconfigurations)
             self._state = self.State.IDLE
+
+            # Log reconfigurations
+            self.logger.info("Performed reconfiguration actions: %s", self.behaviour_mock.reconfiguration_action_amount)
+            self.logger.info("Performed reconfigurations: %s", self.reconf.performed_reconfigurations)
+
             self.consume_channel.basic_publish(exchange='experiment_termination_exchange',
                                                routing_key=self.experiment.unique_id,
                                                body='')
@@ -270,7 +280,8 @@ class MainThread(threading.Thread):
                           'default_configuration_results_exchange', 'configurations_results_exchange',
                           'stop_experiment_exchange', 'check_stop_condition_expression_exchange', 'logging_exchange',
                           'get_worker_capacity_exchange', 'get_new_configuration_exchange',
-                          'measure_new_configuration_exchange', 'process_tasks_exchange', 'experiment_api_exchange']
+                          'measure_new_configuration_exchange', 'process_tasks_exchange', 'experiment_api_exchange',
+                          'reconfiguration_exchange']
         for exchange in self.exchanges:
             queue_name = exchange + self.experiment.unique_id
             result = self.consume_channel.queue_declare(queue=queue_name)

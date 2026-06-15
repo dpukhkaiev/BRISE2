@@ -1,27 +1,32 @@
 {
     "Context": {
         "TaskConfiguration": {
-            "TaskName": "mock_experiment",
+            "TaskName": "test",
             "MaxTimeToRunTask": 10,
             "TimeUnit": "seconds",
-            "Scenario": {
-                "function_name": "func1"
-            },
+            "Scenario": {},
             "Objectives": {
-                "result": {
-                    "Name": "result",
+                "Y1": {
+                    "Name": "Y1",
                     "DataType": "float",
                     "Minimization": true,
-                    "MinExpectedValue": -8,
-                    "MaxExpectedValue": Infinity
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
                 }
             }
         },
         "SearchSpace": {
-            "x": {
-                "Lower": 0,
-                "Upper": 50,
-                "Default": 1,
+            "X1": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.5,
                 "Type": "FloatHyperparameter",
                 "Level": 0
             },
@@ -113,46 +118,6 @@
             "InspectionParameters": {
                 "RepetitionPeriod": 1,
                 "TimeUnit": "seconds"
-            }
-        }
-    },
-    "Reconfiguration": {
-        "AfterDefault": {
-            "vp": "SamplingStrategy",
-            "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
-        },
-        "AfterXConfigurations_0": {
-            "amount": 5,
-            "performAmount": 1,
-            "vp": "CandidateSelector",
-            "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
-        },
-        "AfterXConfigurations_1": {
-            "amount": 10,
-            "performAmount": 3,
-            "vp": "CandidateSelector",
-            "description": {"BestMultiPointProposal": {"NumberOfPoints": 1, "Type": "best_multi_point"}}
-        },
-        "TimeLeft": {
-            "time": 10,
-            "vp": "StopCondition",
-            "description": {"Instance": {
-                "TimeBasedSC": {
-                    "Parameters": {
-                            "MaxRunTime": 20,
-                            "TimeUnit": "seconds"
-                        },
-                        "Type": "time_based",
-                        "Name": "t"
-                    }
-                },
-                "StopConditionTriggerLogic": {
-                    "Expression": "t",
-                    "InspectionParameters": {
-                        "RepetitionPeriod": 1,
-                        "TimeUnit": "seconds"
-                    }
-                }
             }
         }
     }

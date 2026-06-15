@@ -10,7 +10,7 @@ BRISELogConfigurator()  # Configuring logging
 
 def run_benchmark():
     # Container creation performs --volume on `./results/` folder. Change wisely results_storage.
-    host_event_service = "event-service"
+    host_event_service = "localhost" # TODO: Change to event-service and make it work
     port_event_service = 49153
     results_storage = "./results/serialized/"
     try:
@@ -18,11 +18,13 @@ def run_benchmark():
         try:
             # ---    Add User defined benchmark scenarios execution below  ---#
             # --- Possible variants: benchmark_test, fill_db ---#
-            runner.fill_db()
+            #runner.fill_db()
+            #runner.dynamic_reconf_stresstest()
+            #runner.dynamic_reconf_scaling_benchmark()
 
             # --- Helper method to move outdated experiments from `./results` folder ---#
             runner.move_redundant_experiments(location=runner.results_storage + "repeater_outdated/")
-
+            
             # ---   Add User defined benchmark scenarios execution above   ---#
         except Exception as exception:
             logging.error("The Benchmarking process interrupted by an exception: %s" % exception, exc_info=True)
