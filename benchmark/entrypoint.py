@@ -19,7 +19,8 @@ def run_benchmark():
             # ---    Add User defined benchmark scenarios execution below  ---#
             # --- Possible variants: benchmark_test, fill_db ---#
             #runner.fill_db()
-            #runner.reconf_benchmark()
+            #runner.dynamic_reconf_stresstest()
+            #runner.dynamic_reconf_scaling_benchmark()
 
             # --- Helper method to move outdated experiments from `./results` folder ---#
             runner.move_redundant_experiments(location=runner.results_storage + "repeater_outdated/")

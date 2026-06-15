@@ -605,29 +605,29 @@ class BRISEBenchmarkRunner:
         return self.counter
     
     @_benchmarkable
-    def reconf_benchmark(self):
-        self._experiment_timeout = 1 * 60
+    def dynamic_reconf_stresstest(self):
+        """Test that no crashes or failures happen due to the reconfiguration"""
 
         reconf_sampling_and_candidate = {
-            "Reconfiguration": {
-                "AfterXConfigurations_0": {
-                    "amount": 5,
-                    "performAmount": 1,
-                    "vp": "SamplingStrategy",
-                    "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
-                },
-                "AfterXConfigurations_1": {
-                    "amount": 10,
-                    "performAmount": 1,
-                    "vp": "CandidateSelector",
-                    "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
+                "Reconfiguration": {
+                    "AfterXConfigurations_0": {
+                        "amount": 5,
+                        "performAmount": 1,
+                        "vp": "SamplingStrategy",
+                        "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
+                    },
+                    "AfterXConfigurations_1": {
+                        "amount": 10,
+                        "performAmount": 1,
+                        "vp": "CandidateSelector",
+                        "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
+                    }
                 }
             }
-        }
 
         reconf_stop_condition = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 5,
                     "performAmount": 1,
                     "vp": "StopCondition",
@@ -655,7 +655,7 @@ class BRISEBenchmarkRunner:
 
         reconf_optimizer = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 5,
                     "performAmount": 1,
                     "vp": "Optimizer",
@@ -670,7 +670,7 @@ class BRISEBenchmarkRunner:
 
         reconf_validator = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 5,
                     "performAmount": 1,
                     "vp": "Validator",
@@ -693,7 +693,7 @@ class BRISEBenchmarkRunner:
 
         reconf_surrogate = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 5,
                     "performAmount": 1,
                     "vp": "Surrogate",
@@ -712,7 +712,7 @@ class BRISEBenchmarkRunner:
 
         reconf_rep_manager = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 5,
                     "performAmount": 1,
                     "vp": "RepetitionManager",
@@ -731,7 +731,7 @@ class BRISEBenchmarkRunner:
 
         reconf_transfer_learning = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 2,
                     "performAmount": 1,
                     "vp": "TransferLearning",
@@ -742,23 +742,27 @@ class BRISEBenchmarkRunner:
 
         reconf_single_optimizer = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 2,
                     "performAmount": 1,
-                    "vp": "Optimizer_0",
+                    "vp": "Optimizer",
                     "identifiers": ["Model_1"],
-                    "description": {"Instance": { "RandomSearch": {
-                        "SamplingSize": 500,
-                        "MultiObjective": True,
-                        "Type": "random_search"
-                    }}}
+                    "description": {
+                        "Instance": {
+                            "RandomSearch": {
+                            "SamplingSize": 300,
+                            "MultiObjective": True,
+                            "Type": "random_search"
+                            }
+                        }
+                    }
                 }
             }
         }
 
         reconf_single_surrogate = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 2,
                     "performAmount": 1,
                     "vp": "Surrogate_0",
@@ -777,10 +781,10 @@ class BRISEBenchmarkRunner:
 
         reconf_model = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 2,
                     "performAmount": 1,
-                    "vp": "TransferLearning",
+                    "vp": "Model_0",
                     "description": {
                         "MultiObjectiveHandling": {
                                 "SurrogateType": {
@@ -837,7 +841,7 @@ class BRISEBenchmarkRunner:
 
         reconf_predictor = {
             "Reconfiguration": {
-                  "AfterXConfigurations": {
+                "AfterXConfigurations": {
                     "amount": 2,
                     "performAmount": 1,
                     "vp": "Predictor",
@@ -913,15 +917,30 @@ class BRISEBenchmarkRunner:
             }
         }
 
-        self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
-        experiment_description = self.base_experiment_description
-        #experiment_description.update(deepcopy(reconf_sampling_and_candidate))
-        self.execute_experiment(experiment_description, number_of_repetitions=1)
-        
-        return self.counter
-    
-        # Change optimizer, validator, surrogate, etc. during experiment
+        one_min_stop = {"StopCondition": {
+                "Instance": {
+                    "TimeBasedSC": {
+                        "Parameters": {
+                            "MaxRunTime": 60,
+                            "TimeUnit": "seconds"
+                        },
+                        "Type": "time_based",
+                        "Name": "t"
+                    }
+                },
+                "StopConditionTriggerLogic": {
+                    "Expression": "t",
+                    "InspectionParameters": {
+                        "RepetitionPeriod": 1,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
+        }
+
+        # Only run using docker!!
+
+        # Change optimizer, validator, surrogate, etc. during experiment - Passed
         self._base_experiment_description, self._base_search_space = \
             load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
         experiment_description = self.base_experiment_description
@@ -929,40 +948,142 @@ class BRISEBenchmarkRunner:
         for reconf_skeleton in [reconf_optimizer, reconf_validator, reconf_surrogate, reconf_rep_manager]:
             experiment_description.update(deepcopy(reconf_skeleton))
             self.execute_experiment(experiment_description, number_of_repetitions=1)
-
-        # Change sampling strategy, candidate selector and stop condition during the experiment for all test cases
+        
+        # Change sampling strategy, candidate selector and stop condition during the experiment for all test cases - Passed
         for reconf_skeleton in [reconf_sampling_and_candidate, reconf_stop_condition]:
-            for exp_num in range(1):#15
+            for exp_num in [1, 5]:
                 self._base_experiment_description, self._base_search_space = \
                     load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_" + str(exp_num) + ".json")
                 experiment_description = self.base_experiment_description
-                experiment_description.update(deepcopy(reconf_sampling_and_candidate))
+                experiment_description.update(deepcopy(reconf_skeleton))
                 self.execute_experiment(experiment_description, number_of_repetitions=1)
-
-        # Turn of transfer learning, and predictor
+        
+        # Turn of transfer learning, and predictor - Passed
         self._base_experiment_description, self._base_search_space = \
             load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
         experiment_description = self.base_experiment_description
-
+        experiment_description.update(deepcopy(one_min_stop))
+        
         for reconf_skeleton in [reconf_transfer_learning, reconf_predictor]:
             experiment_description.update(deepcopy(reconf_skeleton))
             self.execute_experiment(experiment_description, number_of_repetitions=1)
-
+        
         # Change single optimizer
-        self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_3.json")
-        experiment_description = self.base_experiment_description
-        experiment_description.update(deepcopy(reconf_single_optimizer))
-        self.execute_experiment(experiment_description, number_of_repetitions=1)
-
-        # Change entire model and single surrogate
         self._base_experiment_description, self._base_search_space = \
             load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
         experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(reconf_single_optimizer))
+        experiment_description.update(deepcopy(one_min_stop))
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
+        
+        # Change entire model and single surrogate - Passed
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(one_min_stop))
 
         for reconf_skeleton in [reconf_model, reconf_single_surrogate]:
             experiment_description.update(deepcopy(reconf_skeleton))
             self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        return self.counter
+
+    @_benchmarkable
+    def dynamic_reconf_scaling_benchmark(self):
+        """Benchmark the scaling of the dynamic reconfiguration"""
+
+        config_amount = 100
+        exp_rep_amount = 5
+        scalings = [1, 10, 20, 40, 50, 60, 80, 100]
+
+        reconf_sampling_strategy = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "SamplingStrategy",
+                    "description": {"Sobol": {"Seed": 1, "Type": "sobol"}}
+                }
+            }
+        }
+
+        reconf_candidate = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "CandidateSelector",
+                    "description": {"RandomMultiPointProposal": {"NumberOfPoints": 1, "Type": "random_multi_point"}}
+                }
+            }
+        }
+
+        reconf_single_surrogate = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "Surrogate_0",
+                    "identifiers": ["Model_1"],
+                    "description": {
+                        "Instance": {
+                            "ModelMock": {
+                                "MultiObjective": True,
+                                "Type": "model_mock"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        quanity_based_stop = {"StopCondition": {
+                "Instance": {
+                    "QuantityBasedSC": {
+                        "Parameters": {
+                            "MaxConfigs": config_amount
+                        },
+                        "Type": "quantity_based",
+                        "Name": "Q"
+                    }
+                },
+                "StopConditionTriggerLogic": {
+                    "Expression": "Q",
+                    "InspectionParameters": {
+                        "RepetitionPeriod": 1,
+                        "TimeUnit": "seconds"
+                    }
+                }
+            }
+        }
+
+        # Create experiment descriptions #
+        # Change sampling strategy and candidiate selector
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
+        experiment_description_1 = self.base_experiment_description
+        experiment_description_1.update(deepcopy(quanity_based_stop))
+
+        # Change single surrogate in multiple models
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_8.json")
+        experiment_description_2 = self.base_experiment_description
+        experiment_description_2.update(deepcopy(quanity_based_stop))
+
+        # Data structure to define which descriptions are used to test what scalings
+        reconf_data = [(experiment_description_1, [reconf_sampling_strategy, reconf_candidate]),
+                       (experiment_description_2, [reconf_single_surrogate])]
+
+        for experiment_description, reconf_skeletons in reconf_data:
+            for reconf_skeleton in reconf_skeletons:
+                for s in scalings:
+                    # Update how often the reconfiguration occurs
+                    new_amount = int(config_amount / s) if s != 1 else int(config_amount / 2)
+                    reconf_skeleton["Reconfiguration"]["AfterXConfigurations"]["amount"] = new_amount
+                    reconf_skeleton["Reconfiguration"]["AfterXConfigurations"]["performAmount"] = s
+                    
+                    experiment_description.update(deepcopy(reconf_skeleton))
+                    self.execute_experiment(experiment_description, number_of_repetitions=exp_rep_amount)
 
         return self.counter
 
