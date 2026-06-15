@@ -32,7 +32,7 @@ class TestApproachPerformance:
         cs = ConfigurationSelection(experiment)
         return ReconfigurationModule(experiment, cs)
     
-    @pytest.mark.skip(reason="dont need it now")
+    @pytest.mark.skip(reason="Just for measuring")
     def test_change_surrogate(self, reconf_module:ReconfigurationModule):
         start = timeit.default_timer()
 
@@ -54,6 +54,7 @@ class TestApproachPerformance:
 
         self.save_result("surrogate", iterations, duration)
 
+    @pytest.mark.skip(reason="Just for measuring")
     def test_change_single_surrogate(self, reconf_module_multi_features_single_model:ReconfigurationModule):
         reconf_module = reconf_module_multi_features_single_model
 
@@ -85,6 +86,7 @@ class TestApproachPerformance:
         self.save_result("single_surrogate", iterations * 2, duration)
         #assert False
 
+    @pytest.mark.skip(reason="Just for measuring")
     def test_change_single_optimizer(self, reconf_module_multi_features_single_model:ReconfigurationModule):
         """Test to change a single optimizer"""
         reconf_module = reconf_module_multi_features_single_model
@@ -125,6 +127,7 @@ class TestApproachPerformance:
         self.save_result("single_optimizer", iterations * 2, duration)
         #assert False
 
+    @pytest.mark.skip(reason="Just for measuring")
     def test_change_single_surrogate_on_multiple_models(self, reconf_module_multi_models:ReconfigurationModule):
         """Test to change a single surrogate on a experiment with multiple models"""
         reconf_module = reconf_module_multi_models

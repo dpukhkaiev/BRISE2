@@ -81,7 +81,7 @@ class MainThread(threading.Thread):
             if len(argv) > 1:
                 exp_desc_file_path = argv[1]
             else:
-                exp_desc_file_path = './Resources/Mock/MockExperiment.json'
+                exp_desc_file_path = './Resources/EnergyExperiment/EnergyExperiment.json'
                 log_msg = f"The Experiment Setup was not provided and the path to an experiment file was not specified." \
                           f" The default one will be executed: {exp_desc_file_path}"
                 self.logger.warning(log_msg)
