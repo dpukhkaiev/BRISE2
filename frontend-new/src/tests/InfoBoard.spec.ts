@@ -53,7 +53,6 @@ describe('InfoBoard.vue', () => {
         vi.clearAllMocks()
         eventCallbacks = {}
 
-        // WICHTIG: visualViewport simulieren, um den Vuetify-Absturz bei v-snackbar zu verhindern
         Object.defineProperty(window, 'visualViewport', {
             writable: true,
             configurable: true,
