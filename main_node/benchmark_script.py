@@ -515,11 +515,11 @@ class Runner:
         # Create experiment descriptions #
         # Change sampling strategy and candidiate selector
         self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_0.json")
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/test_case_dynamic.json")
         experiment_description_1 = self.base_experiment_description
         
-        del experiment_description_1["TransferLearning"]
-        experiment_description_1["RepetitionManager"]["Instance"]["QuantityBased"]["MaxTasksPerConfiguration"] = 4
+        #del experiment_description_1["TransferLearning"]
+        #experiment_description_1["RepetitionManager"]["Instance"]["QuantityBased"]["MaxTasksPerConfiguration"] = 4
         experiment_description_1.update(deepcopy(quanity_based_stop))
 
         # Change single surrogate in multiple models
