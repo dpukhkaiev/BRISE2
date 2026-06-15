@@ -554,5 +554,6 @@ class Runner:
 if __name__ == "__main__":
     runner = Runner()
     runner.clear_results()
+    #runner.dynamic_reconf_stresstest()
     runner.dynamic_reconf_scaling_benchmark()
     runner.show_results()

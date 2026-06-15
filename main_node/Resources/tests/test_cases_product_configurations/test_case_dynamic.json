@@ -1,27 +1,32 @@
 {
     "Context": {
         "TaskConfiguration": {
-            "TaskName": "mock_experiment",
-            "MaxTimeToRunTask": 30,
+            "TaskName": "test",
+            "MaxTimeToRunTask": 10,
             "TimeUnit": "seconds",
-            "Scenario": {
-                "function_name": "func1"
-            },
+            "Scenario": {},
             "Objectives": {
-                "result": {
-                    "Name": "result",
+                "Y1": {
+                    "Name": "Y1",
                     "DataType": "float",
                     "Minimization": true,
-                    "MinExpectedValue": -8,
-                    "MaxExpectedValue": Infinity
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
                 }
             }
         },
         "SearchSpace": {
-            "x": {
-                "Lower": 0,
-                "Upper": 50,
-                "Default": 1,
+            "X1": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": 0.0,
+                "Upper": 1.0,
+                "Default": 0.5,
                 "Type": "FloatHyperparameter",
                 "Level": 0
             },
