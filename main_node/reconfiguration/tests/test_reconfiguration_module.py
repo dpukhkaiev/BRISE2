@@ -700,6 +700,15 @@ class TestReconfigurationModule:
         assert cs.predictor.window_size == new_size
         assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size
 
+        # Change via "multiple" wrapper
+        new_size = 0.8
+        reconf_module.change_multiple_variables([{"vp": "Predictor", "new_values": {"WindowSize": new_size}}])
+        reconf_module.done().reconfigure()
+
+        # Assert that the change was correct
+        assert cs.predictor.window_size == new_size
+        assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size
+
     def test_update_surrogate_and_optimizers_with_reconfiguration(self, get_experiment):
         """Test that the update_surrogate_and_optimizers() in model.py works with the reconfiguration"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
@@ -788,7 +797,7 @@ class TestReconfigurationModule:
 
     def test_request_change_method(self, reconf_module:ReconfigurationModule):
         """Test the callback for the queue"""
-        # Test the redirect to change_variant
+        # 1) Test the redirect to change_variant
         feature_data = {"RandomMultiPointProposal": {
                         "NumberOfPoints": 10,
                         "Type": "random_multi_point"}
@@ -806,7 +815,7 @@ class TestReconfigurationModule:
         assert reconf_module._requested_changes["CandidateSelector"]["description"] == feature_data
         assert reconf_module._requested_changes["CandidateSelector"]["identifiers"] is None
 
-        # Test redirection to change_variables
+        # 2) Test redirection to change_variables
         values = {"WindowSize": 0.9}
         event = {
             "type": "variables",
@@ -820,7 +829,7 @@ class TestReconfigurationModule:
         assert "Predictor_Values" in reconf_module._requested_changes
         assert reconf_module._requested_changes["Predictor_Values"]["description"] == values
 
-        # Test invalid event type
+        # 3) Test invalid event type
         event_invalid = {
             "type": "unknown",
             "data": {}
@@ -828,6 +837,55 @@ class TestReconfigurationModule:
 
         with pytest.raises(ValueError):
             reconf_module.request_change(None, None, None, json.dumps(event_invalid).encode())
+
+        # 4) Test change multiple variants/variables
+        reconf_module._requested_changes.clear()
+        assert len(reconf_module._requested_changes) == 0
+        
+        event_candidate = {
+            "type": "variant",
+            "data": {
+                "vp": "CandidateSelector",
+                "new_feature": feature_data
+            }
+        }
+
+        event_variables = {
+            "type": "variables",
+            "data": {
+                "vp": "Predictor",
+                "new_values": values
+            }
+        }
+
+        reconf_module.request_change(None, None, None, json.dumps([event_candidate, event_variables]).encode())
+
+        assert "CandidateSelector" in reconf_module._requested_changes
+        assert reconf_module._requested_changes["CandidateSelector"]["description"] == feature_data
+        assert reconf_module._requested_changes["CandidateSelector"]["identifiers"] is None
+
+        assert "Predictor_Values" in reconf_module._requested_changes
+        assert reconf_module._requested_changes["Predictor_Values"]["description"] == values
+
+    def test_change_variants(self, reconf_module:ReconfigurationModule):
+        """Test that the change_variants method process data correctly"""
+        samp_desc = {"MersenneTwister": {"Seed": 1, "Type": "mersenne_twister"}}
+        optimizer_desc = {"Instance": { "RandomSearch": {
+            "SamplingSize": 96,
+            "MultiObjective": False,
+            "Type": "random_search"
+        }}}
+        reconf_module.change_variants([{"vp": "SamplingStrategy", "new_feature": samp_desc},
+                                       {"vp": "Optimizer", "new_feature": optimizer_desc, "parent_nodes": ["Model"]}])
+
+        assert "SamplingStrategy" in reconf_module._requested_changes
+        assert reconf_module._requested_changes["SamplingStrategy"]["description"] == samp_desc
+        assert reconf_module._requested_changes["SamplingStrategy"]["identifiers"] is None
+
+        assert "Optimizer" in reconf_module._requested_changes
+        assert reconf_module._requested_changes["Optimizer"]["description"] == optimizer_desc
+        assert reconf_module._requested_changes["Optimizer"]["identifiers"] == ["Model"]
+
 
     ## Helper
     def __get_first_elem(self, map):

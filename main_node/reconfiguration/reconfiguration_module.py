@@ -61,7 +61,7 @@ class ReconfigurationModule():
     @configure_method
     def change_variant(self, variability_point:str, new_feature:list[dict]|dict, parent_nodes:None|list=None):
         """Request to change the given variability point to a new variant"""
-        # Select prev_feature by Type or Key in feature model or both?
+        # Search variability point
         parent_keys_list = self._get_variability_point_keys(variability_point, parent_nodes)
         if len(parent_keys_list) == 0:
             raise ValueError("Variability point " + variability_point + " was not found in the feature selection!")
@@ -79,7 +79,7 @@ class ReconfigurationModule():
     @configure_method
     def change_variables(self, variability_point:str, new_values:dict):
         """Request to change the values of a component with a given variability point"""
-        # Select prev_feature by Type or Key in feature model or both?
+        # Search variability point
         parent_keys_list = self._get_variability_point_keys(variability_point, None)
         if len(parent_keys_list) == 0:
             raise ValueError("Variability point " + variability_point + " was not found in the feature selection!")
@@ -90,9 +90,48 @@ class ReconfigurationModule():
 
         self._requested_changes[variability_point + "_Values"] = {"description": new_values, "identifiers": None}
 
+    @configure_method
+    def change_variants(self, change_requests:list[dict]):
+        """Wrapper for changing multiple variants at once.
+        
+        :params change_request: Dictionaries in list must contain the keys "vp", "new_feature" and optionally "parent_nodes"
+        """
+
+        for request in change_requests:
+            if "vp" not in request or "new_feature" not in request:
+                self.logger.warning("Skipped variant change request due to missing key: %s", request)
+                continue
+
+            self.change_variant(request["vp"], request["new_feature"], request.get("parent_nodes"))
+
+    @configure_method
+    def change_multiple_variables(self, change_requests:list[dict]):
+        """Wrapper for changing multiple variables at once.
+        
+        :params change_request: Dictionaries in list must contain the keys "vp", "new_values"
+        """
+        for request in change_requests:
+            if "vp" not in request or "new_values" not in request:
+                self.logger.warning("Skipped variable change request due to missing key: %s", request)
+                continue
+
+            self.change_variables(request["vp"], request["new_values"])
+
     def request_change(self, ch, method, properties, body):
         """Determine the requested change from the queue"""
         event = json.loads(body.decode())
+
+        # Process list of requests
+        if isinstance(event, list):
+            for e in event:
+                self.__handle_change_request_event(e)
+            return
+
+        # Single request
+        self.__handle_change_request_event(event)
+        
+    def __handle_change_request_event(self, event:dict):
+        """Perform a reconfiguration based on the event."""
         event_type = event["type"]
         event_data = event.get("data", {})
 
