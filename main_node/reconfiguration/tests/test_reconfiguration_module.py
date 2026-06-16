@@ -792,8 +792,74 @@ class TestReconfigurationModule:
         # Assert that change was successful
         assert len(model.mapping_optimizer_objective) == 5
         assert all([isinstance(optimizer, MOEA) for optimizer in list(model.mapping_optimizer_objective.keys())])
-        assert len(model._optimizer_map) == 5
+
+    def test_cleanup_surrogates_and_optimizers_on_reconf(self, get_experiment):
+        """Test that the cleanup process for optimizers and surrogates is working"""
+        reconf_module = self._get_reconf_module(get_experiment, experiment_num=5)
+        cs = reconf_module.configuration_selection
+
+        # Assert that config was loaded correctly
+        assert len(cs.predictor.mapping_region_model) == 1
+        
+        model = self.__get_first_elem(cs.predictor.mapping_region_model)
+        assert len(model.mapping_surrogate_objective) == 11
+        assert len(model.mapping_optimizer_objective) == 1
+
+        # Assert that internal maps are correctly
         assert len(model._surrogate_map) == 5
+        assert len(model._optimizer_map) == 1
+
+        assert list(model._surrogate_map.keys()) == ["Surrogate_" + str(i) for i in range(5)]
+        assert list(model._optimizer_map.keys()) == ["Optimizer"]
+
+        old_surrogate_map = copy.copy(model._surrogate_map)
+        old_optimizer_map = copy.copy(model._optimizer_map)
+
+        old_optimizer = old_optimizer_map["Optimizer"][0]
+
+        for key, surrogates in model._surrogate_map.items():
+            assert len(surrogates) == 3 if key == "Surrogate_0" else 2
+
+        # Change
+        surrogate_desc = {
+            "Instance": {
+                "ModelMock": {
+                    "MultiObjective": True,
+                    "Type": "model_mock"
+                }
+            }
+        }
+
+        optimizer_desc = {
+            "Instance": {
+                "RandomSearch": {
+                    "SamplingSize": 96,
+                    "MultiObjective": False,
+                    "Type": "random_search"
+                }
+            }
+        }
+
+        reconf_module.change_variant("Surrogate_1", surrogate_desc)
+        reconf_module.change_variant("Optimizer", optimizer_desc)
+        reconf_module.done().reconfigure()
+
+        # Assert old surrogates/optimizers were deleted and maps are correct
+        assert len(model._optimizer_map) == 1
+        assert old_optimizer_map != model._optimizer_map
+        assert old_optimizer != model._optimizer_map["Optimizer"][0]
+        assert all([o != old_optimizer for o in model.mapping_optimizer_objective.keys()])
+
+        assert len(model._surrogate_map) == 5
+        for key, surrogates in model._surrogate_map.items():
+            assert len(surrogates) == 3 if key == "Surrogate_0" or key == "Surrogate_1" else 2
+
+            if key == "Surrogate_1":
+                assert surrogates != old_surrogate_map[key]
+                continue
+
+            assert surrogates == old_surrogate_map[key]
+        assert all([s not in old_surrogate_map["Surrogate_1"] for s in model.mapping_surrogate_objective.keys()])
 
     def test_request_change_method(self, reconf_module:ReconfigurationModule):
         """Test the callback for the queue"""

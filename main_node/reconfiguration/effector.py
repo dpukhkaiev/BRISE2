@@ -28,6 +28,7 @@ class Effector(Generic[T]):
     def change(self, description):
         """Calls the effector function with the given description"""
         if self.args is not None:
+            self.args["initial"] = False # Indicate that the change is a reconfiguration
             self._func(self._instance, description, **self.args)
             return
 
@@ -50,7 +51,7 @@ class Effector(Generic[T]):
                     found_identifier = [found_identifier]
 
                 Effector(vp, self, func, found_identifier,
-                         args=kwargs,
+                         args=kwargs if len(kwargs) > 0 else None,
                          full_description=full_description)
 
                 return func(self, *args, **kwargs)
