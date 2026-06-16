@@ -37,23 +37,3 @@ class ReconfigurationExecutor():
                     continue
 
             e.change(full_description if e.full_description else new_description)
-
-    def _get_descriptions(self, vp:str, experiment_description:dict, identifiers:list|None = None):
-        """Return a list with the description of all variants for the given variability point in the given model"""
-        descriptions = []
-
-        model_name = "Model"
-
-        # Get identifier for model_name
-        if identifiers is not None:
-            for i in identifiers:
-                if i.startswith("Model"):
-                    model_name = i
-                    break
-
-        model_description = experiment_description["ConfigurationSelection"]["Predictor"][model_name]
-        for key, description in model_description.items():
-            if key.startswith(vp):
-                descriptions.append(description)
-
-        return descriptions
