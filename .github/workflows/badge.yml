@@ -1,0 +1,60 @@
+name: Update Coverage Badge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-percentage
+          path: .
+
+      - name: Extract coverage % - TODO: remove color process here
+        id: coverage
+        run: |
+          LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' main_node/coverage.xml | head -n1 || echo 0)
+          PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
+          echo "coverage=${PERCENT}" >> $GITHUB_OUTPUT
+
+          # Choose color based on percentage
+          if (( PERCENT >= 90 )); then
+              COLOR=brightgreen
+          elif (( PERCENT >= 80 )); then
+              COLOR=green
+          elif (( PERCENT >= 70 )); then
+              COLOR=yellowgreen
+          elif (( PERCENT >= 60 )); then
+              COLOR=yellow
+          elif (( PERCENT >= 50 )); then
+              COLOR=orange
+          else
+              COLOR=red
+          fi
+
+          # Create URL with percentage
+          url="https://img.shields.io/badge/Code%20Coverage-${PERCENT}%25-${COLOR}?style=flat"
+          curl -sSL --fail "$url" -o badge-data/coverage.svg
+
+      - name: Commit and push badge
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add badge-data/coverage.svg
+          git commit -m "Update coverage badge [skip ci]" || echo "No changes to commit"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }} --force
