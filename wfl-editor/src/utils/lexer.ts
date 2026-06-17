@@ -82,9 +82,10 @@ export const ID = createToken({
 
 export const allTokens = [
     WhiteSpace,
+    // for future import feature
     LineComment,
     BlockComment,
-    // Keywords 
+
     NominalHyperparameter,
     OrdinalHyperparameter,
     IntegerHyperparameter,
@@ -101,4 +102,6 @@ export const allTokens = [
     ID
 ]
 
+
+// initialise lexer for extern use
 export const WflLexer = new Lexer(allTokens)

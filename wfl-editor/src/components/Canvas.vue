@@ -50,7 +50,6 @@ onConnect((connection) => {
     addEdges(connection)
     graphStore.setEdges(flowEdges.value)
 
-
 })
 
 // for store to track changes of the nodes
