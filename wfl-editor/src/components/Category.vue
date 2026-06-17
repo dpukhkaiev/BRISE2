@@ -15,10 +15,6 @@ const { activeNodeId } = storeToRefs(graphStore)
 const activeNode = computed(() => graphStore.activeNode as any)
 
 
-// for expanding table 
-const isVisible = ref(false)
-
-
 const connectedChildren = computed(() => {
     const children = activeNode.value?.data.childrenIds || []
     return children
