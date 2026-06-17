@@ -33,7 +33,11 @@ class MeanShiftClustering(ClusteringAlgorithm):
             self.bandwidth = estimate_bandwidth(X, quantile=self.quantile)
         if self.bandwidth <= 0.0:
             self.bandwidth = 0.5
-        ms = MeanShift(bandwidth=self.bandwidth, bin_seeding=True)
+        
+        # disable bin_seeding for smaller datasets
+        use_bin_seeding = self.bandwidth > 0.5
+        ms = MeanShift(bandwidth=self.bandwidth, bin_seeding=use_bin_seeding)
+        
         ms.fit(X)
         for i, cluster in enumerate(ms.labels_):
             self.logger.debug(f"Experiment {similar_experiments[i]} - belongs to cluster {cluster}")
