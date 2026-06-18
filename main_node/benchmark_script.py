@@ -492,6 +492,63 @@ class Runner:
             }
         }
 
+        reconf_model = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "Model",
+                    "description": {
+                        "Surrogate": {
+                            "Instance": {
+                                "GaussianProcessRegressor": {
+                                    "MultiObjective": True,
+                                    "Parameters": {
+                                        "n_restarts_optimizer": 2
+                                    },
+                                    "Type": "sklearn_model_wrapper",
+                                    "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
+                                }
+                            }
+                        },
+                        "Optimizer": {
+                            "Instance": {
+                                "MOEA": {
+                                    "Generations": 10,
+                                    "PopulationSize": 100,
+                                    "Algorithms": {
+                                        "GACO": {
+                                            "MultiObjective": {}
+                                        }
+                                    },
+                                    "Type": "moea"
+                                }
+                            }
+                        },
+                        "Validator": {
+                            "ExternalValidator": {
+                                "QualityValidator": {
+                                    "Split": {
+                                        "HoldOut": {
+                                            "TrainingSet": 0.7
+                                        }
+                                    },
+                                    "QualityThreshold": 0.5,
+                                    "Type": "quality_validator"
+                                }
+                            }
+                        },
+                        "CandidateSelector": {
+                            "BestMultiPointProposal": {
+                                "NumberOfPoints": 1,
+                                "Type": "best_multi_point"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         quanity_based_stop = {"StopCondition": {
                 "Instance": {
                     "QuantityBasedSC": {
@@ -529,7 +586,7 @@ class Runner:
         experiment_description_2.update(deepcopy(quanity_based_stop))
 
         # Data structure to define which descriptions are used to test what scalings
-        reconf_data = [(experiment_description_1, [reconf_sampling_strategy, reconf_candidate]),
+        reconf_data = [(experiment_description_1, [reconf_sampling_strategy, reconf_candidate, reconf_model]),
                        (experiment_description_2, [reconf_single_surrogate])]
 
         for experiment_description, reconf_skeletons in reconf_data:
