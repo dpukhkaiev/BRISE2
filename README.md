@@ -1,6 +1,7 @@
 # BRISE 2.6.0
 ##### Benchmark Reduction via Adaptive Instance Selection
 ![BRISE-CI](https://github.com/dpukhkaiev/BRISE2/workflows/BRISE-CI/badge.svg)
+![CodeCoverage](./badge-data/coverage.svg)
 
 A Software Product Line for Parameter Tuning 
 
@@ -19,6 +20,8 @@ To get a working instance of BRISE:
 Run  `./brise.sh help` to see possible options for starting it. For example, if you want to overwrite the standard addresses and ports used by the `event-service` or `database`, you may use the following command:
 `./brise.sh up -m docker-compose -eAMQP 49153  -eGUI 49154 -db_host localhost -db_port 27017`
 If no values are specified, the default ones will be taken from the [deployment file](./deployment_settings/LocalDeployment.json).
+
+> **_NOTE:_**  If you use a ARM processor go to `waffle/Dockerfile` and uncomment/comment the respective FROM lines. The default is AMD.
 
 `NOTE. brise.sh is designed for UNIX operating system. Running the script under Windows Subsystem for Linux may 
 require additional actions, for example, using [dos2unix](https://linux.die.net/man/1/dos2unix) tools.` 
