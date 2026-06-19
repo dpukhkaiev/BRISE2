@@ -151,8 +151,10 @@ class AcceptableErrorBasedType(Repeater):
 
             else:
                 # Or we don't adapt thresholds
-                for acceptable_error in self.base_acceptable_errors:
-                    thresholds.append(acceptable_error)
+                try:
+                    thresholds.extend(self.base_acceptable_errors)
+                except TypeError:
+                    thresholds.extend([self.base_acceptable_errors] * len(self.objectives))
 
             # Simple implementation of possible multi-dim Repeater decision-making:
             # If any of resulting dimensions are not accurate - just terminate.
