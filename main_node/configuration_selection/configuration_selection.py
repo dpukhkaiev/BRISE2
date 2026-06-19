@@ -12,6 +12,7 @@ from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 from transfer_learning.transfer_learning_module import TransferLearningOrchestrator
 
 from reconfiguration.effector import Effector
+from reconfiguration.reconfiguration_module import ReconfigurationModule
 
 class ConfigurationSelection:
     """
@@ -97,7 +98,13 @@ class ConfigurationSelection:
                                                         transfer_submodules["Model_transfer"].
                                                         recommend_best_model(similar_experiments))
                     if transferred_mapping_region_model is not None:
-                        self.predictor.update_mapping_region_model(transferred_mapping_region_model)
+                        reconf = ReconfigurationModule(self.experiment)
+                        for model_name, descriptions in transferred_mapping_region_model.items():
+                            for vp, desc in descriptions.items():
+                                reconf.change_variant(vp, desc, [model_name])
+                        reconf.done().reconfigure()
+                        #self.predictor.update_mapping_region_model(transferred_mapping_region_model)
+                        #ReconfigurationModule.instance.change_variants().done().reconfigure()
                         self.logger.info(f"New combination of surrogate models is recommended for this iteration: \
                                                                  {transferred_mapping_region_model.values()}")
                 # Configuration transfer

@@ -6,7 +6,6 @@ import json
 from reconfiguration.reconfiguration_executor import ReconfigurationExecutor
 
 from core_entities.experiment import Experiment
-from configuration_selection.configuration_selection import ConfigurationSelection
 
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
@@ -24,12 +23,14 @@ class State(Enum):
 class ReconfigurationModule():
     """Handle reconfiguration of all components"""
 
-    def __init__(self, experiment:Experiment, configuration_selection:ConfigurationSelection):
+    instance = None
+
+    def __init__(self, experiment:Experiment):
+        """Init the module if arguments are not None. Otherwise return the current instance/singleton"""
         self.state = State.IDLE
         self.logger = logging.getLogger(__name__)
 
         self.experiment = experiment
-        self.configuration_selection = configuration_selection
 
         self.performed_reconfigurations = 0
 
@@ -40,6 +41,8 @@ class ReconfigurationModule():
         self._requested_changes = {}
 
         self.executor = ReconfigurationExecutor()
+
+        ReconfigurationModule.instance = self
 
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             self.connection_thread = self._EventServiceConnection(self)
@@ -104,6 +107,8 @@ class ReconfigurationModule():
 
             self.change_variant(request["vp"], request["new_feature"], request.get("parent_nodes"))
 
+        return self
+
     @configure_method
     def change_multiple_variables(self, change_requests:list[dict]):
         """Wrapper for changing multiple variables at once.
@@ -116,6 +121,8 @@ class ReconfigurationModule():
                 continue
 
             self.change_variables(request["vp"], request["new_values"])
+
+        return self
 
     def request_change(self, ch, method, properties, body):
         """Determine the requested change from the queue"""
@@ -256,7 +263,7 @@ class ReconfigurationModule():
             :param configuration_selection: instance of ConfigurationSelection class
             """
             self.reconf_module: ReconfigurationModule = reconf_module
-            self.experiment_id = self.reconf_module.configuration_selection.experiment.unique_id
+            self.experiment_id = self.reconf_module.experiment.unique_id
             super().__init__(reconf_module)
 
         def bind_and_consume(self):

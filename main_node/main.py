@@ -157,7 +157,7 @@ class MainThread(threading.Thread):
         self.configuration_selection = ConfigurationSelection(self.experiment)
 
         # Create reconfiguration module
-        self.reconf = ReconfigurationModule(self.experiment, self.configuration_selection)
+        self.reconf = ReconfigurationModule(self.experiment)
         self.behaviour_mock = ReconfigurationBehaviourMock(self.reconf)
 
         dch_o = DefaultConfigHandlerOrchestrator()
