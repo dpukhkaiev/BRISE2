@@ -94,18 +94,27 @@ class ConfigurationSelection:
                 # Model transfer
                 model_transfer_module = self.transfer_learning_orchestrator.transfer_submodules["Model_transfer"]
                 if model_transfer_module is not None:
-                    transferred_mapping_region_model = (self.transfer_learning_orchestrator.
-                                                        transfer_submodules["Model_transfer"].
-                                                        recommend_best_model(similar_experiments))
-                    if transferred_mapping_region_model is not None:
-                        reconf = ReconfigurationModule.instance if ReconfigurationModule.instance is not None else ReconfigurationModule(self.experiment)
-                        for model_name, descriptions in transferred_mapping_region_model.items():
-                            for vp, desc in descriptions.items():
-                                reconf.change_variant(vp, desc, [model_name])
-                        reconf.done().reconfigure()
+                    transferred_mapping_models = (self.transfer_learning_orchestrator.
+                                                  transfer_submodules["Model_transfer"].
+                                                  recommend_best_model(similar_experiments))
+                    if transferred_mapping_models is not None:
+                        reconf = ReconfigurationModule.get_or_create(self.experiment)
+                        for model_name, descriptions in transferred_mapping_models.items():
+                            # Check that the regions match
+                            model = self.predictor.get_model_by_name(model_name)
+                            if model is None or model.region != descriptions["region"]:
+                                continue
+                            
+                            # Update
+                            for vp in ["Surrogate", "Optimizer"]:
+                                reconf.change_variant(vp, descriptions[vp], [model_name])
+
+                        if reconf.unfinished_configuration():
+                            reconf.done().reconfigure()
+
                         #self.predictor.update_mapping_region_model(transferred_mapping_region_model)
                         self.logger.info(f"New combination of surrogate models is recommended for this iteration: \
-                                                                 {transferred_mapping_region_model.values()}")
+                                                                 {transferred_mapping_models.values()}")
                 # Configuration transfer
                 configuration_transfer_module = self.transfer_learning_orchestrator.transfer_submodules[
                     "Configuration_transfer"]

@@ -210,3 +210,10 @@ class Predictor:
             for transferred_region in transferred_mapping_region_model.keys():
                 if transferred_region == current_region:
                     self.mapping_region_model[current_region] = transferred_mapping_region_model[transferred_region]
+
+    def get_model_by_name(self, name:str):
+        """Return the model with the matching name"""
+        for model in self.mapping_region_model.values():
+            if model.model_name == name:
+                return model
+        return None

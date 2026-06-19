@@ -140,21 +140,25 @@ class DynamicModelRecommendation(ModelRecommendation):
             else:
                 new_descriptions = {}
                 models_types = []
+                search_space: SearchSpace = pickle.loads(self.database.get_last_record_by_experiment_id
+                                                         ("Search_space", self.experiment_id)["SearchspaceObject"])
+                
                 for i in self.experiment_description["ConfigurationSelection"]["Predictor"].items():
                     if "Model" in i[0]:
                         models_types.append(i)
 
                 for r_index_str, model_description in resulting_best_combination.items():
-                    model_name = models_types[int(r_index_str)][0]
+                    r_index = int(r_index_str)
+                    model_name = models_types[r_index][0]
                     
                     new_descriptions[model_name] = {"Surrogate": model_description["Model"][0]["Surrogate"],
-                                                    "Optimizer": model_description["Model"][0]["Optimizer"]}
+                                                    "Optimizer": model_description["Model"][0]["Optimizer"],
+                                                    "region": search_space.regions[r_index]}
                 return new_descriptions
             
                 # Old version
                 mapping_region_model = {}
-                search_space: SearchSpace = pickle.loads(self.database.get_last_record_by_experiment_id
-                                                         ("Search_space", self.experiment_id)["SearchspaceObject"])
+                
 
                 
                 for r_index_str, model_description in resulting_best_combination.items():

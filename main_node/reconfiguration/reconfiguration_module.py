@@ -250,6 +250,10 @@ class ReconfigurationModule():
         for key, value in new_values.items():
             level[parent_key][key] = value
 
+    @staticmethod
+    def get_or_create(experiment:Experiment):
+        return ReconfigurationModule.instance if ReconfigurationModule.instance is not None else ReconfigurationModule(experiment)
+
     class _EventServiceConnection(RabbitMQConnection):
         """
         This class is responsible for listening to 2 queues.
