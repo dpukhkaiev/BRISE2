@@ -34,7 +34,7 @@ class DynamicModelRecommendation(ModelRecommendation):
 
         self.was_model_recommended = False
 
-    def recommend_best_model(self, similar_experiments: List) -> Union[Dict[Tuple[Hyperparameter], Model], None]:
+    def recommend_best_model(self, similar_experiments: List) -> Dict|None:
         """
         Recommends the best of the available source models' combinations by time and quality criteria
         :return: a mapping of region to model to be used by predictor

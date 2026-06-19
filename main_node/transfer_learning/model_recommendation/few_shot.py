@@ -12,7 +12,7 @@ class FewShotRecommendation(ModelRecommendation):
         self.was_model_transferred = False
         self.is_few_shot = True
 
-    def recommend_best_model(self, similar_experiments: List) -> Union[Dict[Tuple[Hyperparameter], Model], None]:
+    def recommend_best_model(self, similar_experiments: List) -> Dict|None:
         if self.was_model_transferred:
             return None
         transferred_models = []
