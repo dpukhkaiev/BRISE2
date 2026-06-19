@@ -6,8 +6,9 @@ channels:
 
 dependencies:
   - python=3.12
+  - pytest-cov
   - setuptools
-  - scikit-learn[alldeps]
+  - scikit-learn[alldeps]=1.6.1
   - PyYAML
   - statsmodels
   - scipy
