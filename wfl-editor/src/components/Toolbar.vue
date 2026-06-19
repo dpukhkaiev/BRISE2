@@ -1,28 +1,24 @@
 <script setup lang="ts">
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { useVueFlow } from '@vue-flow/core'
+import { useGraphStore } from '../store.ts'
+import { storeToRefs } from 'pinia'
 
 const { addNodes } = useVueFlow()
 
-// define node types
 const nodeTypes = [
-  { type: 'float', label: 'FloatHyperParameter' },
-  { type: 'ordinal', label: 'OrdinalHyperParameter' },
-  { type: 'nominal', label: 'NominalHyperParameter' },
-  { type: 'integer', label: 'IntegerHyperParameter' },
+  { type: 'float', label: 'FloatHyperparameter' },
+  { type: 'ordinal', label: 'OrdinalHyperparameter' },
+  { type: 'nominal', label: 'NominalHyperparameter' },
+  { type: 'integer', label: 'IntegerHyperparameter' },
 ]
 
+const graphStore = useGraphStore()
 // add nodes with parameters
 function addNode(nodeConfig: { type: string, label: string }) {
-  const id = Date.now().toString()
-  const categories = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? [] : undefined
-  addNodes({
-    id: id,
-    type: nodeConfig.type,
-    position: { x: Math.random() * 500, y: Math.random() * 500 },
-    data: { label: nodeConfig.label, name: '', categories: categories ? [] : undefined, children: categories ? [] : undefined }
-  })
-  console.log('id: ', id)
+  const node = graphStore.createNode(nodeConfig)
+  addNodes(node)
 }
+
 </script>
 
 <template>

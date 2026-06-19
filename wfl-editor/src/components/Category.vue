@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useGraphStore } from '../store.ts'
 import { storeToRefs } from 'pinia'
-import type { Node } from '@vue-flow/core'
+
 
 const props = defineProps<{
     isOpen: boolean
@@ -28,7 +28,7 @@ function removeChild(id: string) {
 
 const allCategories = computed(() => {
     const manual = activeNode.value?.data.categories || [];
-    const children = connectedChildren.value.map(c => c.data.name);
+    const children = connectedChildren.value.map((c: any) => c.data.name);
     return [...manual, ...children];
 });
 

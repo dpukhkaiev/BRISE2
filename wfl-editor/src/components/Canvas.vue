@@ -86,8 +86,13 @@ function validateEdges(connection: any) {
     return true
 }
 
+function testXML() {
 
+    const xmlResult = graphStore.exportGraphToXML()
 
+    console.log("XML TEXT")
+    console.log(xmlResult)
+}
 
 </script>
 
@@ -104,6 +109,8 @@ function validateEdges(connection: any) {
             @open-category-table="isCategoryTableOpen = true" />
 
         <Category :is-open="isCategoryTableOpen" @close="isCategoryTableOpen = false" />
+
+        <button @click="testXML">show xml in console</button>
 
     </div>
 </template>

@@ -67,14 +67,14 @@ const allCategories = computed(() => {
                 <input v-model="activeNode.data.name" class="styled-input" />
 
                 <label>Upper</label>
-                <input type="number" :step="activeNode?.type === 'float' ? '0.1' : '1'" v-model="activeNode.data.upper"
-                    class="styled-input" />
+                <input type="number" :step="activeNode?.type === 'float' ? '0.1' : '1'"
+                    v-model="activeNode.data.constraints.upper" class="styled-input" />
 
                 <label>Lower</label>
-                <input type="number" v-model="activeNode.data.lower" class="styled-input" />
+                <input type="number" v-model="activeNode.data.constraints.lower" class="styled-input" />
 
                 <label>Default</label>
-                <input type="number" v-model="activeNode.data.default" :min="activeNode?.data.lower"
+                <input type="number" v-model="activeNode.data.constraints.default" :min="activeNode?.data.lower"
                     :max="activeNode?.data.upper" class="styled-input" />
 
                 <label>Level</label>
