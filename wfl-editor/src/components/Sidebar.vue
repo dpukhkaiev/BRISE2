@@ -33,10 +33,8 @@ function addCategory() {
 
 }
 const connectedChildren = computed(() => {
-    const children = activeNode.value?.data.childrenIds || []
-    return children
-        .map((id: string) => graphStore.nodes.find((n: any) => n.id === id))
-        .filter(Boolean) // filter null/undefined for the case if nodes deleted
+    if (!activeNodeId.value) return []
+    return graphStore.getAllDescendants(activeNodeId.value)
 })
 
 function removeChild(id: string) {
@@ -118,7 +116,14 @@ const allCategories = computed(() => {
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
 
             </div>
-        </div>
+
+            <label>Custom Constraints</label>
+            <div v-for="(c, i) in activeNode.data.customConstraints" :key="i">
+                <input v-model="activeNode.data.customConstraints[i]" class="styled-input" />
+                <button class="btn"@click="activeNode.data.customConstraints.splice(i, 1)">x</button>
+            </div>
+                 <button class="btn" @click="activeNode.data.customConstraints.push('')">+ Add constraint</button>
+            </div>
 
         <div v-else class="sidebar-content">
             <p>Click on a node to configure the sidebar</p>

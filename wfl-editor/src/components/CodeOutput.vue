@@ -1,6 +1,11 @@
 <script setup lang="ts">
+//store
+import { useGraphStore } from '../store.ts'
+
 defineProps<{ isOpen: boolean, code: string }>()
 defineEmits(['close'])
+
+
 </script>
 
 <template>

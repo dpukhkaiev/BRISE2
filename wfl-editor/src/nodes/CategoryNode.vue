@@ -33,7 +33,7 @@ const props = defineProps<{
   border: none;
   background: transparent;
   font-size: 12px;
-  width: 100px;
+  width: 100%;
   text-align: center;
 }
 </style>

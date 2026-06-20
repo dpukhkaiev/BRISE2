@@ -9,11 +9,20 @@ export const useGraphStore = defineStore('graph', () => {
     const edges: any = ref([])
     const activeNodeId = ref<string | null>(null)
 
+
+    interface DescendantNode {
+    node: Node
+    children: DescendantNode[]
+    }
+
+    
+    // for createNode to map the types to the xml export function
     const waffleSuperMap: Record<string, string> = {
         float: 'FloatHyperparameter',
         integer: 'IntegerHyperparameter',
         nominal: 'NominalHyperparameter',
-        ordinal: 'OrdinalHyperparameter'
+        ordinal: 'OrdinalHyperparameter',
+        category: 'Category'
     }
 
     // find an active/ currently updated node
@@ -21,7 +30,7 @@ export const useGraphStore = defineStore('graph', () => {
         return nodes.value.find((n: any) => n.id === activeNodeId.value) || null
     })
 
-    // build node here, vueflow calls it in vue components
+    // maps node types to their XML tag names (used in data.super for export)
     function createNode(nodeConfig: { type: string, label: string }) {
 
         const id = Date.now().toString()
@@ -36,7 +45,8 @@ export const useGraphStore = defineStore('graph', () => {
                 super: waffleSuperMap[nodeConfig.type],
                 constraints: { lower: null, upper: null, default: null, level: 0 },
                 categories: categories ? [] : undefined,
-                children: categories ? [] : undefined
+                children: categories ? [] : undefined,
+                 customConstraints: []
             }
         })
         nodes.value.push(node)
@@ -92,27 +102,37 @@ export const useGraphStore = defineStore('graph', () => {
         }
     }
 
+    function getAllDescendants(nodeId:string): Node[] {
+        const node = nodes.value.find((n: Node) => n.id === nodeId)
+        if(!node) return []
+
+         const directChildren = (node.data?.childrenIds || [])
+        .map((id: string) => nodes.value.find((n: any) => n.id === id))
+        .filter(Boolean)
+
+        const nestedDescendants = directChildren.flatMap((child: any) => getAllDescendants(child.id))
+
+        return [...directChildren, ...nestedDescendants]
+    }
     // collect all children and categories of the parent node
     const getCategoryItem = computed(() => {
-        const node = activeNode.value
-        if (!node) return []
-
-        const cats = node.data.categories || []
-        const children = (node.data.childrenIds || []).map((id: string) => nodes.value.find((n: any) => n.id === id)?.data.name)
-        return [...cats, ...children]
+        if (!activeNodeId.value) return []
+        return getAllDescendants(activeNodeId.value)
     })
+
 
     //create category node 
     function createCategoryBox(sourceNode: Node, targetNode: Node) {
         const id = Date.now().toString()
          const midX = (sourceNode.position.x + targetNode.position.x) / 2
-    const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 60
+    const midY = (sourceNode.position.y + targetNode.position.y) / 2 
 
           const node = {
         id,
         type: 'category',
         position: { x: midX, y: midY },
-        data: { name: '', super: 'Category' }
+        // for xml export
+        data: { name: '', super: waffleSuperMap['category'] }
     }
     nodes.value.push(node)
     return node
@@ -131,13 +151,13 @@ export const useGraphStore = defineStore('graph', () => {
         }
 
         const buildNodeXML = (node: any): HTMLElement => {
-            const tagName = node.data?.super
+            const tagName = node.type ===  node.data?.super 
             const nodeEl = xmlDoc.createElement(tagName);
 
             nodeEl.setAttribute('name', node.data?.name || node.data?.label);
             nodeEl.setAttribute('id', node.id);
 
-            // extract constraints and pa
+            // extract constraints and parameters
             if (node.data?.constraints) {
                 const constraintsEl = xmlDoc.createElement('Constraints');
                 Object.entries(node.data.constraints).forEach(([key, val]) => {
@@ -146,28 +166,26 @@ export const useGraphStore = defineStore('graph', () => {
                         cEl.textContent = val.toString();
                         constraintsEl.appendChild(cEl);
                     }
-                });
+                })
+                nodeEl.appendChild(constraintsEl)
             }
+            const childIds = node.data?.childrenIds || []
+            childIds.forEach((childId: string) => {
+            const childNode = nodes.value.find((n: any) => n.id === childId)
+            if (childNode)
+             {
+                nodeEl.appendChild(buildNodeXML(childNode))
+             }
+             })
 
-            if (node.data?.categories && node.data.categories.length > 0) {
-                node.data.categories.forEach((catName: string) => {
-                    const catEl = xmlDoc.createElement('Category');
-                    catEl.setAttribute('name', catName);
+             return nodeEl
+         }
 
-                    const children = getChildrenForCategory(node.id, catName);
-                    children.forEach((childNode: any) => {
-                        catEl.appendChild(buildNodeXML(childNode));
-                    });
-
-                    nodeEl.appendChild(catEl);
-                });
-            }
-
-            return nodeEl;
-
-        }
-        const rootNodes = nodes.value.filter((n: any) => !n.data?.parentCategory);
-        rootNodes.forEach((rootNode: any) => {
+        const allChildIds = new Set(nodes.value.flatMap((n: any) => n.data?.childrenIds || []))
+        const rootNodes = nodes.value.filter((n: any) => !allChildIds.has(n.id))
+       
+        rootNodes.forEach((rootNode: any) =>
+        {
             root.appendChild(buildNodeXML(rootNode));
         });
         const serializer = new XMLSerializer();
@@ -188,6 +206,7 @@ export const useGraphStore = defineStore('graph', () => {
         getCategoryItem,
         createNode,
         exportGraphToXML,
-        createCategoryBox
+        createCategoryBox,
+        getAllDescendants
     }
 })
