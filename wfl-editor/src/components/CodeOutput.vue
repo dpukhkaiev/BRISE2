@@ -5,6 +5,7 @@ import { useGraphStore } from '../store.ts'
 defineProps<{ isOpen: boolean, code: string }>()
 defineEmits(['close'])
 
+const graphStore = useGraphStore()
 
 </script>
 
@@ -17,7 +18,7 @@ defineEmits(['close'])
 </template>
 
 <style scoped>
-.wfl-overlay {
+.wfl-panel {
   position: absolute;
   left: 0;
   top : 0;
@@ -26,13 +27,17 @@ defineEmits(['close'])
   background-color: #ffffff;
   box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.25s ease-out;
-  background: rgba(0,0,0,0.5);
+  
   border-right: 1px solid #e2e8f0;
   color: #1e293b;
   padding: 20px;
   box-sizing: border-box;
   z-index: 100;
   overflow-y: auto;
+}
+
+.wfl-panel-closed {
+  transform: translateX(-100%);
 }
 
 .wfl-code {

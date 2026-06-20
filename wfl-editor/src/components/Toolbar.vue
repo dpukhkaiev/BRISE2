@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useVueFlow } from '@vue-flow/core'
+import { ref, markRaw, watch } from 'vue'
 import { useGraphStore } from '../store.ts'
 import { storeToRefs } from 'pinia'
+import CodeOutput from './CodeOutput.vue'
+
 
 const { addNodes } = useVueFlow()
 
@@ -19,6 +22,11 @@ function addNode(nodeConfig: { type: string, label: string }) {
   addNodes(node)
 }
 
+const isCodeWindowOpen = ref(false)
+
+function openWaffleCode(event: any) {
+  isCodeWindowOpen.value = true
+}
 </script>
 
 <template>
@@ -26,10 +34,11 @@ function addNode(nodeConfig: { type: string, label: string }) {
     <button class="btn" v-for="node in nodeTypes" :key="node.type" :class="node.type" @click="addNode(node)">
       {{ node.label }}
     </button>
-     <button class="btn" @click="openWaffleCode">Open Code View
-<CodeOutput></CodeOutput>
-        </button>
-  </div>
+    
+     <button class="btn" @click="openWaffleCode">Open Code View </button>
+      </div>
+    
+
 </template>
 
 <style>

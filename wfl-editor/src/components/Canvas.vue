@@ -133,7 +133,7 @@ function testXML() {
 
        
     </div>
-    
+    <CodeOutput :is-open="isCodeWindowOpen" @close="isCodeWindowOpen = false" :code="wflCode"/>
 </template>
 
 <style>
