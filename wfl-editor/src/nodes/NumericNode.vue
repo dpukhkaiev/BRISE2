@@ -17,19 +17,20 @@ const props = defineProps<{
 <template>
   <div :class="['node-base', type]">
     {{ props.data.label }}
-    <div v-if="props.data.name" style="color: black; font-size: 14px;">{{ props.data.name }}</div>
-    <Handle type="source" :position="Position.Bottom" />
-
+    <div v-if="props.data.name" style="color: black; font-size: 11px;">{{ props.data.name }}</div>
+    <Handle type="target" :position="Position.Top" id="target-n"/>
+  
   </div>
 
 </template>
 
 <style>
 .node-base {
-  padding: 8px 14px;
+ padding: 4px 8px;
   border: 1px solid;
   border-radius: 6px;
   font-weight: 600;
+  font-size: 12px;
 }
 
 .node-name {

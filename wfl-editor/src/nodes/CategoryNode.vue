@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Position, Handle, Edge } from '@vue-flow/core'
+import { Position, Handle } from '@vue-flow/core'
+import { VueFlow, useVueFlow, Edge } from '@vue-flow/core'
 
-// define node structure
 const props = defineProps<{
-  type: string
+  id: string
   data: {
-    label: string
     name: string
   }
 
@@ -13,30 +12,28 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div :class="['node-base', type]">
-    {{ props.data.label }}
-    <div v-if="props.data.name" style="color: black; font-size: 14px;">{{ props.data.name }}</div>
+     <div class="category-box">
+    <input
+      v-model="$props.data.name"
+      placeholder="Category Name"
+      class="category-input" />
+    <Handle type="target" :position="Position.Top" />
     <Handle type="source" :position="Position.Bottom" />
-  </div>
-</template>
+     </div>
+    </template>
 
 <style>
-.node-base {
-  padding: 8px 14px;
-  border: 1px solid;
+.category-box {
+  padding: 4px 8px;
+  border: 1px dashed #64748b;
   border-radius: 6px;
-  font-weight: 600;
+  background: transparent;
 }
-
-.ordinal {
-  background-color: #fef9c3 !important;
-  color: #854d0e;
-  border-color: #ca8a04;
-}
-
-.nominal {
-  background-color: #dcfce7 !important;
-  color: #166534;
-  border-color: #16a34a;
+.category-input {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  width: 100px;
+  text-align: center;
 }
 </style>

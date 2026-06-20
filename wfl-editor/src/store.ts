@@ -102,6 +102,22 @@ export const useGraphStore = defineStore('graph', () => {
         return [...cats, ...children]
     })
 
+    //create category node 
+    function createCategoryBox(sourceNode: Node, targetNode: Node) {
+        const id = Date.now().toString()
+         const midX = (sourceNode.position.x + targetNode.position.x) / 2
+    const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 60
+
+          const node = {
+        id,
+        type: 'category',
+        position: { x: midX, y: midY },
+        data: { name: '', super: 'Category' }
+    }
+    nodes.value.push(node)
+    return node
+    }
+
     // extract the data and make it xml
     function exportGraphToXML() {
         const xmlDoc = document.implementation.createDocument(null, 'SearchSpace', null);
@@ -171,6 +187,7 @@ export const useGraphStore = defineStore('graph', () => {
         clearActiveNode,
         getCategoryItem,
         createNode,
-        exportGraphToXML
+        exportGraphToXML,
+        createCategoryBox
     }
 })
