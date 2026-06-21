@@ -1,19 +1,26 @@
 <script setup lang="ts">
 //store
 import { useGraphStore } from '../store.ts'
+import { useXmlToWfl } from '../composables/useXmlToWaffle'
+import { computed } from 'vue'
 
 defineProps<{ isOpen: boolean, code: string }>()
 defineEmits(['close'])
 
 const graphStore = useGraphStore()
+const { convert } = useXmlToWfl()
 
+const wflCode = computed(() => {
+  const xml = graphStore.exportGraphToXML()
+  return convert(xml)
+})
 </script>
 
 <template>
-  <div :class="['wfl-panel', {'wfl-panel-closed' : !isOpen}]">
-      <button class="close-btn" @click="$emit('close')">✕</button>
-      <h3>Generated WFL Code</h3>
-      <pre class="wfl-code">{{ code }}</pre>
+  <div :class="['wfl-panel', { 'wfl-panel-closed': !isOpen }]">
+    <button class="close-btn" @click="$emit('close')">✕</button>
+    <h3>Generated WFL Code</h3>
+    <pre class="wfl-code">{{ wflCode }}</pre>
   </div>
 </template>
 
@@ -21,13 +28,13 @@ const graphStore = useGraphStore()
 .wfl-panel {
   position: absolute;
   left: 0;
-  top : 0;
-   height: 100%;
+  top: 0;
+  height: 100%;
   width: 300px;
   background-color: #ffffff;
   box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.25s ease-out;
-  
+
   border-right: 1px solid #e2e8f0;
   color: #1e293b;
   padding: 20px;
@@ -48,8 +55,9 @@ const graphStore = useGraphStore()
   font-family: monospace;
   white-space: pre-wrap;
   overflow-x: auto;
-   font-size: 12px;
+  font-size: 12px;
 }
+
 .close-btn {
   position: absolute;
   top: 15px;
@@ -58,6 +66,6 @@ const graphStore = useGraphStore()
   border: none;
   font-size: 16px;
   cursor: pointer;
-   color: #64748b;
+  color: #64748b;
 }
 </style>

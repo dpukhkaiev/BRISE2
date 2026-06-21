@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, markRaw, watch } from 'vue'
 // Vueflow
-import type { Node, Edge } from '@vue-flow/core'
 import { VueFlow, Panel, useVueFlow } from '@vue-flow/core'
 // components
 import Toolbar from './Toolbar.vue'
@@ -42,11 +41,11 @@ onConnect((connection) => {
 
     if (sourceNode && targetNode) {
         const isSourceCategorical = sourceNode.type === 'nominal' || sourceNode.type === 'ordinal'
-       
 
-    if (isSourceCategorical) {  
-    
-    const categoryNode = graphStore.createCategoryBox(sourceNode, targetNode)
+
+        if (isSourceCategorical) {
+
+            const categoryNode = graphStore.createCategoryBox(sourceNode, targetNode)
             addNodes(categoryNode)
 
             addEdges({ source: sourceNode.id, target: categoryNode.id })
@@ -56,7 +55,7 @@ onConnect((connection) => {
             graphStore.addChildToNode(categoryNode.id, targetNode.id)
             graphStore.setEdges(flowEdges.value)
             return
-    }
+        }
     }
 
     addEdges(connection)
@@ -105,20 +104,18 @@ function testXML() {
     console.log("XML TEXT")
     console.log(xmlResult)
 }
+const isCodeWindowOpen = ref(false)
 
+function openWaffleCode() {
+    isCodeWindowOpen.value = true
+}
 </script>
 
 <template>
     <div style="height: 100vh; width: 100%; display: flex; flex-direction: column;">
-        <VueFlow 
-        :nodes="graphStore.nodes" 
-        :edges="graphStore.edges" 
-        :node-types="myNodeTypes" 
-        connection-mode="strict"
-        :is-valid-connection="validateEdges" 
-        :default-edge-options="{ type: 'smoothstep', animated: false }"
-        @node-click="onNodeClick"
-        @pane-click="onPaneClick">
+        <VueFlow :nodes="graphStore.nodes" :edges="graphStore.edges" :node-types="myNodeTypes" connection-mode="strict"
+            :is-valid-connection="validateEdges" :default-edge-options="{ type: 'smoothstep', animated: false }"
+            @node-click="onNodeClick" @pane-click="onPaneClick">
             <Panel position="top-right" class="custom-center-panel">
                 <Toolbar />
             </Panel>
@@ -128,12 +125,13 @@ function testXML() {
             @open-category-table="isCategoryTableOpen = true" />
 
         <Category :is-open="isCategoryTableOpen" @close="isCategoryTableOpen = false" />
-
+        <CodeOutput :is-open="isCodeWindowOpen" @close="isCodeWindowOpen = false" :code="wflCode" />
         <button @click="testXML">show xml in console</button>
 
-       
+        <button class="btn" @click="openWaffleCode">Open Code View </button>
     </div>
-    <CodeOutput :is-open="isCodeWindowOpen" @close="isCodeWindowOpen = false" :code="wflCode"/>
+
+
 </template>
 
 <style>
@@ -148,10 +146,32 @@ function testXML() {
     z-index: 50;
 }
 
-.vue-flow-wrapper {
-  flex: 1;
-  width: 100%;
-  height: 100%;
+
+.btn {
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.05);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.vue-flow-wrapper {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+}
 </style>

@@ -11,7 +11,7 @@ const props = defineProps<{
 const emit = defineEmits(['close', 'isOpen'])
 const graphStore = useGraphStore()
 
-const { activeNodeId } = storeToRefs(graphStore)
+
 const activeNode = computed(() => graphStore.activeNode as any)
 
 

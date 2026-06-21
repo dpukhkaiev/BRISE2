@@ -143,15 +143,8 @@ export const useGraphStore = defineStore('graph', () => {
         const xmlDoc = document.implementation.createDocument(null, 'SearchSpace', null);
         const root = xmlDoc.documentElement;
 
-        const getChildrenForCategory = (parentId: string, categoryName: string) => {
-            return nodes.value.filter((child: any) => {
-                const isChild = nodes.value.find((n: any) => n.id === parentId)?.data?.childrenIds?.includes(child.id);
-                return isChild && child.data?.parentCategory === categoryName;
-            })
-        }
-
-        const buildNodeXML = (node: any): HTMLElement => {
-            const tagName = node.type ===  node.data?.super 
+        const buildNodeXML = (node: Node): Element => {
+            const tagName =  node.data?.super 
             const nodeEl = xmlDoc.createElement(tagName);
 
             nodeEl.setAttribute('name', node.data?.name || node.data?.label);
@@ -160,14 +153,16 @@ export const useGraphStore = defineStore('graph', () => {
             // extract constraints and parameters
             if (node.data?.constraints) {
                 const constraintsEl = xmlDoc.createElement('Constraints');
+                   let hasConstraints = false
                 Object.entries(node.data.constraints).forEach(([key, val]) => {
                     if (val !== null && val !== undefined && key !== 'level') {
-                        const cEl = xmlDoc.createElement(key);
-                        cEl.textContent = val.toString();
-                        constraintsEl.appendChild(cEl);
+                        const cEl = xmlDoc.createElement(key)
+                        cEl.textContent = val.toString()
+                        constraintsEl.appendChild(cEl)
+                           hasConstraints = true
                     }
                 })
-                nodeEl.appendChild(constraintsEl)
+                 if (hasConstraints) nodeEl.appendChild(constraintsEl)
             }
             const childIds = node.data?.childrenIds || []
             childIds.forEach((childId: string) => {
@@ -176,7 +171,7 @@ export const useGraphStore = defineStore('graph', () => {
              {
                 nodeEl.appendChild(buildNodeXML(childNode))
              }
-             })
+               })
 
              return nodeEl
          }
