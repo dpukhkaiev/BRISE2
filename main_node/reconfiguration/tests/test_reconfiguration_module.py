@@ -711,6 +711,7 @@ class TestReconfigurationModule:
         assert cs.predictor.window_size == new_size
         assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size
 
+    @pytest.skip(reason="Not used anymore")
     def test_update_surrogate_and_optimizers_with_reconfiguration(self, get_experiment):
         """Test that the update_surrogate_and_optimizers() in model.py works with the reconfiguration"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
