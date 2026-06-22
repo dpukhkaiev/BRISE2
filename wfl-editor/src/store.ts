@@ -10,10 +10,6 @@ export const useGraphStore = defineStore('graph', () => {
     const activeNodeId = ref<string | null>(null)
 
 
-    interface DescendantNode {
-    node: Node
-    children: DescendantNode[]
-    }
 
     
     // for createNode to map the types to the xml export function

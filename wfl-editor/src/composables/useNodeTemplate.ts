@@ -86,7 +86,7 @@ export function nominalTemplate(node: NominalNode, childrenWfl: string[]): strin
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
     return [
         `${node.name} : OrdinalHyperparameter`,
-        `xor`,
+        ,
         `{`,
         ...childrenWfl.map(c =>indent(c)),
         `}`

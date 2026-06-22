@@ -126,7 +126,7 @@ function openWaffleCode() {
 
         <Category :is-open="isCategoryTableOpen" @close="isCategoryTableOpen = false" />
         <CodeOutput :is-open="isCodeWindowOpen" @close="isCodeWindowOpen = false" :code="wflCode" />
-        <button @click="testXML">show xml in console</button>
+        <button @click="testXML">show xml</button>
 
         <button class="btn" @click="openWaffleCode">Open Code View </button>
     </div>
