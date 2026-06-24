@@ -4,12 +4,10 @@ import os
 import threading
 import uuid
 
+from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
 from core_entities.configuration import Configuration
 from tools.mongo_dao import MongoDB
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish
-from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
-
-from tools.reflective_class_import import reflective_class_import
 
 
 class WSClient:
@@ -113,14 +111,23 @@ class WSClient:
         :return:
         """
 
+        # `evaluation_time` is reported by the worker and consumed by the
+        # HybridDistribution to adapt its release timeout. It is not part of the
+        # Experiment Description yet (pending the feature-model integration), so
+        # we default to 0 whenever it is absent or unparsable. This default also
+        # prevents the crash that occurred when `repetition_time` was referenced
+        # below while never being initialized.
+        repetition_time = 0.0
         try:
             if body:
                 data = json.loads(body.decode())
-                evaluation_time_str = data.get("evaluation_time")
-                repetition_time = float(evaluation_time_str)
+                evaluation_time = data.get("evaluation_time")
+                if evaluation_time is not None:
+                    repetition_time = float(evaluation_time)
 
         except Exception as e:
-            repetition_time = 0
+            self.logger.warning("Could not parse 'evaluation_time', defaulting to 0: %s" % e)
+            repetition_time = 0.0
 
         with self.number_of_workers_lock:
             current_number_of_worker = self.get_number_of_workers()

@@ -1,11 +1,12 @@
 import unittest
 import logging
 import json
+import threading
 from unittest.mock import patch, MagicMock, call
 
 from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
 from configuration_distribution.batchedDistribution import BatchedDistribution
-from configuration_distribution.hybridDistribution import HybridDistribution
+from configuration_distribution.hybridDistribution import HybridDistribution, EventGate
 from configuration_distribution.asynchronousDistribution import AsynchronousDistribution
 
 # disable logging
@@ -467,6 +468,47 @@ class TestBatchedDistribution(unittest.TestCase):
             body=self.body
         )
 
+    # ? --- Test broken-barrier recovery (incomplete wave) ---
+    @patch('configuration_distribution.batchedDistribution.publish')
+    def test_handle_recovers_from_broken_barrier(self, mock_publish):
+        """
+        If a wave is left incomplete (e.g. a worker dies, or worker_capacity is 0
+        so the batch never fills and the barrier gets aborted), waiting workers
+        must not hang: the broken barrier is discarded and the worker returns.
+        """
+        distribution_algorithm = BatchedDistribution(self.config)
+        distribution_algorithm.logger = MagicMock()
+
+        broken_barrier = threading.Barrier(distribution_algorithm._batch_size)
+        broken_barrier.abort()  # simulate the incomplete / dead-worker wave
+        distribution_algorithm._barrier = broken_barrier
+
+        distribution_algorithm.handle_configuration_distribution(self.experiment_id, self.body)
+
+        # * The broken barrier is dropped so the next wave starts clean...
+        self.assertIsNone(distribution_algorithm._barrier)
+        # * ...and this worker does not proceed to publish for the failed wave.
+        mock_publish.assert_not_called()
+        distribution_algorithm.logger.warning.assert_called_once()
+
+    @patch('threading.Thread')
+    def test_dispatch_replaces_broken_barrier(self, MockThread):
+        """A subsequent dispatch replaces a broken barrier with a fresh one."""
+        distribution_algorithm = BatchedDistribution(self.config)
+        distribution_algorithm.logger = MagicMock()
+        distribution_algorithm.first_it = MagicMock(return_value=False)
+
+        broken_barrier = threading.Barrier(distribution_algorithm._batch_size)
+        broken_barrier.abort()
+        distribution_algorithm._barrier = broken_barrier
+
+        distribution_algorithm.dispatch(self.experiment_id, self.body)
+
+        self.assertIsNotNone(distribution_algorithm._barrier)
+        self.assertIsNot(distribution_algorithm._barrier, broken_barrier)
+        self.assertFalse(distribution_algorithm._barrier.broken)
+
+
 class TestHybridDistribution(unittest.TestCase):
 
     def setUp(self):
@@ -676,15 +718,85 @@ class TestHybridDistribution(unittest.TestCase):
         distributionAlgorithm = HybridDistribution(self.config)
         mock_gate = MagicMock()
         distributionAlgorithm._gate = mock_gate
-        
+
         # * Define dummy stats
         dummy_stats = {"result": "completion"}
-        
+
         # * Call
         distributionAlgorithm._cleanup_gate(dummy_stats)
-        
+
         # * Assertions
         self.assertIsNone(distributionAlgorithm._gate)
+
+
+class TestEventGate(unittest.TestCase):
+    """Unit tests for the timeout-based synchronization gate (EventGate)."""
+
+    def test_release_on_completion(self):
+        """When batchSize workers arrive, the gate releases them all at once."""
+        cleanup = MagicMock()
+        gate = EventGate(2, 30, cleanup)
+
+        threads = [threading.Thread(target=gate.wait_at_gate) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+
+        for thread in threads:
+            self.assertFalse(thread.is_alive(), "worker stayed blocked at the gate")
+        self.assertTrue(gate.triggered)
+
+        cleanup.assert_called_once()
+        stats = cleanup.call_args[0][0]
+        self.assertEqual(stats["result"], "completion")
+
+    def test_release_on_timeout(self):
+        """An incomplete wave is released by the timeout instead of hanging."""
+        done = threading.Event()
+        captured = {}
+
+        def cleanup(stats):
+            captured["stats"] = stats
+            done.set()
+
+        # batchSize 5 will never fill with a single worker -> timeout releases it.
+        gate = EventGate(5, 0.2, cleanup)
+        worker = threading.Thread(target=gate.wait_at_gate)
+        worker.start()
+        worker.join(timeout=5)
+
+        self.assertFalse(worker.is_alive())
+        self.assertTrue(done.wait(timeout=5), "cleanup was never invoked")
+        self.assertTrue(gate.triggered)
+        self.assertEqual(captured["stats"]["result"], "timeout")
+
+    def test_late_worker_after_trigger_does_not_double_clean(self):
+        """
+        Edge case 'worker arrives during the timeout-release window': a worker
+        that reaches the gate after it was already triggered must pass through
+        without hanging and without firing a second cleanup for the finished wave.
+        """
+        cleanup = MagicMock()
+        gate = EventGate(5, 0.2, cleanup)
+
+        # First worker joins the wave and is released by the timeout.
+        first = threading.Thread(target=gate.wait_at_gate)
+        first.start()
+        first.join(timeout=5)
+
+        self.assertTrue(gate.triggered)
+        self.assertEqual(cleanup.call_count, 1)
+
+        # A worker arriving after the trigger passes the already-open gate and
+        # must not produce a second cleanup nor block.
+        late = threading.Thread(target=gate.wait_at_gate)
+        late.start()
+        late.join(timeout=5)
+
+        self.assertFalse(late.is_alive(), "late worker blocked on a released gate")
+        self.assertEqual(cleanup.call_count, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

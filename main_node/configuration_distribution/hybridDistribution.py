@@ -147,7 +147,15 @@ class HybridDistribution(AbstractDistribution):
         self._first_it = True
         self._first_it_lock = threading.Lock()
 
-        self._initial_timeout = 5
+        # `TimeoutInSeconds` is the initial per-wave release timeout, used until
+        # enough worker evaluation times have been collected to adapt it
+        # (see _calculate_next_timeout). Optional; defaults to 5 seconds.
+        try:
+            self._initial_timeout = float(config["TimeoutInSeconds"]["Int"])
+        except (KeyError, TypeError, ValueError):
+            self.logger.info("No valid 'TimeoutInSeconds' in description; defaulting to 5 seconds.")
+            self._initial_timeout = 5.0
+
         self._number_of_workers = 0
         self._evaluation_times = []
 
@@ -169,8 +177,9 @@ class HybridDistribution(AbstractDistribution):
         PROPOSAL_SIZE = 5 
         
         if len(self._evaluation_times) < PROPOSAL_SIZE:
-            return MIN_TIMEOUT
-            
+            # not enough data to adapt yet -> use the configured initial timeout
+            return self._initial_timeout
+
         last_proposal_times = self._evaluation_times[-PROPOSAL_SIZE:]
         
         # ? Divide the proposal times into rounds

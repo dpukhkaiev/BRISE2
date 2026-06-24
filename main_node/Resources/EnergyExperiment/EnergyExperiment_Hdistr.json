@@ -236,7 +236,7 @@
         "batchSize": {
                 "Int": "5"
         },
-        "timeout": {
+        "timeoutInSeconds": {
                 "Int": "5"
         }
     }
