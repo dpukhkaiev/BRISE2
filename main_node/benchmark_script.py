@@ -561,6 +561,182 @@ class Runner:
             }
         }
 
+        reconf_model_multi_surrogates = {
+            "Reconfiguration": {
+                "AfterXConfigurations": {
+                    "amount": 1,
+                    "performAmount": 1,
+                    "vp": "Model_1",
+                    "description": {
+                        "MultiObjectiveHandling": {
+                            "SurrogateType": {
+                                "Portfolio": {}
+                            }
+                        },
+                        "Optimizer": {
+                            "Instance": {
+                                "RandomSearch": {
+                                    "SamplingSize": 500,
+                                    "MultiObjective": True,
+                                    "Type": "random_search"
+                                }
+                            }
+                        },
+                        "Validator": {
+                            "ExternalValidator": {
+                                "QualityValidator": {
+                                    "Split": {
+                                        "HoldOut": {
+                                            "TrainingSet": 0.5
+                                        }
+                                    },
+                                    "QualityThreshold": -10000,
+                                    "Type": "quality_validator"
+                                }
+                            },
+                            "InternalValidator": {
+                                "QualityValidator": {
+                                    "Split": {
+                                        "KFold": {
+                                            "NumberOfFolds": 4
+                                        }
+                                    },
+                                    "QualityThreshold": -10000,
+                                    "Type": "quality_validator"
+                                }
+                            }
+                        },
+                        "CandidateSelector": {
+                            "RandomMultiPointProposal": {
+                                "NumberOfPoints": 1,
+                                "Type": "random_multi_point"
+                            }
+                        },
+                        "Surrogate_0": {
+                            "ConfigurationTransformers": {
+                                "OrdinalTransformer": {
+                                    "SklearnOrdinalEncoder": {
+                                        "Type": "sklearn_ordinal_transformer",
+                                        "Class": "sklearn.OrdinalEncoder"
+                                    }
+                                },
+                                "NominalTransformer": {
+                                    "BinaryEncoder": {
+                                        "Type": "binary_transformer",
+                                        "Class": "brise.BinaryEncoder"
+                                    }
+                                },
+                                "IntegerTransformer": {
+                                    "SklearnIntMinMaxScaler": {
+                                        "Type": "sklearn_integer_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                },
+                                "FloatTransformer": {
+                                    "SklearnFloatMinMaxScaler": {
+                                        "Type": "sklearn_float_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "LinearRegression": {
+                                    "MultiObjective": False,
+                                    "Type": "sklearn_model_wrapper",
+                                    "Class": "sklearn.linear_model.LinearRegression"
+                                }
+                            }
+                        },
+                        "Surrogate_1": {
+                            "ConfigurationTransformers": {
+                                "OrdinalTransformer": {
+                                    "SklearnOrdinalEncoder": {
+                                        "Type": "sklearn_ordinal_transformer",
+                                        "Class": "sklearn.OrdinalEncoder"
+                                    }
+                                },
+                                "NominalTransformer": {
+                                    "BinaryEncoder": {
+                                        "Type": "binary_transformer",
+                                        "Class": "brise.BinaryEncoder"
+                                    }
+                                },
+                                "IntegerTransformer": {
+                                    "SklearnIntMinMaxScaler": {
+                                        "Type": "sklearn_integer_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                },
+                                "FloatTransformer": {
+                                    "SklearnFloatMinMaxScaler": {
+                                        "Type": "sklearn_float_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "GradientBoostingRegressor": {
+                                    "MultiObjective": False,
+                                    "Parameters": {
+                                        "n_estimators": 4
+                                    },
+                                    "Type": "sklearn_model_wrapper",
+                                    "Class": "sklearn.ensemble.GradientBoostingRegressor"
+                                }
+                            }
+                        },
+                        "Surrogate_2": {
+                            "ConfigurationTransformers": {
+                                "OrdinalTransformer": {
+                                    "SklearnOrdinalEncoder": {
+                                        "Type": "sklearn_ordinal_transformer",
+                                        "Class": "sklearn.OrdinalEncoder"
+                                    }
+                                },
+                                "NominalTransformer": {
+                                    "BinaryEncoder": {
+                                        "Type": "binary_transformer",
+                                        "Class": "brise.BinaryEncoder"
+                                    }
+                                },
+                                "IntegerTransformer": {
+                                    "SklearnIntMinMaxScaler": {
+                                        "Type": "sklearn_integer_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                },
+                                "FloatTransformer": {
+                                    "SklearnFloatMinMaxScaler": {
+                                        "Type": "sklearn_float_transformer",
+                                        "Class": "sklearn.MinMaxScaler"
+                                    }
+                                }
+                            },
+                            "Instance": {
+                                "BayesianRidgeRegression": {
+                                    "MultiObjective": False,
+                                    "Parameters": {
+                                        "max_iter": 10,
+                                        "tol": 1.0
+                                    },
+                                    "Type": "sklearn_model_wrapper",
+                                    "Class": "sklearn.linear_model.BayesianRidge"
+                                }
+                            }
+                        },
+                        "Surrogate_3": {
+                            "Instance": {
+                                "ModelMock": {
+                                    "MultiObjective": True,
+                                    "Type": "model_mock"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         quanity_based_stop = {"StopCondition": {
                 "Instance": {
                     "QuantityBasedSC": {
@@ -599,7 +775,7 @@ class Runner:
 
         # Data structure to define which descriptions are used to test what scalings
         reconf_data = [(experiment_description_1, [reconf_sampling_strategy, reconf_candidate, reconf_model]),
-                       (experiment_description_2, [reconf_single_surrogate])]
+                       (experiment_description_2, [reconf_single_surrogate, reconf_model_multi_surrogates])]
 
         for experiment_description, reconf_skeletons in reconf_data:
             for reconf_skeleton in reconf_skeletons:
