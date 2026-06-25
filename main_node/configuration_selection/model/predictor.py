@@ -202,15 +202,6 @@ class Predictor:
                 {"Exp_unique_ID": self.experiment_id},
                 {"Models_dumps": self.hierarchical_models_dumps})
 
-    def update_mapping_region_model(self, transferred_mapping_region_model):
-        """
-        Update the models, based on the transfer learning results. Assumption: regions are identical
-        """
-        for current_region in self.mapping_region_model.keys():
-            for transferred_region in transferred_mapping_region_model.keys():
-                if transferred_region == current_region:
-                    self.mapping_region_model[current_region] = transferred_mapping_region_model[transferred_region]
-
     def get_model_by_name(self, name:str):
         """Return the model with the matching name"""
         for model in self.mapping_region_model.values():
