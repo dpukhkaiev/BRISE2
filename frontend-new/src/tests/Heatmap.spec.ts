@@ -4,21 +4,23 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import Heatmap from '@/widgets/charts/heatmap/ui/Heatmap.vue'
 
-// mock plotly so it is recognized for ES-modules
 vi.mock('plotly.js-dist-min', () => {
-    const mockReact = vi.fn();
+    const mockPlotly = {
+        react: vi.fn().mockResolvedValue(undefined),
+        purge: vi.fn(),
+    }
     return {
         __esModule: true,
-        default: { react: mockReact },
-        react: mockReact
-    };
-});
+        default: mockPlotly,
+        ...mockPlotly
+    }
+})
 
-// import mock directly
-import Plotly from 'plotly.js-dist-min';
+import PlotlyMock from 'plotly.js-dist-min'
 
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
+         plotlyInstance: PlotlyMock,
         experiment_description: ref({
             ConfigurationSelection: {
                 Predictor: {
@@ -72,7 +74,7 @@ describe('Heatmap.vue', () => {
 
         await flushPromises()
 
-        expect(Plotly.react).toHaveBeenCalled()
+        expect(PlotlyMock.react).toHaveBeenCalled()
     })
 
 
@@ -95,9 +97,9 @@ describe('Heatmap.vue', () => {
         }
         await flushPromises()
 
-        expect(Plotly.react).toHaveBeenCalled()
+        expect(PlotlyMock.react).toHaveBeenCalled()
 
-        const lastCallData = vi.mocked(Plotly.react).mock.calls[0][1]
+        const lastCallData = vi.mocked(PlotlyMock.react).mock.calls[0][1]
         const starTrace = lastCallData[2] as any
 
         expect(starTrace.marker.color).toBe('Gold')
@@ -113,6 +115,6 @@ describe('Heatmap.vue', () => {
         await selectColor?.trigger('change')
         await flushPromises()
 
-        expect(Plotly.react).toHaveBeenCalled()
+        expect(PlotlyMock.react).toHaveBeenCalled()
     })
 })

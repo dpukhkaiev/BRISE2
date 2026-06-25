@@ -3,7 +3,7 @@ import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // Plotly
-import Plotly from 'plotly.js-dist-min'
+//import Plotly from 'plotly.js-dist-min'
 
 
 // Constant
@@ -199,15 +199,18 @@ function initMainEvents() {
     });
 }
 
-function render() {
+async function render(): Promise<void> {
     console.log('currentDiagram:', currentDiagram.value)
     console.log('rootParam:', rootParam.value)
     console.log('element found:', document.getElementById(currentDiagram.value))
+
+    const Plotly = store.plotlyInstance
     const element = document.getElementById(currentDiagram.value)
-    if (!element) {
-        console.warn('element not found', currentDiagram.value)
+    if (!Plotly || !element) {
+        console.warn('Plotly instance or DOM element not ready yet for:', currentDiagram.value)
         return
     }
+
 
     var trace = [{
         type: 'parcoords' as const,
@@ -271,7 +274,11 @@ onMounted(() => {
 onUnmounted(() => {
     if (renderTimer) clearTimeout(renderTimer)
     const element = document.getElementById(currentDiagram.value)
-    if (element) Plotly.purge(element)
+    const Plotly = store.plotlyInstance
+
+    if (element && Plotly) {
+        Plotly.purge(element)
+    }
 })
 
 </script>

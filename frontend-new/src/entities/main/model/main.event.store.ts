@@ -15,7 +15,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
    const experiment_description = ref<ExperimentDescription | null>(null)
    const searchspace = ref<any>(null)
    const globalConfig = ref<any>(null)
-
+   const plotlyInstance = ref<any>(null)
    const listeners: Record<string, Observable<IMessage>> = {
       [MainEvent.EXPERIMENT]: stompClient.watch('front_experiment_queue', { 'x-message-ttl': '1000' }),
       [MainEvent.FINAL]: stompClient.watch('front_final_queue', { 'x-message-ttl': '1000' }),
@@ -28,6 +28,18 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
    function onEvent(event: MainEvent): Observable<IMessage> | undefined {
       return listeners[String(event)]
+   }
+
+   // load plotly async in the background
+   async function loadPlotly() {
+      if (!plotlyInstance.value) {
+         try {
+            plotlyInstance.value = await import('plotly.js-dist-min')
+            console.log('Plotly successfully initialized')
+         } catch (error) {
+            console.error('no success', error)
+         }
+      }
    }
 
    // starts the subsription to Experiment event
@@ -50,5 +62,5 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
 
 
-   return { globalConfig, searchspace, experiment_description, isConnected, onEvent, initEvent }
+   return { globalConfig, searchspace, experiment_description, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

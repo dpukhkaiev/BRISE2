@@ -21,6 +21,7 @@ vi.mock('plotly.js-dist-min', () => {
 
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
+        plotlyInstance: PlotlyMock,
         experiment_description: ref({
          Context: {
                 TaskConfiguration: {
@@ -102,7 +103,7 @@ describe('ImpRes.vue', () => {
     expect(PlotlyMock.react).toHaveBeenCalled()
 })
 
-it('sollte bei einem NEW-Event Daten akkumulieren und das Chart aktualisieren', async () => {
+it('NEW event incoming points update the chart', async () => {
         const wrapper = mountComponent()
         await flushPromises()
 
@@ -137,7 +138,7 @@ it('sollte bei einem NEW-Event Daten akkumulieren und das Chart aktualisieren', 
         expect(bestPointsTrace?.y).toEqual([50.0, 30.0])
     })
 
-    it('sollte bei FINAL-Event den Endzustand rendern', async () => {
+    it('should render the last point when FINAL event incoming', async () => {
         const wrapper = mountComponent()
 
         if (eventCallbacks['DEFAULT']) {

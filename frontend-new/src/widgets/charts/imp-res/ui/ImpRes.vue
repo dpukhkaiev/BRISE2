@@ -46,158 +46,21 @@ async function getPlotly() {
     return plotlyInstance
 }
 
-// save as variable
-const Plotly = await getPlotly()
 
 onMounted(() => {
     initMainEvents()
 })
 
-
-function initMainEvents() {
-    watch(experiment_description, () => {
-        bestRes.value = []
-        allRes.value = []
-        // pointer to dom element 
-        const element = impr.value
-        isVisible.value = false
-        if (element)
-            Plotly.purge(element)
-    }, {
-        deep: true,
-        immediate: true
-    })
-
-    // add start point
-    store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
-                solution = configuration
-                const min = new Date().getMinutes();
-                const sec = new Date().getSeconds();
-                const temp: any = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': allRes.value.length + 1
-                };
-                allRes.value.push(temp)
-                bestRes.value.push(temp)
-            })
-            // render when chart is initialized
-            render().then(() => { isChartInitialized.value = true })
-            // render() // render chart when all points got
-        }
-    })
-
-    // add last point
-    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body);
-            configs.forEach((configuration: any) => {
-                solution = configuration;
-                const min = new Date().getMinutes();
-                const sec = new Date().getSeconds();
-                const temp: any = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': allRes.value.length + 1
-                };
-                allRes.value.push(temp);
-                bestRes.value.push(temp); // There is no check if this solution is the best decision
-            });
-        }
-        render(); // Render chart when all points got
-    })
-
-    // add new point
-    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body);
-
-            // new x/y values for both traces
-            const newAllX: number[] = [], newAllY: number[] = [], newAllText: string[] = []
-            const newBestX: number[] = [], newBestY: number[] = []
-
-            // check the best availbale point
-            const descr = experiment_description.value
-
-            let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
-            if (!objectives) return
-            const firstObjectiveKey = Object.keys(objectives)[0]
-            console.log('TaskConfig', descr?.['TaskConfiguration'])
-            const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
-
-
-            configs.forEach((configuration: any) => {
-                const min = new Date().getMinutes();
-                const sec = new Date().getSeconds();
-                allRes.value.push({
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': allRes.value.length + 1
-                }) // add new point (resut)
-
-                const temp: PointExp = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': allRes.value.length
-                }
-
-                // compare to the last best point
-                const lastBest = bestRes.value.at(-1)
-                if (lastBest) {
-                    const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
-                    if (!isBetter) {
-                        temp.results = lastBest.results
-                        temp.configurations = lastBest.configurations
-                    }
-                }
-
-                bestRes.value.push(temp) // add the best availbale point(result) 
-
-
-                // bestRes.value.length > 2 && render()
-
-                newAllX.push(allRes.value.length)
-                newAllY.push(configuration.results[0])
-                newAllText.push(String(Object.values(configuration.configurations)))
-
-                newBestX.push(temp['measured points'])
-                newBestY.push(temp.results[0])
-            })
-
-            Plotly.extendTraces(impr.value!, {
-                x: [newAllX, newBestX, [] as number[]],
-                y: [newAllY, newBestY, [] as number[]],
-                text: [newAllText, [], []] as any
-            }, [0, 1, 2])
-
-            // startEndPoint update
-            const xBest = bestRes.value.map(i => i['measured points'])
-            const yBest = bestRes.value.map(i => i['results'][0])
-            Plotly.restyle(impr.value!, {
-                x: [[xBest[0], xBest[xBest.length - 1]]],
-                y: [[yBest[0], yBest[yBest.length - 1]]]
-            }, [2])
-        }
-
-    })
-}
-
-
-
 async function render() {
     // DOM element. Render point
 
     const element = impr.value
-
+    const Plotly = store.plotlyInstance
+    if (!element || !Plotly) return
     isVisible.value = true
     await nextTick()
+
+
     // X-axis data
     const xBest = Array.from(bestRes.value).map((i: any) => i['measured points']);
     // Results
@@ -282,6 +145,185 @@ async function render() {
     if (element)
         Plotly.react(element, data, layout);
 }
+
+
+function initMainEvents() {
+    watch(experiment_description, () => {
+        bestRes.value = []
+        allRes.value = []
+        // pointer to dom element 
+        const element = impr.value
+        isVisible.value = false
+        isChartInitialized.value = false
+        const Plotly = plotlyInstance
+        // will clear the div, and remove any Plotly plots that have been placed in it
+        if (element && Plotly) {
+            Plotly.purge(element)
+        }
+    }, {
+        deep: true,
+        immediate: true
+    })
+
+    // add start point
+    store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+            const configs = JSON.parse(message.body)
+            configs.forEach((configuration: any) => {
+                solution = configuration
+                const min = new Date().getMinutes();
+                const sec = new Date().getSeconds();
+                const temp: any = {
+                    'configurations': Object.values(configuration.configurations),
+                    'results': Object.values(configuration.results),
+                    'time': min + 'm ' + sec + 's',
+                    'measured points': allRes.value.length + 1
+                };
+                allRes.value.push(temp)
+                bestRes.value.push(temp)
+            })
+            // render when chart is initialized
+            isVisible.value = true
+            nextTick(() => {
+                render().then(() => { isChartInitialized.value = true })
+            })
+            // render() // render chart when all points got
+        }
+    })
+
+    // add last point
+    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+            const configs = JSON.parse(message.body);
+            configs.forEach((configuration: any) => {
+                solution = configuration;
+                const min = new Date().getMinutes();
+                const sec = new Date().getSeconds();
+                const temp: any = {
+                    'configurations': Object.values(configuration.configurations),
+                    'results': Object.values(configuration.results),
+                    'time': min + 'm ' + sec + 's',
+                    'measured points': allRes.value.length + 1
+                };
+                allRes.value.push(temp);
+                bestRes.value.push(temp); // There is no check if this solution is the best decision
+            });
+            isVisible.value = true
+            nextTick(() => {
+                render()
+            })
+        }
+
+    })
+
+    // add new point
+    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+            const configs = JSON.parse(message.body);
+
+            // new x/y values for both traces
+            const newAllX: number[] = [], newAllY: number[] = [], newAllText: string[] = []
+            const newBestX: number[] = [], newBestY: number[] = []
+
+            // check the best availbale point
+            const descr = experiment_description.value
+
+            let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
+            if (!objectives) return
+            const firstObjectiveKey = Object.keys(objectives)[0]
+            console.log('TaskConfig', descr?.['TaskConfiguration'])
+            const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
+
+
+            configs.forEach((configuration: any) => {
+                const min = new Date().getMinutes();
+                const sec = new Date().getSeconds();
+                // number der measuret points before pushing into an array
+                const currentPointIndex = allRes.value.length + 1;
+
+                allRes.value.push({
+                    'configurations': Object.values(configuration.configurations),
+                    'results': Object.values(configuration.results),
+                    'time': min + 'm ' + sec + 's',
+                    'measured points': currentPointIndex
+                }) // add new point (resut)
+
+                const temp: PointExp = {
+                    'configurations': Object.values(configuration.configurations),
+                    'results': Object.values(configuration.results),
+                    'time': min + 'm ' + sec + 's',
+                    'measured points': currentPointIndex
+                }
+
+                // compare to the last best point
+                const lastBest = bestRes.value.at(-1)
+                if (lastBest) {
+                    const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
+                    if (!isBetter) {
+                        temp.results = lastBest.results
+                        temp.configurations = lastBest.configurations
+                    }
+                }
+
+                bestRes.value.push(temp) // add the best availbale point(result) 
+
+
+                // bestRes.value.length > 2 && render()
+
+                /*newAllX.push(allRes.value.length)
+                newAllY.push(configuration.results[0])
+                newAllText.push(String(Object.values(configuration.configurations)))
+
+                newBestX.push(temp['measured points'])
+                newBestY.push(temp.results[0])
+            })
+
+
+            // extendTraces allow to add data to traces in an existing graphDiv
+            const Plotly = store.plotlyInstance
+
+            if (!Plotly) return
+
+            if (!isChartInitialized.value) {
+                isVisible.value = true
+                nextTick(() => {
+                    render().then(() => { isChartInitialized.value = true })
+                })
+                return
+            }
+
+            Plotly.extendTraces(impr.value!, {
+                x: [newAllX, newBestX],
+                y: [newAllY, newBestY],
+                text: [newAllText]
+            }, [0])
+
+            Plotly.extendTraces(impr.value!, {
+                x: [newBestX],
+                y: [newBestY]
+            }, [1])
+
+            // startEndPoint update
+            const xBest = bestRes.value.map(i => i['measured points'])
+            const yBest = bestRes.value.map(i => i['results'][0])
+            Plotly.restyle(impr.value!, {
+                x: [[xBest[0], xBest[xBest.length - 1]]],
+                y: [[yBest[0], yBest[yBest.length - 1]]]
+            }, [2])
+        }*/
+            })
+            isVisible.value = true
+            nextTick(() => {
+                render()
+            })
+        }
+
+    })
+}
+
+
+
+
 
 </script>
 

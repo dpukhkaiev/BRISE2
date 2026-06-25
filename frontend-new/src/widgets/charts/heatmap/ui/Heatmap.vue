@@ -97,9 +97,9 @@ async function zParser(data: Map<String, any>): Promise<Array<Array<any>>> {
 
 
 async function render(): Promise<void> {
-    const Plotly = await import('plotly.js-dist-min')
-    // if (isModelType.value !== 'regression') return
+    const Plotly = store.plotlyInstance
 
+    if (!Plotly) return
     if (isModelType.value === 'regression') {
         const zData = await zParser(result.value);
         const element = map.value
