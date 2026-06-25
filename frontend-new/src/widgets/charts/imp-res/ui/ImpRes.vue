@@ -170,7 +170,7 @@ function initMainEvents() {
                 newBestX.push(temp['measured points'])
                 newBestY.push(temp.results[0])
             })
-            if (!isChartInitialized.value || bestRes.value.length <= 2) return
+
             Plotly.extendTraces(impr.value!, {
                 x: [newAllX, newBestX, [] as number[]],
                 y: [newAllY, newBestY, [] as number[]],

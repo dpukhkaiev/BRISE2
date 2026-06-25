@@ -53,9 +53,10 @@ function applyFilter(value: string) {
 const filteredResult = computed(() => {
     if (!filterValue.value) return result.value
 
-    let params = ''
-    let results = ''
+
     return result.value.filter(task => {
+        let params = ''
+        let results = ''
         Object.values(task.config).forEach((param: any) => {
             params = params + param
         })
@@ -191,7 +192,9 @@ const expanded = ref<string[]>([])
 
 
 defineExpose({
-    replaceNones
+    replaceNones,
+    result,
+    pendingTasks
 })
 </script>
 

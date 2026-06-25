@@ -2,7 +2,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import Heatmap from '../widgets/charts/heatmap/ui/Heatmap.vue'
+import Heatmap from '@/widgets/charts/heatmap/ui/Heatmap.vue'
 
 // mock plotly so it is recognized for ES-modules
 vi.mock('plotly.js-dist-min', () => {
