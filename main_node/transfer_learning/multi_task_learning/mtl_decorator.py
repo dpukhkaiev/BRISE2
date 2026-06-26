@@ -10,6 +10,7 @@ class MultiTaskLearningDecorator(MultiTaskLearning):
     def __init__(self, experiment_description: Dict, experiment_id, base_mtl: MultiTaskLearning):
         super().__init__(experiment_description, experiment_id)
         self.base_mtl = base_mtl
+        self.is_few_shot = base_mtl.is_few_shot
 
     def transfer_configurations(self, similar_experiments: List) -> List[Configuration]:
         return self.base_mtl.transfer_configurations(similar_experiments)
