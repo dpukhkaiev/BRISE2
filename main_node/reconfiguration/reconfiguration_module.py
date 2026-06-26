@@ -252,6 +252,9 @@ class ReconfigurationModule():
 
     @staticmethod
     def get_or_create(experiment:Experiment):
+        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
+            return ReconfigurationModule(experiment)
+        
         return ReconfigurationModule.instance if ReconfigurationModule.instance is not None else ReconfigurationModule(experiment)
 
     class _EventServiceConnection(RabbitMQConnection):
