@@ -104,7 +104,7 @@ onMounted(() => {
 
 
 
-          <v-tabs-window-item value="charts" eager>
+          <v-tabs-window-item value="charts">
             <v-row no-gutters>
               <v-col v-show="visibleCharts.includes('impres')" cols="12" md="8" class="pr-2">
                 <ImpRes />

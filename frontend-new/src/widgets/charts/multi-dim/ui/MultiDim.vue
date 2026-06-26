@@ -116,14 +116,15 @@ function initMainEvents() {
         })
 
     // Default configuration
-    store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.DEFAULT)?.subscribe(async (message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !experiment) {
                 console.warn('not ready yet - rootParam or experiment not there ')
                 return
             }
             let configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
+            let count = 0;
+            for (const configuration of configs) {
                 if (configuration) {
                     //chose()
                     if (!parameter_names.value) return
@@ -139,11 +140,21 @@ function initMainEvents() {
                 } else {
                     console.log("Empty default")
                 }
-            })
+
+                // every 50 elements yielding active to release main thread
+                count++;
+                if (count % 50 === 0 && typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield();
+                }
+
+            }
             console.log('Default:', configs)
 
             if (renderTimer) clearTimeout(renderTimer)
-            renderTimer = setTimeout(() => {
+            renderTimer = setTimeout(async () => {
+                if (typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield()
+                }
                 render()
                 renderTimer = null
             }, 500)
@@ -151,13 +162,17 @@ function initMainEvents() {
     });
 
     // New task results
-    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !rootParam.value.length || !experiment) {
                 return
             }
             let configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
+            // count for counting messages for the yielding
+            let count = 0;
+            // for each becasue of async for scheduler.yield
+
+            for (const configuration of configs) {
                 if (configuration) {
                     //chose()
                     if (!parameter_names.value) return
@@ -173,9 +188,20 @@ function initMainEvents() {
                 else {
                     console.log("Empty task")
                 }
-            })
+
+                // every 50 elements yielding active to release main thread
+                count++;
+                if (count % 50 === 0 && typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield();
+                }
+            }
+
+            // yielding before plotting 
             if (renderTimer) clearTimeout(renderTimer)
-            renderTimer = setTimeout(() => {
+            renderTimer = setTimeout(async () => {
+                if (typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield()
+                }
                 render()
                 renderTimer = null
             }, 500)

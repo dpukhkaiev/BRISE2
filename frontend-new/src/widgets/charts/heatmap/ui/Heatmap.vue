@@ -175,19 +175,22 @@ function initMainEvents() {
     })
 
     // new configuration results
-    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         const configs = JSON.parse(message.body)
-        configs.forEach((configuration: any) => {
+        let count = 0;
+        for (const configuration of configs) {
             if (configuration) {
                 const conf = configuration['configurations'];
                 const freq = lastName(conf.frequency);
                 const threads = lastName(conf.threads);
                 result.value.set(String([freq, threads]), configuration['results']);
                 measPoints.value.push([freq, threads]);
-            } else {
-                console.log('Empty configuration');
             }
-        });
+            count++;
+            if (count % 50 === 0 && 'scheduler' in window && typeof scheduler.yield === 'function') {
+                await scheduler.yield();
+            }
+        }
         // collect all configs first, then render once after Vue's DOM update
         nextTick(() => render())
     })

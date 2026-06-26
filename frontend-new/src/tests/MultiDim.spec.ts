@@ -61,7 +61,7 @@ vi.mock('../entities/main', () => ({
     MainEvent: { NEW: 'NEW', FINAL: 'FINAL', DEFAULT: 'DEFAULT' }
 }))
 
-describe('MultiDim Component (Parallel Coordinates)', () => {
+describe('MultiDim', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         vi.clearAllMocks()
