@@ -81,9 +81,8 @@ function onPaneClick() {
 
 function validateEdges(connection: any) {
 
-    // find target and source nodes
+    // find  source nodes
     const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
-    const targetNode = flowNodes.value.find((node: any) => node.id === connection.target)
     // check if they exist
     if (sourceNode) {
 
@@ -97,6 +96,10 @@ function validateEdges(connection: any) {
     return true
 }
 
+function removeCategory(categoryName: string) {
+
+}
+
 function testXML() {
 
     const xmlResult = graphStore.exportGraphToXML()
@@ -106,9 +109,7 @@ function testXML() {
 }
 const isCodeWindowOpen = ref(false)
 
-function openWaffleCode() {
-    isCodeWindowOpen.value = true
-}
+
 </script>
 
 <template>
@@ -125,10 +126,8 @@ function openWaffleCode() {
             @open-category-table="isCategoryTableOpen = true" />
 
         <Category :is-open="isCategoryTableOpen" @close="isCategoryTableOpen = false" />
-        <CodeOutput :is-open="isCodeWindowOpen" @close="isCodeWindowOpen = false" :code="wflCode" />
-        <button @click="testXML">show xml</button>
+        <CodeOutput :is-open="isCodeWindowOpen" @toggle="isCodeWindowOpen = !isCodeWindowOpen" />
 
-        <button class="btn" @click="openWaffleCode">Open Code View </button>
     </div>
 
 

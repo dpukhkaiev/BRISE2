@@ -76,18 +76,16 @@ export function integerTemplate(node: IntegerNode ): string {
 
 export function nominalTemplate(node: NominalNode, childrenWfl: string[]): string {
     return [
-        `${node.name} : NominalHyperparameter`,
+        `${node.name} : NominalHyperparameter`, `{`,
         ,
-        `{`,
         ...childrenWfl.map(c => indent(c)),
         `}`
     ].join('\n')
 }
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
     return [
-        `${node.name} : OrdinalHyperparameter`,
+        `${node.name} : OrdinalHyperparameter`, `{`,
         ,
-        `{`,
         ...childrenWfl.map(c =>indent(c)),
         `}`
     ].join('\n')
@@ -99,8 +97,7 @@ function categoryTemplate(node: CategoryNode, childrenWfl: string[]): string {
         return node.name  
     }
     return [
-        `${node.name} : Category`,
-        `{`,
+        `${node.name} : Category`,  `{`,
         ...childrenWfl.map(c => indent(c)),
         `}`
     ].join('\n')

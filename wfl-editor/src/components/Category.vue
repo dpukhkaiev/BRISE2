@@ -22,9 +22,7 @@ const connectedChildren = computed(() => {
         .filter(Boolean) // filter null/undefined for the case if nodes deleted
 })
 
-function removeChild(id: string) {
 
-}
 
 const allCategories = computed(() => {
     const manual = activeNode.value?.data.categories || [];
@@ -32,6 +30,9 @@ const allCategories = computed(() => {
     return [...manual, ...children];
 });
 
+function removeChild(categoryName: string) {
+
+}
 </script>
 
 <template>

@@ -10,7 +10,6 @@ const props = defineProps<{
 
 const graphStore = useGraphStore()
 
-const { activeNodeId } = storeToRefs(graphStore)
 const activeNode = computed(() => graphStore.activeNode as any)
 
 const newCategory = ref('')
@@ -26,18 +25,21 @@ function addCategory() {
     }
     showError.value = false
 
-    if (!activeNodeId.value) return
+    if (!activeNode.value.id) return
 
-    graphStore.addCategoryToNode(activeNodeId.value, newCategory.value)
+    graphStore.addCategoryToNode(activeNode.value.id, newCategory.value)
     newCategory.value = ''
 
 }
 const connectedChildren = computed(() => {
-    if (!activeNodeId.value) return []
-    return graphStore.getAllDescendants(activeNodeId.value)
+    if (!activeNode.value.id) return []
+    return graphStore.getAllDescendants(activeNode.value.id)
 })
 
-function removeChild(id: string) {
+function removeChild(categoryName: string) {
+    if (activeNode.value?.id) {
+        graphStore.removeCategory(activeNode.value.id, categoryName)
+    }
 
 }
 
@@ -56,7 +58,7 @@ const allCategories = computed(() => {
 
         <div v-if="activeNode" class="sidebar-content">
             <h3>{{ activeNode.data.name || activeNode.data.label }}</h3>
-            <p class="node-id">ID: {{ activeNodeId }}</p>
+            <p class="node-id">ID: {{ graphStore.activeNodeId }}</p>
             <hr />
             <span :class="['dot', activeNode?.type]"></span>
             <!-- nummerical parameters -->
@@ -120,10 +122,10 @@ const allCategories = computed(() => {
             <label>Custom Constraints</label>
             <div v-for="(c, i) in activeNode.data.customConstraints" :key="i">
                 <input v-model="activeNode.data.customConstraints[i]" class="styled-input" />
-                <button class="btn"@click="activeNode.data.customConstraints.splice(i, 1)">x</button>
+                <button class="btn" @click="activeNode.data.customConstraints.splice(i, 1)">x</button>
             </div>
-                 <button class="btn" @click="activeNode.data.customConstraints.push('')">+ Add constraint</button>
-            </div>
+            <button class="btn" @click="activeNode.data.customConstraints.push('')">+ Add constraint</button>
+        </div>
 
         <div v-else class="sidebar-content">
             <p>Click on a node to configure the sidebar</p>
@@ -218,7 +220,6 @@ const allCategories = computed(() => {
     border-radius: 6px;
 }
 
-/* Standard Button Style */
 .btn {
     padding: 8px 16px;
     border-radius: 6px;

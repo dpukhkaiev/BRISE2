@@ -9,9 +9,6 @@ export const useGraphStore = defineStore('graph', () => {
     const edges: any = ref([])
     const activeNodeId = ref<string | null>(null)
 
-
-
-    
     // for createNode to map the types to the xml export function
     const waffleSuperMap: Record<string, string> = {
         float: 'FloatHyperparameter',
@@ -62,7 +59,7 @@ export const useGraphStore = defineStore('graph', () => {
     // find current node and add category to it
     function addCategoryToNode(nodeId: string | null, categoryName: string) {
         if (!nodeId) return
-        const node = nodes.value.find((n: any) => n.id === nodeId)
+        const node = nodes.value.find((n: Node) => n.id === nodeId)
         if (node) {
             if (!node.data) node.data = {}
             if (!node.data.categories) node.data.categories = []
@@ -74,7 +71,7 @@ export const useGraphStore = defineStore('graph', () => {
     // preserve children (so the update in newNodes in VueFlow state does not overwrite the children of the node)
     function setNodes(newNodes: Node[]) {
         nodes.value = newNodes.map((newNode) => {
-            const existing = nodes.value.find((n: any) => n.id === newNode.id)
+            const existing = nodes.value.find((n: Node) => n.id === newNode.id)
             if (existing?.data?.children) {
                 newNode.data.children = existing.data.children
             }
@@ -120,8 +117,8 @@ export const useGraphStore = defineStore('graph', () => {
     //create category node 
     function createCategoryBox(sourceNode: Node, targetNode: Node) {
         const id = Date.now().toString()
-         const midX = (sourceNode.position.x + targetNode.position.x) / 2
-    const midY = (sourceNode.position.y + targetNode.position.y) / 2 
+        const midX = (sourceNode.position.x + targetNode.position.x) / 2
+        const midY = (sourceNode.position.y + targetNode.position.y) / 2 
 
           const node = {
         id,
@@ -133,6 +130,37 @@ export const useGraphStore = defineStore('graph', () => {
     nodes.value.push(node)
     return node
     }
+
+    // delete categories custom and nested nodes 
+    function removeCategory(nodeId: string | null, categoryName: string){
+        if(!nodeId) return
+
+        const node = nodes.value.find((n: Node) => n.id === nodeId)
+        if(node && node.data) {
+            // custom categories
+            if(node.data.categories) {
+                node.data.categories = node.data.categories.filter(
+                    (cat: string) => cat !== categoryName
+                )
+            }
+
+            // nested child node
+            if (node.data.childrenIds) {
+            const childToDelete = nodes.value.find(
+                (n: Node) => n.data?.name === categoryName && node.data.childrenIds.includes(n.id)
+            )
+            if(childToDelete) {
+                node.data.childrenIds = node.data.childrenIds.filter(
+                    (id: string) => id !== childToDelete.id
+                )
+            }
+            // remove from canvas flow 
+            nodes.value = nodes.value.filter((n: Node) => n.id !== childToDelete.id)
+            edges.value = edges.value.filter((e: Edge) => e.source !== childToDelete.id && e.target !== childToDelete.id)
+        }
+    }
+}
+
 
     // extract the data and make it xml
     function exportGraphToXML() {
@@ -198,6 +226,7 @@ export const useGraphStore = defineStore('graph', () => {
         createNode,
         exportGraphToXML,
         createCategoryBox,
-        getAllDescendants
+        getAllDescendants,
+        removeCategory
     }
 })
