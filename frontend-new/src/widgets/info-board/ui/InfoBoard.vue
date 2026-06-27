@@ -190,66 +190,80 @@ function formatPercent(value: number): string {
 </script>
 
 <template>
-    <v-expansion-panels elevation="2" multiple>
-        <!-- Panel 1 -->
-        <v-expansion-panel :disabled="news.length === 0">
-            <v-expansion-panel-title class="info">
-                Info messages
+  <v-expansion-panels
+    elevation="2"
+    multiple
+  >
+    <!-- Panel 1 -->
+    <v-expansion-panel :disabled="news.length === 0">
+      <v-expansion-panel-title class="info">
+        Info messages
 
-                <v-icon icon="mdi-text-box" class="mx-2"></v-icon>
-                <p class="ml-4"> Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
-                </p>
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
+        <v-icon
+          icon="mdi-text-box"
+          class="mx-2"
+        />
+        <p class="ml-4">
+          Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
+        </p>
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <!-- Logs list -->
 
+        <v-list
+          v-if="news.length != 0"
+          lines="two"
+        >
+          <v-list-item
+            v-for="info in news"
+            :key="info.time"
+            prepend-icon="mdi-check"
+          >
+            <v-list-item-title>{{ info.message }}</v-list-item-title>
+            <v-list-item-subtitle>
+              {{ new Date(info.time).toLocaleDateString() }}
+            </v-list-item-subtitle>
+            <v-divider />
+          </v-list-item>
+        </v-list>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
 
-                <!-- Logs list -->
+    <!-- Panel 2 -->
+    <v-expansion-panel :disabled="!solutionState.solution">
+      <v-expansion-panel-title>
+        Solution
 
-                <v-list lines="two" v-if="news.length != 0">
-                    <v-list-item v-for="info in news" :key="info.time" prepend-icon="mdi-check">
-                        <v-list-item-title>{{ info.message }}</v-list-item-title>
-                        <v-list-item-subtitle>
-                            {{ new Date(info.time).toLocaleDateString() }}
-                        </v-list-item-subtitle>
-                        <v-divider />
-                    </v-list-item>
-                </v-list>
-            </v-expansion-panel-text>
-        </v-expansion-panel>
+        <v-icon icon="mdi-star" />
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        A solution that is found by BRISE ({{ solutionState.solution ? 'Done' : 'Please stand by..' }})
+      </v-expansion-panel-text>
+      <v-expansion-panel-text>
+        <v-list
+          v-if="solutionState.solution"
+          class="solution"
+        >
+          <v-list-item prepend-icon="mdi-flag">
+            <span class="desc">Configuration: </span> <span>{{ solutionState.configWithNones }}</span>
+          </v-list-item>
 
-        <!-- Panel 2 -->
-        <v-expansion-panel :disabled="!solutionState.solution">
-            <v-expansion-panel-title>
-                Solution
+          <v-list-item prepend-icon="mdi-grade">
+            <span class="desc">Result: </span> <span>{{ solutionState.result }}</span>
+          </v-list-item>
 
-                <v-icon icon="mdi-star" />
+          <v-list-item prepend-icon="mdi-network">
+            <span class="desc">Quality gain: </span>
+            <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
+              %</span>
+          </v-list-item>
 
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-                A solution that is found by BRISE ({{ solutionState.solution ? 'Done' : 'Please stand by..' }})
-            </v-expansion-panel-text>
-            <v-expansion-panel-text>
-                <v-list class="solution" v-if="solutionState.solution">
-                    <v-list-item prepend-icon="mdi-flag">
-                        <span class="desc">Configuration: </span> <span>{{ solutionState.configWithNones }}</span>
-                    </v-list-item>
+          <v-list-item prepend-icon="mdi-blur">
+            <span class="desc">Performed measurements: </span>
+            <span>{{ solutionState.solution['performed_measurements'] }}</span>
+          </v-list-item>
 
-                    <v-list-item prepend-icon="mdi-grade">
-                        <span class="desc">Result: </span> <span>{{ solutionState.result }}</span>
-                    </v-list-item>
-
-                    <v-list-item prepend-icon="mdi-network">
-                        <span class="desc">Quality gain: </span>
-                        <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
-                            %</span>
-                    </v-list-item>
-
-                    <v-list-item prepend-icon="mdi-blur">
-                        <span class="desc">Performed measurements: </span>
-                        <span>{{ solutionState.solution['performed_measurements'] }}</span>
-                    </v-list-item>
-
-                    <!--  <v-list-item v-if="searchspace['size'] != 'Infinity'">
+          <!--  <v-list-item v-if="searchspace['size'] != 'Infinity'">
                         <span class="desc">Saved efforts: </span>
                         <span>
                             {{
@@ -262,13 +276,16 @@ function formatPercent(value: number): string {
                         </span>
 
                     </v-list-item> -->
-                </v-list>
-            </v-expansion-panel-text>
-        </v-expansion-panel>
-    </v-expansion-panels>
+        </v-list>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  </v-expansion-panels>
 
-    <!-- Snackbar global -->
-    <v-snackbar v-model="snackbar" :timeout="duration">
-        {{ snackbarMsg }}
-    </v-snackbar>
+  <!-- Snackbar global -->
+  <v-snackbar
+    v-model="snackbar"
+    :timeout="duration"
+  >
+    {{ snackbarMsg }}
+  </v-snackbar>
 </template>

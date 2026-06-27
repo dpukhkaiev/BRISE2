@@ -328,5 +328,8 @@ function initMainEvents() {
 </script>
 
 <template>
-    <div v-show="isVisible" ref="impr"></div>
+  <div
+    v-show="isVisible"
+    ref="impr"
+  />
 </template>

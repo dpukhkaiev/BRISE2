@@ -210,8 +210,8 @@ function initMainEvents() {
                     const conf = configuration['configurations'];
                     result.value.set(String([lastName(conf.frequency), lastName(conf.threads)]), configuration['results']);
                     measPoints.value.push([lastName(conf.frequency), lastName(conf.threads)]);
-                    sol = Object.values(solution.results)
-                    dc = Object.values(defaultConfiguration.results)
+                    sol.value = Object.values(solution.results)
+                    dc.value = Object.values(defaultConfiguration.results)
 
                 } else {
                     console.log('Empty solution');
@@ -248,19 +248,31 @@ onMounted(() => {
 
 </script>
 <template>
-
-    <div v-if="isModelType === 'regression'">
-        <div ref="map"></div>
-    </div>
-    <select v-model="theme.color" @change="render">
-        <option v-for="col in colors" :key="col" :value="col">
-            {{ col }}
-        </option>
-    </select>
-    <select v-model="theme.type" @change="render">
-        <option v-for="type in types" :key="type" :value="type">
-            {{ type }}
-        </option>
-    </select>
-
+  <div v-if="isModelType === 'regression'">
+    <div ref="map" />
+  </div>
+  <select
+    v-model="theme.color"
+    @change="render"
+  >
+    <option
+      v-for="col in colors"
+      :key="col"
+      :value="col"
+    >
+      {{ col }}
+    </option>
+  </select>
+  <select
+    v-model="theme.type"
+    @change="render"
+  >
+    <option
+      v-for="type in types"
+      :key="type"
+      :value="type"
+    >
+      {{ type }}
+    </option>
+  </select>
 </template>

@@ -310,10 +310,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div v-for="item in rootParam" :key="item">
-
-
-        <div :id="item" style="width:100%; height:500px;"></div>
-
-    </div>
+  <div
+    v-for="item in rootParam"
+    :key="item"
+  >
+    <div
+      :id="item"
+      style="width:100%; height:500px;"
+    />
+  </div>
 </template>

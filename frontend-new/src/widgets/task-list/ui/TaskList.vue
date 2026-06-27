@@ -199,55 +199,75 @@ defineExpose({
 </script>
 
 <template>
-    <div class="box" v-if="update">
-        <v-card elevation="4">
-            <v-card-title>
-                <h5>Result <span class="length">({{ result.length }})</span></h5>
-            </v-card-title>
-            <!--search bar-->
-            <v-text-field variant="outlined" @keyup="(e: any) => applyFilter(e.target.value)" placeholder="Filter">
-            </v-text-field>
+  <div
+    v-if="update"
+    class="box"
+  >
+    <v-card elevation="4">
+      <v-card-title>
+        <h5>Result <span class="length">({{ result.length }})</span></h5>
+      </v-card-title>
+      <!--search bar-->
+      <v-text-field
+        variant="outlined"
+        placeholder="Filter"
+        @keyup="(e: any) => applyFilter(e.target.value)"
+      />
 
-            <v-data-table-virtual show-expand v-model:expanded="expanded" class="result" :headers="headers"
-                :items="filteredResult">
-                <!-- Configuration Column -->
-                <template v-slot:item.run="{ item }">
-                    <span v-for="(value, key) in item.config" :key="key">
-                        {{ key }} = {{ value }} ;
-                    </span>
-                </template>
-                <template v-slot:item.roundedResults="{ item }">
-                    <span v-for="(value, key) in item.roundedResults" :key="key">
-                        {{ key }} = {{ value }} ;
-                    </span>
-                </template>
-
-
-                <!-- Expanded Content Column -->
-                <template #expanded-row="{ item }">
-                    <div v-memo="[item.id, expanded.includes(item.id)]">
-
-                        <v-chip v-for="(value, key) in item.config" :key="key">
-                            {{ key }}: {{ value }}
-                        </v-chip>
-                    </div>
-
-                    <v-list>
-                        <v-list-item>Worker: {{ item.meta.worker }}</v-list-item>
-                        <v-list-item>Repetitions {{ searchTasks(item.config).length }}</v-list-item>
-                        <v-list-item>
-                            Average result:
-
-                            <span v-for="(res, index) in cachedAvg(item.config)" :key="index">
-                                {{ res.toFixed(2) }}
-                                <span v-if="index < cachedAvg(item.config).length - 1"> ; </span>
-                            </span>
+      <v-data-table-virtual
+        v-model:expanded="expanded"
+        show-expand
+        class="result"
+        :headers="headers"
+        :items="filteredResult"
+      >
+        <!-- Configuration Column -->
+        <template #item.run="{ item }">
+          <span
+            v-for="(value, key) in item.config"
+            :key="key"
+          >
+            {{ key }} = {{ value }} ;
+          </span>
+        </template>
+        <template #item.roundedResults="{ item }">
+          <span
+            v-for="(value, key) in item.roundedResults"
+            :key="key"
+          >
+            {{ key }} = {{ value }} ;
+          </span>
+        </template>
 
 
-                        </v-list-item>
-                    </v-list>
-                </template>
-            </v-data-table-virtual>
-        </v-card>
-    </div>
+        <!-- Expanded Content Column -->
+        <template #expanded-row="{ item }">
+          <div v-memo="[item.id, expanded.includes(item.id)]">
+            <v-chip
+              v-for="(value, key) in item.config"
+              :key="key"
+            >
+              {{ key }}: {{ value }}
+            </v-chip>
+          </div>
+
+          <v-list>
+            <v-list-item>Worker: {{ item.meta.worker }}</v-list-item>
+            <v-list-item>Repetitions {{ searchTasks(item.config).length }}</v-list-item>
+            <v-list-item>
+              Average result:
+
+              <span
+                v-for="(res, index) in cachedAvg(item.config)"
+                :key="index"
+              >
+                {{ res.toFixed(2) }}
+                <span v-if="index < cachedAvg(item.config).length - 1"> ; </span>
+              </span>
+            </v-list-item>
+          </v-list>
+        </template>
+      </v-data-table-virtual>
+    </v-card>
+  </div>
 </template>
