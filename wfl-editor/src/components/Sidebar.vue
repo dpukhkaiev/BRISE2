@@ -27,10 +27,12 @@ function addCategory() {
 
     if (!activeNode.value.id) return
 
-    graphStore.addCategoryToNode(activeNode.value.id, newCategory.value)
-    newCategory.value = ''
+    // graphStore.addCategoryToNode(activeNode.value.id, newCategory.value)
 
+    graphStore.createCategoryBox(activeNode.value, newCategory.value)
+    newCategory.value = ''
 }
+
 const connectedChildren = computed(() => {
     if (!activeNode.value.id) return []
     return graphStore.getAllDescendants(activeNode.value.id)
@@ -40,7 +42,6 @@ function removeChild(categoryName: string) {
     if (activeNode.value?.id) {
         graphStore.removeCategory(activeNode.value.id, categoryName)
     }
-
 }
 
 const allCategories = computed(() => {
@@ -64,7 +65,12 @@ const allCategories = computed(() => {
             <!-- nummerical parameters -->
             <div v-if="activeNode?.type === 'float' || activeNode?.type === 'integer'">
                 <label>Name</label>
-                <input v-model="activeNode.data.name" class="styled-input" />
+                <input v-model="activeNode.data.name" class="styled-input"
+                    :class="{ 'input-error': !activeNode.data.name }" />
+
+                <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
+                    name is a required
+                </p>
 
                 <label>Upper</label>
                 <input type="number" :step="activeNode?.type === 'float' ? '0.1' : '1'"
@@ -84,7 +90,12 @@ const allCategories = computed(() => {
             <!-- categorical parameters -->
             <div v-else-if="activeNode?.type === 'nominal' || activeNode?.type === 'ordinal'">
                 <label>Name</label>
-                <input type="text" v-model="activeNode.data.name" class="styled-input" />
+                <input type="text" v-model="activeNode.data.name" class="styled-input"
+                    :class="{ 'input-error': !activeNode.data.name }" />
+
+                <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
+                    name is a required
+                </p>
 
                 <label>Categories</label>
                 <ul>
@@ -102,7 +113,7 @@ const allCategories = computed(() => {
                 </ul>
 
 
-
+                <!--custom categories-->
                 <input type="text" v-model="newCategory" @input="showError = false" class="styled-input" />
                 <p v-if="showError" style="color: red; font-size: 12px;">Category cannot be empty</p>
                 <div>
@@ -119,12 +130,12 @@ const allCategories = computed(() => {
 
             </div>
 
-            <label>Custom Constraints</label>
-            <div v-for="(c, i) in activeNode.data.customConstraints" :key="i">
+            <!-- <label>Children</label>
+            <div v-for="(c, i) in activeNode.data.category" :key="i">
                 <input v-model="activeNode.data.customConstraints[i]" class="styled-input" />
                 <button class="btn" @click="activeNode.data.customConstraints.splice(i, 1)">x</button>
-            </div>
-            <button class="btn" @click="activeNode.data.customConstraints.push('')">+ Add constraint</button>
+            </div> -->
+
         </div>
 
         <div v-else class="sidebar-content">
@@ -185,6 +196,11 @@ const allCategories = computed(() => {
     font-size: 11px;
     color: #64748b;
     font-family: monospace;
+}
+
+.styled-input.input-error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
 }
 
 .dot {

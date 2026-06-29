@@ -45,11 +45,11 @@ onConnect((connection) => {
 
         if (isSourceCategorical) {
 
-            const categoryNode = graphStore.createCategoryBox(sourceNode, targetNode)
+            const categoryNode = graphStore.createCategoryBox(sourceNode, "", targetNode)
             addNodes(categoryNode)
 
-            addEdges({ source: sourceNode.id, target: categoryNode.id })
-            addEdges({ source: categoryNode.id, target: targetNode.id })
+            addEdges({ id: `e-${sourceNode.id}-${categoryNode.id}`, source: sourceNode.id, target: categoryNode.id })
+            addEdges({ id: `e-${categoryNode.id}-${targetNode.id}`, source: categoryNode.id, target: targetNode.id })
 
             graphStore.addChildToNode(sourceNode.id, categoryNode.id)
             graphStore.addChildToNode(categoryNode.id, targetNode.id)
@@ -63,10 +63,11 @@ onConnect((connection) => {
 
 })
 
+
 // for store to track changes of the nodes
-watch(flowNodes, (newNodes) => {
+/*watch(flowNodes, (newNodes) => {
     graphStore.setNodes(newNodes)
-}, { deep: true })
+}, { deep: true }) */
 
 function onNodeClick(event: any) {
     // event.node.id is saved in store
@@ -96,10 +97,6 @@ function validateEdges(connection: any) {
     return true
 }
 
-function removeCategory(categoryName: string) {
-
-}
-
 function testXML() {
 
     const xmlResult = graphStore.exportGraphToXML()
@@ -114,9 +111,10 @@ const isCodeWindowOpen = ref(false)
 
 <template>
     <div style="height: 100vh; width: 100%; display: flex; flex-direction: column;">
-        <VueFlow :nodes="graphStore.nodes" :edges="graphStore.edges" :node-types="myNodeTypes" connection-mode="strict"
-            :is-valid-connection="validateEdges" :default-edge-options="{ type: 'smoothstep', animated: false }"
-            @node-click="onNodeClick" @pane-click="onPaneClick">
+        <VueFlow v-model:nodes="graphStore.nodes" v-model:edges="graphStore.edges" :node-types="myNodeTypes"
+            connection-mode="strict" :is-valid-connection="validateEdges"
+            :default-edge-options="{ type: 'smoothstep', animated: false }" @node-click="onNodeClick"
+            @pane-click="onPaneClick">
             <Panel position="top-right" class="custom-center-panel">
                 <Toolbar />
             </Panel>

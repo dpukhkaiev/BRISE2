@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useGraphStore } from '../store.ts'
-import { storeToRefs } from 'pinia'
 
 
 const props = defineProps<{
@@ -30,9 +29,7 @@ const allCategories = computed(() => {
     return [...manual, ...children];
 });
 
-function removeChild(categoryName: string) {
 
-}
 </script>
 
 <template>

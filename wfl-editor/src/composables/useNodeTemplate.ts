@@ -46,7 +46,7 @@ export type Children = FloatNode | IntegerNode | NominalNode | OrdinalNode | Cat
 
 
 //
-function indent(text: string, spaces: number = 3): string {
+function indent(text: string, spaces: number = 2): string {
     const pad = ' '.repeat(spaces)
     return text.split('\n').map(line => pad + line).join('\n')
 }
@@ -54,7 +54,7 @@ function indent(text: string, spaces: number = 3): string {
 function floatTemplate(node: FloatNode): string {
 
 
-    const constraints = [`${node.name}: FloatHyperparameter`, `{`]
+    const constraints = [`${node.name}: FloatHyperparameter {`]
     if (node.lower !== undefined) constraints.push(indent(`[Lower = ${node.lower}]`))
     if (node.upper !== undefined) constraints.push(indent(`[Upper = ${node.upper}]`))
     if (node.default !== undefined) constraints.push(indent(`[Default = ${node.default}]`))
@@ -65,7 +65,7 @@ function floatTemplate(node: FloatNode): string {
 
 export function integerTemplate(node: IntegerNode ): string {
   
-    const constraints = [`${node.name}: IntegerHyperparameter`, `{`]
+    const constraints = [`${node.name}: IntegerHyperparameter {`]
     if (node.lower !== undefined) constraints.push(indent(`[Lower = ${node.lower}]`))
     if (node.upper !== undefined) constraints.push(indent(`[Upper = ${node.upper}]`))
     if (node.default !== undefined) constraints.push(indent(`[Default = ${node.default}]`))
@@ -76,18 +76,16 @@ export function integerTemplate(node: IntegerNode ): string {
 
 export function nominalTemplate(node: NominalNode, childrenWfl: string[]): string {
     return [
-        `${node.name} : NominalHyperparameter`, `{`,
-        ,
+        `${node.name} : NominalHyperparameter {`,       
         ...childrenWfl.map(c => indent(c)),
         `}`
     ].join('\n')
 }
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
     return [
-        `${node.name} : OrdinalHyperparameter`, `{`,
-        ,
-        ...childrenWfl.map(c =>indent(c)),
-        `}`
+        `${node.name} : OrdinalHyperparameter {`,
+        
+        ...childrenWfl.map(c =>indent(c)) ,`}`,        
     ].join('\n')
 }
 
@@ -97,7 +95,7 @@ function categoryTemplate(node: CategoryNode, childrenWfl: string[]): string {
         return node.name  
     }
     return [
-        `${node.name} : Category`,  `{`,
+        `${node.name} : Category {`,
         ...childrenWfl.map(c => indent(c)),
         `}`
     ].join('\n')

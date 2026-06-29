@@ -39,7 +39,6 @@ export const useGraphStore = defineStore('graph', () => {
                 constraints: { lower: null, upper: null, default: null, level: 0 },
                 categories: categories ? [] : undefined,
                 children: categories ? [] : undefined,
-                 customConstraints: []
             }
         })
         nodes.value.push(node)
@@ -66,17 +65,24 @@ export const useGraphStore = defineStore('graph', () => {
 
             node.data.categories.push(categoryName)
         }
+
     }
 
     // preserve children (so the update in newNodes in VueFlow state does not overwrite the children of the node)
     function setNodes(newNodes: Node[]) {
         nodes.value = newNodes.map((newNode) => {
             const existing = nodes.value.find((n: Node) => n.id === newNode.id)
-            if (existing?.data?.children) {
+            
+            if(existing?.data) {
                 newNode.data.children = existing.data.children
+                newNode.data.childrenIds = existing.data.childrenIds
+                newNode.data.categories = existing.data.categories
+                newNode.data.name = existing.data.name
+                newNode.data.constraints = existing.data.constraints
             }
-            return newNode
+            
         })
+    
     }
 
     function setEdges(newEdges: Edge[]) {
@@ -115,19 +121,44 @@ export const useGraphStore = defineStore('graph', () => {
 
 
     //create category node 
-    function createCategoryBox(sourceNode: Node, targetNode: Node) {
+    function createCategoryBox(sourceNode: Node, categoryName?: string, targetNode?: Node) {
         const id = Date.now().toString()
-        const midX = (sourceNode.position.x + targetNode.position.x) / 2
-        const midY = (sourceNode.position.y + targetNode.position.y) / 2 
+      
+        // position for custom categories on canvas
+        let posX = sourceNode.position.x + 150
+        let posY = sourceNode.position.y + 50
 
-          const node = {
+        if (targetNode && typeof targetNode !== 'undefined') {
+            posX = (sourceNode.position.x + targetNode.position.x) / 2
+            posY = (sourceNode.position.y + targetNode.position.y) / 2 
+        }
+
+        const node = {
         id,
         type: 'category',
-        position: { x: midX, y: midY },
+        position: { x: posX, y: posY },
         // for xml export
-        data: { name: '', super: waffleSuperMap['category'] }
-    }
+        data:{ 
+                name: categoryName || '', 
+                super: waffleSuperMap['category'],
+                childrenIds: []
+        }
+      
+   }
+
     nodes.value.push(node)
+
+    edges.value.push({
+        id: `e-${sourceNode.id}-${id}`,
+        source: sourceNode.id,
+        target: id
+    })
+
+    // ID im Parent als Kind hinterlegen
+    if (!sourceNode.data.childrenIds) 
+        sourceNode.data.childrenIds = []
+        sourceNode.data.childrenIds.push(id)
+
     return node
     }
 
@@ -137,6 +168,7 @@ export const useGraphStore = defineStore('graph', () => {
 
         const node = nodes.value.find((n: Node) => n.id === nodeId)
         if(node && node.data) {
+            console.log("Search for", categoryName, "in ChildrenIds:", node.data.childrenIds);
             // custom categories
             if(node.data.categories) {
                 node.data.categories = node.data.categories.filter(
@@ -145,20 +177,28 @@ export const useGraphStore = defineStore('graph', () => {
             }
 
             // nested child node
-            if (node.data.childrenIds) {
+            if (node.data.childrenIds && node.data.childrenIds.length > 0) {
+                
             const childToDelete = nodes.value.find(
                 (n: Node) => n.data?.name === categoryName && node.data.childrenIds.includes(n.id)
             )
+            console.log("Found node to be deleted", childToDelete);
             if(childToDelete) {
                 node.data.childrenIds = node.data.childrenIds.filter(
                     (id: string) => id !== childToDelete.id
                 )
-            }
+            
             // remove from canvas flow 
             nodes.value = nodes.value.filter((n: Node) => n.id !== childToDelete.id)
+            console.log(' removed node ', nodes.value)
             edges.value = edges.value.filter((e: Edge) => e.source !== childToDelete.id && e.target !== childToDelete.id)
+                  console.log(' removed edges ', edges.value)
+            }
+           
         }
+        
     }
+     console.log(' removed node ', nodes.value)
 }
 
 
