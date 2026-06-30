@@ -63,7 +63,12 @@ class RepeaterOrchestration:
         expected_value_ranges = [(min, max) for min in minimal_values for max in maximal_values]
         self._expected_values_range = expected_value_ranges
 
-        self.logger.info("Outliers detection module is disabled")
+        outlier_detectors_parameters = self.experiment_description["OutliersDetection"]
+        if outlier_detectors_parameters["isEnabled"]:
+            self.outlier_detectors = get_outlier_detectors(outlier_detectors_parameters)
+            self.logger.info("Outliers detection module is enabled")
+        else:
+            self.logger.info("Outliers detection module is disabled")
 
         self._type = self.get_repeater(True)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
@@ -137,7 +142,11 @@ class RepeaterOrchestration:
                                             objective,
                                             self._expected_values_range[index],
                                             self._objectives_data_types[index])
-
+            if self.outlier_detectors is not None:
+                tasks_results = self.outlier_detectors.find_outliers_for_taskset(tasks_results,
+                                                                                 self._objectives,
+                                                                                 [configuration],
+                                                                                 tasks_to_send)
             # Sending data to API and adding Tasks to Configuration
             for parameters, task in zip(tasks_to_send, tasks_results):
                 if configuration.parameters == parameters:
