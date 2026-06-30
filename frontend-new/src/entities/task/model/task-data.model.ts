@@ -1,4 +1,4 @@
-// represnts raw server data (response) for a single task (item)
+// represents raw server data (response) for a single task (item)
 interface TaskData {
     run: Run,
     configurations: Configuration,

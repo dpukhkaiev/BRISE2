@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
+//import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
 // Plotly
-import Plotly from 'plotly.js-dist-min'
+//import Plotly from 'plotly.js-dist-min'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 
 import { MainEvent } from '../../../../entities/main'
@@ -74,33 +75,37 @@ const isModelType = computed(() => {
     return 'unknown'
 })
 
-function zParser(data: Map<String, any>): Array<Array<any>> {
+async function zParser(data: Map<String, any>): Promise<Array<Array<any>>> {
     // Parse the answears in to array of Y rows
     const z: any = []
-    x.value &&
-        y.value &&
-        y.value.forEach((y: any) => { // y - parameter2
-            const row: any = [];
-            x.value.forEach((x: any) => { // x - parameter1
-                const results = data.get(String([y, x])); // To get horizontal orientation - change to [x,y], vertical - [y,x]
-                row.push(results && results[0]); // Get the first result from an array or mark it as undefined.
+    for (const yVal of y.value) {
+        const row: any = [];
+        for (const xVal of x.value) {
+            const results = data.get(String([yVal, xVal])); // To get horizontal orientation - change to [x,y], vertical - [y,x]
+            row.push(results && results[0]); // Get the first result from an array or mark it as undefined.
+        }
+        z.push(row);
+        // breaking a long task in a lot of short ones
+        if ('scheduler' in window && typeof scheduler.yield === 'function') {
+            await scheduler.yield();
+        }
 
-            });
-            z.push(row);
-        });
+    }
+
     return z;
 }
 
 
-function render(): void {
+async function render(): Promise<void> {
+    const Plotly = store.plotlyInstance
 
-    // if (isModelType.value !== 'regression') return
-
+    if (!Plotly) return
     if (isModelType.value === 'regression') {
+        const zData = await zParser(result.value);
         const element = map.value
         const data: any[] = [
             { // defined X and Y axises with data, type and color
-                z: zParser(result.value),
+                z: zData,
                 x: x.value.map(String),
                 y: y.value.map(String),
                 type: theme.value.type,
@@ -170,19 +175,23 @@ function initMainEvents() {
     })
 
     // new configuration results
-    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         const configs = JSON.parse(message.body)
-        configs.forEach((configuration: any) => {
+        let count = 0;
+        for (const configuration of configs) {
             if (configuration) {
                 const conf = configuration['configurations'];
                 const freq = lastName(conf.frequency);
                 const threads = lastName(conf.threads);
                 result.value.set(String([freq, threads]), configuration['results']);
                 measPoints.value.push([freq, threads]);
-            } else {
-                console.log('Empty configuration');
             }
-        });
+            count++;
+            if (count % 50 === 0 && 'scheduler' in window && typeof scheduler.yield === 'function') {
+                await scheduler.yield();
+            }
+        }
+        // collect all configs first, then render once after Vue's DOM update
         nextTick(() => render())
     })
 
@@ -201,8 +210,8 @@ function initMainEvents() {
                     const conf = configuration['configurations'];
                     result.value.set(String([lastName(conf.frequency), lastName(conf.threads)]), configuration['results']);
                     measPoints.value.push([lastName(conf.frequency), lastName(conf.threads)]);
-                    sol = Object.values(solution.results)
-                    dc = Object.values(defaultConfiguration.results)
+                    sol.value = Object.values(solution.results)
+                    dc.value = Object.values(defaultConfiguration.results)
 
                 } else {
                     console.log('Empty solution');
@@ -239,19 +248,31 @@ onMounted(() => {
 
 </script>
 <template>
-
-    <div v-if="isModelType === 'regression'">
-        <div ref="map"></div>
-    </div>
-    <select v-model="theme.color" @change="render">
-        <option v-for="col in colors" :key="col" :value="col">
-            {{ col }}
-        </option>
-    </select>
-    <select v-model="theme.type" @change="render">
-        <option v-for="type in types" :key="type" :value="type">
-            {{ type }}
-        </option>
-    </select>
-
+  <div v-if="isModelType === 'regression'">
+    <div ref="map" />
+  </div>
+  <select
+    v-model="theme.color"
+    @change="render"
+  >
+    <option
+      v-for="col in colors"
+      :key="col"
+      :value="col"
+    >
+      {{ col }}
+    </option>
+  </select>
+  <select
+    v-model="theme.type"
+    @change="render"
+  >
+    <option
+      v-for="type in types"
+      :key="type"
+      :value="type"
+    >
+      {{ type }}
+    </option>
+  </select>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@mdi/font/css/materialdesignicons.css'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 // services
 import { useMainEventStore } from '../../../entities/main'
@@ -18,10 +18,9 @@ const isFinish = ref(false)
 // create a store 
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
+const { experiment_description, searchspace, globalConfig, isConnected } = storeToRefs(store)
 
 const showDownload = ref(false)
-
 
 function openDownloadOption(): void {
     showDownload.value = true
@@ -29,10 +28,12 @@ function openDownloadOption(): void {
 
 function startMainControl(): any {
     if (isRunning.value === false) {
-        stopMainControl();
+        //  stopMainControl();
         MainClientApi.startMain(JSON.parse(JSON.stringify(experiment_description.value)));
         isRunning.value = true
         isFinish.value = false
+
+
     }
     console.log('sending:', experiment_description.value)
 }
@@ -44,8 +45,6 @@ function stopMainControl(): any {
     }
 
 }
-
-
 
 function initMainEvents(): void {
     store.onEvent(MainEvent.FINAL)?.subscribe(() => {
@@ -82,41 +81,65 @@ onMounted(() => {
 
 </script>
 <template>
-    <div class="button-row">
-        <v-card flat border rounded="lg">
-            <v-card-item class="mb-2">
-                <div class="info-row">
-                    <span class="label">Experiment</span>
-                    <span class="value"> {{ experiment_description?.Context?.TaskConfiguration?.TaskName }}</span>
-                </div>
-            </v-card-item>
-            <v-card-item>
-                <div class="info-row">
-                    <span class="label">Scenario</span>
-                    <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
-                    }}</span>
-                </div>
-            </v-card-item>
-            <v-card-actions>
-                <v-btn :ripple="false" :disabled="isRunning" @click="startMainControl" color="#A8D5A2"
-                    style="color: #2D6A27;" variant="elevated" prepend-icon="mdi-play">
-                    Start
-                </v-btn>
-                <v-btn :ripple="false" :disabled="!isRunning" @click="stopMainControl" color="#F4B8B8"
-                    style="color: #8B2E2E;" variant="elevated" prepend-icon="mdi-stop">
-                    Stop
-                </v-btn>
-                <v-btn :ripple="false" class="text-none text-body-small" v-if="isFinish" @click="openDownloadOption"
-                    append-icon="mdi-content-save" color="#B8C9F4" style="color: #2E3F8B;" variant="outlined">
-                    Save Experiment
-                </v-btn>
-                <v-file-input v-model="selectedFile">
-
-                </v-file-input>
-                <v-btn @click="uploadFile">
-                    Upload Experiment
-                </v-btn>
-                <!--     <v-select v-model="selectedExperiment" :items="experiments">
+  <div class="button-row">
+    <v-card
+      flat
+      border
+      rounded="lg"
+    >
+      <v-card-item class="mb-2">
+        <div class="info-row">
+          <span class="label">Experiment</span>
+          <span class="value"> {{ experiment_description?.Context?.TaskConfiguration?.TaskName }}</span>
+        </div>
+      </v-card-item>
+      <v-card-item>
+        <div class="info-row">
+          <span class="label">Scenario</span>
+          <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario?.ws_file
+          }}</span>
+        </div>
+      </v-card-item>
+      <v-card-actions>
+        <v-btn
+          :disabled="isRunning || !isConnected"
+          :ripple="false"
+          color="#A8D5A2"
+          style="color: #2D6A27;"
+          variant="elevated"
+          prepend-icon="mdi-play"
+          @click="startMainControl"
+        >
+          Start
+        </v-btn>
+        <v-btn
+          :ripple="false"
+          :disabled="!isRunning"
+          color="#F4B8B8"
+          style="color: #8B2E2E;"
+          variant="elevated"
+          prepend-icon="mdi-stop"
+          @click="stopMainControl"
+        >
+          Stop
+        </v-btn>
+        <v-btn
+          v-if="isFinish"
+          :ripple="false"
+          class="text-none text-body-small"
+          append-icon="mdi-content-save"
+          color="#B8C9F4"
+          style="color: #2E3F8B;"
+          variant="outlined"
+          @click="openDownloadOption"
+        >
+          Save Experiment
+        </v-btn>
+        <v-file-input v-model="selectedFile" />
+        <v-btn @click="uploadFile">
+          Upload Experiment
+        </v-btn>
+        <!--     <v-select v-model="selectedExperiment" :items="experiments">
                 </v-select>
                 <v-menu open-on-hover>
 
@@ -126,17 +149,23 @@ onMounted(() => {
                         <v-list-item-title>{{ item }}</v-list-item-title>
                     </v-list-item>
                 </v-list>-->
-            </v-card-actions>
+      </v-card-actions>
 
-            <v-progress-linear v-if="isRunning" indeterminate color="#FF9800" height="4"
-                style="position:absolute; bottom: 0; left: 0; right: 0;" />
-
-        </v-card>
-        <v-dialog v-model="showDownload" max-width="350">
-            <DownloadPopup @close="showDownload = false" />
-        </v-dialog>
-
-    </div>
+      <v-progress-linear
+        v-if="isRunning"
+        indeterminate
+        color="#FF9800"
+        height="4"
+        style="position:absolute; bottom: 0; left: 0; right: 0;"
+      />
+    </v-card>
+    <v-dialog
+      v-model="showDownload"
+      max-width="350"
+    >
+      <DownloadPopup @close="showDownload = false" />
+    </v-dialog>
+  </div>
 </template>
 
 <style scoped>

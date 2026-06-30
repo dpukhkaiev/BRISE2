@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // Plotly
-import Plotly from 'plotly.js-dist-min'
+//import Plotly from 'plotly.js-dist-min'
 
 
 // Constant
@@ -18,6 +18,10 @@ import { useMainEventStore } from '../../../../entities/main'
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
 const { experiment_description, searchspace } = storeToRefs(store)
+
+
+//const experiment_description = computed(() => store.experiment_description)
+//const searchspace = computed(() => store.searchspace)
 
 // experiment configuration
 const parameter_names = ref()
@@ -94,6 +98,9 @@ function initMainEvents() {
         rootParam.value = searchspace.value["root_parameters_list"]
         console.log('rootParam after:', rootParam.value)
         experiment = searchspace.value["name"]
+
+        // call chose here when searchspace.boundaries exist
+        chose()
         // ObjectPriorities does not exist on received data, updated new path 
         let priorities = experiment_description.value?.Context?.TaskConfiguration?.Objectives
 
@@ -109,16 +116,17 @@ function initMainEvents() {
         })
 
     // Default configuration
-    store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.DEFAULT)?.subscribe(async (message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !experiment) {
                 console.warn('not ready yet - rootParam or experiment not there ')
                 return
             }
             let configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
+            let count = 0;
+            for (const configuration of configs) {
                 if (configuration) {
-                    chose()
+                    //chose()
                     if (!parameter_names.value) return
                     defaultPoint = configuration
                     let alphas = new Array();;
@@ -132,11 +140,21 @@ function initMainEvents() {
                 } else {
                     console.log("Empty default")
                 }
-            })
+
+                // every 50 elements yielding active to release main thread
+                count++;
+                if (count % 50 === 0 && typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield();
+                }
+
+            }
             console.log('Default:', configs)
 
             if (renderTimer) clearTimeout(renderTimer)
-            renderTimer = setTimeout(() => {
+            renderTimer = setTimeout(async () => {
+                if (typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield()
+                }
                 render()
                 renderTimer = null
             }, 500)
@@ -144,15 +162,19 @@ function initMainEvents() {
     });
 
     // New task results
-    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !rootParam.value.length || !experiment) {
                 return
             }
             let configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
+            // count for counting messages for the yielding
+            let count = 0;
+            // for each becasue of async for scheduler.yield
+
+            for (const configuration of configs) {
                 if (configuration) {
-                    chose()
+                    //chose()
                     if (!parameter_names.value) return
                     var alphas = new Array();;
                     parameter_names.value.forEach((key: any) => {
@@ -166,9 +188,20 @@ function initMainEvents() {
                 else {
                     console.log("Empty task")
                 }
-            })
+
+                // every 50 elements yielding active to release main thread
+                count++;
+                if (count % 50 === 0 && typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield();
+                }
+            }
+
+            // yielding before plotting 
             if (renderTimer) clearTimeout(renderTimer)
-            renderTimer = setTimeout(() => {
+            renderTimer = setTimeout(async () => {
+                if (typeof scheduler !== 'undefined' && scheduler.yield) {
+                    await scheduler.yield()
+                }
                 render()
                 renderTimer = null
             }, 500)
@@ -192,15 +225,18 @@ function initMainEvents() {
     });
 }
 
-function render() {
+async function render(): Promise<void> {
     console.log('currentDiagram:', currentDiagram.value)
     console.log('rootParam:', rootParam.value)
     console.log('element found:', document.getElementById(currentDiagram.value))
+
+    const Plotly = store.plotlyInstance
     const element = document.getElementById(currentDiagram.value)
-    if (!element) {
-        console.warn('element not found', currentDiagram.value)
+    if (!Plotly || !element) {
+        console.warn('Plotly instance or DOM element not ready yet for:', currentDiagram.value)
         return
     }
+
 
     var trace = [{
         type: 'parcoords' as const,
@@ -264,15 +300,23 @@ onMounted(() => {
 onUnmounted(() => {
     if (renderTimer) clearTimeout(renderTimer)
     const element = document.getElementById(currentDiagram.value)
-    if (element) Plotly.purge(element)
+    const Plotly = store.plotlyInstance
+
+    if (element && Plotly) {
+        Plotly.purge(element)
+    }
 })
+
 </script>
 
 <template>
-    <div v-for="item in rootParam" :key="item">
-
-
-        <div :id="item" style="width:100%; height:500px;"></div>
-
-    </div>
+  <div
+    v-for="item in rootParam"
+    :key="item"
+  >
+    <div
+      :id="item"
+      style="width:100%; height:500px;"
+    />
+  </div>
 </template>

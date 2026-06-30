@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
 
 import { MainEvent } from '../../../entities/main'
 import { Task } from '../../../entities/task/model/task-data.model';
@@ -12,16 +13,23 @@ const result = ref<Task[]>([])
 
 const update = ref(false)
 
-// task object for expanding a row in a table
-
+// subscription object for saving and unmounting subscriptions
+const subs = new Subscription()
+let stopWatch: () => void = () => { }
 
 // initialize store
 const store = useMainEventStore()
+
+// cache average result calculations
+const avgResultCache = new Map<string, any[]>()
+
 // destructure reactive value from main.event.store
 const { experiment_description } = storeToRefs(store)
 function refresh() {
     result.value = []
     update.value = true
+    avgResultCache.clear()
+    pendingTasks.length = 0
 }
 
 const filterValue = ref('')
@@ -30,6 +38,14 @@ const filterValue = ref('')
 const pendingTasks: Task[] = []
 let intervalId: ReturnType<typeof setInterval>
 
+function cachedAvg(config: Record<string, any>): any[] {
+    const key = JSON.stringify(config)
+    if (avgResultCache.has(key)) return avgResultCache.get(key)!
+    const avg = getAverageResult(config)
+    avgResultCache.set(key, avg)
+    return avg
+}
+
 function applyFilter(value: string) {
     filterValue.value = value.trim().toLocaleLowerCase()
 }
@@ -37,9 +53,10 @@ function applyFilter(value: string) {
 const filteredResult = computed(() => {
     if (!filterValue.value) return result.value
 
-    let params = ''
-    let results = ''
+
     return result.value.filter(task => {
+        let params = ''
+        let results = ''
         Object.values(task.config).forEach((param: any) => {
             params = params + param
         })
@@ -101,17 +118,17 @@ function searchTasks(search: Record<string, any>) {
     return select
 }
 
-function replaceNones(config: Record<string, any>) {
-    let res_config = new Array<any>()
-    Array.prototype.forEach.call(config, param => {
+function replaceNones(config: any[]) {
+
+    return config.map(param => {
         if (param == '' || param == null) {
-            res_config.push('None')
+            return 'None'
         }
-        else {
-            res_config.push(param)
-        }
+
+        return param
+
     });
-    return res_config
+
 }
 
 function getAverageResult(search: Record<string, any>) {
@@ -133,7 +150,7 @@ function getAverageResult(search: Record<string, any>) {
 }
 
 function initMainEvents(): void {
-    store.onEvent(MainEvent.NEW)?.subscribe((message) => {
+    subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message) => {
         if (message.headers['message_subtype'] === 'task') {
             var fresh: Task = new Task(JSON.parse(message.body))
             var params_array = Object.values(fresh.config)
@@ -142,14 +159,13 @@ function initMainEvents(): void {
             //  !result.value.includes(fresh, -1) && result.value.push(fresh);
             pendingTasks.push(fresh) // only collect, not render yet
         }
-    });
+    }));
 
-    watch(experiment_description, () => {
+    stopWatch = watch(experiment_description, () => {
 
-        update.value = false
         refresh()
     },
-        // reactive object from store, need deep to tracl properties of the object
+        // reactive object from store, need deep to track properties of the object
         {
             deep: true,
             immediate: true
@@ -169,55 +185,89 @@ onMounted(() => {
 
 onUnmounted(() => {
     clearInterval(intervalId)
+    subs.unsubscribe()
+    stopWatch()
 })
 const expanded = ref<string[]>([])
+
+
+defineExpose({
+    replaceNones,
+    result,
+    pendingTasks
+})
 </script>
 
 <template>
-    <div class="box" v-if="update">
-        <v-card elevation="4">
-            <v-card-title>
-                <h5>Result <span class="length">({{ result.length }})</span></h5>
-            </v-card-title>
-            <v-text-field variant="outlined" @keyup="(e: any) => applyFilter(e.target.value)" placeholder="Filter">
-            </v-text-field>
+  <div
+    v-if="update"
+    class="box"
+  >
+    <v-card elevation="4">
+      <v-card-title>
+        <h5>Result <span class="length">({{ result.length }})</span></h5>
+      </v-card-title>
+      <!--search bar-->
+      <v-text-field
+        variant="outlined"
+        placeholder="Filter"
+        @keyup="(e: any) => applyFilter(e.target.value)"
+      />
 
-            <v-data-table-virtual show-expand v-model:expanded="expanded" class="result" :headers="headers"
-                :items="filteredResult">
-                <!-- Configuration Column -->
-                <template v-slot:item.run="{ item }">
-                    <span v-for="(value, key) in item.config" :key="key">
-                        {{ key }} = {{ value }} ;
-                    </span>
-                </template>
-                <template v-slot:item.roundedResults="{ item }">
-                    <span v-for="(value, key) in item.roundedResults" :key="key">
-                        {{ key }} = {{ value }} ;
-                    </span>
-                </template>
+      <v-data-table-virtual
+        v-model:expanded="expanded"
+        show-expand
+        class="result"
+        :headers="headers"
+        :items="filteredResult"
+      >
+        <!-- Configuration Column -->
+        <template #item.run="{ item }">
+          <span
+            v-for="(value, key) in item.config"
+            :key="key"
+          >
+            {{ key }} = {{ value }} ;
+          </span>
+        </template>
+        <template #item.roundedResults="{ item }">
+          <span
+            v-for="(value, key) in item.roundedResults"
+            :key="key"
+          >
+            {{ key }} = {{ value }} ;
+          </span>
+        </template>
 
 
-                <!-- Expanded Content Column -->
-                <template #expanded-row="{ item }">
+        <!-- Expanded Content Column -->
+        <template #expanded-row="{ item }">
+          <div v-memo="[item.id, expanded.includes(item.id)]">
+            <v-chip
+              v-for="(value, key) in item.config"
+              :key="key"
+            >
+              {{ key }}: {{ value }}
+            </v-chip>
+          </div>
 
-                    <v-chip v-for="(value, key) in item.config" :key="key">
-                        {{ key }}: {{ value }}
-                    </v-chip>
+          <v-list>
+            <v-list-item>Worker: {{ item.meta.worker }}</v-list-item>
+            <v-list-item>Repetitions {{ searchTasks(item.config).length }}</v-list-item>
+            <v-list-item>
+              Average result:
 
-
-                    <v-list>
-                        <v-list-item>Worker: {{ item.meta.worker }}</v-list-item>
-                        <v-list-item>Repetitions {{ searchTasks(item.config).length }}</v-list-item>
-                        <v-list-item>
-                            Average result:
-                            <span v-for="(res, index) in getAverageResult(item.config)" :key="index">
-                                {{ res.toFixed(2) }}
-                                <span v-if="index < getAverageResult(item.config).length - 1"> ; </span>
-                            </span>
-                        </v-list-item>
-                    </v-list>
-                </template>
-            </v-data-table-virtual>
-        </v-card>
-    </div>
+              <span
+                v-for="(res, index) in cachedAvg(item.config)"
+                :key="index"
+              >
+                {{ res.toFixed(2) }}
+                <span v-if="index < cachedAvg(item.config).length - 1"> ; </span>
+              </span>
+            </v-list-item>
+          </v-list>
+        </template>
+      </v-data-table-virtual>
+    </v-card>
+  </div>
 </template>
