@@ -42,6 +42,7 @@ class Model:
         self._surrogate_map: Mapping[str, list[Surrogate]] = {}
 
         if self.mo_handling_surrogate_type == "Compositional":
+            # Create a surrogate for each objective function
             i = 0
             for key, value in self.objectives.items():
                 self._init_surrogate(surrogate_descriptions[i], region=self.region, objectives={key: value},
@@ -103,6 +104,7 @@ class Model:
 
         # Handle DynamicCompositional and Portfolio type
         if self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
+            # Create surrogate for each objective function
             for i, o_name in enumerate(self.objectives.keys()):
                 obj = {o_name: self.objectives[o_name]}
                 s = self.surrogate_orchestrator.get_surrogate(description, region, obj)
@@ -323,62 +325,3 @@ class Model:
         selected_candidates = self.candidate_selector.select_candidates(optimized_full[names_and_objectives])
 
         return pd.DataFrame(selected_candidates)
-
-    def update_surrogates_and_optimizers(self, surrogates_description_and_objectives_and_optimizers_description: List):
-        """
-        Update the surrogates, based on the transfer learning results
-        """
-        surrogates = []
-        optimizers = []
-        for s_o_opt in surrogates_description_and_objectives_and_optimizers_description:
-            surrogate = s_o_opt["Surrogate"]
-            objectives_surrogate = s_o_opt["Objectives_surrogate"]
-            optimizer = s_o_opt["Optimizer"]
-            objectives_optimizer = s_o_opt["Objectives_optimizer"]
-            surrogates.append(self.surrogate_orchestrator.get_surrogate(surrogate, self.region, objectives_surrogate))
-            optimizers.append(self.optimizer_orchestrator.get_optimizer(optimizer, self.region, objectives_optimizer))
-        
-        surrogate_to_be_replaced = []
-        for s, o in self.mapping_surrogate_objective.items():
-            for s_transferred in surrogates:
-                if o.__eq__(s_transferred.objectives):
-                    surrogate_to_be_replaced.append(s)
-
-                    # Update surrogate map
-                    self.__replace_in_vp_map(self._surrogate_map, s, s_transferred)
-                    continue
-        
-        # Remove surrogate
-        for s in surrogate_to_be_replaced:
-            del self.mapping_surrogate_objective[s]
-        
-        for s_transferred in surrogates:
-            self.mapping_surrogate_objective[s_transferred] = s_transferred.objectives
-        
-        optimizer_to_be_replaced = []
-        for opt, o in self.mapping_optimizer_objective.items():
-            for opt_transferred in optimizers:
-                if o.__eq__(opt_transferred.objectives):
-                    optimizer_to_be_replaced.append(opt)
-
-                    # Update surrogate map
-                    self.__replace_in_vp_map(self._optimizer_map, opt, opt_transferred)
-                    continue
-        for opt in optimizer_to_be_replaced:
-            del self.mapping_optimizer_objective[opt]
-        for opt_transferred in optimizers:
-            self.mapping_optimizer_objective[opt_transferred] = opt_transferred.objectives
-
-    def __replace_in_vp_map(self, map:Mapping, obj_old, obj_new):
-        """Replace a surrogate or optimizer that is transfered in the according map to be able to remove it on reconfiguration"""
-        vp_match = None
-
-        # Search for vp that has created the old object
-        for vp, created_objs in map.items():
-            if obj_old in created_objs:
-                vp_match = vp
-                break
-        
-        if vp_match is not None:
-            # Remove old object from list and add new one
-            map[vp_match] = [o for o in map[vp_match] if o != obj_old] + [obj_new]

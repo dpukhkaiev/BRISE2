@@ -29,6 +29,8 @@ from reconfiguration.effector import Effector
 
 class TestReconfigurationModule:
 
+    cs = None
+
     @pytest.fixture(scope='function')
     def reconf_module(self, get_experiment):
         return self._get_reconf_module(get_experiment)
@@ -43,8 +45,8 @@ class TestReconfigurationModule:
 
         experiment_description, search_space = get_experiment(experiment_num)
         experiment = Experiment(experiment_description, search_space)
-        cs = ConfigurationSelection(experiment)
-        return ReconfigurationModule(experiment, cs)
+        TestReconfigurationModule.cs = ConfigurationSelection(experiment) # Save to avoid that effectors are cleared!
+        return ReconfigurationModule(experiment)
 
     #@pytest.mark.skip(reason="Takes to much time now. Unskip later")
     def test_unfinished_configuration(self, reconf_module:ReconfigurationModule):
@@ -86,7 +88,7 @@ class TestReconfigurationModule:
 
     def test_change_sampling_strategy(self, reconf_module:ReconfigurationModule):
         """Test that the reconfiguration changes the sampling strategy"""
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         # Assert first item is what the intial config definied
         assert len(cs.predictor.mapping_region_sampling_strategy) == 1
@@ -107,7 +109,7 @@ class TestReconfigurationModule:
 
     def test_change_optimizer(self, reconf_module:ReconfigurationModule):
         """Test that the reconfiguration changes the optimizer"""
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         assert len(cs.predictor.mapping_region_model) == 1
         model = cs.predictor.mapping_region_model.popitem()[1]
@@ -137,7 +139,7 @@ class TestReconfigurationModule:
         assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_validator(self, reconf_module:ReconfigurationModule):
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         assert len(cs.predictor.mapping_region_model) == 1
         model = cs.predictor.mapping_region_model.popitem()[1]
@@ -182,7 +184,7 @@ class TestReconfigurationModule:
         assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_candidate_selector(self, reconf_module:ReconfigurationModule):
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         assert len(cs.predictor.mapping_region_model) == 1
         model = cs.predictor.mapping_region_model.popitem()[1]
@@ -209,7 +211,7 @@ class TestReconfigurationModule:
         assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_surrogate(self, reconf_module:ReconfigurationModule):
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         assert len(cs.predictor.mapping_region_model) == 1
         model = cs.predictor.mapping_region_model.popitem()[1]
@@ -239,7 +241,7 @@ class TestReconfigurationModule:
         assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_predictor(self, reconf_module:ReconfigurationModule):
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         old_predictor = cs.predictor
         assert len(cs.predictor.mapping_region_model) == 1
@@ -431,7 +433,7 @@ class TestReconfigurationModule:
         assert reconf_module._new_experiment_description == expected_desc
 
     def test_change_transfer_learning(self, reconf_module:ReconfigurationModule):
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
         experiment = reconf_module.experiment
 
         # Assert config was loaded correctly
@@ -494,7 +496,7 @@ class TestReconfigurationModule:
     def test_change_single_model(self, get_experiment):
         """Test to change a single model"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=8)
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
         
         assert len(cs.predictor.mapping_region_model) == 3
 
@@ -569,7 +571,7 @@ class TestReconfigurationModule:
     def test_change_single_optimizer(self, get_experiment):
         """Test to change a single optimizer"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         # Assert that config was loaded correctly
         assert len(cs.predictor.mapping_region_model) == 1
@@ -614,7 +616,7 @@ class TestReconfigurationModule:
     def test_change_single_surrogate_on_multiple_models(self, get_experiment):
         """Test to change a single surrogate on a experiment with multiple models"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=8)
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         # Assert that config was loaded correctly
         assert len(cs.predictor.mapping_region_model) == 3
@@ -649,7 +651,7 @@ class TestReconfigurationModule:
 
     def test_change_component_on_multiple_models(self, get_experiment):
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=12)
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
         
         assert len(cs.predictor.mapping_region_model) == 3
         assert all([isinstance(model.candidate_selector, BestMultiPoint) for model in cs.predictor.mapping_region_model.values()])
@@ -687,7 +689,7 @@ class TestReconfigurationModule:
 
     def test_change_values(self, reconf_module:ReconfigurationModule):
         """Test that the `change_variables` method works correctly"""
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         assert cs.predictor.window_size == 1.0
 
@@ -709,10 +711,11 @@ class TestReconfigurationModule:
         assert cs.predictor.window_size == new_size
         assert reconf_module._new_experiment_description["ConfigurationSelection"]["Predictor"]["WindowSize"] == new_size
 
+    @pytest.mark.skip(reason="Not used anymore")
     def test_update_surrogate_and_optimizers_with_reconfiguration(self, get_experiment):
         """Test that the update_surrogate_and_optimizers() in model.py works with the reconfiguration"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=3)
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         # Assert that config was loaded correctly
         assert len(cs.predictor.mapping_region_model) == 1
@@ -796,7 +799,7 @@ class TestReconfigurationModule:
     def test_cleanup_surrogates_and_optimizers_on_reconf(self, get_experiment):
         """Test that the cleanup process for optimizers and surrogates is working"""
         reconf_module = self._get_reconf_module(get_experiment, experiment_num=5)
-        cs = reconf_module.configuration_selection
+        cs = TestReconfigurationModule.cs
 
         # Assert that config was loaded correctly
         assert len(cs.predictor.mapping_region_model) == 1
