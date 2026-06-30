@@ -186,6 +186,46 @@
             }
         }
     },
+    "OutliersDetection": {
+        "isEnabled": true,
+        "Detectors": [
+            {
+                "Type": "Dixon",
+                "Parameters": {
+                    "MinActiveNumberOfTasks": 3,
+                    "MaxActiveNumberOfTasks": 30
+                }
+            },
+            {
+                "Type": "Chauvenet",
+                "Parameters": {
+                    "MinActiveNumberOfTasks": 3,
+                    "MaxActiveNumberOfTasks": 10000
+                }
+            },
+            {
+                "Type": "Mad",
+                "Parameters": {
+                    "MinActiveNumberOfTasks": 3,
+                    "MaxActiveNumberOfTasks": 10000
+                }
+            },
+            {
+                "Type": "Grubbs",
+                "Parameters": {
+                    "MinActiveNumberOfTasks": 3,
+                    "MaxActiveNumberOfTasks": 10000
+                }
+            },
+            {
+                "Type": "Quartiles",
+                "Parameters": {
+                    "MinActiveNumberOfTasks": 3,
+                    "MaxActiveNumberOfTasks": 10000
+                }
+            }
+        ]
+    },
     "RepetitionManager": {
         "MaxFailedTasksPerConfiguration": 1,
         "Instance": {
