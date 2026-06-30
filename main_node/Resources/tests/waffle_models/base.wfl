@@ -836,6 +836,68 @@ TransferLearning ? {
   [self.MultiTaskLearning or self.ModelRecommendation]
 }
 
+// --------------------Outliers Detection------------------------
+OutliersDetection ? {
+  isEnabled -> predefined
+  
+  or Detectors ? {
+    [size childs.self >= 0]
+    [size childs.self <= 5]
+    [size unique Type at self == size childs.self]
+
+    Dixon {
+      Type -> predefined
+      [Type = "Dixon"]
+      Parameters {
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks >= 3]
+      }
+    }
+    Chauvenet {
+      Type -> predefined
+      [Type = "Chauvenet"]
+      Parameters {
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks >= 3]
+      }
+    }
+    Mad {
+      Type -> predefined
+      [Type = "Mad"]
+      Parameters {
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks >= 3]
+      }
+    }
+    Grubbs {
+      Type -> predefined
+      [Type = "Grubbs"]
+      Parameters {
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks >= 3]
+      }
+    }
+    Quartiles {
+      Type -> predefined
+      [Type = "Quartiles"]
+      Parameters {
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks >= 3]
+      }
+    }
+  }
+}
+
 // ----------------Default Configuration Handler-----------------
 DefaultConfigurationHandler ? {
   RandomDCH {
