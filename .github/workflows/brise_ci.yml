@@ -73,39 +73,3 @@ jobs:
           LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
           PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
           echo "coverage=${PERCENT}"
-          cd ..
-          mkdir -p badge-data
-  
-          # Choose color based on percentage
-          # 90-100% brightgreen
-          # 80-89% green
-          # 70-79% yellowgreen
-          # 60-69% yellow
-          # 50-59%  orange
-          # <50% red
-          if (( PERCENT >= 90 )); then
-              COLOR=brightgreen
-          elif (( PERCENT >= 80 )); then
-              COLOR=green
-          elif (( PERCENT >= 70 )); then
-              COLOR=yellowgreen
-          elif (( PERCENT >= 60 )); then
-              COLOR=yellow
-          elif (( PERCENT >= 50 )); then
-              COLOR=orange
-          else
-              COLOR=red
-          fi
-  
-          # create url with percentage
-          n=$(($PERCENT+0))
-          url="https://img.shields.io/badge/Code%20Coverage-${PERCENT}%25-${COLOR}?style=flat"
-          curl -sSL --fail "$url" -o badge-data/coverage.svg
-      # Commit updated badge svg
-      - name: Upload coverage percentage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-percentage
-          path: |
-            main_node/coverage.xml
-            badge-data/coverage.svg
