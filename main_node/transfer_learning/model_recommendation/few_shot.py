@@ -12,7 +12,7 @@ class FewShotRecommendation(ModelRecommendation):
         self.was_model_transferred = False
         self.is_few_shot = True
 
-    def recommend_best_model(self, similar_experiments: List) -> Union[Dict[Tuple[Hyperparameter], Model], None]:
+    def recommend_best_model(self, similar_experiments: List) -> Dict|None:
         if self.was_model_transferred:
             return None
         transferred_models = []
@@ -28,8 +28,10 @@ class FewShotRecommendation(ModelRecommendation):
         if len(transferred_models) == 0:
             return None
         self.was_model_transferred = True
-        last_model = transferred_models[len(transferred_models) - 1]
-        return last_model
+        last_model = list(transferred_models[len(transferred_models) - 1].values())[0]
+        return {last_model.model_name: {"Surrogate": last_model.model_description[1]["Surrogate"],
+                                        "Optimizer": last_model.model_description[1]["Optimizer"],
+                                        "region": last_model.region}}
 
     @staticmethod
     def were_models_dumped(model_dumps: list):

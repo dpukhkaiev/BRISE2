@@ -7,7 +7,7 @@
     "DatabasePass": "yourPassword"
   },
   "EventService": {
-    "Address": "event_service",
+    "Address": "event-service",
     "AMQTPort": 49153,
     "GUIPort": 49154
   }

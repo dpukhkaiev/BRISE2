@@ -12,7 +12,7 @@ from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
 class StopCondition(ABC):
 
-    def __init__(self, stop_condition_parameters: dict, experiment_description: dict, experiment_id: str):
+    def __init__(self, stop_condition_parameters: dict, description: dict, experiment_id: str):
         self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                 os.getenv("BRISE_DATABASE_PORT"),
                                 os.getenv("BRISE_DATABASE_NAME"),
@@ -24,8 +24,8 @@ class StopCondition(ABC):
         self.decision = False
         self.logger = logging.getLogger(stop_condition_parameters["Name"])
         self.repetition_interval = datetime.timedelta(**{
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
-            experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
+            description["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
+            description["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
 
     def start_threads(self):
         """
@@ -48,7 +48,9 @@ class StopCondition(ABC):
         :param properties: pika.spec.BasicProperties
         :param body: empty
         """
-        self.connection_thread.stop()
+        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+            self.connection_thread.stop()
+            
         self.active = False
 
     @abstractmethod

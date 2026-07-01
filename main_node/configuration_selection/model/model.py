@@ -1,6 +1,7 @@
 import itertools
 import time
 import pandas as pd
+import logging
 
 from typing import List, Mapping, Tuple, Dict
 from core_entities.search_space import Hyperparameter
@@ -14,90 +15,153 @@ from configuration_selection.model.validator.validator_orchestrator import Valid
 from configuration_selection.model.candidate_selector.candidate_selector_orchestrator import CandidateSelectorOrchestrator
 from configuration_selection.model.surrogate.composite_surrogate import CompositeSurrogate
 
+from reconfiguration.effector import Effector
 
 class Model:
-    def __init__(self, model_description: Tuple, region: Tuple, objectives: Dict):
-        self.model_name = model_description[0]
-        self.model_description = model_description
+    def __init__(self, model_name:str, model_description: dict, region: Tuple, objectives: Dict):
+        self.model_name = model_name
         self.region = region
-
-        self.mo_handling_surrogate_type = None
         self.objectives = objectives
-        # surrogate and MO handling
+
         self.surrogate_orchestrator = SurrogateOrchestrator()
 
-        for i in model_description[1].items():
+        self._init_model(model_description, vpoint=model_name)
+
+    @Effector.effector("Model") # VP Name definied by vpoint arg!
+    def _init_model(self, model_description, vpoint=None, **kwargs):
+        self.model_description = model_description
+        self.mo_handling_surrogate_type = None
+        
+        # surrogate and MO handling
+        for i in model_description.items():
             if "MultiObjectiveHandling" in i[0]:
                 self.mo_handling_surrogate_type = list(i[1]["SurrogateType"])[0]
 
-        surrogate_types = []
-        for key, description in model_description[1].items():
-            if "Surrogate" in key:
-                surrogate_types.append(description)
-
+        surrogate_descriptions = self._get_descriptions(model_description, "Surrogate")
         self.mapping_surrogate_objective: Mapping[Surrogate, Dict] = {}
+        self._surrogate_map: Mapping[str, list[Surrogate]] = {}
 
         if self.mo_handling_surrogate_type == "Compositional":
+            # Create a surrogate for each objective function
             i = 0
-            for key, value in objectives.items():
-                temp_o = {key: value}
-                surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_types[i], region, temp_o)
-                self.mapping_surrogate_objective[surrogate] = temp_o
+            for key, value in self.objectives.items():
+                self._init_surrogate(surrogate_descriptions[i], region=self.region, objectives={key: value},
+                                     vpoint="Surrogate_" + str(i))
                 i += 1
         elif self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
-            for o_name in objectives.keys():
-                for s in surrogate_types:
-                    surrogate = self.surrogate_orchestrator.get_surrogate(s, region, {o_name: objectives[o_name]})
-                    self.mapping_surrogate_objective[surrogate] = {o_name: objectives[o_name]}
-            for s in surrogate_types:
-                surrogate = self.surrogate_orchestrator.get_surrogate(s, region, objectives)
-                if surrogate.multi_objective:
-                    self.mapping_surrogate_objective[surrogate] = objectives
+            for i, s in enumerate(surrogate_descriptions):
+                self._init_surrogate(s, region=self.region, objectives=self.objectives,
+                                        vpoint="Surrogate_" + str(i))
 
         else:  # Scalar Pure None
-            surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_types[0], region, objectives)
-            self.mapping_surrogate_objective[surrogate] = objectives
+            self._init_surrogate(surrogate_descriptions[0], region=self.region, objectives=self.objectives,
+                                 vpoint="Surrogate")
 
         # optimizer
         self.optimizer_orchestrator = OptimizerOrchestrator()
-
-        optimizer_types = []
-        for key, description in model_description[1].items():
-            if "Optimizer" in key:
-                optimizer_types.append(description)
-
+        optimizer_descriptions = self._get_descriptions(model_description, "Optimizer")
+        
         self.mapping_optimizer_objective: Mapping[Optimizer, dict] = {}
+        self._optimizer_map: Mapping[str, list[Optimizer]] = {}
+        
         if self.mo_handling_surrogate_type == "Compositional":
             i = 0
-            for key, value in objectives.items():
-                temp_o = {key: value}
-                optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_types[i], region, temp_o)
-                self.mapping_optimizer_objective[optimizer] = temp_o
+            for key, value in self.objectives.items():
+                self._init_optimizer(optimizer_descriptions[i], region=self.region, objectives={key: value},
+                                     vpoint="Optimizer_" + str(i))
                 i += 1
         else:
-            optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_types[0], region, objectives)
-            self.mapping_optimizer_objective[optimizer] = objectives
+            self._init_optimizer(optimizer_descriptions[0], region=self.region, objectives=self.objectives,
+                                 vpoint="Optimizer")
 
         # validator
         self.validator_orchestrator = ValidatorOrchestrator()
-        validator_description = model_description[1]["Validator"]
-        self.external_validator = None
-        self.internal_validator = None
-        for k in validator_description.keys():
-            if k == 'ExternalValidator':
-                self.external_validator = self.validator_orchestrator.get_validator(validator_description[k], region, objectives)
-            elif k == 'InternalValidator':
-                self.internal_validator = self.validator_orchestrator.get_validator(validator_description[k], region, objectives)
+        validator_description = model_description["Validator"]
+        self._init_validators(validator_description)
 
         # candidate selector
         self.candidate_selector_orchestrator = CandidateSelectorOrchestrator()
-        candidate_selector_description = model_description[1]["CandidateSelector"]
-        self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(candidate_selector_description)
+        candidate_selector_description = model_description["CandidateSelector"]
+        self._init_candiate_selector(candidate_selector_description)
 
         # transfer learning
         self.time_to_build = None
         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions = []
         self.model_dumps = None
+
+    # Real VP name provided by kwarg vpoint!
+    @Effector.effector("Surrogate", identifiers="model_name")
+    def _init_surrogate(self, description, region=None, objectives=None, only_on_mo=False, vpoint=None, initial=True):
+        created_surrogates = self._surrogate_map.get(vpoint, [])
+
+        # Remove old surrogates/cleanup
+        if initial is False:
+            for s in created_surrogates:
+                if s in self.mapping_surrogate_objective:
+                    del self.mapping_surrogate_objective[s]
+            
+            del self._surrogate_map[vpoint]
+
+        # Handle DynamicCompositional and Portfolio type
+        if self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
+            # Create surrogate for each objective function
+            for i, o_name in enumerate(self.objectives.keys()):
+                obj = {o_name: self.objectives[o_name]}
+                s = self.surrogate_orchestrator.get_surrogate(description, region, obj)
+                self.__create_surrogate(description, region, vpoint, obj)
+
+                # Create another one (just once) if the surrogate is multiobjective
+                if s.multi_objective is True and i == 0:
+                    self.__create_surrogate(description, region, vpoint, self.objectives)
+                
+            return
+        
+        # Save created surrogate
+        self.__create_surrogate(description, region, vpoint, objectives)
+
+    def __create_surrogate(self, description:dict, region:Tuple, vpoint:str, objectives):
+        """Add surrogate to `mapping_surrogate_objective` and `_surrogate_map`"""
+        surrogate = self.surrogate_orchestrator.get_surrogate(description, region, objectives)
+        self._surrogate_map[vpoint] = self._surrogate_map.get(vpoint, []) + [surrogate]
+        self.mapping_surrogate_objective[surrogate] = objectives
+
+    # Real VP name provided by kwarg vpoint!
+    @Effector.effector("Optimizer", identifiers="model_name")
+    def _init_optimizer(self, description, region=None, objectives=None, vpoint=None, initial=True):
+        optimizer = self.optimizer_orchestrator.get_optimizer(description, region, objectives)
+
+        # Remove old optimizer
+        created_optimizer = self._optimizer_map.get(vpoint, [])
+        if initial is False:
+            for o in created_optimizer:
+                if o in self.mapping_optimizer_objective:
+                    del self.mapping_optimizer_objective[o]
+                
+            del self._optimizer_map[vpoint]
+
+        # Save created optimizer
+        self._optimizer_map[vpoint] = self._optimizer_map.get(vpoint, []) + [optimizer]
+        
+        self.mapping_optimizer_objective[optimizer] = objectives
+
+    @Effector.effector("Validator", identifiers="model_name")
+    def _init_validators(self, description:dict):
+        self.external_validator = None
+        self.internal_validator = None
+
+        for k in description.keys():
+            if k == 'ExternalValidator':
+                self.external_validator = self.validator_orchestrator.get_validator(description[k], self.region, self.objectives)
+            elif k == 'InternalValidator':
+                self.internal_validator = self.validator_orchestrator.get_validator(description[k], self.region, self.objectives)
+
+    @Effector.effector("CandidateSelector", identifiers="model_name")
+    def _init_candiate_selector(self, description):
+        self.candidate_selector = self.candidate_selector_orchestrator.get_candidate_selector(description)
+
+    def _get_descriptions(self, model_description:dict, type_name:str):
+        """Return a list with all descriptions of a special type like Optimizer, Surrogate, etc."""
+        return [description for key, description in model_description.items() if type_name in key]
 
     def predict(self, parameters: List[Hyperparameter], configurations: List[Configuration]) -> pd.DataFrame:
         """
@@ -261,39 +325,3 @@ class Model:
         selected_candidates = self.candidate_selector.select_candidates(optimized_full[names_and_objectives])
 
         return pd.DataFrame(selected_candidates)
-
-    def update_surrogates_and_optimizers(self, surrogates_description_and_objectives_and_optimizers_description: List):
-        """
-        Update the surrogates, based on the transfer learning results
-        """
-        surrogates = []
-        optimizers = []
-        for s_o_opt in surrogates_description_and_objectives_and_optimizers_description:
-            surrogate = s_o_opt["Surrogate"]
-            objectives_surrogate = s_o_opt["Objectives_surrogate"]
-            optimizer = s_o_opt["Optimizer"]
-            objectives_optimizer = s_o_opt["Objectives_optimizer"]
-            surrogates.append(self.surrogate_orchestrator.get_surrogate(surrogate, self.region, objectives_surrogate))
-            optimizers.append(self.optimizer_orchestrator.get_optimizer(optimizer, self.region, objectives_optimizer))
-
-        surrogate_to_be_replaced = []
-        for s, o in self.mapping_surrogate_objective.items():
-            for s_transferred in surrogates:
-                if o.__eq__(s_transferred.objectives):
-                    surrogate_to_be_replaced.append(s)
-                    continue
-        for s in surrogate_to_be_replaced:
-            del self.mapping_surrogate_objective[s]
-        for s_transferred in surrogates:
-            self.mapping_surrogate_objective[s_transferred] = s_transferred.objectives
-
-        optimizer_to_be_replaced = []
-        for opt, o in self.mapping_optimizer_objective.items():
-            for opt_transferred in optimizers:
-                if o.__eq__(opt_transferred.objectives):
-                    optimizer_to_be_replaced.append(opt)
-                    continue
-        for opt in optimizer_to_be_replaced:
-            del self.mapping_optimizer_objective[opt]
-        for opt_transferred in optimizers:
-            self.mapping_optimizer_objective[opt_transferred] = opt_transferred.objectives

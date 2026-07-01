@@ -12,6 +12,7 @@ from core_entities.search_space import SearchSpace
 from tools.mongo_dao import MongoDB
 from configuration_selection.model.model import Model
 
+from reconfiguration.effector import Effector
 
 class Predictor:
     """
@@ -32,8 +33,9 @@ class Predictor:
         self.predictor_config = experiment_description["ConfigurationSelection"]["Predictor"]
         self.task_config = experiment_description["Context"]["TaskConfiguration"]
         self.search_space = search_space
-        self.window_size = self.predictor_config["WindowSize"]
         self.sampling_strategy_orchestrator = SamplingStrategyOrchestrator()
+
+        self._init_values(self.predictor_config)
 
         self.logger = logging.getLogger(__name__)
 
@@ -46,19 +48,27 @@ class Predictor:
         for r in self.search_space.regions:
             level = r[0].level
             type = models_types[level]
-            model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
+            model = Model(model_name=type[0], model_description=type[1], region=r, objectives=self.task_config["Objectives"])
             self.mapping_region_model[r] = model
 
-        self.mapping_region_sampling_strategy = {}
-        for r in self.search_space.regions:
-            sampling_strategy = (self.sampling_strategy_orchestrator.
-                                 get_sampling_strategy
-                                 (experiment_description["ConfigurationSelection"]["SamplingStrategy"], r))
-            self.mapping_region_sampling_strategy[r] = sampling_strategy
+        self._init_mapping_region_sampling_strategy(experiment_description["ConfigurationSelection"]["SamplingStrategy"])
 
         self.hierarchical_models_dumps = []
 
         self.logger = logging.getLogger(__name__)
+
+    @Effector.effector("Predictor_Values")
+    def _init_values(self, description):
+        self.window_size = description["WindowSize"]
+
+    @Effector.effector("SamplingStrategy")
+    def _init_mapping_region_sampling_strategy(self, description):
+        self.mapping_region_sampling_strategy = {}
+        for r in self.search_space.regions:
+            sampling_strategy = (self.sampling_strategy_orchestrator.
+                                 get_sampling_strategy
+                                 (description, r))
+            self.mapping_region_sampling_strategy[r] = sampling_strategy
 
     def predict(self, measured_configurations: List[Configuration], sample: bool = False) -> List[Configuration]:
         """
@@ -192,11 +202,9 @@ class Predictor:
                 {"Exp_unique_ID": self.experiment_id},
                 {"Models_dumps": self.hierarchical_models_dumps})
 
-    def update_mapping_region_model(self, transferred_mapping_region_model):
-        """
-        Update the models, based on the transfer learning results. Assumption: regions are identical
-        """
-        for current_region in self.mapping_region_model.keys():
-            for transferred_region in transferred_mapping_region_model.keys():
-                if transferred_region == current_region:
-                    self.mapping_region_model[current_region] = transferred_mapping_region_model[transferred_region]
+    def get_model_by_name(self, name:str):
+        """Return the model with the matching name"""
+        for model in self.mapping_region_model.values():
+            if model.model_name == name:
+                return model
+        return None

@@ -23,7 +23,7 @@ class ModelRecommendation(ABC):
                                 os.getenv("BRISE_DATABASE_PASS"))
 
     @abstractmethod
-    def recommend_best_model(self, similar_experiments: List) -> Union[Dict[Tuple[Hyperparameter], Model], None]:
+    def recommend_best_model(self, similar_experiments: List) -> Dict|None:
         """
        Get the most relevant model from the most similar experiment (if it is possible)
        to use it within the target experiment.

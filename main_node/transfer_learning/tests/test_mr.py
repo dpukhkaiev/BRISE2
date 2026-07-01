@@ -62,10 +62,12 @@ class TestMR:
         similar_experiments = tl.ted_module.analyse_experiments_similarity()
 
         mapping_region_model = tl.transfer_submodules["Model_transfer"].recommend_best_model(similar_experiments)
-        region = list(mapping_region_model.keys())[0]
+        assert "GaussianProcessRegressor" in mapping_region_model["Model"]["Surrogate"]["Instance"]
+
+        """region = list(mapping_region_model.keys())[0]
         isinstance(region, Tuple)
         surrogate = list(mapping_region_model[region].mapping_surrogate_objective.keys())[0]
-        assert isinstance(surrogate.surrogate_instance, GaussianProcessRegressor)
+        assert isinstance(surrogate.surrogate_instance, GaussianProcessRegressor)"""
 
     def test_1(self, get_workers, get_configurations_2_float):
         """
@@ -212,10 +214,12 @@ class TestMR:
         similar_experiments = tl.ted_module.analyse_experiments_similarity()
 
         mapping_region_model = tl.transfer_submodules["Model_transfer"].recommend_best_model(similar_experiments)
-        region = list(mapping_region_model.keys())[0]
+        assert "GaussianProcessRegressor" in mapping_region_model["Model"]["Surrogate"]["Instance"]
+        
+        """region = list(mapping_region_model.keys())[0]
         isinstance(region, Tuple)
         surrogate = list(mapping_region_model[region].mapping_surrogate_objective.keys())[0]
-        assert isinstance(surrogate.surrogate_instance, GaussianProcessRegressor)
+        assert isinstance(surrogate.surrogate_instance, GaussianProcessRegressor)"""
 
     def initialize_experiment(self, skeleton: Dict = None) -> Tuple[Experiment, SearchSpace]:
         experiment_description, search_space = load_experiment_setup(experiment_description_file)
