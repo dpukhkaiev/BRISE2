@@ -65,7 +65,8 @@ jobs:
           cd main_node
           pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term || TEST_EXIT_CODE=$?
           if [ -n "${TEST_EXIT_CODE:-}" ]; then exit $TEST_EXIT_CODE; fi
-      # Fetch coverage badge svg
+      
+      # (Optional) Print coverage percentage
       - name: Extract coverage %
         shell: bash -el {0}
         run: |
@@ -73,6 +74,8 @@ jobs:
           LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
           PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
           echo "coverage=${PERCENT}"
+
+      # Save coverage report as artifact
       - name: Upload Coverage XML
         uses: actions/upload-artifact@v4
         with:

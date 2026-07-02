@@ -13,6 +13,7 @@ jobs:
   if_merged:
     # only run if completed percentage upload workflow was successful and the branch is develop
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'develop' }}
+    
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,6 +21,7 @@ jobs:
         with:
           persist-credentials: true
 
+      # Download coverage.xml from previous workflow
       - name: Download Coverage Artifact
         uses: actions/download-artifact@v4
         with:
@@ -27,9 +29,11 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Extract coverage rom main_noide/coverage.xml and generate badge
       - name: Extract coverage %
         shell: bash -l {0}
         run: |
+          cd main_node
           LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
           PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
           echo "Extracted coverage is: ${PERCENT}%"
@@ -56,16 +60,16 @@ jobs:
               COLOR=red
           fi
 
-          # create url with percentage
+          # create badge url with percentage
           n=$(($PERCENT+0))
           url="https://img.shields.io/badge/Code%20Coverage-${PERCENT}%25-${COLOR}?style=flat"
           curl -sSL --fail "$url" -o badge-data/coverage.svg
-      # Commit updated badge svg
+      
+          # Commit updated badge svg
       - name: Commit badge data
         uses: stefanzweifel/git-auto-commit-action@v4
-
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit_message: "Update coverage badge"
           file_pattern: badge-data/coverage.svg
-          branch: main
+          branch: develop
