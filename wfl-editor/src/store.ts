@@ -20,21 +20,35 @@ export const useGraphStore = defineStore('graph', () => {
 
     // find an active/ currently updated node
     const activeNode = computed(() => {
-        return nodes.value.find((n: any) => n.id === activeNodeId.value) || null
+        return nodes.value.find((n: Node) => n.id === activeNodeId.value) || null
     })
+
+    function createUniqueName(baseName: string): string {
+        let counter = 1
+        let uniqueName = `${baseName} ${counter}`
+        // loop until found a name that any of the nodes have
+        while (nodes.value.some((n: Node) => n.data?.name === uniqueName)) {
+            counter++
+            uniqueName = `${baseName} ${counter}`
+
+        }
+
+        return uniqueName
+    }
 
     // maps node types to their XML tag names (used in data.super for export)
     function createNode(nodeConfig: { type: string, label: string }) {
 
         const id = Date.now().toString()
         const categories = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? [] : undefined
+        const autoName = createUniqueName(nodeConfig.label)
         const node = ({
             id: id,
             type: nodeConfig.type,
             position: { x: Math.random() * 500, y: Math.random() * 500 },
             data: {
                 label: nodeConfig.label,
-                name: '',
+                name: autoName,
                 super: waffleSuperMap[nodeConfig.type],
                 constraints: { lower: null, upper: null, default: null, level: 0 },
                 categories: categories ? [] : undefined,
@@ -55,50 +69,31 @@ export const useGraphStore = defineStore('graph', () => {
         activeNodeId.value = null
     }
 
-    // find current node and add category to it
-    function addCategoryToNode(nodeId: string | null, categoryName: string) {
-        if (!nodeId) return
-        const node = nodes.value.find((n: Node) => n.id === nodeId)
-        if (node) {
-            if (!node.data) node.data = {}
-            if (!node.data.categories) node.data.categories = []
-
-            node.data.categories.push(categoryName)
-        }
-
+    // check if a node already has a parent
+    function hasParent(nodeId: string): boolean {
+        return nodes.value.some((n:Node) => n.data?.childrenIds?.includes(nodeId))
     }
 
-    // preserve children (so the update in newNodes in VueFlow state does not overwrite the children of the node)
-    function setNodes(newNodes: Node[]) {
-        nodes.value = newNodes.map((newNode) => {
-            const existing = nodes.value.find((n: Node) => n.id === newNode.id)
-            
-            if(existing?.data) {
-                newNode.data.children = existing.data.children
-                newNode.data.childrenIds = existing.data.childrenIds
-                newNode.data.categories = existing.data.categories
-                newNode.data.name = existing.data.name
-                newNode.data.constraints = existing.data.constraints
-            }
-            
-        })
+    // ensures unique names for hyperparameter nodes and category nodes
+    function checkDuplicates(existingId: string, nodeName: string): boolean{
+        if (!nodeName.trim()) return false
+         const node = (nodes.value.some((n: Node) => n.id !== existingId &&  n.data.name === nodeName) )
+            if(node)
+                { return true }
+                  else return false
+         } 
     
-    }
-
-    function setEdges(newEdges: Edge[]) {
-        edges.value = newEdges
-    }
-
     // store childId which of connected properties of a parent node
     function addChildToNode(parentId: string, childId: string) {
         const parentNode = nodes.value.find((n: any) => n.id === parentId)
-
         if (parentId) {
             if (!parentNode.data.childrenIds) parentNode.data.childrenIds = []
             if (!parentNode.data.childrenIds.includes(childId)) {
                 parentNode.data.childrenIds.push(childId)
             }
+
         }
+        
     }
 
     function getAllDescendants(nodeId:string): Node[] {
@@ -106,10 +101,10 @@ export const useGraphStore = defineStore('graph', () => {
         if(!node) return []
 
          const directChildren = (node.data?.childrenIds || [])
-        .map((id: string) => nodes.value.find((n: any) => n.id === id))
+        .map((id: string) => nodes.value.find((n: Node) => n.id === id))
         .filter(Boolean)
 
-        const nestedDescendants = directChildren.flatMap((child: any) => getAllDescendants(child.id))
+        const nestedDescendants = directChildren.flatMap((child: Node) => getAllDescendants(child.id))
 
         return [...directChildren, ...nestedDescendants]
     }
@@ -118,7 +113,6 @@ export const useGraphStore = defineStore('graph', () => {
         if (!activeNodeId.value) return []
         return getAllDescendants(activeNodeId.value)
     })
-
 
     //create category node 
     function createCategoryBox(sourceNode: Node, categoryName?: string, targetNode?: Node) {
@@ -133,20 +127,26 @@ export const useGraphStore = defineStore('graph', () => {
             posY = (sourceNode.position.y + targetNode.position.y) / 2 
         }
 
+        const finalName = categoryName || createUniqueName('Category')
+
+        // flag for custom categories, if nno targetNode exists then true
+        const isManualCategory = !targetNode 
+
         const node = {
         id,
         type: 'category',
         position: { x: posX, y: posY },
         // for xml export
         data:{ 
-                name: categoryName || '', 
+                name: finalName, 
                 super: waffleSuperMap['category'],
-                childrenIds: []
+                childrenIds: [] ,
+                isManual: isManualCategory 
         }
-      
-   }
+      }
 
-    nodes.value.push(node)
+
+          nodes.value.push(node)
 
     edges.value.push({
         id: `e-${sourceNode.id}-${id}`,
@@ -154,52 +154,68 @@ export const useGraphStore = defineStore('graph', () => {
         target: id
     })
 
-    // ID im Parent als Kind hinterlegen
-    if (!sourceNode.data.childrenIds) 
-        sourceNode.data.childrenIds = []
-        sourceNode.data.childrenIds.push(id)
+    // register custom category node as a direct child of the parent node
+    if (!sourceNode.data.childrenIds) sourceNode.data.childrenIds = [];
+    sourceNode.data.childrenIds.push(id)
 
+    if(!targetNode) { return }
+
+    edges.value.push({
+        id: `e-${id}-${targetNode.id}`,
+        source: id,
+        target: targetNode.id
+    })
+    
+    if (!node.data.childrenIds)    node.data.childrenIds = [];
+    // register target node as child of the category node
+    (node.data.childrenIds as any).push(targetNode.id)
+   
+    console.log('added node', node.data.childrenIds)
     return node
+
     }
 
     // delete categories custom and nested nodes 
-    function removeCategory(nodeId: string | null, categoryName: string){
+    function removeCategory(nodeId: string, categoryName: string){
         if(!nodeId) return
 
-        const node = nodes.value.find((n: Node) => n.id === nodeId)
-        if(node && node.data) {
-            console.log("Search for", categoryName, "in ChildrenIds:", node.data.childrenIds);
-            // custom categories
-            if(node.data.categories) {
-                node.data.categories = node.data.categories.filter(
-                    (cat: string) => cat !== categoryName
-                )
-            }
-
-            // nested child node
-            if (node.data.childrenIds && node.data.childrenIds.length > 0) {
-                
-            const childToDelete = nodes.value.find(
-                (n: Node) => n.data?.name === categoryName && node.data.childrenIds.includes(n.id)
-            )
-            console.log("Found node to be deleted", childToDelete);
-            if(childToDelete) {
-                node.data.childrenIds = node.data.childrenIds.filter(
-                    (id: string) => id !== childToDelete.id
-                )
-            
-            // remove from canvas flow 
-            nodes.value = nodes.value.filter((n: Node) => n.id !== childToDelete.id)
-            console.log(' removed node ', nodes.value)
-            edges.value = edges.value.filter((e: Edge) => e.source !== childToDelete.id && e.target !== childToDelete.id)
-                  console.log(' removed edges ', edges.value)
-            }
-           
-        }
+        // find current selected node (of whom sidebar is shown) 
+        const parentNode = nodes.value.find((n: Node) => n.id === nodeId)
         
-    }
-     console.log(' removed node ', nodes.value)
-}
+        //search in all descendants for the id of element to be deleted
+        const allDescendants = getAllDescendants(parentNode.id)
+        const elementToDelete = allDescendants.find((n:Node) => n.data.name === categoryName)
+
+        if(elementToDelete) {
+            // 
+            const targetId = elementToDelete.id
+            // all sub nodes of the element to be deleted
+        const subDescendants = getAllDescendants(targetId);
+        const idsToDelete = [targetId, ...subDescendants.map((d: Node) => d.id)];
+
+        // delete node from canvas
+        nodes.value = nodes.value.filter((n: Node) => !idsToDelete.includes(n.id));
+
+        // delete edges
+        edges.value = edges.value.filter((e: Edge) => 
+            !idsToDelete.includes(e.source) && !idsToDelete.includes(e.target)
+        );
+
+        // clear from the childIds array deleted elements
+        nodes.value.forEach((n: Node) => {
+            if (n.data?.childrenIds) {
+                n.data.childrenIds = n.data.childrenIds.filter((id: string) => !idsToDelete.includes(id));
+            }
+        });
+        
+        // 
+        if (parentNode.data?.childrenIds) {
+            parentNode.data.childrenIds = parentNode.data.childrenIds.filter((id: string) => !idsToDelete.includes(id));
+        }
+     }
+        }
+            
+           
 
 
     // extract the data and make it xml
@@ -230,7 +246,7 @@ export const useGraphStore = defineStore('graph', () => {
             }
             const childIds = node.data?.childrenIds || []
             childIds.forEach((childId: string) => {
-            const childNode = nodes.value.find((n: any) => n.id === childId)
+            const childNode = nodes.value.find((n: Node) => n.id === childId)
             if (childNode)
              {
                 nodeEl.appendChild(buildNodeXML(childNode))
@@ -256,10 +272,8 @@ export const useGraphStore = defineStore('graph', () => {
         edges,
         activeNodeId,
         activeNode,
+        createUniqueName,
         addNode,
-        addCategoryToNode,
-        setNodes,
-        setEdges,
         addChildToNode,
         clearActiveNode,
         getCategoryItem,
@@ -267,6 +281,8 @@ export const useGraphStore = defineStore('graph', () => {
         exportGraphToXML,
         createCategoryBox,
         getAllDescendants,
-        removeCategory
+        removeCategory,
+        checkDuplicates,
+        hasParent
     }
 })

@@ -4,8 +4,6 @@ import { ref, markRaw, watch } from 'vue'
 import { useGraphStore } from '../store.ts'
 
 
-
-
 const { addNodes } = useVueFlow()
 
 const nodeTypes = [
@@ -16,12 +14,17 @@ const nodeTypes = [
 ]
 
 const graphStore = useGraphStore()
+
 // add nodes with parameters
 function addNode(nodeConfig: { type: string, label: string }) {
   const node = graphStore.createNode(nodeConfig)
   addNodes(node)
 }
 
+// TODO
+function saveConfig(code: string) {
+
+}
 
 </script>
 
@@ -30,6 +33,7 @@ function addNode(nodeConfig: { type: string, label: string }) {
     <button class="btn" v-for="node in nodeTypes" :key="node.type" :class="node.type" @click="addNode(node)">
       {{ node.label }}
     </button>
+    <button class="btn" @click="saveConfig(code)">Save Configuration</button>
   </div>
 
 

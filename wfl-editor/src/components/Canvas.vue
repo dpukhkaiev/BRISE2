@@ -31,7 +31,7 @@ const myNodeTypes = {
 const isSidebarOpen = ref(false)
 
 // categories popup window state
-const isCategoryTableOpen = ref(false)
+const activeModalView = ref<'categories' | 'nodes' | null>(null)
 
 onConnect((connection) => {
 
@@ -42,25 +42,32 @@ onConnect((connection) => {
     if (sourceNode && targetNode) {
         const isSourceCategorical = sourceNode.type === 'nominal' || sourceNode.type === 'ordinal'
 
-
         if (isSourceCategorical) {
 
-            const categoryNode = graphStore.createCategoryBox(sourceNode, "", targetNode)
+            const categoryNode = graphStore.createCategoryBox(sourceNode, undefined, targetNode)
+            if (!categoryNode) { return }
             addNodes(categoryNode)
 
-            addEdges({ id: `e-${sourceNode.id}-${categoryNode.id}`, source: sourceNode.id, target: categoryNode.id })
-            addEdges({ id: `e-${categoryNode.id}-${targetNode.id}`, source: categoryNode.id, target: targetNode.id })
+            //addEdges({ id: `e-${sourceNode.id}-${categoryNode.id}`, source: sourceNode.id, target: categoryNode.id })
+            //addEdges({ id: `e-${categoryNode.id}-${targetNode.id}`, source: categoryNode.id, target: targetNode.id })
 
             graphStore.addChildToNode(sourceNode.id, categoryNode.id)
             graphStore.addChildToNode(categoryNode.id, targetNode.id)
-            graphStore.setEdges(flowEdges.value)
-            return
+        }
+
+        if (sourceNode) {
+            const isSourceCategory = sourceNode.type === 'category'
+
+            if (isSourceCategory) {
+                graphStore.addChildToNode(sourceNode.id, targetNode.id)
+
+                console.log('added child')
+            }
         }
     }
 
     addEdges(connection)
-    graphStore.setEdges(flowEdges.value)
-
+    return true
 })
 
 
@@ -76,14 +83,31 @@ function onNodeClick(event: any) {
 }
 
 function onPaneClick() {
+    const activeNodeId = graphStore.activeNodeId
+    if (!activeNodeId) { return }
+    if (activeNodeId) {
+        const nameInvalid = !activeNodeId.value.data.name || graphStore.checkDuplicates(activeNodeId.value.id, activeNode.value.data.name)
+        if (nameInvalid) {
+            return false
+        }
+    }
     isSidebarOpen.value = false
     graphStore.clearActiveNode()
 }
 
 function validateEdges(connection: any) {
+    const sourceId = connection.source
+    const targetId = connection.target
+
+    // avoid connecting node to itself
+    if (sourceId === targetId) {
+        return false
+    }
 
     // find  source nodes
     const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
+
+
     // check if they exist
     if (sourceNode) {
 
@@ -121,9 +145,9 @@ const isCodeWindowOpen = ref(false)
         </VueFlow>
 
         <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false"
-            @open-category-table="isCategoryTableOpen = true" />
+            @open-category-table="(view) => activeModalView = view" />
 
-        <Category :is-open="isCategoryTableOpen" @close="isCategoryTableOpen = false" />
+        <Category :is-open="activeModalView !== null" :view-mode="activeModalView" @close="activeModalView = null" />
         <CodeOutput :is-open="isCodeWindowOpen" @toggle="isCodeWindowOpen = !isCodeWindowOpen" />
 
     </div>

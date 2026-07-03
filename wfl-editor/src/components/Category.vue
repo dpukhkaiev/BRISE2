@@ -1,49 +1,68 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useGraphStore } from '../store.ts'
-
+import type { Node } from '@vue-flow/core'
 
 const props = defineProps<{
     isOpen: boolean
+    viewMode: 'categories' | 'nodes' | null
 }>()
 
 const emit = defineEmits(['close', 'isOpen'])
 const graphStore = useGraphStore()
 
 
+
 const activeNode = computed(() => graphStore.activeNode as any)
 
-
+// all children of the parent node (direct and nested)
 const connectedChildren = computed(() => {
-    const children = activeNode.value?.data.childrenIds || []
-    return children
-        .map((id: string) => graphStore.nodes.find((n: any) => n.id === id))
-        .filter(Boolean) // filter null/undefined for the case if nodes deleted
+    if (!activeNode.value.id) return []
+    const descendants = graphStore.getAllDescendants(activeNode.value.id)
+    return descendants
+        .filter((c: any) => !c.data?.isManual)
+        .map((c: any) => c.data?.name || c.data?.label);
 })
 
-
-
-const allCategories = computed(() => {
-    const manual = activeNode.value?.data.categories || [];
-    const children = connectedChildren.value.map((c: any) => c.data.name);
-    return [...manual, ...children];
+// manually created categories
+const customCategories = computed(() => {
+    if (!activeNode.value?.id) return []
+    return graphStore.nodes
+        .filter((node: Node) =>
+            node.type === 'category' &&
+            node.data?.isManual &&
+            graphStore.edges.some((e: any) => e.source === activeNode.value.id && e.target === node.id)
+        )
+        .map((node: any) => node.data?.name)
 });
-
 
 </script>
 
 <template>
-    <div v-if="props.isOpen" class="category-overlay">
+    <div v-if="props.isOpen && props.viewMode === 'categories'" class="category-overlay">
         <div class="category-modal">
             <button class="cat-btn" @click="emit('close')">x</button>
             <h3>All Categories</h3>
             <ul>
-                <li v-for="(cat, index) in allCategories" :key="index">
+                <li v-for="(cat, index) in customCategories" :key="index">
                     {{ cat }}
                 </li>
             </ul>
         </div>
     </div>
+    <div v-if="props.isOpen && props.viewMode === 'nodes'" class="category-overlay">
+
+        <div class="children-modal">
+            <button class="cat-btn" @click="emit('close')">x</button>
+            <h3>All Dependent Parameters</h3>
+            <ul>
+                <li v-for="(cat, index) in connectedChildren" :key="index">
+                    {{ cat }}
+                </li>
+            </ul>
+        </div>
+    </div>
+
 
 
 </template>
@@ -63,6 +82,13 @@ const allCategories = computed(() => {
 }
 
 .category-modal {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    min-width: 300px;
+}
+
+.children-modal {
     background: white;
     padding: 20px;
     border-radius: 8px;

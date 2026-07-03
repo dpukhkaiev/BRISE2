@@ -33,10 +33,34 @@ function addCategory() {
     newCategory.value = ''
 }
 
+// all children of the parent node (direct and nested)
 const connectedChildren = computed(() => {
     if (!activeNode.value.id) return []
-    return graphStore.getAllDescendants(activeNode.value.id)
+    const descendants = graphStore.getAllDescendants(activeNode.value.id)
+    return descendants
+        .filter((c: any) => !c.data?.isManual)
+        .map((c: any) => c.data?.name || c.data?.label);
 })
+
+// manually created categories
+const customCategories = computed(() => {
+    if (!activeNode.value?.id) return []
+    return graphStore.nodes
+        .filter((node: Node) =>
+            node.type === 'category' &&
+            node.data?.isManual &&
+            graphStore.edges.some((e: any) => e.source === activeNode.value.id && e.target === node.id)
+        )
+        .map((node: any) => node.data?.name)
+});
+
+// block sidebar from closing 
+function blockSidebar() {
+    if (!activeNode.value?.data.name || isNodeNameTaken.value || isConstraintsInvalid.value) {
+        return
+    }
+    emit('close')
+}
 
 function removeChild(categoryName: string) {
     if (activeNode.value?.id) {
@@ -44,18 +68,38 @@ function removeChild(categoryName: string) {
     }
 }
 
-const allCategories = computed(() => {
-    const manual = activeNode.value?.data.categories || [];
-    const children = connectedChildren.value.map((c: any) => c.data.name);
-    return [...manual, ...children];
-});
 
+const isNameTaken = computed(() => {
+    if (!activeNode.value?.id || !newCategory.value) return false
+    const names = graphStore.checkDuplicates(activeNode.value.id, newCategory.value)
+    if (names) {
+        return true
+    } else return false
+})
+
+const isNodeNameTaken = computed(() => {
+    const name = graphStore.checkDuplicates(activeNode.value.id, activeNode.value.data.name)
+    if (name) { return true } else return false
+})
+
+const isConstraintsInvalid = computed(() => {
+    const lower = activeNode.value?.data?.constraints?.lower
+    const upper = activeNode.value?.data?.constraints?.upper
+
+
+    if (lower === null || upper === null || lower === undefined || upper === undefined || lower === '' || upper === '') {
+        return false
+    }
+
+
+    return Number(lower) > Number(upper)
+})
 </script>
 
 <template>
     <div :class="['sidebar', { 'sidebar-closed': !props.isOpen }]">
 
-        <button class="close-btn" @click="emit('close')">✕</button>
+        <button class="close-btn" @click="blockSidebar">✕</button>
 
         <div v-if="activeNode" class="sidebar-content">
             <h3>{{ activeNode.data.name || activeNode.data.label }}</h3>
@@ -66,18 +110,28 @@ const allCategories = computed(() => {
             <div v-if="activeNode?.type === 'float' || activeNode?.type === 'integer'">
                 <label>Name</label>
                 <input v-model="activeNode.data.name" class="styled-input"
-                    :class="{ 'input-error': !activeNode.data.name }" />
+                    :class="{ 'input-error': !activeNode.data.name || isNodeNameTaken }" />
 
                 <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
-                    name is a required
+                    name is required
                 </p>
+                <p v-if="isNodeNameTaken" style="color: red; font-size: 12px;">That name is
+                    already in use! </p>
 
                 <label>Upper</label>
                 <input type="number" :step="activeNode?.type === 'float' ? '0.1' : '1'"
-                    v-model="activeNode.data.constraints.upper" class="styled-input" />
+                    v-model="activeNode.data.constraints.upper" class="styled-input"
+                    :class="{ 'input-error': isConstraintsInvalid }" />
 
                 <label>Lower</label>
-                <input type="number" v-model="activeNode.data.constraints.lower" class="styled-input" />
+                <input type="number" v-model="activeNode.data.constraints.lower"
+                    :step="activeNode?.type === 'float' ? '0.1' : '1'" class="styled-input"
+                    :class="{ 'input-error': isConstraintsInvalid }" />
+
+                <p v-if="isConstraintsInvalid" style="color: red; font-size: 12px; margin-top: 4px;">
+                    Lower bound cannot be greater than Upper bound!
+                </p>
+
 
                 <label>Default</label>
                 <input type="number" v-model="activeNode.data.constraints.default" :min="activeNode?.data.lower"
@@ -94,32 +148,54 @@ const allCategories = computed(() => {
                     :class="{ 'input-error': !activeNode.data.name }" />
 
                 <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
-                    name is a required
+                    name is required
                 </p>
-
+                <p v-if="isNodeNameTaken" style="color: red; font-size: 12px;">That name is
+                    already in use! </p>
+                <!--custom categories-->
                 <label>Categories</label>
                 <ul>
 
-                    <li v-for="(item, index) in allCategories.slice(0, 5)" :key="index">
+                    <li v-for="(item, index) in customCategories.slice(0, 5)" :key="index">
                         {{ item }}
                         <button class="btn btn-danger" @click="removeChild(item)">x</button>
                     </li>
 
-                    <div v-if="allCategories.length > 5">
-                        <button type="button" class="btn-link" @click="emit('open-category-table')">
-                            + {{ allCategories.length - 5 }} ↗
+                    <div v-if="customCategories.length > 5">
+                        <button type="button" class="btn-link" @click="emit('open-category-table', 'categories')">
+                            + {{ customCategories.length - 5 }} ↗
+                        </button>
+                    </div>
+
+
+                </ul>
+
+                <input type="text" v-model="newCategory" @input="showError = false" class="styled-input"
+                    :class="{ 'input-error': isNameTaken }" />
+                <p v-if="showError" style="color: red; font-size: 12px;">Category cannot be empty</p>
+                <p v-if="isNameTaken" style="color: red; font-size: 12px;">That name is
+                    already in use! </p>
+                <div>
+                    <button class="btn btn-primary" @click="addCategory()" :disabled="isNameTaken ||
+                        !newCategory.trim()">Add
+                        category</button>
+                </div>
+
+
+                <label>Dependent Parameters</label>
+                <ul>
+
+                    <li v-for="(item, index) in connectedChildren.slice(0, 5)" :key="index">
+                        {{ item }}
+                        <button class="btn btn-danger" @click="removeChild(item)">x</button>
+                    </li>
+
+                    <div v-if="connectedChildren.length > 5">
+                        <button type="button" class="btn-link" @click="emit('open-category-table', 'nodes')">
+                            + {{ connectedChildren.length - 5 }} ↗
                         </button>
                     </div>
                 </ul>
-
-
-                <!--custom categories-->
-                <input type="text" v-model="newCategory" @input="showError = false" class="styled-input" />
-                <p v-if="showError" style="color: red; font-size: 12px;">Category cannot be empty</p>
-                <div>
-                    <button class="btn btn-primary" @click="addCategory()">Add
-                        category</button>
-                </div>
 
                 <label>Default</label>
                 <input type="number" v-model="activeNode.data.default" :min="activeNode?.data.lower"
@@ -127,20 +203,31 @@ const allCategories = computed(() => {
 
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
-
             </div>
 
-            <!-- <label>Children</label>
-            <div v-for="(c, i) in activeNode.data.category" :key="i">
-                <input v-model="activeNode.data.customConstraints[i]" class="styled-input" />
-                <button class="btn" @click="activeNode.data.customConstraints.splice(i, 1)">x</button>
-            </div> -->
+            <div v-if="activeNode?.type === 'category'">
+                <label>Dependent Parameters</label>
+                <ul>
+
+                    <li v-for="(item, index) in connectedChildren.slice(0, 5)" :key="index">
+                        {{ item }}
+                        <button class="btn btn-danger" @click="removeChild(item)">x</button>
+                    </li>
+
+                    <div v-if="connectedChildren.length > 5">
+                        <button type="button" class="btn-link" @click="emit('open-category-table', 'nodes')">
+                            + {{ connectedChildren.length - 5 }} ↗
+                        </button>
+                    </div>
+                </ul>
+            </div>
+
+
+
 
         </div>
 
-        <div v-else class="sidebar-content">
-            <p>Click on a node to configure the sidebar</p>
-        </div>
+
     </div>
 </template>
 
@@ -161,6 +248,7 @@ const allCategories = computed(() => {
 
 .sidebar-closed {
     transform: translateX(100%);
+    visibility: hidden;
 }
 
 .sidebar-content {
@@ -266,6 +354,12 @@ const allCategories = computed(() => {
     background-color: #334155;
 }
 
+.btn-primary:disabled {
+    background-color: #cbd5e1;
+    color: #94a3b8;
+    border-color: #cbd5e1;
+    cursor: not-allowed;
+}
 
 .btn-danger {
     background-color: #fee2e2;

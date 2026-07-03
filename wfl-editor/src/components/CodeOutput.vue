@@ -33,15 +33,21 @@ const wflCode = computed(() => {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 35vh;
-  width: 100%;
+  height: 40%;
+  width: 50%;
+  max-height: 150px;
+  max-height: 90vh;
+  resize: vertical;
+  overflow: hidden;
   background-color: #ffffff;
   box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   flex-direction: column;
   border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  border-left: 1px solid #e2e8f0;
   color: #0f172a;
-  padding: 0 20px 20px 20px;
+  padding: 0 10px 10px 10px;
   box-sizing: border-box;
   z-index: 100;
   display: flex;
@@ -49,7 +55,15 @@ const wflCode = computed(() => {
 }
 
 .wfl-panel-closed {
+  height: 40px !important;
+  resize: none;
   transform: translateY(calc(100% - 40px));
+}
+
+.wfl-panel-closed .panel-content {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.3s, opacity 0.3s;
 }
 
 .toggle-btn {
@@ -67,6 +81,7 @@ const wflCode = computed(() => {
   font-weight: 500;
   font-size: 14px;
   transition: background-color 0.2s, color 0.2s;
+  flex-shrink: 0;
 }
 
 .toggle-btn:hover {
@@ -87,7 +102,10 @@ const wflCode = computed(() => {
 .panel-content {
   overflow-y: auto;
   flex-grow: 1;
-  padding-top: 15px;
+  padding-top: 5px;
+  visibility: visible;
+  opacity: 1;
+  transition: visibility 0.3s, opacity 0.3s;
 }
 
 .wfl-code {
