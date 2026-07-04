@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Node, Edge } from '@vue-flow/core'
 
 export const useGraphStore = defineStore('graph', () => {
@@ -22,6 +22,24 @@ export const useGraphStore = defineStore('graph', () => {
     const activeNode = computed(() => {
         return nodes.value.find((n: Node) => n.id === activeNodeId.value) || null
     })
+
+        // localStorage for auto save
+    watch(() => [nodes.value, edges.value],
+        () => {
+            localStorage.setItem('graph-state', JSON.stringify({
+                nodes: nodes.value, 
+                edges: edges.value,
+            }))
+        }, {deep: true})
+
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('graph-state')
+        if(!saved) {return}
+        const {nodes: savedNodes, edges: savedEdges} = JSON.parse(saved)
+        nodes.value = savedNodes
+        edges.value = savedEdges
+    }
 
     function createUniqueName(baseName: string): string {
         let counter = 1
@@ -267,6 +285,20 @@ export const useGraphStore = defineStore('graph', () => {
         return `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(xmlDoc)}`;
     }
 
+    function downloadCode(code: string, filename='searchspace.wfl', type = 'text/plain') {
+        const blob = new Blob([code], { type })
+        const url = URL.createObjectURL(blob)
+
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+
+    }
     return {
         nodes,
         edges,
@@ -283,6 +315,8 @@ export const useGraphStore = defineStore('graph', () => {
         getAllDescendants,
         removeCategory,
         checkDuplicates,
-        hasParent
+        hasParent,
+        downloadCode,
+        loadFromLocalStorage
     }
 })

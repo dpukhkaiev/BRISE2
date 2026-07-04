@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, markRaw, watch } from 'vue'
+import { ref, markRaw, onMounted } from 'vue'
 // Vueflow
 import { VueFlow, Panel, useVueFlow } from '@vue-flow/core'
 // components
@@ -32,6 +32,11 @@ const isSidebarOpen = ref(false)
 
 // categories popup window state
 const activeModalView = ref<'categories' | 'nodes' | null>(null)
+
+
+onMounted(() => {
+    graphStore.loadFromLocalStorage()
+})
 
 onConnect((connection) => {
 
@@ -83,19 +88,11 @@ function onNodeClick(event: any) {
 }
 
 function onPaneClick() {
-    const activeNodeId = graphStore.activeNodeId
-    if (!activeNodeId) { return }
-    if (activeNodeId) {
-        const nameInvalid = !activeNodeId.value.data.name || graphStore.checkDuplicates(activeNodeId.value.id, activeNode.value.data.name)
-        if (nameInvalid) {
-            return false
-        }
-    }
     isSidebarOpen.value = false
     graphStore.clearActiveNode()
 }
 
-function validateEdges(connection: any) {
+function isValidConnection(connection: any) {
     const sourceId = connection.source
     const targetId = connection.target
 
@@ -106,7 +103,6 @@ function validateEdges(connection: any) {
 
     // find  source nodes
     const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
-
 
     // check if they exist
     if (sourceNode) {
@@ -136,7 +132,7 @@ const isCodeWindowOpen = ref(false)
 <template>
     <div style="height: 100vh; width: 100%; display: flex; flex-direction: column;">
         <VueFlow v-model:nodes="graphStore.nodes" v-model:edges="graphStore.edges" :node-types="myNodeTypes"
-            connection-mode="strict" :is-valid-connection="validateEdges"
+            connection-mode="strict" :is-valid-connection="isValidConnection"
             :default-edge-options="{ type: 'smoothstep', animated: false }" @node-click="onNodeClick"
             @pane-click="onPaneClick">
             <Panel position="top-right" class="custom-center-panel">

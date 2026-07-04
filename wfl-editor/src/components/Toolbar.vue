@@ -21,10 +21,7 @@ function addNode(nodeConfig: { type: string, label: string }) {
   addNodes(node)
 }
 
-// TODO
-function saveConfig(code: string) {
 
-}
 
 </script>
 
@@ -33,7 +30,6 @@ function saveConfig(code: string) {
     <button class="btn" v-for="node in nodeTypes" :key="node.type" :class="node.type" @click="addNode(node)">
       {{ node.label }}
     </button>
-    <button class="btn" @click="saveConfig(code)">Save Configuration</button>
   </div>
 
 

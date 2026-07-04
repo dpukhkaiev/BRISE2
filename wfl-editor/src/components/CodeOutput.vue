@@ -2,7 +2,7 @@
 //store
 import { useGraphStore } from '../store.ts'
 import { useXmlToWfl } from '../composables/useXmlToWaffle'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 defineProps<{ isOpen: boolean }>()
 defineEmits(['toggle'])
@@ -14,6 +14,24 @@ const wflCode = computed(() => {
   const xml = graphStore.exportGraphToXML()
   return convert(xml)
 })
+
+const copied = ref(false)
+
+async function copyCode() {
+  try {
+    await navigator.clipboard.writeText(wflCode.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 1500)
+  } catch (e) {
+    console.error('Clipboard access did not work', e)
+  }
+}
+
+function saveConfig() {
+  graphStore.downloadCode(wflCode.value)
+}
+
+
 </script>
 
 <template>
@@ -23,8 +41,13 @@ const wflCode = computed(() => {
     </button>
     <div class="panel-content">
       <h3>Generated WFL Code</h3>
+      <div class="actions">
+        <button class="action-btn" @click="saveConfig()">Download .wfl</button>
+        <button class="action-btn" @click="copyCode">{{ copied ? 'Copied!' : 'Copy' }}</button>
+      </div>
       <pre class="wfl-code">{{ wflCode }}</pre>
     </div>
+
   </div>
 </template>
 
@@ -47,11 +70,31 @@ const wflCode = computed(() => {
   border-top: 1px solid #e2e8f0;
   border-left: 1px solid #e2e8f0;
   color: #0f172a;
-  padding: 0 10px 10px 10px;
+  padding: 0 5px 5px 5px;
   box-sizing: border-box;
   z-index: 100;
   display: flex;
   overflow-y: auto;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 14px 0;
+}
+
+.action-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background: #6aacee;
 }
 
 .wfl-panel-closed {
