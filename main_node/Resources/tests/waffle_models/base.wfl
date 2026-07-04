@@ -14,7 +14,14 @@ abstract Category {
 abstract CategoricalHyperparameter : Hyperparameter {
   Categories -> predefined
   Default -> string
-  [Default in Categories]
+
+  // DefaultConfHandler selected
+
+
+  // No DefaultConfHandler selected
+  [if fcard.DefaultConfigurationHandler == 0 then self.Default = 1]
+  [if self.Default then Default in Categories]
+  
   [Categories = (filter childs.self where Type == "Category")]
 }
 
@@ -32,8 +39,18 @@ abstract FloatHyperparameter: NumericHyperparameter {
   Lower -> float
   Upper -> float
   Default -> float
-  [Default >= Lower]
-  [Default <= Upper]
+  
+  // DefaultConfHandler selected
+  [if fcard.DefaultConfigurationHandler == 1 then self.Default = 0]
+  [if fcard.DefaultConfigurationHandler == 1 then Lower = 0]
+  [if fcard.DefaultConfigurationHandler == 1 then Upper = 1]
+
+  // No DefaultConfHandler selected
+  [if fcard.DefaultConfigurationHandler == 0 then Lower < Upper]
+  [if fcard.DefaultConfigurationHandler == 0 then self.Default = 1]
+  [if self.Default then Default >= Lower]
+  [if self.Default then Default <= Upper]
+
   [Type = "FloatHyperparameter"]
   [fcard.StopCondition.Instance.AdaptiveSC = 0]
 }
@@ -41,8 +58,18 @@ abstract IntegerHyperparameter: NumericHyperparameter {
   Lower -> integer
   Upper -> integer
   Default -> integer
-  [Default >= Lower]
-  [Default <= Upper]
+  
+  // DefaultConfHandler selected
+  [if fcard.DefaultConfigurationHandler == 1 then self.Default = 0]
+  [if fcard.DefaultConfigurationHandler == 1 then Lower = 0]
+  [if fcard.DefaultConfigurationHandler == 1 then Upper = 1]
+  
+  // No DefaultConfHandler selected
+  [if fcard.DefaultConfigurationHandler == 0 then Lower < Upper]
+  [if fcard.DefaultConfigurationHandler == 0 then self.Default = 1]
+  [if self.Default then Default >= Lower]
+  [if self.Default then Default <= Upper]
+
   [Type = "IntegerHyperparameter"]
 }
 
