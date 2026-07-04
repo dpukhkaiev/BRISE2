@@ -847,7 +847,7 @@ OutliersDetection ? {
 
     Dixon {
       Type -> predefined
-      [Type = "Dixon"]
+      [Type = "dixon_test"]
       Parameters {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
@@ -857,7 +857,7 @@ OutliersDetection ? {
     }
     Chauvenet {
       Type -> predefined
-      [Type = "Chauvenet"]
+      [Type = "chauvenet_criterion"]
       Parameters {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
@@ -867,7 +867,7 @@ OutliersDetection ? {
     }
     Mad {
       Type -> predefined
-      [Type = "Mad"]
+      [Type = "mad"]
       Parameters {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
@@ -877,7 +877,7 @@ OutliersDetection ? {
     }
     Grubbs {
       Type -> predefined
-      [Type = "Grubbs"]
+      [Type = "grubbs_test"]
       Parameters {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
@@ -887,7 +887,7 @@ OutliersDetection ? {
     }
     Quartiles {
       Type -> predefined
-      [Type = "Quartiles"]
+      [Type = "quartiles_method"]
       Parameters {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
