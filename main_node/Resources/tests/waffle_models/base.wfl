@@ -838,7 +838,7 @@ TransferLearning ? {
 
 // --------------------Outliers Detection------------------------
 OutliersDetection ? {
-  isEnabled -> predefined
+  isEnabled -> boolean
   
   or Detectors ? {
     [size childs.self >= 0]
