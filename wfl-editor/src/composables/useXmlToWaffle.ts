@@ -61,8 +61,16 @@ export function useXmlToWfl() {
     function convert(xmlString: string): string {
         const doc = new DOMParser().parseFromString(xmlString, 'application/xml')
         const root = doc.documentElement // SearchSpace
+        // generate inner waffle content for the top level nodes
         const topLevelNodes = Array.from(root.children).map(parseXmlElement)
-        return topLevelNodes.map(generateWfl).join('\n\n')
+        const innerContent = topLevelNodes.map(generateWfl).join('\n\n')
+        
+        const indentedContent = innerContent
+            .split('\n')
+            .map(line => '  ' + line)
+            .join('\n')
+
+            return `Searchspace {\n${indentedContent}\n}`
     }
     return { convert }
 }

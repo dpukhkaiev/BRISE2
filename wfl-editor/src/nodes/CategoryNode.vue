@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Position, Handle } from '@vue-flow/core'
 import { VueFlow, useVueFlow, Edge } from '@vue-flow/core'
+//store
+import { useGraphStore } from '../store.ts'
 
 const props = defineProps<{
   id: string
@@ -9,18 +11,22 @@ const props = defineProps<{
   }
 
 }>()
+
+const graphStore = useGraphStore()
+
+function isValidTargetConnection(connection: any) {
+  return !graphStore.hasParent(props.id)
+}
+
 </script>
 
 <template>
-     <div class="category-box">
-    <input
-      v-model="$props.data.name"
-      placeholder="Category Name"
-      class="category-input" />
-    <Handle type="target" :position="Position.Top" />
+  <div class="category-box">
+    <input v-model="$props.data.name" placeholder="Category Name" class="category-input" />
+    <Handle type="target" :position="Position.Top" :is-valid-connection="isValidTargetConnection" />
     <Handle type="source" :position="Position.Bottom" />
-     </div>
-    </template>
+  </div>
+</template>
 
 <style>
 .category-box {
@@ -29,6 +35,7 @@ const props = defineProps<{
   border-radius: 6px;
   background: transparent;
 }
+
 .category-input {
   border: none;
   background: transparent;

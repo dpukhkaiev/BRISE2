@@ -27,8 +27,7 @@ function addCategory() {
 
     if (!activeNode.value.id) return
 
-    // graphStore.addCategoryToNode(activeNode.value.id, newCategory.value)
-
+    // create a custom category
     graphStore.createCategoryBox(activeNode.value, newCategory.value)
     newCategory.value = ''
 }
@@ -90,7 +89,6 @@ const isConstraintsInvalid = computed(() => {
     if (lower === null || upper === null || lower === undefined || upper === undefined || lower === '' || upper === '') {
         return false
     }
-
 
     return Number(lower) > Number(upper)
 })
@@ -198,8 +196,7 @@ const isConstraintsInvalid = computed(() => {
                 </ul>
 
                 <label>Default</label>
-                <input type="number" v-model="activeNode.data.default" :min="activeNode?.data.lower"
-                    :max="activeNode?.data.upper" class="styled-input" />
+                <input type="text" v-model="activeNode.data.default" class="styled-input" />
 
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />

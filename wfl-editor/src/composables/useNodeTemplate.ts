@@ -38,7 +38,7 @@ export interface OrdinalNode {
     lower: number
     upper: number
     default: number
-     children: Children[]
+    children: Children[]
 
 }
 
@@ -81,6 +81,7 @@ export function nominalTemplate(node: NominalNode, childrenWfl: string[]): strin
         `}`
     ].join('\n')
 }
+
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
     return [
         `${node.name} : OrdinalHyperparameter {`,
@@ -91,9 +92,7 @@ export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): strin
 
 
 function categoryTemplate(node: CategoryNode, childrenWfl: string[]): string {
-    if (childrenWfl.length === 0) {
-        return node.name  
-    }
+  
     return [
         `${node.name} : Category {`,
         ...childrenWfl.map(c => indent(c)),
@@ -108,4 +107,5 @@ function categoryTemplate(node: CategoryNode, childrenWfl: string[]): string {
     OrdinalHyperparameter: (node, children) => ordinalTemplate(node, children),
     Category: (node, children) => categoryTemplate(node, children),
 }
+
 

@@ -23,7 +23,7 @@ export const useGraphStore = defineStore('graph', () => {
         return nodes.value.find((n: Node) => n.id === activeNodeId.value) || null
     })
 
-        // localStorage for auto save
+    // localStorage for auto save
     watch(() => [nodes.value, edges.value],
         () => {
             localStorage.setItem('graph-state', JSON.stringify({
@@ -32,6 +32,13 @@ export const useGraphStore = defineStore('graph', () => {
             }))
         }, {deep: true})
 
+    function removeFromLocalStorage() {
+        nodes.value = []
+        edges.value = []
+
+        localStorage.removeItem('graph-state')
+       
+    }
 
     function loadFromLocalStorage() {
         const saved = localStorage.getItem('graph-state')
@@ -92,6 +99,12 @@ export const useGraphStore = defineStore('graph', () => {
         return nodes.value.some((n:Node) => n.data?.childrenIds?.includes(nodeId))
     }
 
+    function wouldCreateCycle(targetId: string, sourceId: string): boolean {
+      const child = getAllDescendants(targetId)
+      const isChild = (child.some((n: Node) => n.id === sourceId))
+           return isChild
+    }
+
     // ensures unique names for hyperparameter nodes and category nodes
     function checkDuplicates(existingId: string, nodeName: string): boolean{
         if (!nodeName.trim()) return false
@@ -110,8 +123,13 @@ export const useGraphStore = defineStore('graph', () => {
                 parentNode.data.childrenIds.push(childId)
             }
 
-        }
+       } 
         
+    }
+
+    // TODO
+    function setDefault() {
+
     }
 
     function getAllDescendants(nodeId:string): Node[] {
@@ -134,6 +152,11 @@ export const useGraphStore = defineStore('graph', () => {
 
     //create category node 
     function createCategoryBox(sourceNode: Node, categoryName?: string, targetNode?: Node) {
+         if (targetNode && hasParent(targetNode.id)) {
+        console.warn('Target has already a parent')
+        return null
+     }
+
         const id = Date.now().toString()
       
         // position for custom categories on canvas
@@ -147,7 +170,7 @@ export const useGraphStore = defineStore('graph', () => {
 
         const finalName = categoryName || createUniqueName('Category')
 
-        // flag for custom categories, if nno targetNode exists then true
+        // flag for custom categories, if no targetNode exists then true
         const isManualCategory = !targetNode 
 
         const node = {
@@ -164,34 +187,34 @@ export const useGraphStore = defineStore('graph', () => {
       }
 
 
-          nodes.value.push(node)
+        nodes.value.push(node)
 
-    edges.value.push({
-        id: `e-${sourceNode.id}-${id}`,
-        source: sourceNode.id,
-        target: id
-    })
+        edges.value.push({
+            id: `e-${sourceNode.id}-${id}`,
+            source: sourceNode.id,
+            target: id
+        })
 
-    // register custom category node as a direct child of the parent node
-    if (!sourceNode.data.childrenIds) sourceNode.data.childrenIds = [];
-    sourceNode.data.childrenIds.push(id)
+        // register custom category node as a direct child of the parent node
+        if (!sourceNode.data.childrenIds) sourceNode.data.childrenIds = [];
+        sourceNode.data.childrenIds.push(id)
 
-    if(!targetNode) { return }
+        if(!targetNode) { return }
 
-    edges.value.push({
-        id: `e-${id}-${targetNode.id}`,
-        source: id,
-        target: targetNode.id
-    })
+        edges.value.push({
+            id: `e-${id}-${targetNode.id}`,
+            source: id,
+            target: targetNode.id
+        })
+        
+        if (!node.data.childrenIds)    node.data.childrenIds = [];
+        // register target node as child of the category node
+        (node.data.childrenIds as any).push(targetNode.id)
     
-    if (!node.data.childrenIds)    node.data.childrenIds = [];
-    // register target node as child of the category node
-    (node.data.childrenIds as any).push(targetNode.id)
-   
-    console.log('added node', node.data.childrenIds)
-    return node
+        console.log('added node', node.data.childrenIds)
+        return node
 
-    }
+        }
 
     // delete categories custom and nested nodes 
     function removeCategory(nodeId: string, categoryName: string){
@@ -317,6 +340,8 @@ export const useGraphStore = defineStore('graph', () => {
         checkDuplicates,
         hasParent,
         downloadCode,
-        loadFromLocalStorage
+        loadFromLocalStorage,
+        removeFromLocalStorage,
+        wouldCreateCycle
     }
 })

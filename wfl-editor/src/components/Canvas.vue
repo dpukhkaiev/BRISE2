@@ -40,6 +40,8 @@ onMounted(() => {
 
 onConnect((connection) => {
 
+    console.log('Edges BEFORE:', graphStore.edges.length)
+
     const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
     const targetNode = flowNodes.value.find((node: any) => node.id === connection.target)
 
@@ -56,23 +58,30 @@ onConnect((connection) => {
             //addEdges({ id: `e-${sourceNode.id}-${categoryNode.id}`, source: sourceNode.id, target: categoryNode.id })
             //addEdges({ id: `e-${categoryNode.id}-${targetNode.id}`, source: categoryNode.id, target: targetNode.id })
 
-            graphStore.addChildToNode(sourceNode.id, categoryNode.id)
-            graphStore.addChildToNode(categoryNode.id, targetNode.id)
+            //graphStore.addChildToNode(sourceNode.id, categoryNode.id)
+            //graphStore.addChildToNode(categoryNode.id, targetNode.id)
+            return
         }
 
+        // add manual added children to the category box 
         if (sourceNode) {
             const isSourceCategory = sourceNode.type === 'category'
 
             if (isSourceCategory) {
+                if (graphStore.hasParent(targetNode.id) || graphStore.wouldCreateCycle(targetNode.id, sourceNode.id)) {
+                    return
+                }
                 graphStore.addChildToNode(sourceNode.id, targetNode.id)
 
-                console.log('added child')
+                console.log('added child',)
             }
         }
     }
 
     addEdges(connection)
+    console.log('Edges AFTER:', graphStore.edges.length)
     return true
+
 })
 
 
@@ -103,10 +112,10 @@ function isValidConnection(connection: any) {
 
     // find  source nodes
     const sourceNode = flowNodes.value.find((node: any) => node.id === connection.source)
+    if (graphStore.wouldCreateCycle(targetId, sourceId)) { return false }
 
     // check if they exist
     if (sourceNode) {
-
         if (sourceNode.type === 'float') {
             return false
         }
@@ -124,7 +133,9 @@ function testXML() {
     console.log("XML TEXT")
     console.log(xmlResult)
 }
+
 const isCodeWindowOpen = ref(false)
+
 
 
 </script>
@@ -135,11 +146,15 @@ const isCodeWindowOpen = ref(false)
             connection-mode="strict" :is-valid-connection="isValidConnection"
             :default-edge-options="{ type: 'smoothstep', animated: false }" @node-click="onNodeClick"
             @pane-click="onPaneClick">
+
             <Panel position="top-right" class="custom-center-panel">
+
+
                 <Toolbar />
+
             </Panel>
         </VueFlow>
-
+        <button @click="testXML">XML </button>
         <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false"
             @open-category-table="(view) => activeModalView = view" />
 

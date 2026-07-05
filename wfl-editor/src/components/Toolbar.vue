@@ -21,8 +21,9 @@ function addNode(nodeConfig: { type: string, label: string }) {
   addNodes(node)
 }
 
-
-
+function clearLocalStorage() {
+  graphStore.removeFromLocalStorage()
+}
 </script>
 
 <template>
@@ -30,6 +31,7 @@ function addNode(nodeConfig: { type: string, label: string }) {
     <button class="btn" v-for="node in nodeTypes" :key="node.type" :class="node.type" @click="addNode(node)">
       {{ node.label }}
     </button>
+    <button class="btn" @click="clearLocalStorage()">reset state</button>
   </div>
 
 
