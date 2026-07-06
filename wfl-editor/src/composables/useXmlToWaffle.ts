@@ -25,15 +25,16 @@ function parseXmlElement(el: Element): Children {
 
     const lower = lowerText ? Number(lowerText) : undefined
     const upper = upperText ? Number(upperText) : undefined
-    const def = defText ? Number(defText) : undefined
-   
+    const def = defText ? String(defText) : undefined
+     const defN = defText ? Number(defText) : undefined
+
     switch (type) {
         case 'float':
-            return { type: 'float', name, lower, upper, default: def } as FloatNode
+            return { type: 'float', name, lower, upper, default: defN } as FloatNode
         case 'integer':
-            return { type: 'integer', name, lower, upper, default: def } as IntegerNode
+            return { type: 'integer', name, lower, upper, default: defN } as IntegerNode
         case 'nominal':
-            return { type: 'nominal', name, lower, upper, default: def, children } as NominalNode
+            return { type: 'nominal', name, lower, upper, default:def , children } as NominalNode
         case 'ordinal':
             return { type: 'ordinal', name, lower, upper, default: def, children } as OrdinalNode
         case 'category':

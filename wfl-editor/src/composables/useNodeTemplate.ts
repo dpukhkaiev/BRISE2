@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, pushScopeId } from 'vue'
 
 export interface FloatNode {
     type: 'float'
@@ -25,9 +25,7 @@ export interface CategoryNode {
 export interface NominalNode {
  type: 'nominal'
     name: string
-    lower: number
-    upper: number
-    default: number
+    default: string
      children: Children[]
 
 }
@@ -35,9 +33,7 @@ export interface NominalNode {
 export interface OrdinalNode {
  type: 'ordinal'
     name: string
-    lower: number
-    upper: number
-    default: number
+    default: string
     children: Children[]
 
 }
@@ -75,19 +71,19 @@ export function integerTemplate(node: IntegerNode ): string {
 }
 
 export function nominalTemplate(node: NominalNode, childrenWfl: string[]): string {
-    return [
-        `${node.name} : NominalHyperparameter {`,       
-        ...childrenWfl.map(c => indent(c)),
-        `}`
-    ].join('\n')
+    const lines = [`${node.name} : NominalHyperparameter {` ]     
+    lines.push(...childrenWfl.map(c => indent(c)))
+    if(node.default !== undefined) lines.push(indent(`[Default = "${node.default}"]`))
+    lines.push(`}`)
+    return lines.join('\n')
 }
 
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
-    return [
-        `${node.name} : OrdinalHyperparameter {`,
-        
-        ...childrenWfl.map(c =>indent(c)) ,`}`,        
-    ].join('\n')
+    const lines = [ `${node.name} : OrdinalHyperparameter {`]
+    lines.push(...childrenWfl.map(c =>indent(c))) 
+    if (node.default !== undefined) lines.push(indent(`[Default = "${node.default}"]`))
+    lines.push(`}`)
+    return lines.join('\n')
 }
 
 
@@ -101,6 +97,7 @@ function categoryTemplate(node: CategoryNode, childrenWfl: string[]): string {
 }
     // templates together
     export const templates: Record<string, (node: any, children: string[]) => string> = {
+
     FloatHyperparameter: (node) => floatTemplate(node),
     IntegerHyperparameter: (node) => integerTemplate(node),
     NominalHyperparameter: (node, children) => nominalTemplate(node, children),

@@ -32,13 +32,21 @@ function addCategory() {
     newCategory.value = ''
 }
 
+const ancestors = computed(() => {
+    if (!activeNode.value?.id) return ''
+    const ancestorNames = graphStore.getAllAncestors(activeNode.value.id).reverse().map((n: Node) => n.data?.name)
+
+    const fullPath = ['Context', 'Searchspace', ancestorNames, activeNode.value.data.name].join('.')
+    return fullPath
+})
+
 // all children of the parent node (direct and nested)
 const connectedChildren = computed(() => {
     if (!activeNode.value.id) return []
     const descendants = graphStore.getAllDescendants(activeNode.value.id)
     return descendants
-        .filter((c: any) => !c.data?.isManual)
-        .map((c: any) => c.data?.name || c.data?.label);
+        .filter((c: Node) => !c.data?.isManual)
+        .map((c: Node) => c.data?.name || c.data?.label);
 })
 
 // manually created categories
@@ -84,13 +92,18 @@ const isNodeNameTaken = computed(() => {
 const isConstraintsInvalid = computed(() => {
     const lower = activeNode.value?.data?.constraints?.lower
     const upper = activeNode.value?.data?.constraints?.upper
+    const d = activeNode.value?.data?.constraints?.default
 
 
-    if (lower === null || upper === null || lower === undefined || upper === undefined || lower === '' || upper === '') {
+    if (lower === null || upper === null || lower === undefined || upper === undefined || lower === '' || upper === '' || d === undefined || d === '' || d === null) {
         return false
     }
 
-    return Number(lower) > Number(upper)
+    return Number(lower) > Number(upper) || Number(d) < Number(lower) || Number(d) > Number(upper)
+})
+
+const defaultPath = computed(() => {
+    return graphStore.calculateNodePath(activeNode.value.data.id)
 })
 </script>
 
@@ -134,7 +147,9 @@ const isConstraintsInvalid = computed(() => {
                 <label>Default</label>
                 <input type="number" v-model="activeNode.data.constraints.default" :min="activeNode?.data.lower"
                     :max="activeNode?.data.upper" class="styled-input" />
-
+                <p v-if="isConstraintsInvalid" style="color: red; font-size: 12px; margin-top: 4px;">
+                    Default cannot be greater than Upper and lower the Lower
+                </p>
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
             </div>
@@ -164,8 +179,6 @@ const isConstraintsInvalid = computed(() => {
                             + {{ customCategories.length - 5 }} ↗
                         </button>
                     </div>
-
-
                 </ul>
 
                 <input type="text" v-model="newCategory" @input="showError = false" class="styled-input"
@@ -196,7 +209,8 @@ const isConstraintsInvalid = computed(() => {
                 </ul>
 
                 <label>Default</label>
-                <input type="text" v-model="activeNode.data.default" class="styled-input" />
+                <div class="def styled-input"> {{ ancestors }}</div>
+                <div>DEBUG ancestors: {{ ancestors }}</div>
 
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
@@ -241,6 +255,7 @@ const isConstraintsInvalid = computed(() => {
     z-index: 100;
     border-left: 1px solid #e2e8f0;
     color: #1e293b;
+
 }
 
 .sidebar-closed {
@@ -251,6 +266,10 @@ const isConstraintsInvalid = computed(() => {
 .sidebar-content {
     padding: 20px;
     margin-top: 20px;
+}
+
+.def {
+    font-size: 16px;
 }
 
 .sidebar-content ul {
@@ -264,6 +283,7 @@ const isConstraintsInvalid = computed(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+    font-size: 16px;
 }
 
 .close-btn {

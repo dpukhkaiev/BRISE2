@@ -99,6 +99,11 @@ export const useGraphStore = defineStore('graph', () => {
         return nodes.value.some((n:Node) => n.data?.childrenIds?.includes(nodeId))
     }
 
+    function getParent(nodeId: string) {
+       const parent = nodes.value.find((n: Node) => n.data?.childrenIds?.includes(nodeId))
+        return parent
+    }
+
     function wouldCreateCycle(targetId: string, sourceId: string): boolean {
       const child = getAllDescendants(targetId)
       const isChild = (child.some((n: Node) => n.id === sourceId))
@@ -127,9 +132,19 @@ export const useGraphStore = defineStore('graph', () => {
         
     }
 
-    // TODO
-    function setDefault() {
+    function getAllAncestors(nodeId:string): Node[] {
+        const node = nodes.value.find((n: Node) => n.id === nodeId)
+        if(!node) return []
 
+        const directParent = getParent(nodeId)
+        if(!directParent) {
+            return []
+        }
+        const ancestors = getAllAncestors(directParent.id)
+
+        return [directParent, ...ancestors]
+
+      
     }
 
     function getAllDescendants(nodeId:string): Node[] {
@@ -255,9 +270,18 @@ export const useGraphStore = defineStore('graph', () => {
         }
      }
         }
-            
-           
-
+        
+  function calculateNodePath(nodeId: string): string {
+    const ancestorNames = getAllAncestors(nodeId)
+        .reverse()
+        .map((n: Node) => n.data?.name)
+    
+    const node = nodes.value.find((n: Node) => n.id === nodeId)
+    return ['Context', 'Searchspace', ...ancestorNames, node?.data?.name]
+        .filter(Boolean)
+        .join('.')
+}
+        
 
     // extract the data and make it xml
     function exportGraphToXML() {
@@ -271,7 +295,7 @@ export const useGraphStore = defineStore('graph', () => {
             nodeEl.setAttribute('name', node.data?.name || node.data?.label);
             nodeEl.setAttribute('id', node.id);
 
-            // extract constraints and parameters
+            // extract constraints and parameters for nummerical nodes
             if (node.data?.constraints) {
                 const constraintsEl = xmlDoc.createElement('Constraints');
                    let hasConstraints = false
@@ -285,6 +309,20 @@ export const useGraphStore = defineStore('graph', () => {
                 })
                  if (hasConstraints) nodeEl.appendChild(constraintsEl)
             }
+
+            // extract default for categorical nodes
+            if (node.data?.constraints) {
+                 let constraintsEl = nodeEl.querySelector('Constraints')
+            if (!constraintsEl) {
+                constraintsEl = xmlDoc.createElement('Constraints')
+                nodeEl.appendChild(constraintsEl)
+             }
+            const defaultEl = xmlDoc.createElement('default')
+                defaultEl.textContent =  calculateNodePath(node.id)
+                constraintsEl.appendChild(defaultEl)
+                
+                    }
+
             const childIds = node.data?.childrenIds || []
             childIds.forEach((childId: string) => {
             const childNode = nodes.value.find((n: Node) => n.id === childId)
@@ -322,6 +360,7 @@ export const useGraphStore = defineStore('graph', () => {
         URL.revokeObjectURL(url)
 
     }
+
     return {
         nodes,
         edges,
@@ -342,6 +381,8 @@ export const useGraphStore = defineStore('graph', () => {
         downloadCode,
         loadFromLocalStorage,
         removeFromLocalStorage,
-        wouldCreateCycle
+        wouldCreateCycle,
+        getAllAncestors,
+        calculateNodePath
     }
 })
