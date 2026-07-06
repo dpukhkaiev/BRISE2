@@ -294,35 +294,37 @@ export const useGraphStore = defineStore('graph', () => {
 
             nodeEl.setAttribute('name', node.data?.name || node.data?.label);
             nodeEl.setAttribute('id', node.id);
-
+  const isCategorical = node.data?.super === 'NominalHyperparameter' || node.data?.super === 'OrdinalHyperparameter';
             // extract constraints and parameters for nummerical nodes
+          
             if (node.data?.constraints) {
                 const constraintsEl = xmlDoc.createElement('Constraints');
                    let hasConstraints = false
+                   
                 Object.entries(node.data.constraints).forEach(([key, val]) => {
-                    if (val !== null && val !== undefined && key !== 'level') {
+                    if (val !== null && val !== undefined && key !== 'level' && val !== '') {
+                        if (isCategorical && key === 'default') return;
                         const cEl = xmlDoc.createElement(key)
                         cEl.textContent = val.toString()
                         constraintsEl.appendChild(cEl)
                            hasConstraints = true
                     }
                 })
-                 if (hasConstraints) nodeEl.appendChild(constraintsEl)
-            }
+        
 
             // extract default for categorical nodes
-            if (node.data?.constraints) {
-                 let constraintsEl = nodeEl.querySelector('Constraints')
-            if (!constraintsEl) {
-                constraintsEl = xmlDoc.createElement('Constraints')
-                nodeEl.appendChild(constraintsEl)
-             }
+          
+           if(isCategorical){
+          
             const defaultEl = xmlDoc.createElement('default')
                 defaultEl.textContent =  calculateNodePath(node.id)
                 constraintsEl.appendChild(defaultEl)
-                
+                hasConstraints = true
                     }
+                
 
+                 if (hasConstraints) nodeEl.appendChild(constraintsEl)
+            }
             const childIds = node.data?.childrenIds || []
             childIds.forEach((childId: string) => {
             const childNode = nodes.value.find((n: Node) => n.id === childId)
