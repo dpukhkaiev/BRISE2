@@ -40,22 +40,22 @@ const ancestors = computed(() => {
     return fullPath
 })
 
+
 // all children of the parent node (direct and nested)
 const connectedChildren = computed(() => {
     if (!activeNode.value.id) return []
     const descendants = graphStore.getAllDescendants(activeNode.value.id)
     return descendants
-        .filter((c: Node) => !c.data?.isManual)
+        .filter((c: Node) => !c.data?.childrenIds)
         .map((c: Node) => c.data?.name || c.data?.label);
 })
 
 // manually created categories
-const customCategories = computed(() => {
+const categories = computed(() => {
     if (!activeNode.value?.id) return []
     return graphStore.nodes
         .filter((node: Node) =>
             node.type === 'category' &&
-            node.data?.isManual &&
             graphStore.edges.some((e: any) => e.source === activeNode.value.id && e.target === node.id)
         )
         .map((node: any) => node.data?.name)
@@ -92,18 +92,50 @@ const isNodeNameTaken = computed(() => {
 const isConstraintsInvalid = computed(() => {
     const lower = activeNode.value?.data?.constraints?.lower
     const upper = activeNode.value?.data?.constraints?.upper
-    const d = activeNode.value?.data?.constraints?.default
 
-
-    if (lower === null || upper === null || lower === undefined || upper === undefined || lower === '' || upper === '' || d === undefined || d === '' || d === null) {
+    if (lower === null || upper === null || lower === undefined || upper === undefined || lower === '' || upper === '') {
         return false
     }
 
-    return Number(lower) > Number(upper) || Number(d) < Number(lower) || Number(d) > Number(upper)
+    return Number(lower) > Number(upper)
 })
 
-const defaultPath = computed(() => {
-    return graphStore.calculateNodePath(activeNode.value.data.id)
+const isDefaultInvalid = computed(() => {
+    const lower = activeNode.value?.data?.constraints?.lower
+    const upper = activeNode.value?.data?.constraints?.upper
+    const d = activeNode.value?.data?.constraints?.default
+
+    if (d === undefined || d === '' || d === null) { return false }
+    return Number(d) < Number(lower) || Number(d) > Number(upper)
+})
+
+
+// validate name when changed
+const updateName = computed({
+    get() {
+        return activeNode.value?.data?.name || ''
+    },
+    set(newValue: string) {
+        if (activeNode.value?.id) {
+            graphStore.updateNodeName(activeNode.value.id, newValue)
+        }
+    }
+})
+
+const directCategories = computed(() => {
+    if (!activeNode.value?.id) return []
+    return graphStore.getDirectCategories(activeNode.value.id)
+})
+
+const defaultCategoryId = computed({
+    get() {
+        return activeNode.value?.data?.defaultPathId || ''
+    },
+    set(categoryId: string) {
+        if (activeNode.value?.id) {
+            graphStore.setDefault(activeNode.value.id, categoryId)
+        }
+    }
 })
 </script>
 
@@ -120,8 +152,8 @@ const defaultPath = computed(() => {
             <!-- nummerical parameters -->
             <div v-if="activeNode?.type === 'float' || activeNode?.type === 'integer'">
                 <label>Name</label>
-                <input v-model="activeNode.data.name" class="styled-input"
-                    :class="{ 'input-error': !activeNode.data.name || isNodeNameTaken }" />
+                <input v-model="updateName" class="styled-input"
+                    :class="{ 'input-error': !updateName || isNodeNameTaken }" />
 
                 <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
                     name is required
@@ -147,8 +179,8 @@ const defaultPath = computed(() => {
                 <label>Default</label>
                 <input type="number" v-model="activeNode.data.constraints.default" :min="activeNode?.data.lower"
                     :max="activeNode?.data.upper" class="styled-input" />
-                <p v-if="isConstraintsInvalid" style="color: red; font-size: 12px; margin-top: 4px;">
-                    Default cannot be greater than Upper and lower the Lower
+                <p v-if="isDefaultInvalid" style="color: red; font-size: 12px; margin-top: 4px;">
+                    Default cannot be greater than Upper and lower than Lower
                 </p>
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
@@ -157,8 +189,8 @@ const defaultPath = computed(() => {
             <!-- categorical parameters -->
             <div v-else-if="activeNode?.type === 'nominal' || activeNode?.type === 'ordinal'">
                 <label>Name</label>
-                <input type="text" v-model="activeNode.data.name" class="styled-input"
-                    :class="{ 'input-error': !activeNode.data.name }" />
+                <input type="text" v-model="updateName" class="styled-input"
+                    :class="{ 'input-error': !updateName || isNodeNameTaken }" />
 
                 <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
                     name is required
@@ -169,14 +201,14 @@ const defaultPath = computed(() => {
                 <label>Categories</label>
                 <ul>
 
-                    <li v-for="(item, index) in customCategories.slice(0, 5)" :key="index">
+                    <li v-for="(item, index) in categories.slice(0, 5)" :key="index">
                         {{ item }}
                         <button class="btn btn-danger" @click="removeChild(item)">x</button>
                     </li>
 
-                    <div v-if="customCategories.length > 5">
+                    <div v-if="categories.length > 5">
                         <button type="button" class="btn-link" @click="emit('open-category-table', 'categories')">
-                            + {{ customCategories.length - 5 }} ↗
+                            + {{ categories.length - 5 }} ↗
                         </button>
                     </div>
                 </ul>
@@ -209,8 +241,15 @@ const defaultPath = computed(() => {
                 </ul>
 
                 <label>Default</label>
-                <div class="def styled-input"> {{ ancestors }}</div>
-                <div>DEBUG ancestors: {{ ancestors }}</div>
+
+                <select v-model="defaultCategoryId" class="styled-select">
+
+                    <option value="">No category selected</option>
+                    <option v-for="cat in directCategories" :key="cat.id" :value="cat.id">
+                        {{ cat.data.name }}
+                    </option>
+
+                </select>
 
                 <label>Level</label>
                 <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />

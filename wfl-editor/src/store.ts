@@ -49,23 +49,34 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     function createUniqueName(baseName: string): string {
+        const cleanedName = baseName.trim().replace(/\s+/g, '_')
         let counter = 1
-        let uniqueName = `${baseName} ${counter}`
+        let uniqueName = `${cleanedName}_${counter}`
         // loop until found a name that any of the nodes have
         while (nodes.value.some((n: Node) => n.data?.name === uniqueName)) {
             counter++
-            uniqueName = `${baseName} ${counter}`
+            uniqueName = `${cleanedName}_${counter}`
 
         }
 
         return uniqueName
     }
 
+    // clean up the node names to remove spaces
+    function updateNodeName(nodeId: string, newName: string) {
+        const node = nodes.value.find((n:Node) => n.id === nodeId) 
+        if(node) {
+            node.data.name = newName.trim().replace(/\s+/g, '_')
+        }
+    }
+
+
     // maps node types to their XML tag names (used in data.super for export)
     function createNode(nodeConfig: { type: string, label: string }) {
 
         const id = Date.now().toString()
         const categories = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? [] : undefined
+        const defaultCategoryId = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? null : undefined
         const autoName = createUniqueName(nodeConfig.label)
         const node = ({
             id: id,
@@ -78,6 +89,7 @@ export const useGraphStore = defineStore('graph', () => {
                 constraints: { lower: null, upper: null, default: null, level: 0 },
                 categories: categories ? [] : undefined,
                 children: categories ? [] : undefined,
+                defaultPathId: defaultCategoryId
             }
         })
         nodes.value.push(node)
@@ -104,6 +116,23 @@ export const useGraphStore = defineStore('graph', () => {
         return parent
     }
 
+    function setDefault(nodeId: string, categoryId: string) {
+        const node = nodes.value.find((n: Node) => n.id === nodeId)
+        if(!node) {return}
+        // set default path to the selected category node
+        node.data.defaultPathId = categoryId
+    }
+
+    function isDefaultOf(categoryId: string): boolean {
+    return nodes.value.some((n: Node) => n.data?.defaultPathId === categoryId)
+}
+
+
+    function getDirectCategories(nodeId: string): Node[] {
+        const node = nodes.value.find((n: Node) => n.id === nodeId)
+        if(!node?.data?.childrenIds) {return []}
+        return node.data.childrenIds.map((id:string) =>nodes.value.find((n: Node) => n.id === id) ).filter((n: Node) => n.type === 'category')
+    }
     function wouldCreateCycle(targetId: string, sourceId: string): boolean {
       const child = getAllDescendants(targetId)
       const isChild = (child.some((n: Node) => n.id === sourceId))
@@ -245,6 +274,11 @@ export const useGraphStore = defineStore('graph', () => {
         if(elementToDelete) {
             // 
             const targetId = elementToDelete.id
+
+            // handle change of default path if default node is deleted
+            if (parentNode.data?.defaultPathId === targetId) {
+                 parentNode.data.defaultPathId =  null
+                }
             // all sub nodes of the element to be deleted
         const subDescendants = getAllDescendants(targetId);
         const idsToDelete = [targetId, ...subDescendants.map((d: Node) => d.id)];
@@ -271,7 +305,7 @@ export const useGraphStore = defineStore('graph', () => {
      }
         }
         
-  function calculateNodePath(nodeId: string): string {
+  function calculateDefaultPath(nodeId: string): string {
     const ancestorNames = getAllAncestors(nodeId)
         .reverse()
         .map((n: Node) => n.data?.name)
@@ -294,7 +328,7 @@ export const useGraphStore = defineStore('graph', () => {
 
             nodeEl.setAttribute('name', node.data?.name || node.data?.label);
             nodeEl.setAttribute('id', node.id);
-  const isCategorical = node.data?.super === 'NominalHyperparameter' || node.data?.super === 'OrdinalHyperparameter';
+            const isCategorical = node.data?.super === 'NominalHyperparameter' || node.data?.super === 'OrdinalHyperparameter';
             // extract constraints and parameters for nummerical nodes
           
             if (node.data?.constraints) {
@@ -317,11 +351,13 @@ export const useGraphStore = defineStore('graph', () => {
            if(isCategorical){
           
             const defaultEl = xmlDoc.createElement('default')
-                defaultEl.textContent =  calculateNodePath(node.id)
+                defaultEl.textContent =  node.data?.defaultPathId 
+
+                ? calculateDefaultPath(node.data.defaultPathId)
+                : ''
                 constraintsEl.appendChild(defaultEl)
                 hasConstraints = true
                     }
-                
 
                  if (hasConstraints) nodeEl.appendChild(constraintsEl)
             }
@@ -363,6 +399,7 @@ export const useGraphStore = defineStore('graph', () => {
 
     }
 
+   
     return {
         nodes,
         edges,
@@ -385,6 +422,11 @@ export const useGraphStore = defineStore('graph', () => {
         removeFromLocalStorage,
         wouldCreateCycle,
         getAllAncestors,
-        calculateNodePath
+        calculateDefaultPath,
+        updateNodeName,
+        getDirectCategories,
+        setDefault,
+        isDefaultOf
+      
     }
 })

@@ -135,9 +135,10 @@ function testXML() {
 }
 
 const isCodeWindowOpen = ref(false)
-
-
-
+/*
+const isDefaultOf = computed(() => {
+    return graphStore.isDefaultOf()
+}) */
 </script>
 
 <template>
