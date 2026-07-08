@@ -137,6 +137,7 @@ const defaultCategoryId = computed({
         }
     }
 })
+
 </script>
 
 <template>
@@ -183,7 +184,9 @@ const defaultCategoryId = computed({
                     Default cannot be greater than Upper and lower than Lower
                 </p>
                 <label>Level</label>
-                <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
+                <div>
+                    <span> {{ activeNode.data?.level }} </span>
+                </div>
             </div>
 
             <!-- categorical parameters -->
@@ -252,7 +255,9 @@ const defaultCategoryId = computed({
                 </select>
 
                 <label>Level</label>
-                <input type="number" v-model="activeNode.data.level" placeholder="0" class="styled-input" />
+                <div>
+                    <span> {{ activeNode.data.level }} </span>
+                </div>
             </div>
 
             <div v-if="activeNode?.type === 'category'">
@@ -274,9 +279,20 @@ const defaultCategoryId = computed({
 
 
 
-
         </div>
 
+        <div v-if="activeNode?.type === 'category'" style="padding: 8px 16px;">
+            <label>Name</label>
+            <input type=" text" v-model="updateName" class="styled-input"
+                :class="{ 'input-error': !updateName || isNodeNameTaken }" />
+
+            <p v-if="!activeNode.data.name" style="color: red; font-size: 12px; margin-top: 4px;">
+                name is required
+            </p>
+            <p v-if="isNodeNameTaken" style="color: red; font-size: 12px;">That name is
+                already in use! </p>
+
+        </div>
 
     </div>
 </template>
@@ -287,7 +303,7 @@ const defaultCategoryId = computed({
     right: 0;
     top: 0;
     height: 100%;
-    width: 300px;
+    width: 400px;
     background-color: #ffffff;
     box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
     transition: transform 0.25s ease-out;

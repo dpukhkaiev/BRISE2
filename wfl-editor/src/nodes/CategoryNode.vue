@@ -29,7 +29,7 @@ const isDefaultOf = computed(() => {
 
 <template>
   <div class="category-box" :class="{ 'is-default': isDefaultOf }">
-    <input v-model="$props.data.name" class="category-input" />
+    <div v-if="props.data.name" style="color: black; font-size: 11px;">{{ props.data.name }}</div>
     <Handle type="target" :position="Position.Top" :is-valid-connection="isValidTargetConnection" />
     <Handle type="source" :position="Position.Bottom" />
   </div>
@@ -55,21 +55,20 @@ const isDefaultOf = computed(() => {
 .category-box.is-default::after {
   content: 'Default';
   position: absolute;
-  top: -9px;
-  /* Leicht angepasst für den feineren Look */
+  top: -12px;
+
   right: 6px;
   background: #eff6ff;
-  /* Sehr sanftes, helles Hintergrund-Blau */
+
   color: #2563eb;
-  /* Gut lesbares, aber unaufdringliches Text-Blau */
+
   border: 1px solid #bfdbfe;
-  /* Feiner Rahmen um das Label herum */
+
   font-size: 8px;
-  /* Etwas kleiner und dezenter */
+  line-height: 2;
   padding: 0px 4px;
-  /* Flacheres Padding für einen "humble" Look */
-  border-radius: 3px;
+  border-radius: 2px;
   font-weight: 500;
-  /* Nicht ganz so fetter Text */
+
 }
 </style>

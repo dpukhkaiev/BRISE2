@@ -127,12 +127,31 @@ export const useGraphStore = defineStore('graph', () => {
     return nodes.value.some((n: Node) => n.data?.defaultPathId === categoryId)
 }
 
+// calculate level
+function calculateLevelForNode(nodeId: string) {
+ 
+    const ancestors = getAllAncestors(nodeId)
+        const realParentsCount = ancestors.filter((n: Node) => n.type !== 'category').length
+      return realParentsCount
+    
+}
+
+// update node
+function updateLevels() {
+    nodes.value.forEach((n: Node) => {
+        if(n.type === 'category') return
+
+        n.data.level = calculateLevelForNode(n.id)
+    })
+
+}
 
     function getDirectCategories(nodeId: string): Node[] {
         const node = nodes.value.find((n: Node) => n.id === nodeId)
         if(!node?.data?.childrenIds) {return []}
         return node.data.childrenIds.map((id:string) =>nodes.value.find((n: Node) => n.id === id) ).filter((n: Node) => n.type === 'category')
     }
+
     function wouldCreateCycle(targetId: string, sourceId: string): boolean {
       const child = getAllDescendants(targetId)
       const isChild = (child.some((n: Node) => n.id === sourceId))
@@ -155,6 +174,9 @@ export const useGraphStore = defineStore('graph', () => {
             if (!parentNode.data.childrenIds) parentNode.data.childrenIds = []
             if (!parentNode.data.childrenIds.includes(childId)) {
                 parentNode.data.childrenIds.push(childId)
+
+                // after registering a child, updating levels
+                 updateLevels()
             }
 
        } 
@@ -256,6 +278,9 @@ export const useGraphStore = defineStore('graph', () => {
         (node.data.childrenIds as any).push(targetNode.id)
     
         console.log('added node', node.data.childrenIds)
+
+        // before returning node, updating all levels
+        updateLevels()
         return node
 
         }
@@ -303,6 +328,8 @@ export const useGraphStore = defineStore('graph', () => {
             parentNode.data.childrenIds = parentNode.data.childrenIds.filter((id: string) => !idsToDelete.includes(id));
         }
      }
+     // after all cases check for levels
+     updateLevels()
         }
         
   function calculateDefaultPath(nodeId: string): string {
@@ -426,7 +453,7 @@ export const useGraphStore = defineStore('graph', () => {
         updateNodeName,
         getDirectCategories,
         setDefault,
-        isDefaultOf
-      
+        isDefaultOf,
+        updateLevels
     }
 })
