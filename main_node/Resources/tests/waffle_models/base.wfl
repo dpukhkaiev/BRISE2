@@ -17,7 +17,6 @@ abstract CategoricalHyperparameter : Hyperparameter {
 
   // DefaultConfHandler selected
 
-
   // No DefaultConfHandler selected
   [if fcard.DefaultConfigurationHandler == 0 then self.Default = 1]
   [if self.Default then Default in Categories]
@@ -54,6 +53,7 @@ abstract FloatHyperparameter: NumericHyperparameter {
   [Type = "FloatHyperparameter"]
   [fcard.StopCondition.Instance.AdaptiveSC = 0]
 }
+
 abstract IntegerHyperparameter: NumericHyperparameter {
   Lower -> integer
   Upper -> integer
