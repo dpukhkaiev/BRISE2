@@ -837,13 +837,12 @@ TransferLearning ? {
 }
 
 // --------------------Outliers Detection------------------------
-OutliersDetection ? {
+OutliersDetection  {
   isEnabled -> boolean
-  
+
   or Detectors ? {
-    [size childs.self >= 0]
+    [size childs.self >= 3]
     [size childs.self <= 5]
-    [size unique Type at self == size childs.self]
 
     Dixon {
       Type -> predefined
