@@ -841,8 +841,8 @@ OutliersDetection  {
   isEnabled -> boolean
 
   or Detectors {
-    [size childs.self >= 3]
-    [size childs.self <= 5]
+    // should be odd number!
+    [size childs.self = 3 || size childs.self = 5]
 
     Dixon {
       Type -> predefined
