@@ -851,7 +851,7 @@ OutliersDetection  {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
         [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
       }
     }
     Chauvenet {
@@ -861,7 +861,7 @@ OutliersDetection  {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
         [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
       }
     }
     Mad {
@@ -871,7 +871,7 @@ OutliersDetection  {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
         [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
       }
     }
     Grubbs {
@@ -881,7 +881,7 @@ OutliersDetection  {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
         [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
       }
     }
     Quartiles {
@@ -891,7 +891,7 @@ OutliersDetection  {
         MinActiveNumberOfTasks -> integer
         MaxActiveNumberOfTasks -> integer
         [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
       }
     }
   }
