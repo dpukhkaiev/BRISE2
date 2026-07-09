@@ -840,7 +840,7 @@ TransferLearning ? {
 OutliersDetection  {
   isEnabled -> boolean
 
-  or Detectors ? {
+  or Detectors {
     [size childs.self >= 3]
     [size childs.self <= 5]
 
