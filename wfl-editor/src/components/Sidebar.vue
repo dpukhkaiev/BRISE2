@@ -47,7 +47,7 @@ const connectedChildren = computed(() => {
     const descendants = graphStore.getAllDescendants(activeNode.value.id)
     return descendants
         .filter((c: Node) => !c.data?.childrenIds)
-        .map((c: Node) => c.data?.name || c.data?.label);
+
 })
 
 // manually created categories
@@ -58,7 +58,7 @@ const categories = computed(() => {
             node.type === 'category' &&
             graphStore.edges.some((e: any) => e.source === activeNode.value.id && e.target === node.id)
         )
-        .map((node: any) => node.data?.name)
+
 });
 
 // block sidebar from closing 
@@ -69,9 +69,9 @@ function blockSidebar() {
     emit('close')
 }
 
-function removeChild(categoryName: string) {
-    if (activeNode.value?.id) {
-        graphStore.removeCategory(activeNode.value.id, categoryName)
+function removeChild(targetId: string) {
+    if (activeNode.value?.id && targetId) {
+        graphStore.removeCategory(targetId)
     }
 }
 
@@ -204,9 +204,9 @@ const defaultCategoryId = computed({
                 <label>Categories</label>
                 <ul>
 
-                    <li v-for="(item, index) in categories.slice(0, 5)" :key="index">
-                        {{ item }}
-                        <button class="btn btn-danger" @click="removeChild(item)">x</button>
+                    <li v-for="item in categories.slice(0, 5)" :key="item.id">
+                        {{ item.data?.name }}
+                        <button class="btn btn-danger" @click="removeChild(item.id)">x</button>
                     </li>
 
                     <div v-if="categories.length > 5">
@@ -231,9 +231,9 @@ const defaultCategoryId = computed({
                 <label>Dependent Parameters</label>
                 <ul>
 
-                    <li v-for="(item, index) in connectedChildren.slice(0, 5)" :key="index">
-                        {{ item }}
-                        <button class="btn btn-danger" @click="removeChild(item)">x</button>
+                    <li v-for="(item) in connectedChildren.slice(0, 5)" :key="item.id">
+                        {{ item.data?.name || item.data?.label }}
+                        <button class="btn btn-danger" @click="removeChild(item.id)">x</button>
                     </li>
 
                     <div v-if="connectedChildren.length > 5">
@@ -264,9 +264,9 @@ const defaultCategoryId = computed({
                 <label>Dependent Parameters</label>
                 <ul>
 
-                    <li v-for="(item, index) in connectedChildren.slice(0, 5)" :key="index">
-                        {{ item }}
-                        <button class="btn btn-danger" @click="removeChild(item)">x</button>
+                    <li v-for="(item) in connectedChildren.slice(0, 5)" :key="item.id">
+                        {{ item.data?.name || item.data?.label }}
+                        <button class="btn btn-danger" @click="removeChild(item.id)">x</button>
                     </li>
 
                     <div v-if="connectedChildren.length > 5">

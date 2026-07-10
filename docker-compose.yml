@@ -8,6 +8,16 @@ services:
       - EXP_DUMP_NAME=undefined
     restart: on-failure
 
+  waffle-gui:
+    build: ./wfl-editor/
+    container_name: wfl-editor
+    tty: true
+    ports:
+      - 3001:80
+    restart: on-failure
+    volumes:
+      - ./wfl-editor:/app
+
   event_service:
     build: ./event_service/
     stdin_open: true

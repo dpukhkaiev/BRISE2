@@ -23,6 +23,10 @@ export const useGraphStore = defineStore('graph', () => {
         return nodes.value.find((n: Node) => n.id === activeNodeId.value) || null
     })
 
+    // stacks to collect redo/undo snapshots of actions
+    const undoStack = ref<string[]>([])
+    const redoStack = ref<string[]>([])
+
     // localStorage for auto save
     watch(() => [nodes.value, edges.value],
         () => {
@@ -40,6 +44,60 @@ export const useGraphStore = defineStore('graph', () => {
        
     }
 
+    function saveCheckpoint() {
+    const snapshot = JSON.stringify({
+        nodes: nodes.value,
+        edges: edges.value
+    })
+     
+    undoStack.value.push(snapshot)
+    // when user does a new action, redo future is deleted
+    redoStack.value = []
+    return snapshot
+    }
+
+    function undoAction(){
+        if (undoStack.value.length === 0) return
+
+            const currentSnapshot = JSON.stringify({
+                nodes: nodes.value,
+                edges: edges.value
+            })
+            redoStack.value.push(currentSnapshot)
+
+            
+            const previousStateStr = undoStack.value.pop()
+            if (previousStateStr) {
+                const previousState = JSON.parse(previousStateStr)
+                
+                nodes.value = previousState.nodes
+                edges.value = previousState.edges
+                
+                updateLevels()
+            }
+    }
+
+    function redoAction() {
+        if (redoStack.value.length === 0) return
+        //save current state onto the undo stack before moving forward
+        const currentSnapshot = JSON.stringify({
+        nodes: nodes.value,
+        edges: edges.value
+        })
+
+        undoStack.value.push(currentSnapshot)
+        const nextStateStr = redoStack.value.pop()
+
+        if (nextStateStr) {
+            const nextState = JSON.parse(nextStateStr)
+            
+            // restore values
+            nodes.value = nextState.nodes
+            edges.value = nextState.edges
+            
+            updateLevels()
+        }
+    }
     function loadFromLocalStorage() {
         const saved = localStorage.getItem('graph-state')
         if(!saved) {return}
@@ -64,6 +122,7 @@ export const useGraphStore = defineStore('graph', () => {
 
     // clean up the node names to remove spaces
     function updateNodeName(nodeId: string, newName: string) {
+        saveCheckpoint()
         const node = nodes.value.find((n:Node) => n.id === nodeId) 
         if(node) {
             node.data.name = newName.trim().replace(/\s+/g, '_')
@@ -73,7 +132,7 @@ export const useGraphStore = defineStore('graph', () => {
 
     // maps node types to their XML tag names (used in data.super for export)
     function createNode(nodeConfig: { type: string, label: string }) {
-
+        saveCheckpoint()
         const id = Date.now().toString()
         const categories = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? [] : undefined
         const defaultCategoryId = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? null : undefined
@@ -117,6 +176,7 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     function setDefault(nodeId: string, categoryId: string) {
+        saveCheckpoint()
         const node = nodes.value.find((n: Node) => n.id === nodeId)
         if(!node) {return}
         // set default path to the selected category node
@@ -169,6 +229,7 @@ function updateLevels() {
     
     // store childId which of connected properties of a parent node
     function addChildToNode(parentId: string, childId: string) {
+          saveCheckpoint()
         const parentNode = nodes.value.find((n: any) => n.id === parentId)
         if (parentId) {
             if (!parentNode.data.childrenIds) parentNode.data.childrenIds = []
@@ -218,7 +279,8 @@ function updateLevels() {
 
     //create category node 
     function createCategoryBox(sourceNode: Node, categoryName?: string, targetNode?: Node) {
-         if (targetNode && hasParent(targetNode.id)) {
+        saveCheckpoint()
+        if (targetNode && hasParent(targetNode.id)) {
         console.warn('Target has already a parent')
         return null
      }
@@ -286,24 +348,22 @@ function updateLevels() {
         }
 
     // delete categories custom and nested nodes 
-    function removeCategory(nodeId: string, categoryName: string){
-        if(!nodeId) return
-
+    function removeCategory(targetId: string){
+         saveCheckpoint()
+        if(!targetId) return
+ 
         // find current selected node (of whom sidebar is shown) 
-        const parentNode = nodes.value.find((n: Node) => n.id === nodeId)
-        
-        //search in all descendants for the id of element to be deleted
-        const allDescendants = getAllDescendants(parentNode.id)
-        const elementToDelete = allDescendants.find((n:Node) => n.data.name === categoryName)
+        const parentNode = getParent(targetId)
 
-        if(elementToDelete) {
-            // 
-            const targetId = elementToDelete.id
-
-            // handle change of default path if default node is deleted
-            if (parentNode.data?.defaultPathId === targetId) {
+         // handle change of default path if default node is deleted
+            if (parentNode && parentNode.data?.defaultPathId === targetId) {
                  parentNode.data.defaultPathId =  null
                 }
+
+        //search in all descendants for the id of element to be deleted
+       // const allDescendants = getAllDescendants(targetId)
+       // const elementToDelete = allDescendants.find((n:Node) => n.data.name === categoryName)
+          
             // all sub nodes of the element to be deleted
         const subDescendants = getAllDescendants(targetId);
         const idsToDelete = [targetId, ...subDescendants.map((d: Node) => d.id)];
@@ -324,13 +384,11 @@ function updateLevels() {
         });
         
         // 
-        if (parentNode.data?.childrenIds) {
-            parentNode.data.childrenIds = parentNode.data.childrenIds.filter((id: string) => !idsToDelete.includes(id));
-        }
-     }
+     
+     
      // after all cases check for levels
      updateLevels()
-        }
+    }   
         
   function calculateDefaultPath(nodeId: string): string {
     const ancestorNames = getAllAncestors(nodeId)
@@ -454,6 +512,11 @@ function updateLevels() {
         getDirectCategories,
         setDefault,
         isDefaultOf,
-        updateLevels
+        updateLevels,
+        saveCheckpoint,
+        undoAction,
+        redoAction,
+        undoStack,
+        redoStack
     }
 })

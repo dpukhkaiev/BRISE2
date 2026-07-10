@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, markRaw, onMounted } from 'vue'
+import { ref, markRaw, onMounted, onUnmounted, nextTick } from 'vue'
 // Vueflow
 import { VueFlow, Panel, useVueFlow } from '@vue-flow/core'
 // components
@@ -36,6 +36,11 @@ const activeModalView = ref<'categories' | 'nodes' | null>(null)
 
 onMounted(() => {
     graphStore.loadFromLocalStorage()
+    window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', handleKeydown)
 })
 
 onConnect((connection) => {
@@ -89,17 +94,39 @@ function onChange(changes: any[]) {
 
     if (removeChange) {
         const deletedNodeId = removeChange.id
-
-
         graphStore.removeCategory(deletedNodeId)
-
-        console.log(`Node ${deletedNodeId} wwas deleted`)
+        // wait for canvas cycle, then recalculate tree positions
+        nextTick(() => {
+            graphStore.updateLevels()
+        })
     }
 }
-// for store to track changes of the nodes
-/*watch(flowNodes, (newNodes) => {
-    graphStore.setNodes(newNodes)
-}, { deep: true }) */
+
+function handleKeydown(e: KeyboardEvent) {
+    const activeEl = document.activeElement
+    if (activeEl && (activeEl.tageName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.hasAttribute('contenteditable'))) {
+        return
+    }
+    const isCtrlPressed = e.crtlKey || e.metaKey
+    const pressedKey = e.key.toLowerCase()
+
+    // check for undo: ctrl + z
+    if (isCtrlPressed && pressedKey === 'z') {
+        if (e.shiftKey) {
+            e.preventDefault()
+            graphStore.redoAction()
+        }
+        else {
+            e.preventDefault()
+            graphStore.undoAction()
+        }
+    }
+    if (isCtrlPressed && pressedKey === 'y') {
+        e.preventDefault()
+        graphStore.redoAction()
+    }
+
+}
 
 function onNodeClick(event: any) {
     // event.node.id is saved in store
@@ -163,8 +190,20 @@ const isDefaultOf = computed(() => {
                 <Toolbar />
 
             </Panel>
+
+            <Panel position="top-left" class="history-panel">
+                <button class="btn history-btn" :disabled="graphStore.undoStack.length === 0"
+                    @click="graphStore.undoAction()">
+                    <font-awesome-icon icon="fa-solid fa-undo" /> Undo
+                </button>
+                <button class="btn history-btn" :disabled="graphStore.redoStack.length === 0"
+                    @click="graphStore.redoAction()">
+                    <font-awesome-icon icon="fa-solid fa-redo" /> Redo
+                </button>
+            </Panel>
         </VueFlow>
-        <button @click="testXML">XML </button>
+
+        <!-- <button @click="testXML">XML </button> -->
         <Sidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false"
             @open-category-table="(view) => activeModalView = view" />
 
@@ -215,5 +254,33 @@ const isDefaultOf = computed(() => {
     flex: 1;
     width: 100%;
     height: 100%;
+}
+
+.history-panel {
+    position: absolute;
+    top: 88px !important;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 40;
+
+}
+
+.history-btn {
+    background-color: #3b4252;
+    color: #eceff4;
+    border-color: #4c566a;
+}
+
+.history-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.reset-btn {
+    background-color: #bf616a;
+    color: white;
 }
 </style>
