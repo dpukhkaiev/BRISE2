@@ -830,64 +830,43 @@ TransferLearning ? {
 }
 
 // --------------------Outliers Detection------------------------
-OutliersDetection  {
-  isEnabled -> boolean
+OutliersDetection {
+    isEnabled -> boolean
+    Detectors {
+    Dixon ? { 
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 30]
+        }
+    Chauvenet ? {   
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
+        }
+    Mad ? {   
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
+        }
+    Grubbs ? {   
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
+        }
+    Quartiles ? {  
+        MinActiveNumberOfTasks -> integer
+        MaxActiveNumberOfTasks -> integer
+        [MinActiveNumberOfTasks >= 3]
+        [MaxActiveNumberOfTasks <= 1000]
+        }
 
-  or Detectors {
-    // should be odd number!
-    [size childs.self = 3 || size childs.self = 5]
-
-    Dixon {
-      Type -> predefined
-      [Type = "dixon_test"]
-      Parameters {
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
-      }
+    // Constraint ensuring that either exactly 3 or exactly 5 children are selected
+    [size childs.self == 3 or size childs.self == 5]
     }
-    Chauvenet {
-      Type -> predefined
-      [Type = "chauvenet_criterion"]
-      Parameters {
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
-      }
-    }
-    Mad {
-      Type -> predefined
-      [Type = "mad"]
-      Parameters {
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
-      }
-    }
-    Grubbs {
-      Type -> predefined
-      [Type = "grubbs_test"]
-      Parameters {
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
-      }
-    }
-    Quartiles {
-      Type -> predefined
-      [Type = "quartiles_method"]
-      Parameters {
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
-      }
-    }
-  }
 }
 
 // ----------------Default Configuration Handler-----------------
