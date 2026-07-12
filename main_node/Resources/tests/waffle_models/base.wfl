@@ -840,35 +840,35 @@ TransferLearning ? {
 OutliersDetection {
     isEnabled -> boolean
     Detectors {
-    Dixon ? { 
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 30]
+      Dixon ? { 
+          MinActiveNumberOfTasks -> integer
+          MaxActiveNumberOfTasks -> integer
+          [MinActiveNumberOfTasks >= 3]
+          [MaxActiveNumberOfTasks <= 30]
         }
-    Chauvenet ? {   
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
+      Chauvenet ? {   
+          MinActiveNumberOfTasks -> integer
+          MaxActiveNumberOfTasks -> integer
+          [MinActiveNumberOfTasks >= 3]
+          [MaxActiveNumberOfTasks <= 1000]
         }
-    Mad ? {   
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
+      Mad ? {   
+          MinActiveNumberOfTasks -> integer
+          MaxActiveNumberOfTasks -> integer
+          [MinActiveNumberOfTasks >= 3]
+          [MaxActiveNumberOfTasks <= 1000]
         }
-    Grubbs ? {   
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
+      Grubbs ? {   
+          MinActiveNumberOfTasks -> integer
+          MaxActiveNumberOfTasks -> integer
+          [MinActiveNumberOfTasks >= 3]
+          [MaxActiveNumberOfTasks <= 1000]
         }
-    Quartiles ? {  
-        MinActiveNumberOfTasks -> integer
-        MaxActiveNumberOfTasks -> integer
-        [MinActiveNumberOfTasks >= 3]
-        [MaxActiveNumberOfTasks <= 1000]
+      Quartiles ? {  
+          MinActiveNumberOfTasks -> integer
+          MaxActiveNumberOfTasks -> integer
+          [MinActiveNumberOfTasks >= 3]
+          [MaxActiveNumberOfTasks <= 1000]
         }
 
     // Constraint ensuring that either exactly 3 or exactly 5 children are selected
