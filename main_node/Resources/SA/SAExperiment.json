@@ -238,6 +238,31 @@
             }
         }
     },
+    "OutliersDetection": {
+        "isEnabled": true,
+        "Detectors": {
+             "Dixon": {
+                "MinActiveNumberOfTasks": 3,
+                "MaxActiveNumberOfTasks": 30
+            },
+            "Chauvenet": {
+                "MinActiveNumberOfTasks": 3,
+                "MaxActiveNumberOfTasks": 1000
+            },
+            "Mad": {
+                "MinActiveNumberOfTasks": 3,
+                "MaxActiveNumberOfTasks": 1000
+            },
+            "Grubbs": {
+                "MinActiveNumberOfTasks": 3,
+                "MaxActiveNumberOfTasks": 1000
+            },
+            "Quartiles": {
+                "MinActiveNumberOfTasks": 3,
+                "MaxActiveNumberOfTasks": 1000
+            }
+        }
+    },
     "RepetitionManager": {
         "MaxFailedTasksPerConfiguration": 1,
         "Instance": {
