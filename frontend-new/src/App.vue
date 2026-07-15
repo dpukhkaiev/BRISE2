@@ -1,22 +1,30 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useMainEventStore } from './entities/main/model/main.event.store'
+import { usePlotStore } from './entities/main/model/plot.store'
 import logo from './assets/logo.svg'
 import { LaunchControl } from './widgets/control-bar'
 import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
-import { MultiDim } from './widgets/charts/multi-dim'
-import { ImpRes } from './widgets/charts/imp-res'
-import { Heatmap } from './widgets/charts/heatmap'
 
+import { Skeleton } from './widgets/charts/skeleton-chart'
+import { Heatmap } from './widgets/charts/heatmap'
+import { OptHist } from './widgets/charts/optHist'
+import { HypImp } from './widgets/charts/hyp-imp'
+import { MultiDim } from './widgets/charts/multi-dim'
 
 
 const store = useMainEventStore()
+const plotStore = usePlotStore()
+const { selected, visibleCharts } = storeToRefs(plotStore)
 
 const tab = ref('info')
 const chartMenu = ref(false)
-const visibleCharts = ref(['multidim', 'impres', 'heatmap'])
+//const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'hypImp'])
 const drawer = ref(false)
+
+//const hypImpRef = ref<InstanceType<typeof HypImp> | null>(null)
 
 onMounted(() => {
   store.initEvent()
@@ -112,7 +120,8 @@ onMounted(() => {
             v-for="chart in [
               { id: 'multidim', label: 'Multi-dim' },
               { id: 'impres', label: 'Imp-res' },
-              { id: 'heatmap', label: 'Heatmap' }
+              { id: 'heatmap', label: 'Heatmap' },
+              { id: 'hypImp', label: 'Importances' }
             ]"
             :key="chart.id"
           >
@@ -189,33 +198,132 @@ onMounted(() => {
             <TaskList />
           </v-tabs-window-item>
 
-
-
           <v-tabs-window-item value="charts">
             <v-row no-gutters>
               <v-col
-                v-show="visibleCharts.includes('impres')"
                 cols="12"
                 md="8"
                 class="pr-2"
               >
-                <ImpRes />
+                <Skeleton/>
               </v-col>
+
               <v-col
-                v-show="visibleCharts.includes('heatmap')"
                 cols="12"
                 md="8"
                 class="pr-2"
               >
-                <Heatmap />
+                <Heatmap/>
               </v-col>
+
               <v-col
-                v-show="visibleCharts.includes('multidim')"
+                v-if="selected.optHist"
+                v-show="visibleCharts.includes('optHist')"
                 cols="12"
                 md="10"
                 class="pr-2"
               >
-                <MultiDim />
+                <OptHist/>
+              </v-col>
+
+              <v-col
+                v-if="selected.paraCoord"
+                v-show="visibleCharts.includes('paraCoord')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <MultiDim/>
+              </v-col>
+
+              <v-col
+                v-if="selected.rank"
+                v-show="visibleCharts.includes('rank')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<Rank/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.hypImp"
+                v-show="visibleCharts.includes('hypImp')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <HypImp/>
+              </v-col>
+
+              <v-col
+                v-if="selected.slice"
+                v-show="visibleCharts.includes('slice')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<Slice/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.contour"
+                v-show="visibleCharts.includes('contour')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<Contour/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.paretoFront"
+                v-show="visibleCharts.includes('paretoFront')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<ParetoFront/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.edf"
+                v-show="visibleCharts.includes('edf')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<Edf/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.intVal"
+                v-show="visibleCharts.includes('intVal')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<IntVal/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.termImpr"
+                v-show="visibleCharts.includes('termImpr')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<TermImpr/>-->
+              </v-col>
+
+              <v-col
+                v-if="selected.timeline"
+                v-show="visibleCharts.includes('timeline')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <!--<Timeline/>-->
               </v-col>
             </v-row>
           </v-tabs-window-item>

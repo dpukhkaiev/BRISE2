@@ -148,7 +148,7 @@ function initMainEvents() {
                 }
 
             }
-            console.log('Default:', configs)
+            //console.log('Default:', configs)
 
             if (renderTimer) clearTimeout(renderTimer)
             renderTimer = setTimeout(async () => {
@@ -216,7 +216,7 @@ function initMainEvents() {
             configs.forEach((configuration: any) => {
                 if (configuration) {
                     solution = configuration
-                    console.log('Final:', configs)
+                    //console.log('Final:', configs)
                 } else {
                     console.log("Empty solution")
                 }
@@ -226,9 +226,9 @@ function initMainEvents() {
 }
 
 async function render(): Promise<void> {
-    console.log('currentDiagram:', currentDiagram.value)
-    console.log('rootParam:', rootParam.value)
-    console.log('element found:', document.getElementById(currentDiagram.value))
+    //console.log('currentDiagram:', currentDiagram.value)
+    //console.log('rootParam:', rootParam.value)
+    //console.log('element found:', document.getElementById(currentDiagram.value))
 
     const Plotly = store.plotlyInstance
     const element = document.getElementById(currentDiagram.value)

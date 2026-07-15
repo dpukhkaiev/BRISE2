@@ -10,6 +10,7 @@ export interface ExperimentDescription {
     ConfigurationSelection?: any
     RepetitionManager?: any
     StopCondition?: any
+    PlotSelection: any
 }
 
 interface DomainDescription {

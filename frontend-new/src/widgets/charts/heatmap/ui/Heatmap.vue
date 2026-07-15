@@ -214,7 +214,7 @@ function initMainEvents() {
                     dc.value = Object.values(defaultConfiguration.results)
 
                 } else {
-                    console.log('Empty solution');
+                    //console.log('Empty solution');
                 }
             });
             render();
