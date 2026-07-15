@@ -1,7 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { nextTick, reactive, toRefs } from 'vue'
-import MultiDimComponent from '../widgets/charts/multi-dim/ui/MultiDim.vue'
+import MultiDimComponent from '../widgets/charts/para-coord/ui/MultiDim.vue'
 
 const { hoistedPlotly, sharedCallbacks, rawSearchspace, rawExperimentDescription } = vi.hoisted(() => {
     return {

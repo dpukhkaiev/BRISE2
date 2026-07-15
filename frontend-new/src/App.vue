@@ -10,9 +10,9 @@ import { TaskList } from './widgets/task-list'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
 import { Heatmap } from './widgets/charts/heatmap'
-import { OptHist } from './widgets/charts/optHist'
+import { OptHist } from './widgets/charts/opt-hist'
 import { HypImp } from './widgets/charts/hyp-imp'
-import { MultiDim } from './widgets/charts/multi-dim'
+import { ParaCoord } from './widgets/charts/para-coord'
 
 
 const store = useMainEventStore()
@@ -233,7 +233,7 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <MultiDim/>
+                <ParaCoord/>
               </v-col>
 
               <v-col

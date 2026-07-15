@@ -1,0 +1,1 @@
+export { default as ParaCoord } from './ui/ParaCoord.vue'

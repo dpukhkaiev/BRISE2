@@ -1,4 +1,43 @@
 <script setup lang="ts">
+import { ref, watch, nextTick } from 'vue'
+import { usePlotStore } from '../../../../entities/main/model/plot.store'
+import { renderParaCoord } from '../render'
+import { storeToRefs } from 'pinia'
+import { useMainEventStore } from '../../../../entities/main'
+
+const store = useMainEventStore()
+const plotStore = usePlotStore()
+const { experiment_description, searchspace } = storeToRefs(store)
+const { allRes, bestRes } = storeToRefs(plotStore)
+const optHist = ref<HTMLElement | null>(null)
+
+async function render() {
+    await nextTick()
+
+    if (!optHist.value) return
+    if (!experiment_description.value) 
+        return
+    renderParaCoord(optHist.value, allRes.value)
+}
+
+watch(
+    allRes,
+    () => {
+        render()
+    },
+    { deep: true }
+)
+</script>
+
+
+
+<template>
+  <div
+    ref="paraCoord"
+  ></div>
+</template>
+<!--
+<script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
@@ -225,47 +264,7 @@ function initMainEvents() {
     });
 }
 
-async function render(): Promise<void> {
-    //console.log('currentDiagram:', currentDiagram.value)
-    //console.log('rootParam:', rootParam.value)
-    //console.log('element found:', document.getElementById(currentDiagram.value))
 
-    const Plotly = store.plotlyInstance
-    const element = document.getElementById(currentDiagram.value)
-    if (!Plotly || !element) {
-        console.warn('Plotly instance or DOM element not ready yet for:', currentDiagram.value)
-        return
-    }
-
-
-    var trace = [{
-        type: 'parcoords' as const,
-        line: {
-            showscale: true,
-            // reversescale: true,
-            colorscale: 'Jet',
-            color: unpack(allPoints.value, 'result')
-        },
-        dimensions: dimmensionsData()
-    }];
-
-    var layout = {
-        margin: {
-            l: 150,
-
-        },
-        title: {
-            text: currentDiagram.value,
-            font: {
-                size: 20
-            },
-            xref: 'paper' as const,
-            x: 0.05,
-        }
-    }
-
-    Plotly.react(element, trace, layout)
-}
 
 function factoryDimension(parameter: String, valuesRange: Array<any>) {
     let dimValues = unpack(allPoints.value, parameter)
@@ -319,4 +318,4 @@ onUnmounted(() => {
       style="width:100%; height:500px;"
     />
   </div>
-</template>
+</template>-->
