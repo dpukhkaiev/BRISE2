@@ -15,12 +15,8 @@ abstract CategoricalHyperparameter : Hyperparameter {
   Categories -> predefined
   Default -> string
 
-  // DefaultConfHandler selected
-
   // No DefaultConfHandler selected
-  [if fcard.DefaultConfigurationHandler == 0 then self.Default = 1]
-  [if self.Default then Default in Categories]
-  
+  [if fcard.DefaultConfigurationHandler == 0 and self.Default then Default in Categories]
   [Categories = (filter childs.self where Type == "Category")]
 }
 
@@ -38,7 +34,7 @@ abstract FloatHyperparameter: NumericHyperparameter {
   Lower -> float
   Upper -> float
   Default -> float
-  
+
   // DefaultConfHandler selected
   [if fcard.DefaultConfigurationHandler == 1 then self.Default = 0]
   [if fcard.DefaultConfigurationHandler == 1 then Lower = 0]
@@ -58,12 +54,12 @@ abstract IntegerHyperparameter: NumericHyperparameter {
   Lower -> integer
   Upper -> integer
   Default -> integer
-  
+
   // DefaultConfHandler selected
   [if fcard.DefaultConfigurationHandler == 1 then self.Default = 0]
   [if fcard.DefaultConfigurationHandler == 1 then Lower = 0]
   [if fcard.DefaultConfigurationHandler == 1 then Upper = 1]
-  
+
   // No DefaultConfHandler selected
   [if fcard.DefaultConfigurationHandler == 0 then Lower < Upper]
   [if fcard.DefaultConfigurationHandler == 0 then self.Default = 1]
