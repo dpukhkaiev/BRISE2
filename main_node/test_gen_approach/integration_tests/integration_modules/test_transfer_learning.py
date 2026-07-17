@@ -92,8 +92,6 @@ class TestTransferLearning:
         reset_database()
 
         experiment, _ = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         is_tl = has_transfer_learning(experiment)
@@ -108,8 +106,6 @@ class TestTransferLearning:
         reset_database()
 
         experiment, _ = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if not has_transfer_learning(experiment):
@@ -141,8 +137,6 @@ class TestTransferLearning:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if not has_transfer_learning(experiment):
@@ -211,8 +205,6 @@ class TestTransferLearning:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if not has_transfer_learning(experiment):

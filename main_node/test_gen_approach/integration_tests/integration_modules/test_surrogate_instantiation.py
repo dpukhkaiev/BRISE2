@@ -67,8 +67,6 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):
@@ -110,8 +108,6 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):
@@ -153,8 +149,6 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):
@@ -199,8 +193,6 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        # if experiment is None:
-        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):

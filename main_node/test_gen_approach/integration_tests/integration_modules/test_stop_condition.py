@@ -264,9 +264,6 @@ class TestStopConditionPhase1:
         reset_database()
 
         exp_desc, search_space = load_phase1_config(config_file)
-        # if exp_desc is None or search_space is None:
-        #     pytest.skip(f"Could not load Phase 1 config: {config_file}")
-
         assert exp_desc is not None
         assert search_space is not None
 
@@ -294,9 +291,6 @@ class TestStopConditionPhase1:
         reset_database()
 
         exp_desc, search_space = load_phase1_config(config_file)
-        # if exp_desc is None or search_space is None:
-        #     pytest.skip(f"Could not load Phase 1 config: {config_file}")
-
         assert exp_desc is not None
         assert search_space is not None
 

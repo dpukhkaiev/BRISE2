@@ -1,4 +1,4 @@
-FROM brisedev/event-service-dev:2.6.0
+FROM brisedev/event-service-dev:2.6.1
 
 COPY ./bin/definitions.json /etc/rabbitmq/
 COPY ./bin/rabbitmq.conf /etc/rabbitmq/rabbitmq.conf

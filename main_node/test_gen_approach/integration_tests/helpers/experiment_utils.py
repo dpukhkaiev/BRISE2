@@ -18,7 +18,6 @@ from core_entities.search_space import SearchSpace
 from core_entities.experiment import Experiment
 
 from configuration_selection.configuration_selection import ConfigurationSelection
-from tools.initial_config import load_experiment_setup
 
 PHASE1_OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "test_generation" / "output_configs"
 
