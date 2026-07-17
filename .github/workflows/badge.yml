@@ -1,0 +1,78 @@
+name: Code Coverage Badge
+
+on:
+  workflow_run:
+    workflows: ["BRISE-CI"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  if_merged:
+    # only run if completed percentage upload workflow was successful and the branch is develop
+    if: ${{ github.event.workflow_run.conclusion == 'success' && (github.event.workflow_run.head_branch == 'develop' || github.event.workflow_run.head_branch == 'master') }}
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          persist-credentials: true
+
+      # Download coverage.xml from previous workflow
+      - name: Download Coverage Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: code-coverage-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract coverage rom main_noide/coverage.xml and generate badge
+      - name: Extract coverage %
+        shell: bash -l {0}
+        run: |
+          cd main_node
+          # fail if file doesnt exist
+          test -f coverage.xml
+
+          LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
+          PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
+          echo "Extracted coverage is: ${PERCENT}%"
+          mkdir -p badge-data
+
+          # Choose color based on percentage
+          # 90-100% brightgreen
+          # 80-89% green
+          # 70-79% yellowgreen
+          # 60-69% yellow
+          # 50-59%  orange
+          # <50% red
+          if (( PERCENT >= 90 )); then
+              COLOR=brightgreen
+          elif (( PERCENT >= 80 )); then
+              COLOR=green
+          elif (( PERCENT >= 70 )); then
+              COLOR=yellowgreen
+          elif (( PERCENT >= 60 )); then
+              COLOR=yellow
+          elif (( PERCENT >= 50 )); then
+              COLOR=orange
+          else
+              COLOR=red
+          fi
+
+          # create badge url with percentage
+          n=$(($PERCENT+0))
+          url="https://img.shields.io/badge/Code%20Coverage-${PERCENT}%25-${COLOR}?style=flat"
+          curl -sSL --fail "$url" -o badge-data/coverage.svg
+      
+          # Commit updated badge svg
+      - name: Commit badge data
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update coverage badge [skip CI]"
+          file_pattern: badge-data/coverage.svg
+          branch: ${{ github.event.workflow_run.head_branch }}
