@@ -1,4 +1,4 @@
-name: brise-260
+name: brise-261
 
 channels:
   - conda-forge
@@ -6,8 +6,9 @@ channels:
 
 dependencies:
   - python=3.12
+  - pytest-cov
   - setuptools
-  - scikit-learn[alldeps]
+  - scikit-learn[alldeps]=1.6.1
   - PyYAML
   - statsmodels
   - scipy
@@ -18,3 +19,7 @@ dependencies:
   - pandas
   - pygmo
   - flake8
+  - allpairspy
+  - textx
+  - selenium
+  - webdriver-manager

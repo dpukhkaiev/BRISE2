@@ -67,7 +67,7 @@ restart(){
 
 build_image() {
   log "Building Benchmark image."
-  cd .. 
+  cd ..
   docker build -t $IMAGE_NAME --build-arg host_uid=$(id -u) --build-arg host_gid=$(id -g) --build-arg MODE={1} --rm -f "benchmark/Dockerfile" .
   cd benchmark
 

@@ -1,0 +1,114 @@
+Model: elements*=Element;
+
+Element: Feature | Goal | Constraint | Assertion;
+
+Constraint: "[" name=prec24 "]";
+Assertion: "assert" "[" name=prec24 "]";
+Goal: 
+    "<<"
+    gtype=Goaltype
+    name=prec24 
+    ">>"
+;
+
+Goaltype: "min" | "max" | "minimize" | "maximize";
+Feature: 
+    abstract=Abstract?
+    gcard=Gcard?
+    name=Name
+    super=Super?
+    type=Type?
+    reference=Reference?
+    fcard=Fcard?
+    init=Init?
+    nested*=Nested?
+;
+
+Name: ID;
+Abstract: "abstract";
+Gcard: (Cardinterval | INT)+[/,/] |"xor" | "or" | "mux" | "opt" | Cardinterval;
+Fcard: (Cardinterval | INT)+[/,/] |"?" | "*" | "+" | Cardinterval;
+Super: ":" ID;
+Type: "->" TypeList;
+Reference: "->>" ID | "->>>" ID;
+Init: "=" prec24 | ":=" prec24;
+Nested: 
+    "{"
+    /\s*/
+    child+=Element
+    "}"
+;
+Cardinterval: INT ".." (INT | "*");
+TypeList: "integer" | "float" | "string" | "predefined" | "array" | "integerArray" | "floatArray" | "boolean";
+
+prec24:   (op='filter')? op=prec23 ('where' op=prec23)?;
+prec23:   (op='if')? op=prec22 ('then' op=prec22 ('else' op=prec22)?)?; 
+prec22:   op=prec21  (op=op22   op=prec21)?;
+prec21:   op=prec20  (op=op21   op=prec20)?;
+prec20:   op=prec19  (op=op20   op=prec19)*;
+prec19:   op=prec18  (op=op19   op=prec18)*;
+prec18:   op=prec17  (op=op18   op=prec17)*;
+prec17:   op=prec16  (op=op17   op=prec16)?;
+prec16:   op=prec15  (op=op16   op=prec15)?;
+prec15:   (op=op15)?  op=prec14;
+prec14:   (op=op14)?  op=prec13;
+prec13:   (op=op13)?  op=prec12;
+prec12:   op=prec11  (op=op12   op=prec11)?;
+prec11:   op=prec10  (op=op11   op=prec10)?;
+prec10:   op=prec9  (op=op10   op=prec9)*;
+prec9:   op=prec8  (op=op9   op=prec8)*;
+prec8:   op=prec7  (op=op8   op=prec7)?;
+prec7:   (op=op7)?  op=prec6;
+prec6:   (op=op6)?  op=prec50;
+prec50:  (op='unique')? op=prec5 ('at' op=prec5)?;
+prec5:   op=prec4  (op=op5   op=prec4)?;
+prec4:   op=prec3  (op=op4   op=prec3)?;
+prec3:   op=prec2  (op=op3   op=prec2)?;
+prec2:   op=prec1  (op=op2   op=prec1)?;
+prec1:   op=prec0  (op=op1   op=prec0)?;
+prec0:   op=term   (op=op0   op=term)?;
+term:    op=NUMBER | op = BOOL | op=ComplexName | op = List | ('(' op=prec24 ')') | op = ID | op = Quote;
+
+
+op22: '<=>' | 'iff'                                             ;
+op21: '=>' | 'implies'                                          ;
+op20: '||' | 'or'                                               ;
+op19: 'xor'                                                     ;
+op18: '&&' | 'and'                                              ;
+op17: 'U' | 'until'                                             ;
+op16: 'W' | 'weakuntil'                                         ;
+op15: 'F' | 'eventually' | 'G' | 'globally' | 'X' | 'next'      ;
+op14: '!'                                                       ;
+op13:  Quant                                                    ;
+op12: '<=' | '>=' | '==' | '<' | '>' | '!=' | 'in' | 'not in'   ;
+op11: 'requires' | 'excludes'                                   ;
+op10: '='                                                       ;
+op9:  '+' | '-'                                                 ;
+op8:  '*' | '/' | '%'                                           ;
+op7:  'min' | 'max' | 'size'                                    ;
+op6:  'sum' | 'product' | '#'                                   ;
+op5:  '<:'                                                      ;
+op4:  ':>'                                                      ;
+op3:  ',' | '++'                                                ;
+op2:  '--'                                                      ;
+op1:  '**'                                                      ;
+op0:  '..' | '&'                                                ;
+
+Quote: /((?<![\\])['"])((?:.(?!(?<![\\])\1))*.?)\1/;
+List: /\{.+\}/;
+ComplexName: /(\w+\.)+\w+/;
+
+Quant: QuantNo | QuantNot | QuantLone | QuantOne | QuantSome | QuantAll;
+QuantNo: "no";
+QuantNot: "not";
+QuantLone: "lone";
+QuantOne: "one";
+QuantSome: "some";
+QuantAll: "all";
+
+Comment:
+  StringComment | BlockComment
+;
+
+StringComment: /\/\/.*$/;
+BlockComment: /\/\*(\*(?!\/)|[^*])*\*\//;
