@@ -1,5 +1,6 @@
 import json
 import math
+from traceback import print_stack
 from pathlib import Path
 from typing import List
 
@@ -46,6 +47,7 @@ def create_experiment_from_test_case(test_case_number: int, get_experiment_fixtu
 
     except Exception as e:
         print(f"Failed to create experiment from test case {test_case_number}: {e}")
+        print_stack()
         return None, None, None
 
 
@@ -100,6 +102,7 @@ def write_experiment_to_db(experiment: Experiment, search_space: SearchSpace):
         return True
     except Exception as e:
         print(f"Failed to write experiment to database: {e}")
+        print_stack()
         return False
 
 
@@ -123,6 +126,7 @@ def create_configuration_selection(experiment: Experiment):
         return ConfigurationSelection(experiment)
     except Exception as e:
         print(f"Failed to create ConfigurationSelection: {e}")
+        print_stack()
         return None
 
 
@@ -183,6 +187,7 @@ def get_default_configuration(experiment: Experiment):
         return default_config_handler.get_default_configuration()
     except Exception as e:
         print(f"Failed to get default configuration: {e}")
+        print_stack()
         return None
 
 
@@ -225,6 +230,8 @@ def instantiate_all_scs(experiment: Experiment) -> List:
                 scs.append(sc)
             except Exception as e:
                 print(f"Skipped SC '{sc_type}': {e}")
+                print_stack()
     except (KeyError, TypeError, AttributeError) as e:
         print(f"Failed to read StopCondition config: {e}")
+        print_stack()
     return scs

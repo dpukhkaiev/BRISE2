@@ -1,4 +1,4 @@
-from typing import Optional
+from traceback import print_stack
 from tools.restore_db import RestoreDB
 
 _rdb_instance = None
@@ -19,6 +19,7 @@ def reset_database() -> bool:
         return True
     except Exception as e:
         print(f"Database reset failed: {e}")
+        print_stack()
         return False
 
 
@@ -29,4 +30,5 @@ def cleanup_database() -> bool:
         return True
     except Exception as e:
         print(f"Database cleanup failed: {e}")
+        print_stack()
         return False

@@ -1,3 +1,4 @@
+from traceback import print_stack
 from configuration_selection.configuration_selection import (
     ConfigurationSelection,
 )
@@ -40,6 +41,7 @@ def setup_default_configuration(
         return default_configuration
     except Exception as e:
         print(f"Failed to setup default configuration: {e}")
+        print_stack()
         return None
 
 
@@ -80,6 +82,7 @@ def assign_mock_results_to_configuration(
         return True
     except Exception as e:
         print(f"Failed to assign results to configuration: {e}")
+        print_stack()
         return False
 
 
@@ -101,6 +104,7 @@ def add_configuration_to_experiment(
         return True
     except Exception as e:
         print(f"Failed to add configuration to experiment: {e}")
+        print_stack()
         return False
 
 
@@ -112,4 +116,5 @@ def send_new_configurations(cs: ConfigurationSelection, get_workers_fixture):
         return predicted, measured
     except Exception as e:
         print(f"Failed to send new configurations: {e}")
+        print_stack()
         return None, None
