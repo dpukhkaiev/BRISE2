@@ -3,16 +3,16 @@ import os
 os.environ["TEST_MODE"] = "UNIT_TEST"
 
 
-from test_gen_approach.integration_tests.helpers.config_simluation import add_configuration_to_experiment
-from test_gen_approach.integration_tests.helpers.config_simluation import (
+from test_gen_approach.integration_tests.helpers.config_simulation import add_configuration_to_experiment
+from test_gen_approach.integration_tests.helpers.config_simulation import (
     assign_mock_results_to_configuration,
 )
-from test_gen_approach.integration_tests.helpers.config_simluation import get_mock_results_for_objectives
+from test_gen_approach.integration_tests.helpers.config_simulation import get_mock_results_for_objectives
 import pytest
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 
-from test_gen_approach.integration_tests.helpers.config_simluation import (
+from test_gen_approach.integration_tests.helpers.config_simulation import (
     send_new_configurations,
     setup_default_configuration,
 )
@@ -72,8 +72,8 @@ class TestConfigSelectionLoop:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         is_tl = has_transfer_learning(experiment)
@@ -118,8 +118,8 @@ class TestConfigSelectionLoop:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         is_tl = has_transfer_learning(experiment)
@@ -162,8 +162,8 @@ class TestConfigSelectionLoop:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         is_tl = has_transfer_learning(experiment)
@@ -227,8 +227,8 @@ class TestConfigSelectionLoop:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):

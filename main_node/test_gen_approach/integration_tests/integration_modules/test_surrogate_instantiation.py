@@ -12,7 +12,7 @@ from configuration_selection.model.surrogate.tree_parzen_estimator import (
 )
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
-from test_gen_approach.integration_tests.helpers.config_simluation import setup_default_configuration
+from test_gen_approach.integration_tests.helpers.config_simulation import setup_default_configuration
 from test_gen_approach.integration_tests.helpers.db_utils import reset_database
 from test_gen_approach.integration_tests.helpers.experiment_utils import (
     create_configuration_selection,
@@ -67,8 +67,8 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):
@@ -110,8 +110,8 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):
@@ -153,8 +153,8 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):
@@ -199,8 +199,8 @@ class TestSurrogateInstantiation:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if has_transfer_learning(experiment):

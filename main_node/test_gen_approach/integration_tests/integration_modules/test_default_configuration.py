@@ -50,8 +50,8 @@ class TestDefaultConfiguration:
         reset_database()
 
         experiment, _ = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         has_dch = has_default_config_handler(experiment)
@@ -78,8 +78,8 @@ class TestDefaultConfiguration:
         reset_database()
 
         experiment, _ = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         has_dch = has_default_config_handler(experiment)

@@ -16,7 +16,7 @@ from transfer_learning.model_recommendation.few_shot import FewShotRecommendatio
 from transfer_learning.transfer_expediency_determination.rgpe_comparator import RgpeComparator
 from tools.initial_config import load_experiment_setup
 
-from test_gen_approach.integration_tests.helpers.config_simluation import (
+from test_gen_approach.integration_tests.helpers.config_simulation import (
     add_configuration_to_experiment,
     assign_mock_results_to_configuration,
     get_mock_results_for_objectives,
@@ -92,8 +92,8 @@ class TestTransferLearning:
         reset_database()
 
         experiment, _ = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         is_tl = has_transfer_learning(experiment)
@@ -108,8 +108,8 @@ class TestTransferLearning:
         reset_database()
 
         experiment, _ = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if not has_transfer_learning(experiment):
@@ -141,8 +141,8 @@ class TestTransferLearning:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if not has_transfer_learning(experiment):
@@ -211,8 +211,8 @@ class TestTransferLearning:
         reset_database()
 
         experiment, search_space = _load_experiment(test_id, get_experiment)
-        if experiment is None:
-            pytest.skip(f"Could not load config: {test_id}")
+        # if experiment is None:
+        #     pytest.skip(f"Could not load config: {test_id}")
         assert experiment is not None
 
         if not has_transfer_learning(experiment):

@@ -25,7 +25,7 @@ from test_gen_approach.integration_tests.helpers.experiment_utils import (
     setup_task_configuration,
     write_experiment_to_db,
 )
-from test_gen_approach.integration_tests.helpers.config_simluation import (
+from test_gen_approach.integration_tests.helpers.config_simulation import (
     get_mock_results_for_objectives,
     send_new_configurations,
     setup_default_configuration,
@@ -264,8 +264,11 @@ class TestStopConditionPhase1:
         reset_database()
 
         exp_desc, search_space = load_phase1_config(config_file)
-        if exp_desc is None or search_space is None:
-            pytest.skip(f"Could not load Phase 1 config: {config_file}")
+        # if exp_desc is None or search_space is None:
+        #     pytest.skip(f"Could not load Phase 1 config: {config_file}")
+
+        assert exp_desc is not None
+        assert search_space is not None
 
         experiment = Experiment(exp_desc, search_space)
         Configuration.set_task_config(
@@ -275,7 +278,7 @@ class TestStopConditionPhase1:
         setup_task_configuration(experiment)
 
         objective_count = get_objective_count(experiment)
-        from test_gen_approach.integration_tests.helpers.config_simluation import setup_default_configuration
+        from test_gen_approach.integration_tests.helpers.config_simulation import setup_default_configuration
         setup_default_configuration(
             experiment, get_configurations_2_float, objective_count, is_transfer_learning=False
         )
@@ -291,8 +294,11 @@ class TestStopConditionPhase1:
         reset_database()
 
         exp_desc, search_space = load_phase1_config(config_file)
-        if exp_desc is None or search_space is None:
-            pytest.skip(f"Could not load Phase 1 config: {config_file}")
+        # if exp_desc is None or search_space is None:
+        #     pytest.skip(f"Could not load Phase 1 config: {config_file}")
+
+        assert exp_desc is not None
+        assert search_space is not None
 
         experiment = Experiment(exp_desc, search_space)
         Configuration.set_task_config(
@@ -302,7 +308,7 @@ class TestStopConditionPhase1:
         setup_task_configuration(experiment)
 
         objective_count = get_objective_count(experiment)
-        from test_gen_approach.integration_tests.helpers.config_simluation import setup_default_configuration
+        from test_gen_approach.integration_tests.helpers.config_simulation import setup_default_configuration
         default_config = setup_default_configuration(
             experiment, get_configurations_2_float, objective_count, is_transfer_learning=False
         )
