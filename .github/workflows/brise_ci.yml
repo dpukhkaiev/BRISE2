@@ -46,7 +46,7 @@ jobs:
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: brise-260
+          activate-environment: brise-261
           environment-file: ./main_node/environment.yml
           python-version: 3.12
           miniconda-version: "latest"
@@ -63,7 +63,6 @@ jobs:
       - name: Test with pytest (original BRISE tests)
         shell: bash -el {0}
         run: |
-          docker ps
           cd main_node
           pytest --ignore=test_gen_approach --cov=. --cov-report=xml:coverage.xml --cov-report=term || TEST_EXIT_CODE=$?
           if [ -n "${TEST_EXIT_CODE:-}" ]; then exit $TEST_EXIT_CODE; fi
@@ -88,5 +87,5 @@ jobs:
       - name: Upload Coverage XML
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: code-coverage-report
           path: main_node/coverage.xml

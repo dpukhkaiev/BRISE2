@@ -29,6 +29,7 @@ jobs:
           name: code-coverage-report
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          if-no-artifact: error
 
       # Extract coverage rom main_noide/coverage.xml and generate badge
       - name: Extract coverage %
