@@ -10,12 +10,15 @@ class CompositeSurrogate(Surrogate):
         objectives = {}
         surrogate_description = {}
         for s in surrogates:
-            surrogate_description[s.feature_name] = s.surrogate_description
+            key = f"{s.feature_name}_{'_'.join(s.objectives.keys())}"
+            surrogate_description[key] = s.surrogate_description
             for o, o_value in s.objectives.items():
                 objectives[o] = o_value
 
         super().__init__(surrogate_description, region, objectives)
         self.multi_objective = True
+        if surrogates:
+            self.mapping_config_transformer_parameter = surrogates[0].mapping_config_transformer_parameter
 
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
         is_built = []

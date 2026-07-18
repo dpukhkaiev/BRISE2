@@ -1,0 +1,273 @@
+======================================================================
+PARSED FEATURES (for pairwise)
+======================================================================
+
+1. [OPT] (2 options):
+     - Context.SearchSpace.Structure.Flat
+     - Context.SearchSpace.Structure.Hierarchical
+
+2. [OPT] (2 options):
+     - ConfigurationSelection.SamplingStrategy.Sobol
+     - ConfigurationSelection.SamplingStrategy.MersenneTwister
+
+3. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling.None
+
+4. [XOR] (5 options):
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling.SurrogateType.Scalar
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling.SurrogateType.Pure
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling.SurrogateType.Compositional
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling.SurrogateType.DynamicCompositional
+     - ConfigurationSelection.Predictor.Model.MultiObjectiveHandling.SurrogateType.Portfolio
+
+5. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.NominalTransformer.BinaryEncoder
+     - ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.NominalTransformer.SklearnBinaryEncoder
+
+6. [XOR] (9 options):
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.LinearRegression
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.SupportVectorRegression
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.GradientBoostingRegressor
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.BayesianRidgeRegression
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.TreeParzenEstimator
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.GaussianProcessRegressor
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiLayerPerceptronRegressor
+     - ConfigurationSelection.Predictor.Model.Surrogate.Instance.ModelMock
+
+7. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.ConfigurationTransformers.NominalTransformer.BinaryEncoder
+     - ConfigurationSelection.Predictor.Model.Optimizer.ConfigurationTransformers.NominalTransformer.SklearnBinaryEncoder
+
+8. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.RandomSearch
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA
+
+9. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.MOEAD
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.MOEAD.None
+
+10. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.NSGA2
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.NSGA2.None
+
+11. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.GACO
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.GACO.None
+
+12. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.MACO
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.MACO.None
+
+13. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.GWO
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.GWO.None
+
+14. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.BEE_COLONY
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.BEE_COLONY.None
+
+15. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.DE
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.DE.None
+
+16. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SEA
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SEA.None
+
+17. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SGA
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SGA.None
+
+18. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SADE
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.SADE.None
+
+19. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.DE1220
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.DE1220.None
+
+20. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.CMAES
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.CMAES.None
+
+21. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.MOEAD_GEN
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.MOEAD_GEN.None
+
+22. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.PSO
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.PSO.None
+
+23. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.PSO_GEN
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.PSO_GEN.None
+
+24. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.NSPSO
+     - ConfigurationSelection.Predictor.Model.Optimizer.Instance.MOEA.Algorithms.NSPSO.None
+
+25. [XOR] (3 options):
+     - ConfigurationSelection.Predictor.Model.Validator.ExternalValidator.QualityValidator
+     - ConfigurationSelection.Predictor.Model.Validator.ExternalValidator.EnergyValidator
+     - ConfigurationSelection.Predictor.Model.Validator.ExternalValidator.MockValidator
+
+26. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Validator.ExternalValidator.QualityValidator.Split.HoldOut
+     - ConfigurationSelection.Predictor.Model.Validator.ExternalValidator.QualityValidator.Split.KFold
+
+27. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Validator.InternalValidator.None
+     - ConfigurationSelection.Predictor.Model.Validator.InternalValidator.QualityValidator
+
+28. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.Validator.InternalValidator.QualityValidator.Split.KFold
+     - ConfigurationSelection.Predictor.Model.Validator.InternalValidator.QualityValidator.Split.HoldOut
+
+29. [OPT] (2 options):
+     - ConfigurationSelection.Predictor.Model.CandidateSelector.BestMultiPointProposal
+     - ConfigurationSelection.Predictor.Model.CandidateSelector.RandomMultiPointProposal
+
+30. [OPT] (2 options):
+     - RepetitionManager.Instance.QuantityBased
+     - RepetitionManager.Instance.AcceptableErrorBased
+
+31. [OPT] (2 options):
+     - RepetitionManager.Instance.AcceptableErrorBased.ExperimentAware
+     - RepetitionManager.Instance.AcceptableErrorBased.ExperimentAware.None
+
+32. [OPT] (2 options):
+     - StopCondition.Instance.AdaptiveSC
+     - StopCondition.Instance.AdaptiveSC.None
+
+33. [OPT] (2 options):
+     - StopCondition.Instance.BadConfigurationBasedSC
+     - StopCondition.Instance.BadConfigurationBasedSC.None
+
+34. [OPT] (2 options):
+     - StopCondition.Instance.GuaranteedSC
+     - StopCondition.Instance.GuaranteedSC.None
+
+35. [OPT] (2 options):
+     - StopCondition.Instance.ImprovementBasedSC
+     - StopCondition.Instance.ImprovementBasedSC.None
+
+36. [OPT] (2 options):
+     - StopCondition.Instance.QuantityBasedSC
+     - StopCondition.Instance.QuantityBasedSC.None
+
+37. [OPT] (2 options):
+     - StopCondition.Instance.TimeBasedSC
+     - StopCondition.Instance.TimeBasedSC.None
+
+38. [OPT] (2 options):
+     - StopCondition.Instance.ValidationBasedSC
+     - StopCondition.Instance.ValidationBasedSC.None
+
+39. [OPT] (2 options):
+     - TransferLearning
+     - TransferLearning.None
+
+40. [OPT] (2 options):
+     - TransferLearning.TransferExpediencyDetermination.SamplingLandmarkBased.Comparator.NormDifference
+     - TransferLearning.TransferExpediencyDetermination.SamplingLandmarkBased.Comparator.RGPE
+
+41. [OPT] (2 options):
+     - TransferLearning.TransferExpediencyDetermination.SamplingLandmarkBased.ExperimentsQuantity.FixedQuantity
+     - TransferLearning.TransferExpediencyDetermination.SamplingLandmarkBased.ExperimentsQuantity.AdaptiveQuantity
+
+42. [XOR] (3 options):
+     - TransferLearning.ModelRecommendation.None
+     - TransferLearning.ModelRecommendation.DynamicModelsRecommendation
+     - TransferLearning.ModelRecommendation.FewShotRecommendation
+
+43. [OPT] (2 options):
+     - TransferLearning.ModelRecommendation.DynamicModelsRecommendation.RecommendationGranularity.Finite
+     - TransferLearning.ModelRecommendation.DynamicModelsRecommendation.RecommendationGranularity.Infinite
+
+44. [OPT] (2 options):
+     - TransferLearning.MultiTaskLearning
+     - TransferLearning.MultiTaskLearning.None
+
+45. [OPT] (2 options):
+     - TransferLearning.MultiTaskLearning.Filters.OldNewRatio
+     - TransferLearning.MultiTaskLearning.Filters.OldNewRatio.None
+
+46. [OPT] (2 options):
+     - TransferLearning.MultiTaskLearning.Filters.FewShotMultiTask
+     - TransferLearning.MultiTaskLearning.Filters.FewShotMultiTask.None
+
+47. [OPT] (2 options):
+     - TransferLearning.MultiTaskLearning.Filters.OnlyBestConfigurations
+     - TransferLearning.MultiTaskLearning.Filters.OnlyBestConfigurations.None
+
+48. [OPT] (2 options):
+     - TransferLearning.MultiTaskLearning.Filters.ShuffleConfigurations
+     - TransferLearning.MultiTaskLearning.Filters.ShuffleConfigurations.None
+
+49. [OPT] (2 options):
+     - DefaultConfigurationHandler
+     - DefaultConfigurationHandler.None
+
+======================================================================
+PARSED MIN/MAX VALUES
+======================================================================
+  BaseAcceptableError: min=0.01, max=99.99 (float)
+  C: min=0.01, max=None (float)
+  CFloat: min=0.01, max=None (float)
+  ConfidenceLevel: min=0.01, max=1.0 (float)
+  GammaFloat: min=0.0, max=None (float)
+  Generations: min=1, max=None (integer)
+  MaxAcceptableError: min=None, max=99.99 (float)
+  MaxBadConfigurations: min=1, max=None (integer)
+  MaxConfigs: min=1, max=None (integer)
+  MaxConfigsWithoutImprovement: min=1, max=None (integer)
+  MaxFailedTasksPerConfiguration: min=1, max=None (integer)
+  MaxRunTime: min=1, max=None (integer)
+  MaxTasksPerConfiguration: min=1, max=None (integer)
+  MinNumberOfSamples: min=1, max=None (integer)
+  MinTasksPerConfiguration: min=2, max=None (integer)
+  NumberOfFolds: min=2, max=None (integer)
+  NumberOfSimilarExperiments: min=1, max=None (integer)
+  OldNewConfigsRatio: min=0.01, max=None (float)
+  PopulationSize: min=1, max=None (integer)
+  QualityThreshold: min=0.0, max=1.0 (float)
+  RatioMax: min=0.01, max=None (float)
+  RepetitionPeriod: min=1, max=None (integer)
+  SamplingSize: min=1, max=None (integer)
+  SearchSpacePercentage: min=0.01, max=99.99 (float)
+  Seed: min=0, max=None (integer)
+  TimeToBuildModelThreshold: min=0.01, max=None (float)
+  TrainingSet: min=0.5, max=0.9 (float)
+  Value: min=1, max=None (integer)
+  WindowSize: min=0.01, max=1.0 (float)
+  bandwidth_factor: min=1.0, max=None (float)
+  epsilon: min=0.0, max=None (float)
+  max_iter: min=1, max=None (integer)
+  min_bandwidth: min=0.0, max=None (float)
+  n_estimators: min=1, max=None (integer)
+  n_restarts_optimizer: min=0, max=None (integer)
+  random_fraction: min=0.0, max=1.0 (float)
+  tol: min=0.01, max=None (float)
+  top_n_percent: min=1, max=99 (integer)
+
+======================================================================
+PARSED ENUM VALUES
+======================================================================
+  BandwidthType: ['Fixed', 'Estimated']
+  CType: ['std', 'float']
+  GammaType: ['scale', 'auto', 'float']
+  ThresholdType: ['Hard', 'Soft']
+  TimeUnit: ['seconds', 'minutes', 'hours', 'days']
+  activation: ['identity', 'logistic', 'tanh', 'relu']
+  kernel: ['linear', 'poly', 'rbf', 'sigmoid', 'precomputed']
+  solver: ['lbfgs', 'sgd', 'adam']
+
+======================================================================
+SUMMARY
+======================================================================
+  Total feature dimensions: 49
+  Total feature options: 110
+  Total min/max attributes: 49
+  Total enum attributes: 8

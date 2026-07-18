@@ -1,4 +1,4 @@
-name: brise-260
+name: brise-261
 
 channels:
   - conda-forge
@@ -19,3 +19,7 @@ dependencies:
   - pandas
   - pygmo
   - flake8
+  - allpairspy
+  - textx
+  - selenium
+  - webdriver-manager
