@@ -72,7 +72,6 @@ def fix_connection_error_on_dynamic_queue_names(experiment):
     try:
         rmq.channel.queue_declare(queue=queue_name, durable=True, auto_delete=False)
     finally:
-        # Check for standard cleanup methods to avoid leaving connections dangling
         if hasattr(rmq, 'close'):
             rmq.close()
         elif hasattr(rmq, 'connection') and hasattr(rmq.connection, 'close'):
