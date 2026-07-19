@@ -64,7 +64,7 @@ def _run_cs_iterations(experiment, cs, config_fixture, get_workers, objective_co
         )
         experiment.send_state_to_db()
 
-# for TestStopConditionIntegration
+# For TestStopConditionIntegration
 def fix_connection_error_on_dynamic_queue_names(experiment):
     # pika.exceptions.ChannelClosedByBroker (404 NOT_FOUND)
     queue_name = f"check_stop_condition_expression_exchange{experiment.unique_id}"
