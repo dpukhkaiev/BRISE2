@@ -3,12 +3,13 @@ import logging
 import pytest
 import json
 import os
+import threading
 
 from tools.initial_config import load_experiment_setup
 from tools.mongo_dao import MongoDB
 
 from configuration_selection.configuration_selection import ConfigurationSelection
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 @pytest.fixture(scope='function')
 def get_configurations_float_nom():
@@ -409,8 +410,17 @@ def mock_configuration_selection_event_service(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def mock_thread_instance(monkeypatch):
-    mock_thread_instance = MagicMock()
-    monkeypatch.setattr('threading.Thread', MagicMock(return_value=mock_thread_instance))
+    # Mock threading except for pika Tiomer threads, which are used for internal networking timers and should not be mocked
+    original_start = threading.Thread.start
+    mock_start = MagicMock()
+    
+    def conditional_start(self, *args, **kwargs):
+        if type(self).__name__ == 'Timer' or 'pika' in repr(self):
+            return original_start(self, *args, **kwargs)
+        return mock_start(self, *args, **kwargs)
+
+    monkeypatch.setattr(threading.Thread, 'start', conditional_start)
+    return mock_start
 
 @pytest.fixture(scope="session")
 def db_client_instance():

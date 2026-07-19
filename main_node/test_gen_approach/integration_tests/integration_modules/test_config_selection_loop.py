@@ -1,8 +1,3 @@
-import os
-
-os.environ["TEST_MODE"] = "UNIT_TEST"
-
-
 from test_gen_approach.integration_tests.helpers.config_simulation import add_configuration_to_experiment
 from test_gen_approach.integration_tests.helpers.config_simulation import (
     assign_mock_results_to_configuration,

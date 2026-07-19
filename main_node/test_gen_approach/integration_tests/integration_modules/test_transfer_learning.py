@@ -1,7 +1,3 @@
-import os
-
-os.environ["TEST_MODE"] = "UNIT_TEST"
-
 from copy import deepcopy
 
 import numpy as np
