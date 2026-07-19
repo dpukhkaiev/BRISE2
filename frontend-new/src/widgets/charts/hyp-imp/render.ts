@@ -1,7 +1,7 @@
 import Plotly from 'plotly.js-dist-min'
 
-export function renderHypImp(element: HTMLElement) {
-    console.log("rendering hypImp")
+export function renderHypImp(element: HTMLElement, result: any) {
+    console.log("rendering hypImp. Result: ", result)
     const labels = ['p1', 'p2']
     const values = [0.9, 0.1]
 

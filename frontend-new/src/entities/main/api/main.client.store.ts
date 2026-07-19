@@ -44,11 +44,32 @@ export async function downloadDump(format = 'pkl'): Promise<any> {
     return object
 }
 
+export async function calculatePlot(
+    plot: string,
+    payload: any
+): Promise<any> {
+
+    const response = await firstValueFrom(
+        rxStompRPC.rpc({
+            destination: 'main_plot_queue',
+            body: JSON.stringify({
+                plot,
+                payload
+            }),
+            headers: {
+                body_type: 'json'
+            }
+        })
+    )
+
+    return JSON.parse(response.body)
+}
 
 // namespace export for importing functions all at once
 export const MainClientApi = {
     startMain,
     stopMain,
     getMainStatus,
-    downloadDump
+    downloadDump,
+    calculatePlot
 }

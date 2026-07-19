@@ -27,6 +27,9 @@ from tools.initial_config import load_experiment_setup
 from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
 
+# import the Optuna Service
+import optuna_service
+
 logging.getLogger("pika").setLevel(logging.WARNING)
 
 
@@ -276,7 +279,14 @@ class MainThread(threading.Thread):
             self.consume_channel.queue_unbind(queue=queue_name, exchange=exchange, routing_key=self.experiment.unique_id)
             self.consume_channel.queue_delete(queue=queue_name)
 
+class PlotService:
 
+    def calculate_importances(self, allRes):
+        return optuna_service.calculate_importances(allRes)
+
+    def calculate_pareto(self, allRes):
+        return optuna_service.calculate_pareto(allRes)
+        
 def run(experiment_setup=None):
     main = MainThread(experiment_setup)
     main.start()
