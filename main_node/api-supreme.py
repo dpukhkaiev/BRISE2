@@ -19,7 +19,6 @@ logger = BRISELogConfigurator().get_logger(__name__)
 # Initialize the API singleton
 API(api_object=RabbitApi(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))
 
-
 class ConsumerThread(Thread):
     """
     This class runs in a separate thread and handles requests client nodes (e.g. benchmark, front-end),

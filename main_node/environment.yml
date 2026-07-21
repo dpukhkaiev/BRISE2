@@ -18,3 +18,4 @@ dependencies:
   - pandas
   - pygmo
   - flake8
+  - optuna

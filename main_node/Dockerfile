@@ -6,6 +6,8 @@ RUN rm /root/Dockerfile
 
 WORKDIR /root
 
+RUN conda env update -n brise-260 -f environment.yml
+
 ARG BRISE_EVENT_SERVICE_HOST
 ENV BRISE_EVENT_SERVICE_HOST=${BRISE_EVENT_SERVICE_HOST}
 
