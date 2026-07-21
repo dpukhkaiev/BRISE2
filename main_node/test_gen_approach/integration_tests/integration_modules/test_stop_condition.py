@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from stop_condition.stop_condition_selector import launch_stop_condition_threads
@@ -5,7 +7,6 @@ from stop_condition.improvement_based import ImprovementBasedType
 from stop_condition.quantity_based import QuantityBasedType
 from stop_condition.time_based import TimeBased
 from stop_condition.validation_based import ValidationBasedType
-from tools.rabbitmq_common_tools import RabbitMQConnection
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 
@@ -63,19 +64,25 @@ def _run_cs_iterations(experiment, cs, config_fixture, get_workers, objective_co
             "Configuration", config.get_configuration_record()
         )
         experiment.send_state_to_db()
+        
+@pytest.fixture(autouse=True)
+def replace_db(db_client_instance, monkeypatch):
+    db_client_instance.cleanup_database()
+    # Patch testDatabase
+    monkeypatch.setattr('stop_condition.stop_condition_selector.MongoDB', lambda *args, **kwargs: db_client_instance)
+    yield db_client_instance
 
-# For TestStopConditionIntegration
-def fix_connection_error_on_dynamic_queue_names(experiment):
-    # fix pika.exceptions.ChannelClosedByBroker (404 NOT_FOUND)
-    queue_name = f"check_stop_condition_expression_exchange{experiment.unique_id}"
-    rmq = RabbitMQConnection(module="test_stop_condition")
-    try:
-        rmq.channel.queue_declare(queue=queue_name, durable=True, auto_delete=False)
-    finally:
-        if hasattr(rmq, 'close'):
-            rmq.close()
-        elif hasattr(rmq, 'connection') and hasattr(rmq.connection, 'close'):
-            rmq.connection.close()
+@pytest.fixture(autouse=True)
+def mock_event_service(monkeypatch):
+    # Create the mock instance that EventServiceConnection(self) will return
+    mock_connection_instance = MagicMock()
+    mock_connection_instance.channel = MagicMock()
+    
+    # Patch the EventServiceConnection class constructor itself
+    monkeypatch.setattr(
+        'stop_condition.stop_condition_validator.EventServiceConnection',
+        MagicMock(return_value=mock_connection_instance)
+    )
 
 class TestStopConditionIntegration:
     """
@@ -113,8 +120,6 @@ class TestStopConditionIntegration:
             experiment, config_fixture, objective_count, is_transfer_learning=False
         )
         experiment.send_state_to_db()
-
-        fix_connection_error_on_dynamic_queue_names(experiment)
 
         activated_scs = launch_stop_condition_threads(experiment.unique_id, experiment)
         assert len(activated_scs) >= 1, (
@@ -159,8 +164,6 @@ class TestStopConditionIntegration:
             )
         cs = create_configuration_selection(experiment)
         _run_cs_iterations(experiment, cs, config_fixture, get_workers, objective_count)
-
-        fix_connection_error_on_dynamic_queue_names(experiment)
 
         activated_scs = launch_stop_condition_threads(experiment.unique_id, experiment)
         assert len(activated_scs) >= 1
