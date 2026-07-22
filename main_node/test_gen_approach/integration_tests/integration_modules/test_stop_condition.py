@@ -1,6 +1,4 @@
-import os
-
-os.environ["TEST_MODE"] = "UNIT_TEST"
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -9,7 +7,6 @@ from stop_condition.improvement_based import ImprovementBasedType
 from stop_condition.quantity_based import QuantityBasedType
 from stop_condition.time_based import TimeBased
 from stop_condition.validation_based import ValidationBasedType
-
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 
@@ -67,7 +64,25 @@ def _run_cs_iterations(experiment, cs, config_fixture, get_workers, objective_co
             "Configuration", config.get_configuration_record()
         )
         experiment.send_state_to_db()
+        
+@pytest.fixture(autouse=True)
+def mock_db(db_client_instance, monkeypatch):
+    db_client_instance.cleanup_database()
+    # Patch testDatabase
+    monkeypatch.setattr('stop_condition.stop_condition_selector.MongoDB', lambda *args, **kwargs: db_client_instance)
+    yield db_client_instance
 
+@pytest.fixture(autouse=True)
+def mock_event_service(monkeypatch):
+    # Create the mock instance that EventServiceConnection(self) will return
+    mock_connection_instance = MagicMock()
+    mock_connection_instance.channel = MagicMock()
+    
+    # Patch the EventServiceConnection class constructor itself
+    monkeypatch.setattr(
+        'stop_condition.stop_condition_validator.EventServiceConnection',
+        MagicMock(return_value=mock_connection_instance)
+    )
 
 class TestStopConditionIntegration:
     """

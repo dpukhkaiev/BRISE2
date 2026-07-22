@@ -20,8 +20,8 @@ class RabbitApi(metaclass=Singleton):
         """
         self._host = host
         self._port = port
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
+        
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
         self.sender_lock = threading.Lock()
 
     def emit(self, message_type: str, message_subtype: str, message: str):

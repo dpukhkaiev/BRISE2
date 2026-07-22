@@ -1,11 +1,7 @@
 import json
 import logging
 import os
-
 from core_entities.configuration import Configuration
-from repeater.results_check.outliers_detection.outliers_detector_selector import (
-    get_outlier_detectors
-)
 from repeater.results_check.task_errors_check import error_check
 from tools.front_API import API
 from tools.mongo_dao import MongoDB
@@ -21,27 +17,23 @@ class RepeaterOrchestration:
     and configuration status management.
     """
 
-    def __init__(self, experiment_id: str, experiment=None):
+    def __init__(self, experiment_id: str):
         """
         :param experiment_id: ID of experiment, required to get experiment description from DB
-        :param experiment: Experiment class instance, (!)used only in tests
         """
         self.logger = logging.getLogger(__name__)
         self.experiment_id = experiment_id
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+
+        self.database = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
                                     os.getenv("BRISE_DATABASE_PORT"),
                                     os.getenv("BRISE_DATABASE_NAME"),
                                     os.getenv("BRISE_DATABASE_USER"),
                                     os.getenv("BRISE_DATABASE_PASS"))
 
-            self.experiment_description = None
-            while self.experiment_description is None:
-                self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
-        else:
-            self.database = MongoDB("test", 0, "test", "user", "pass")
-            self.experiment = experiment
-            self.experiment_description = experiment.description
+        self.experiment_description = None
+        while self.experiment_description is None:
+            self.experiment_description = self.database.get_last_record_by_experiment_id("Experiment_description", experiment_id)
+          
         self.performed_measurements = 0
 
         keys = list(self.experiment_description["RepetitionManager"]["Instance"].keys())
@@ -66,10 +58,10 @@ class RepeaterOrchestration:
         self.logger.info("Outliers detection module is disabled")
 
         self._type = self.get_repeater(True)
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.connection_thread = self._EventServiceConnection(self)
-            self.channel = self.connection_thread.channel
-            self.connection_thread.start()
+       
+        self.connection_thread = self._EventServiceConnection(self)
+        self.channel = self.connection_thread.channel
+        self.connection_thread.start()
 
     def get_repeater(self, is_default_configuration: bool = False):
         """
@@ -92,10 +84,8 @@ class RepeaterOrchestration:
 
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            return repeater_class(self.experiment_description, self.experiment_id)
-        else:
-            return repeater_class(self.experiment_description, self.experiment_id, self.experiment)
+
+        return repeater_class(self.experiment_description, self.experiment_id)
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """
@@ -124,28 +114,10 @@ class RepeaterOrchestration:
         :param properties: pika.spec.BasicProperties
         :param body: result of a configurations in bytes format
         """
-        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
-            result = json.loads(body)
-        else:
-            result = json.loads(body.decode())
+        result = self._decode_for_measure_configurations(body)
+        
         configuration = Configuration.from_json(result["configuration"])
-        if configuration.status['evaluated'] and os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            tasks_to_send = result["tasks_to_send"]
-            tasks_results = result["tasks_results"]
-            for index, objective in enumerate(self._objectives):
-                tasks_results = error_check(tasks_results,
-                                            objective,
-                                            self._expected_values_range[index],
-                                            self._objectives_data_types[index])
-
-            # Sending data to API and adding Tasks to Configuration
-            for parameters, task in zip(tasks_to_send, tasks_results):
-                if configuration.parameters == parameters:
-                    if configuration.is_valid_task(task):
-                        configuration.add_task(task)
-                        self.database.write_one_record("Task", configuration.get_task_record(task))
-
-                API().send('new', 'task', configurations=[parameters], results=[task])
+        self._send_configuration_and_tasks(configuration, result)
 
         # Evaluating configuration
         if configuration.number_of_failed_tasks <= self.repeater_parameters['MaxFailedTasksPerConfiguration']:
@@ -185,10 +157,32 @@ class RepeaterOrchestration:
                         }
                     )
 
-        if os.environ.get('TEST_MODE') == 'UNIT_TEST':
-            return configuration, needed_tasks_count
+        return self._publish_configuration(configuration, tasks_to_send, needed_tasks_count)
+            
+    def _decode_for_measure_configurations(self, body) -> any:
+        return json.loads(body.decode())
+    
+    def _send_configuration_and_tasks(self, configuration: Configuration, result):
+        if configuration.status['evaluated']:
+            tasks_to_send = result["tasks_to_send"]
+            tasks_results = result["tasks_results"]
+            for index, objective in enumerate(self._objectives):
+                tasks_results = error_check(tasks_results,
+                                            objective,
+                                            self._expected_values_range[index],
+                                            self._objectives_data_types[index])
 
-        elif configuration.status['measured']:
+            # Sending data to API and adding Tasks to Configuration
+            for parameters, task in zip(tasks_to_send, tasks_results):
+                if configuration.parameters == parameters:
+                    if configuration.is_valid_task(task):
+                        configuration.add_task(task)
+                        self.database.write_one_record("Task", configuration.get_task_record(task))
+
+                API().send('new', 'task', configurations=[parameters], results=[task])
+      
+    def _publish_configuration(self, configuration: Configuration, tasks_to_send: list, needed_tasks_count: int):
+        if configuration.status['measured']:
             if configuration.type == Configuration.Type.DEFAULT:
                 self._type = self.get_repeater()
                 publish(exchange='default_configuration_results_exchange',

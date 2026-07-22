@@ -38,13 +38,12 @@ class StopConditionValidator:
         self.repetition_interval = datetime.timedelta(**{
             experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["TimeUnit"]:
             experiment_description["StopCondition"]["StopConditionTriggerLogic"]["InspectionParameters"]["RepetitionPeriod"]}).total_seconds()
-
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.connection_thread = EventServiceConnection(self)
-            self.connection_thread.start()
-            self.processing_thread = threading.Thread(target=self.self_evaluation, args=())
-            self.channel = self.connection_thread.channel
-            self.processing_thread.start()
+        
+        self.connection_thread = EventServiceConnection(self)
+        self.connection_thread.start()
+        self.processing_thread = threading.Thread(target=self.self_evaluation, args=())
+        self.channel = self.connection_thread.channel
+        self.processing_thread.start()
 
     def self_evaluation(self):
         """

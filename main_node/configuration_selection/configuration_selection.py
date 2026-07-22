@@ -35,9 +35,9 @@ class ConfigurationSelection:
             self.transfer_is_enabled = False
 
         self.logger = logging.getLogger(__name__)
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.connection_thread = self._EventServiceConnection(self)
-            self.connection_thread.start()
+        
+        self.connection_thread = self._EventServiceConnection(self)
+        self.connection_thread.start()
 
     def send_new_configurations_to_measure(self, ch, method, properties, body) -> Tuple[
             List[Configuration], List[Configuration]]:
@@ -139,10 +139,10 @@ class ConfigurationSelection:
             elif len(self.experiment.measured_configurations) == self.experiment.search_space.size:
                 msg = "Entire Search Space has been already evaluated. Shutting down."
                 self.logger.info(msg)
-                if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                    publish(exchange='stop_experiment_exchange',
-                            routing_key=self.experiment.unique_id,
-                            body=msg)
+                
+                publish(exchange='stop_experiment_exchange',
+                    routing_key=self.experiment.unique_id,
+                    body=msg)
 
             else:
                 sampled_config = self.predictor.predict(self.experiment.measured_configurations, True)[0]
@@ -164,10 +164,10 @@ class ConfigurationSelection:
                     c.parameters)
             hierarchical_configs.append(c_to_send)
             self.sub.send('log', 'info', message=temp_msg)
-            if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                publish(exchange='measure_new_configuration_exchange',
-                        routing_key=self.experiment.unique_id,
-                        body=json.dumps({"configuration": c_to_send.to_json()}))
+            
+            publish(exchange='measure_new_configuration_exchange',
+                routing_key=self.experiment.unique_id,
+                body=json.dumps({"configuration": c_to_send.to_json()}))
 
         return configs_to_be_evaluated, hierarchical_configs
 

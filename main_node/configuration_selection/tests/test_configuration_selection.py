@@ -11,7 +11,6 @@ from tools.restore_db import RestoreDB
 
 rdb = RestoreDB()
 
-
 class TestConfigurationSelection:
 
     def test_0(self, get_experiment, get_workers, get_configurations_2_float):

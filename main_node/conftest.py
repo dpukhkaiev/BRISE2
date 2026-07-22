@@ -1,8 +1,15 @@
+import logging
+
 import pytest
 import json
+import os
+import threading
 
 from tools.initial_config import load_experiment_setup
+from tools.mongo_dao import MongoDB
 
+from configuration_selection.configuration_selection import ConfigurationSelection
+from unittest.mock import MagicMock, patch
 
 @pytest.fixture(scope='function')
 def get_configurations_float_nom():
@@ -392,3 +399,59 @@ def get_workers():
     dictionary_dump = {"worker_capacity": 1}
     body = json.dumps(dictionary_dump)
     yield body.encode()
+
+
+@pytest.fixture(autouse=True)
+def mock_configuration_selection_event_service(monkeypatch):
+    mock_connection_thread = MagicMock()
+    monkeypatch.setattr(ConfigurationSelection, '_EventServiceConnection', MagicMock(return_value=mock_connection_thread))
+    monkeypatch.setattr('configuration_selection.configuration_selection.publish', MagicMock())
+    return mock_connection_thread
+
+@pytest.fixture(autouse=True)
+def mock_thread_instance(monkeypatch):
+    # Mock threading except for pika Tiomer threads, which are used for internal networking timers and should not be mocked
+    original_start = threading.Thread.start
+    mock_start = MagicMock()
+    
+    def conditional_start(self, *args, **kwargs):
+        if type(self).__name__ == 'Timer' or 'pika' in repr(self):
+            return original_start(self, *args, **kwargs)
+        return mock_start(self, *args, **kwargs)
+
+    monkeypatch.setattr(threading.Thread, 'start', conditional_start)
+    return mock_start
+
+@pytest.fixture(scope="session")
+def db_client_instance():
+    """Initializes the database"""
+    client = MongoDB(os.getenv("BRISE_DATABASE_HOST"),
+                                    os.getenv("BRISE_DATABASE_PORT"),
+                                    os.getenv("BRISE_DATABASE_NAME"),
+                                    os.getenv("BRISE_DATABASE_USER"),
+                                    os.getenv("BRISE_DATABASE_PASS"))
+    return client
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup_after_input_tests():
+    """
+    Remove experiments from Database after the tests are finsihed
+    """
+    # Setup
+    yield 
+    # Teardown
+
+    try:
+        db_client = MongoDB() 
+        
+        if hasattr(db_client, 'cleanup_database'):
+            db_client.cleanup_database()
+        else:
+            db_client.db["Configuration"].drop()
+            db_client.db["Experiment_description"].drop()
+            db_client.db["Experiment_state"].drop()
+            db_client.db["Search_space"].drop()
+            
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to clear database during teardown: {e}")

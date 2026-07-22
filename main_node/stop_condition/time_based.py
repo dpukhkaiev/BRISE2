@@ -14,8 +14,7 @@ class TimeBased(StopCondition):
         temp_msg = f"Timeout set to {self.interval} seconds."
         self.logger.info(temp_msg)
         self.time_started = datetime.datetime.now()
-        if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            self.start_threads()
+        self.start_threads()
 
     def is_finish(self):
         seconds_elapsed = (datetime.datetime.now() - self.time_started).total_seconds()

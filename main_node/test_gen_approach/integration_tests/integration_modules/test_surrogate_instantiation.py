@@ -1,7 +1,3 @@
-import os
-
-os.environ["TEST_MODE"] = "UNIT_TEST"
-
 import pytest
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor

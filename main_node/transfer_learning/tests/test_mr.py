@@ -17,7 +17,6 @@ from tools.restore_db import RestoreDB
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
-
 class TestMR:
     def test_0(self, get_workers, get_configurations_2_float):
         """

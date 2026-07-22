@@ -1,4 +1,4 @@
-import pytest
+from tools.mongo_dao import MongoDB
 
 from core_entities.experiment import Configuration
 from core_entities.experiment import Experiment
@@ -9,7 +9,6 @@ from stop_condition.stop_condition_selector import launch_stop_condition_threads
 from stop_condition.bad_configuration_based import BadConfigurationBasedType
 from stop_condition.guaranteed import GuaranteedType
 from stop_condition.time_based import TimeBased
-from stop_condition.quantity_based import QuantityBasedType as SCQuantityBasedType
 from stop_condition.guaranteed import GuaranteedType
 from stop_condition.few_shot_learning_based import FewShotLearningBased
 from configuration_selection.configuration_selection import ConfigurationSelection
@@ -27,12 +26,11 @@ from transfer_learning.multi_task_learning.few_shot import FewShotDecorator
 from transfer_learning.model_recommendation.dynamic_model_recommendation import DynamicModelRecommendation
 from transfer_learning.model_recommendation.few_shot import FewShotRecommendation
 
-
 class TestInput:
     """
     Test whether all corresponding entities are created correctly. W.o. the inner functionality
     """
-    def test_0(self):
+    def test_0(self, mock_db):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'tpe', 'surr.vt.none', 'surr.ct',
         'optimizer.moea', 'opt.vt', 'opt.ct', 'validator.none', 'cs.best',
@@ -46,13 +44,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -77,7 +77,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)
 
 
-    def test_1(self):
+    def test_1(self, mock_db):
         """
         ['1 float 1 nom', 'flat', '2-mo', 'scalar', 'sklearn', 'surr.vt', 'surr.ct',
         'optimizer.moea', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none' 'cs.random',
@@ -90,13 +90,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -115,7 +117,7 @@ class TestInput:
         assert "TransferLearning" not in experiment.description.keys()
 
 
-    def test_2(self):
+    def test_2(self, mock_db):
         """
          ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
          'surr.vt.none', 'surr.ct',  'optimizer.nsga2-moead', 'opt.ct',, 'opt.vt.none'
@@ -129,13 +131,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -153,7 +157,7 @@ class TestInput:
             tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_3(self):
+    def test_3(self, mock_db):
         """
          ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
          'surr.vt.none', 'surr.ct', 'optimizer.gaco', 'optimizer.gaco', 'optimizer.gaco',
@@ -167,13 +171,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 4
@@ -191,7 +197,7 @@ class TestInput:
             tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_4(self):
+    def test_4(self, mock_db):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
         'optimizer.nsga2', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
@@ -203,13 +209,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -230,7 +238,7 @@ class TestInput:
         assert tl.transfer_submodules["Configuration_transfer"].is_few_shot
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, BaseMTL)
 
-    def test_5(self):
+    def test_5(self, mock_db):
         """
         ['2 float', 'flat', '2-mo', 'dynamic', 'mock', 'sklearn', 'sklearn', 'sklearn', 'sklearn', 'surr.vt.none',
         'surr.ct.none', 'optimizer.moead', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal',
@@ -243,13 +251,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
@@ -266,7 +276,8 @@ class TestInput:
         if "TransferLearning" in experiment.description.keys():
             tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         assert "TransferLearning" not in experiment.description.keys()
-    def test_6(self):
+
+    def test_6(self, mock_db):
         """
          ['1 float 1 nom', 'flat', '5-mo', 'pf', 'gpr', 'lr', 'mock', 'surr.vt.none',
          'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct','validator.quality', 'validator.internal',
@@ -279,13 +290,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -302,7 +315,7 @@ class TestInput:
         assert "DefaultConfigurationHandler" not in experiment.description.keys()
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_7(self):
+    def test_7(self, mock_db):
         """
          ['2 float', 'flat', '5-mo', 'pure', 'sklearn', 'surr.vt.none', 'surr.ct', 'optimizer.nsga2', 'opt.ct',
          'validator.quality', 'validator.internal.none','cs.random', 'ted.none', 'mr.none', 'mtl.none',
@@ -315,13 +328,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -341,7 +356,7 @@ class TestInput:
             assert isinstance(dch, RandomDefaultConfigurationHandler)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_8(self):
+    def test_8(self, mock_db):
         """
          ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
          'surr.vt', 'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct.none',
@@ -355,13 +370,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        
+        seed_test_experiment(mock_db, experiment)
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -378,7 +395,7 @@ class TestInput:
         assert "DefaultConfigurationHandler" not in experiment.description.keys()
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_9(self):
+    def test_9(self, mock_db):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'mock', 'surr.vt.none', 'surr.ct.none',
         'optimizer.gaco', 'opt.vt.none', 'opt.ct',  'validator.mock', 'validator.internal.none', cs.random',
@@ -390,13 +407,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), RMQuantityBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -422,7 +441,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, OldNewRatioDecorator)
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl.base_mtl, BaseMTL)
 
-    def test_10(self):
+    def test_10(self, mock_db):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'gbr', 'surr.vt.none', 'surr.ct.none', 'optimizer.random',
         'opt.vt.none', 'opt.ct.none', 'validator.mock', 'validator.internal.none', 'cs.best',
@@ -434,13 +453,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], TimeBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -460,7 +481,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, BaseMTL)
         assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)
 
-    def test_11(self):
+    def test_11(self, mock_db):
         """
         ['1 nom 1 float 1 nom 1 ord 1 float, 'hierarchical', 'so', 'mo.none', 'mab-brr',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.bee-gwo', 'opt.vt.none', 'opt.ct.y-none',
@@ -473,13 +494,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], GuaranteedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -505,7 +528,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl.base_mtl, BaseMTL)
         assert tl.transfer_submodules["Model_transfer"] is None
 
-    def test_12(self):
+    def test_12(self, mock_db):
         """
         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', 'so', 'mo.none', 'framab-tpe',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.de-cmaes', 'opt.vt.none-af', 'opt.ct.y-none',
@@ -518,13 +541,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -546,7 +571,7 @@ class TestInput:
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], FewShotRecommendation)
 
-    def test_13(self):
+    def test_13(self, mock_db):
         """
         ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
         'optimizer.sade', 'opt.vt.none', 'opt.ct', 'validator.mock', 'validator.internal.none', 'cs.random',
@@ -558,13 +583,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
         assert isinstance(activatedSCs[0], BadConfigurationBasedType)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         # configuration selection
         cs = ConfigurationSelection(experiment)
@@ -583,7 +610,7 @@ class TestInput:
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)
 
-    def test_14(self):
+    def test_14(self, mock_db):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'lr', 'surr.vt.none', 'surr.ct.none',
         'optimizer.pso', 'opt.vt.none', 'opt.ct.none',  'validator.mock', 'validator.internal.none', 'cs.best',
@@ -595,13 +622,15 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
+        seed_test_experiment(mock_db, experiment)
+
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(activatedSCs[0], FewShotLearningBased)
         # repetition management
-        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
@@ -622,3 +651,8 @@ class TestInput:
         assert isinstance(tl.ted_module, SamplingLandmarkBased)
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], FewShotRecommendation)
+
+def seed_test_experiment(db_client: MongoDB, experiment: Experiment):
+    """Insert the test experiments into the database"""
+    db_client.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+    

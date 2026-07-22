@@ -15,7 +15,6 @@ from transfer_learning.transfer_expediency_determination.clustering.mean_shift_c
 experiment_description_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
 rdb = RestoreDB()
 
-
 class TestTED:
     def test_0(self):
         """empty db"""
