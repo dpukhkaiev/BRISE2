@@ -9,5 +9,5 @@ class BestMultiPoint(CandidateSelector):
         super().__init__(candidate_selector_description)
 
     def select_candidates(self, candidates: pd.DataFrame) -> pd.DataFrame:
-        selected_candidates = candidates.head(self.number_of_points)
+        selected_candidates = candidates.head(self.number_of_points).reset_index(drop=True)
         return selected_candidates

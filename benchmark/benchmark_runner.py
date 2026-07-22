@@ -10,13 +10,41 @@ import shutil
 import uuid
 from copy import deepcopy
 from functools import wraps
-from threading import Thread
+from threading import Lock, Thread
 from typing import Union
 
 import numpy as np
 import pika
 from core_entities.search_space import SearchSpace
 from tools.initial_config import load_experiment_setup
+
+TIME_BASED_STOP_CONDITION = {
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 1,
+                    "TimeUnit": "minutes"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    }
+}
+
+# Hierarchical (tree-shaped) search spaces from the test suite that are valid
+# multi-point products: their Predictor holds one Model per level, so they
+# exercise the multi-point tree walk, and they declare NumberOfPoints together
+# with a matching DistributionMode batchSize.
+HIERARCHICAL_MULTI_POINT_TEST_CASES = ["test_case_16"]
 
 
 class BRISEBenchmarkRunner:
@@ -66,13 +94,13 @@ class BRISEBenchmarkRunner:
             self.is_calculating_number_of_experiments = True
             logging_level = self.logger.level
             self.logger.setLevel(logging.WARNING)
-            benchmarking_function(self, *args, *kwargs)
+            benchmarking_function(self, *args, **kwargs)
             self.logger.setLevel(logging_level)
             logging.info(
                 "Benchmark is going to run %s unique Experiments (please, take into account the repetitions as well)."
                 % len(self.experiments_to_be_performed))
             self.is_calculating_number_of_experiments = False
-            benchmarking_function(self, *args, *kwargs)
+            benchmarking_function(self, *args, **kwargs)
         return wrapper
 
     def execute_experiment(self,
@@ -402,29 +430,149 @@ class BRISEBenchmarkRunner:
         return self.counter
 
     @_benchmarkable
-    def fill_db(self):
-        self._experiment_timeout = 5 * 60
-        time_based_sc_skeleton = {
-            "StopCondition": {
-                "Instance": {
-                    "TimeBasedSC": {
-                        "Parameters": {
-                            "MaxRunTime": 1,
-                            "TimeUnit": "minutes"
-                        },
-                        "Type": "time_based",
-                        "Name": "t"
-                    }
-                },
-                "StopConditionTriggerLogic": {
-                    "Expression": "t",
-                    "InspectionParameters": {
-                        "RepetitionPeriod": 1,
-                        "TimeUnit": "seconds"
-                    }
+    def benchmark_distribution_modes(self):
+        """
+        Benchmarks the influence of DistributionMode.
+
+        1. Runs a baseline using AsynchronousDistribution.
+        2. Sweeps through various batch sizes for BatchedDistribution.
+        """
+        self.logger.info('In Benchmark function ...')
+
+        self.logger.info("Load Configuration: ...")
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment_Bdistr.json")
+
+        # --- Define Skeletons ---
+
+        # Skeleton 1: Asynchronous (Baseline)
+        async_skeleton = {
+            "DistributionMode": {
+                "AsynchronousDistribution": {
+                    "Type": "AsynchronousDistribution"
                 }
             }
         }
+
+        # Skeleton 2: Batched (Template sweeping)
+        batched_skeleton = {
+            "DistributionMode": {
+                "BatchedDistribution": {
+                    "Type": "BatchedDistribution"
+                },
+                "batchSize": {
+                    "Int": "1"
+                }
+            }
+        }
+
+        # Skeleton 3: Hybrid (Template sweeping)
+        hybrid_skeleton = {
+            "DistributionMode": {
+                "HybridDistribution": {
+                    "Type": "HybridDistribution"
+                },
+                "batchSize": {
+                    "Int": "1"
+                },
+                "timeout": {
+                        "Int": "350"
+                }
+            }
+        }
+
+        # Get the base experiment description
+        # deepcopy to avoid polluting the 'self.base_experiment_description'
+        from copy import deepcopy
+        experiment_description = self.base_experiment_description
+
+        # --- 1. Run Baseline (Async) ---
+        # self.logger.info("Executing benchmark: AsynchronousDistribution")
+        # experiment_description.update(deepcopy(async_skeleton))
+        # self.execute_experiment(experiment_description)
+
+
+        # # --- 2. Run Batched Sweep ---
+        # batch_sizes_to_test = [9]
+        batch_sizes_to_test2 = [6,7,8,9]
+
+        # for size in batch_sizes_to_test:
+        #     self.logger.info(f"Executing benchmark: BatchedDistribution with size {size}")
+
+        #     # Reset the config to the batched skeleton
+        #     experiment_description.update(deepcopy(batched_skeleton))
+        #     experiment_description['DistributionMode']['batchSize']['Int'] = str(size)
+
+        #     # Execute the run
+        #     self.execute_experiment(experiment_description)
+
+        # --- 3. Run Hybrid Sweep ---
+        for size in batch_sizes_to_test2:
+            self.logger.info(f"Executing benchmark: HybridDistribution with size {size}")
+
+            # Reset the config to the hybrid skeleton
+            experiment_description.update(deepcopy(hybrid_skeleton))
+            experiment_description['DistributionMode']['batchSize']['Int'] = str(size)
+
+            # Execute the run
+            self.execute_experiment(experiment_description)
+
+        return self.counter
+
+    @staticmethod
+    def _set_number_of_points(experiment_description: dict, number_of_points: int):
+        """
+        Re-scale an already multi-point description to `number_of_points`.
+
+        Two things have to stay in sync (base.wfl:616-620). A hierarchical
+        Predictor holds one Model per level and all of them must propose the same
+        number of points, and a wave has to be exactly as large as a proposal
+        (batchSize == NumberOfPoints), so that a single surrogate build per level
+        feeds one wave of Workers.
+        """
+        predictor = experiment_description["ConfigurationSelection"]["Predictor"]
+        for model_name, model in predictor.items():
+            if model_name.startswith("Model"):
+                for candidate_selector in model["CandidateSelector"].values():
+                    candidate_selector["NumberOfPoints"] = number_of_points
+
+        experiment_description["DistributionMode"]["batchSize"]["Int"] = str(number_of_points)
+
+    @_benchmarkable
+    def benchmark_hierarchical_multi_point(self, number_of_points: int = None):
+        """
+        Benchmarks multi-point proposal on HIERARCHICAL search spaces.
+
+        `benchmark_distribution_modes` only covers the flat Energy search space, where
+        one region holds every parameter. Here the Predictor walks a tree instead, and
+        each level proposes several points out of a single surrogate build.
+
+        The test cases are already valid multi-point products - they declare both
+        NumberOfPoints and a matching DistributionMode - so a run only replaces the
+        stop condition. Pass `number_of_points` to sweep other batch sizes; it
+        re-scales NumberOfPoints and batchSize together.
+        """
+        self._experiment_timeout = 5 * 60
+
+        for test_case in HIERARCHICAL_MULTI_POINT_TEST_CASES:
+            self._base_experiment_description, self._base_search_space = load_experiment_setup(
+                f"./Resources/tests/test_cases_product_configurations/{test_case}.json")
+
+            experiment_description = self.base_experiment_description
+            experiment_description.update(deepcopy(TIME_BASED_STOP_CONDITION))
+            if number_of_points is not None:
+                self._set_number_of_points(experiment_description, number_of_points)
+
+            self.logger.info(f"Executing benchmark: {test_case} with batchSize "
+                             f"{experiment_description['DistributionMode']['batchSize']['Int']}")
+            self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        return self.counter
+
+    @_benchmarkable
+    def fill_db(self):
+        self._experiment_timeout = 5 * 60
+        time_based_sc_skeleton = TIME_BASED_STOP_CONDITION
         flat_2float_model_skeleton = {
             "ConfigurationSelection": {
                 "SamplingStrategy": {
@@ -667,10 +815,14 @@ class MainAPIClient:
             queue="main_responses",
             on_message_callback=self.on_response,
             auto_ack=True)
-        self.customer_thread = self.ConsumerThread('event-service', 49153, self)
-        self.customer_thread.start()
         self.response = None
         self.corr_id = None
+        # `final_event` issues RPCs from the ConsumerThread, while the main thread
+        # issues its own. A pika connection must not be used by two threads at once.
+        self._rpc_lock = Lock()
+
+        self.customer_thread = self.ConsumerThread('event-service', 49153, self)
+        self.customer_thread.start()
 
     def on_response(self, ch: pika.spec.Channel, method: pika.spec.methods, properties: pika.spec.BasicProperties,
                     body: bytes):
@@ -694,22 +846,23 @@ class MainAPIClient:
             - download_dump: to download dump file
         :param param: body for a specific action. See details in specific action in main_node/api-supreme.py
         """
-        self.response = None
-        self.corr_id = str(uuid.uuid4())
+        with self._rpc_lock:
+            self.response = None
+            self.corr_id = str(uuid.uuid4())
 
-        self.channel.basic_publish(
-            exchange='',
-            routing_key=f'main_{action}_queue',
-            properties=pika.BasicProperties(
-                reply_to="main_responses",
-                correlation_id=self.corr_id,
-                headers={'body_type': 'pickle'}
-            ),
-            body=param)
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=f'main_{action}_queue',
+                properties=pika.BasicProperties(
+                    reply_to="main_responses",
+                    correlation_id=self.corr_id,
+                    headers={'body_type': 'pickle'}
+                ),
+                body=param)
 
-        while self.response is None:
-            self.connection.process_data_events()
-        return self.response
+            while self.response is None:
+                self.connection.process_data_events()
+            return self.response
 
     def update_status(self):
         status_report = self.call("status")

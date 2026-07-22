@@ -1,12 +1,17 @@
+import json
+
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.linear_model import LinearRegression
+
+from configuration_distribution.batchedDistribution import BatchedDistribution
+from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
-from default_config_handler.default_configuration_handler_orchestrator import DefaultConfigHandlerOrchestrator
-from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
+from core_entities.experiment import Experiment
 from core_entities.search_space import get_search_space_record
+from default_config_handler.default_configuration_handler_orchestrator import DefaultConfigHandlerOrchestrator
 from tools.restore_db import RestoreDB
 
 rdb = RestoreDB()
@@ -724,4 +729,47 @@ class TestConfigurationSelection:
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
             experiment.measured_configurations.append(predicted[0])
 
+        assert any([c.type is Configuration.Type.PREDICTED for c in configs])
+
+    def test_16(self, get_experiment, get_configurations_all_types):
+        """
+        test_case_2 (hierarchical search space) with multi-point proposal and
+        batched distribution: NumberOfPoints = 2, batchSize = 2.
+
+        NumberOfPoints must not merely be present in the description, it has to
+        drive the proposal. The feature model couples it to the distribution mode
+        (base.wfl:616-620): N > 1 requires a batched/hybrid mode and N must equal
+        its batchSize, so a wave asks for exactly as many points as one proposal
+        yields. A hierarchical space is used on purpose: the N points walk the
+        tree together, sharing one build per region.
+        """
+        experiment_description, search_space = get_experiment(16)
+        assert not search_space.is_flat
+        experiment = Experiment(experiment_description, search_space)
+        cs = ConfigurationSelection(experiment)
+
+        distribution = ConfigurationDistributionOrchestrator().get_distribution(experiment_description)
+        assert isinstance(distribution, BatchedDistribution)
+        assert cs.predictor.number_of_points == 2
+        assert distribution._batch_size == cs.predictor.number_of_points
+
+        # A wave asks for a full batch, and a single proposal has to fill it.
+        wave = json.dumps({"worker_capacity": distribution._batch_size}).encode()
+        configs = []
+        for i in range(10):
+            predicted, hierarchical = cs.send_new_configurations_to_measure("", "", "", wave)
+            assert len(predicted) == cs.predictor.number_of_points, (
+                f"a wave must yield NumberOfPoints configurations, got {len(predicted)}")
+            assert len(hierarchical) == len(predicted)
+            for config in predicted:
+                config.results = get_configurations_all_types[i]['Result']
+                config.status['measured'] = True
+                config.status['evaluated'] = True
+                assert config.type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
+                # Every point stays on a single root-to-leaf branch of the tree.
+                assert len(config.parameters) == 3
+                experiment.measured_configurations.append(config)
+            configs = configs + predicted
+
+        assert len(configs) == 20
         assert any([c.type is Configuration.Type.PREDICTED for c in configs])

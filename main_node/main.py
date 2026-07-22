@@ -238,6 +238,13 @@ class MainThread(threading.Thread):
         The function for stop main thread externally (e.g. from front-end)
         """
         with self.conf_lock:
+            if self._state is not self.State.RUNNING:
+                # A wave that is still in flight when the Experiment terminates can
+                # request a stop again. Reporting the final result twice would emit
+                # a second 'final' event to whoever drives the Experiment.
+                self.logger.info(f"Experiment is not running. Ignoring the termination request. Reason: {body}")
+                return None
+
             self.sub.send('log', 'info', message=f"Terminating experiment. Reason: {body}")
             self.logger.info(f"Terminating experiment. Reason: {body}")
             self._state = self.State.SHUTTING_DOWN

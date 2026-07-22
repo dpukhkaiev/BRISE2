@@ -28,6 +28,12 @@ class SklearnWrapper(Surrogate):
         transformed_features = self._transform_configuration(features)
         transformed_labels = self._transform_values(labels)
 
+        # A single-objective label is a (n, 1) column-vector; single-target sklearn
+        # estimators expect a 1d (n,) array and otherwise warn (DataConversionWarning).
+        # A genuine multi-output label (>1 column) is left as is.
+        if transformed_labels.shape[1] == 1:
+            transformed_labels = transformed_labels.to_numpy().ravel()
+
         self.surrogate_instance.fit(transformed_features, transformed_labels)
         return True
 

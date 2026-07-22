@@ -6,11 +6,14 @@ import pickle
 import uuid
 from collections import OrderedDict
 from copy import deepcopy
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Mapping, MutableMapping, Tuple
+from typing import Any, Dict, List, Mapping, MutableMapping, Set, Tuple
 
 import pandas as pd
 from tools.front_API import API
+
+from core_entities.search_space import Hyperparameter
 
 
 class Configuration:
@@ -354,3 +357,37 @@ class Configuration:
         record["Task_ID"] = task['task id']
         record["Task"] = task
         return record
+
+
+@dataclass
+class PartialConfiguration:
+    """
+    One point of a multi-point proposal, while it is still being assembled.
+
+    A lightweight builder for a :class:`Configuration`: the Predictor walks the
+    tree-shaped search space level by level and each point keeps its own lineage -
+    the parameters it has decided on so far, and the regions it activated on the
+    previous level and has yet to expand. This is what keeps a point on a single
+    root-to-leaf branch when sibling points descend into other branches. Once the
+    walk is done, :meth:`to_configuration` produces the finished Configuration.
+    """
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    predicted_result: List[float] = field(default_factory=list)
+    pending_regions: Set[Tuple[Hyperparameter]] = field(default_factory=set)
+    type: Configuration.Type = Configuration.Type.PREDICTED
+
+    def absorb(self, candidate: pd.Series, region: Tuple[Hyperparameter]) -> None:
+        """Take one candidate row of a region: its parameters and its objective values."""
+        region_hp_names = [hp.name for hp in region]
+        # to_dict() unboxes the numpy scalars of the row into native Python types,
+        # which the database can encode.
+        for name, value in candidate.to_dict().items():
+            if name in region_hp_names:
+                self.parameters[name] = value
+            else:
+                self.predicted_result.append(value)
+
+    def to_configuration(self, experiment_id: str, prediction_info: Mapping) -> Configuration:
+        configuration = Configuration(self.parameters, self.type, experiment_id, prediction_info=prediction_info)
+        configuration.predicted_result = self.predicted_result
+        return configuration

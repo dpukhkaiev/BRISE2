@@ -609,13 +609,24 @@ ConfigurationSelection {
       xor CandidateSelector {
         BestMultiPointProposal {
           NumberOfPoints -> integer
-          [NumberOfPoints == 1] // multipoint proposal is disabled until synchronous mode is provided
+          [NumberOfPoints >= 1]
+          // Multi-point proposal (N > 1) only makes sense with a synchronizing
+          // distribution mode that releases a whole wave at once. Async would
+          // dispatch N points but the loop has no wave to bound the pipeline.
+          [if NumberOfPoints > 1 then (DistributionMode.Mode.BatchedDistribution or DistributionMode.Mode.HybridDistribution)]
+          // The wave size (batchSize) must equal the number of proposed points so
+          // one surrogate build feeds exactly one wave of Workers.
+          [if DistributionMode.Mode.BatchedDistribution then NumberOfPoints == DistributionMode.Mode.BatchedDistribution.batchSize]
+          [if DistributionMode.Mode.HybridDistribution then NumberOfPoints == DistributionMode.Mode.HybridDistribution.batchSize]
           Type -> predefined
           [Type = "best_multi_point"]
         }
         RandomMultiPointProposal {
           NumberOfPoints -> integer
-          [NumberOfPoints == 1] // multipoint proposal is disabled until synchronous mode is provided
+          [NumberOfPoints >= 1]
+          [if NumberOfPoints > 1 then (DistributionMode.Mode.BatchedDistribution or DistributionMode.Mode.HybridDistribution)]
+          [if DistributionMode.Mode.BatchedDistribution then NumberOfPoints == DistributionMode.Mode.BatchedDistribution.batchSize]
+          [if DistributionMode.Mode.HybridDistribution then NumberOfPoints == DistributionMode.Mode.HybridDistribution.batchSize]
           Type -> predefined
           [Type = "random_multi_point"]
         }
@@ -727,6 +738,34 @@ StopCondition {
       TimeUnit -> string
       [RepetitionPeriod > 0]
       [TimeUnit in {"seconds", "minutes", "hours", "days"}]
+    }
+  }
+}
+// ------------------Configuration Distribution------------------
+// Selects how generated Configurations are dispatched to the Workers.
+DistributionMode {
+  xor Mode {
+    // Default: send each Configuration to the Workers immediately (no synchronization)
+    AsynchronousDistribution {
+      Type -> predefined
+      [Type = "AsynchronousDistribution"]
+    }
+    // Release a full wave only once BatchSize Workers have synchronized at a barrier
+    BatchedDistribution {
+      batchSize -> integer
+      [batchSize >= 1]
+      Type -> predefined
+      [Type = "BatchedDistribution"]
+    }
+    // Like Batched, but a per-wave TimeoutInSeconds also releases the wave so
+    // slow/dead Workers cannot deadlock the pipeline
+    HybridDistribution {
+      batchSize -> integer
+      [batchSize >= 1]
+      timeoutInSeconds -> float
+      [timeoutInSeconds > 0]
+      Type -> predefined
+      [Type = "HybridDistribution"]
     }
   }
 }

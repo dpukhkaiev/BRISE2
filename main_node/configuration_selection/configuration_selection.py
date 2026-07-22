@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import threading
 from typing import List, Tuple
 from copy import deepcopy
 
@@ -16,6 +17,10 @@ class ConfigurationSelection:
     """
     Orchestration class for Configuration Selection module.
     """
+
+    # Upper bound on random resamples used to break a duplicate proposal within
+    # a single wave before the point is skipped (see send_new_configurations_to_measure).
+    _MAX_RESAMPLE_ATTEMPTS = 20
 
     def __init__(self, experiment: Experiment):
         self.sub = API()
@@ -33,6 +38,15 @@ class ConfigurationSelection:
                                                                                self.experiment.unique_id)
         else:
             self.transfer_is_enabled = False
+
+        # Serializes one wave of selection at a time. With batched/hybrid
+        # distribution a wave is already published by a single thread and waves
+        # cannot overlap (the barrier/gate holds the next wave until the current
+        # batch returns), so this lock is uncontended today. It guards the
+        # read-modify-write of Experiment state (evaluated/measured configurations
+        # and model updates) against a future asynchronous-update path that would
+        # let results — and therefore selection — overlap.
+        self._selection_lock = threading.Lock()
 
         self.logger = logging.getLogger(__name__)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
@@ -59,14 +73,11 @@ class ConfigurationSelection:
         """
         needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
 
-        number_of_predicted_configs = (
-            min([model.candidate_selector.number_of_points for model in self.predictor.mapping_region_model.values()]))
-
         predicted_configs = []
         configs_to_be_evaluated = []
 
         if not self.transfer_is_enabled:
-            predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
+            predicted_configs.extend(self._regular_prediction(needed_configs))
         else:
             similar_experiments = self.transfer_learning_orchestrator.ted_module.analyse_experiments_similarity()
             if similar_experiments is None:
@@ -77,7 +88,7 @@ class ConfigurationSelection:
             elif len(similar_experiments) == 0:
                 temp_msg = "No similar experiment has been found."
                 self.logger.info(temp_msg)
-                predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
+                predicted_configs.extend(self._regular_prediction(needed_configs))
             else:
                 # Model transfer
                 model_transfer_module = self.transfer_learning_orchestrator.transfer_submodules["Model_transfer"]
@@ -117,71 +128,106 @@ class ConfigurationSelection:
                         self.logger.info("Measuring a configuration using the transferred model")
                     # regular transfer of configurations
                     else:
+                        extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
                         while needed_configs > 0:
-                            if needed_configs - number_of_predicted_configs >= 0:
-                                extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
-                                temp_predicted = self.predictor.predict(extended_configuration_list)
-                                predicted_configs.extend(temp_predicted)
-                            else:
-                                extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
-                                temp_predicted = self.predictor.predict(extended_configuration_list)
-                                predicted_configs.extend(temp_predicted[:needed_configs])
-                            needed_configs -= number_of_predicted_configs
+                            temp_predicted = self.predictor.predict(extended_configuration_list)
+                            if not temp_predicted:
+                                break
+                            predicted_configs.extend(temp_predicted[:needed_configs])
+                            needed_configs -= len(temp_predicted)
                 # regular transfer of models
                 if model_transfer_module is not None:
-                    predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
+                    predicted_configs.extend(self._regular_prediction(needed_configs))
 
-        for c in predicted_configs:
-            if c not in self.experiment.evaluated_configurations:
-                temp_msg = f"The model predicted {c}."
-                self.logger.info(temp_msg)
-                configs_to_be_evaluated.append(c)
-            elif len(self.experiment.measured_configurations) == self.experiment.search_space.size:
-                msg = "Entire Search Space has been already evaluated. Shutting down."
-                self.logger.info(msg)
+        # De-duplicate the (possibly N) predicted points against already-evaluated
+        # configurations AND against the points already chosen in this wave, then
+        # register them atomically, so a wave's points are checked-then-added as
+        # one critical section. With N > 1 a single wave calls the predictor
+        # several times on the same measured data, so a deterministic surrogate
+        # can propose the same point twice within one wave; without the in-wave
+        # check those duplicates would each be dispatched for measurement. Each
+        # point is handled independently, so a wave may yield fewer than N configs
+        # when the space is nearly exhausted (duplicates trigger a resample, or a
+        # stop when the whole search space is already measured).
+        with self._selection_lock:
+            def _already_selected(candidate: Configuration) -> bool:
+                # A candidate is a duplicate if it was measured in a previous wave
+                # or has already been chosen earlier in the current wave.
+                return (candidate in self.experiment.evaluated_configurations
+                        or candidate in configs_to_be_evaluated)
+
+            for c in predicted_configs:
+                if not _already_selected(c):
+                    temp_msg = f"The model predicted {c}."
+                    self.logger.info(temp_msg)
+                    configs_to_be_evaluated.append(c)
+                elif len(self.experiment.measured_configurations) == self.experiment.search_space.size:
+                    # The wave is abandoned: the remaining points could only be
+                    # duplicates too, and a stop must be requested exactly once.
+                    msg = "Entire Search Space has been already evaluated. Shutting down."
+                    self.logger.info(msg)
+                    if os.environ.get('TEST_MODE') != 'UNIT_TEST':
+                        publish(exchange='stop_experiment_exchange',
+                                routing_key=self.experiment.unique_id,
+                                body=msg)
+                    break
+                else:
+                    # Resample a configuration that is distinct from everything
+                    # already evaluated and everything already chosen in this
+                    # wave. Bounded retries so a nearly-exhausted space cannot
+                    # spin forever; if no distinct point is found the point is
+                    # skipped and the wave simply returns fewer than N configs.
+                    sampled_config = None
+                    for _ in range(self._MAX_RESAMPLE_ATTEMPTS):
+                        candidate = self.predictor.predict(self.experiment.measured_configurations, True)[0]
+                        if not _already_selected(candidate):
+                            sampled_config = candidate
+                            break
+                    if sampled_config is None:
+                        temp_msg = (f"Predicted configuration {c} has already been evaluated and no distinct "
+                                    f"configuration could be sampled in {self._MAX_RESAMPLE_ATTEMPTS} attempts; "
+                                    f"skipping this point for the current wave.")
+                        self.logger.info(temp_msg)
+                        continue
+                    temp_msg = f"Predicted configuration {c} has already been evaluated. Randomly sampled {sampled_config}."
+                    self.logger.info(temp_msg)
+                    configs_to_be_evaluated.append(sampled_config)
+
+            hierarchical_configs = []
+            for c in configs_to_be_evaluated:
+                self.experiment.add_evaluated_configuration_to_experiment(c)
+                if c.type is Configuration.Type.PREDICTED:
+                    self.experiment.update_model_state(True)
+                else:
+                    self.experiment.update_model_state(False)
+                dispatch_msg = f"Sending configuration {c} to be measured."
+                self.logger.info(dispatch_msg)
+                c_to_send = deepcopy(c)
+                if self.experiment.search_space.is_flat:
+                    c_to_send.parameters = self.experiment.search_space.transform_flat_parameters_to_hierarchic(
+                        c.parameters)
+                hierarchical_configs.append(c_to_send)
+                self.sub.send('log', 'info', message=dispatch_msg)
                 if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                    publish(exchange='stop_experiment_exchange',
+                    publish(exchange='measure_new_configuration_exchange',
                             routing_key=self.experiment.unique_id,
-                            body=msg)
-
-            else:
-                sampled_config = self.predictor.predict(self.experiment.measured_configurations, True)[0]
-                temp_msg = f"Predicted configuration {c} has already been evaluated. Randomly sampled {sampled_config}."
-                self.logger.info(temp_msg)
-                configs_to_be_evaluated.append(sampled_config)
-
-        hierarchical_configs = []
-        for c in configs_to_be_evaluated:
-            self.experiment.add_evaluated_configuration_to_experiment(c)
-            if c.type is Configuration.Type.PREDICTED:
-                self.experiment.update_model_state(True)
-            else:
-                self.experiment.update_model_state(False)
-            self.logger.info(temp_msg)
-            c_to_send = deepcopy(c)
-            if self.experiment.search_space.is_flat:
-                c_to_send.parameters = self.experiment.search_space.transform_flat_parameters_to_hierarchic(
-                    c.parameters)
-            hierarchical_configs.append(c_to_send)
-            self.sub.send('log', 'info', message=temp_msg)
-            if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-                publish(exchange='measure_new_configuration_exchange',
-                        routing_key=self.experiment.unique_id,
-                        body=json.dumps({"configuration": c_to_send.to_json()}))
+                            body=json.dumps({"configuration": c_to_send.to_json()}))
 
         return configs_to_be_evaluated, hierarchical_configs
 
-    def _regular_prediction(self, needed_configs: int, number_of_predicted_configs: int):
+    def _regular_prediction(self, needed_configs: int) -> List[Configuration]:
+        """
+        Propose configurations until the wave is filled. A proposal usually yields
+        NumberOfPoints configurations, but the count is taken from the proposal
+        itself, as a level that has to sample cannot always serve that many.
+        """
         result = []
-        while needed_configs > 0:
-            if needed_configs - number_of_predicted_configs >= 0:
-                temp_predicted = self.predictor.predict(self.experiment.measured_configurations)
-                result.extend(temp_predicted)
-            else:
-                temp_predicted = self.predictor.predict(self.experiment.measured_configurations)
-                result.extend(temp_predicted[:needed_configs])
-            needed_configs -= number_of_predicted_configs
-        return result
+        while len(result) < needed_configs:
+            temp_predicted = self.predictor.predict(self.experiment.measured_configurations)
+            if not temp_predicted:
+                break
+            result.extend(temp_predicted)
+        return result[:needed_configs]
 
     class _EventServiceConnection(RabbitMQConnection):
         """
