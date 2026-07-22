@@ -7,7 +7,7 @@ import pytest
 import json
 
 @pytest.fixture(autouse=True)
-def replace_db(db_client_instance, monkeypatch):
+def mock_db(db_client_instance, monkeypatch):
     db_client_instance.cleanup_database()
     # Patch testDatabase
     monkeypatch.setattr('repeater.repeater_selector.MongoDB', lambda *args, **kwargs: db_client_instance)
@@ -15,7 +15,7 @@ def replace_db(db_client_instance, monkeypatch):
     yield db_client_instance
 
 @pytest.fixture(autouse=True)
-def mock_repeator_selection(monkeypatch):
+def mock_repeater_selection(monkeypatch):
     def mock_repeater0(self, body):
         return json.loads(body)
     monkeypatch.setattr('repeater.repeater_selector.RepeaterOrchestration._decode_for_measure_configurations', mock_repeater0)

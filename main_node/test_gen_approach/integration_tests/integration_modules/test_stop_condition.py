@@ -66,7 +66,7 @@ def _run_cs_iterations(experiment, cs, config_fixture, get_workers, objective_co
         experiment.send_state_to_db()
         
 @pytest.fixture(autouse=True)
-def replace_db(db_client_instance, monkeypatch):
+def mock_db(db_client_instance, monkeypatch):
     db_client_instance.cleanup_database()
     # Patch testDatabase
     monkeypatch.setattr('stop_condition.stop_condition_selector.MongoDB', lambda *args, **kwargs: db_client_instance)
