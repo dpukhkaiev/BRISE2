@@ -5,14 +5,14 @@ name: BRISE-CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [ master, develop ]
   pull_request:
-    branches: [master, develop]
+    branches: [ master, develop ]
 
 jobs:
   docker-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 300
 
     steps:
       - name: Checkout Repository
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: brise-260
+          activate-environment: brise-261
           environment-file: ./main_node/environment.yml
           python-version: 3.12
           miniconda-version: "latest"
@@ -59,9 +59,33 @@ jobs:
           flake8 . --config tox.ini --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=50 --max-line-length=300 --statistics
-      - name: Test with pytest
+
+      - name: Test with pytest (original BRISE tests)
         shell: bash -el {0}
         run: |
-          docker ps
           cd main_node
-          pytest
+          pytest --ignore=test_gen_approach --cov=. --cov-report=xml:coverage.xml --cov-report=term || TEST_EXIT_CODE=$?
+          if [ -n "${TEST_EXIT_CODE:-}" ]; then exit $TEST_EXIT_CODE; fi
+
+      - name: Phase 2 - Integration tests (new Test Generation Approach)
+        shell: bash -el {0}
+        run: |
+          cd main_node
+          pytest test_gen_approach/integration_tests/ --cov=. --cov-append --cov-report=xml:coverage.xml --cov-report=term || TEST_EXIT_CODE=$?       
+          if [ -n "${TEST_EXIT_CODE:-}" ]; then exit $TEST_EXIT_CODE; fi
+
+      # (Optional) Print coverage percentage
+      - name: Extract coverage %
+        shell: bash -el {0}
+        run: |
+          cd main_node
+          LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
+          PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
+          echo "coverage=${PERCENT}"
+
+      # Save coverage report as artifact
+      - name: Upload Coverage XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: main_node/coverage.xml

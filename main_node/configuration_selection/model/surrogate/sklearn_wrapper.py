@@ -48,3 +48,12 @@ class SklearnWrapper(Surrogate):
             result = pd.DataFrame(predicted, columns=["Y"])
 
         return result
+
+    def _transform_values(self, labels: pd.DataFrame) -> pd.DataFrame:
+        # flatten labels to be 1d-array
+        transformed_labels = super()._transform_values(labels)
+        
+        if isinstance(transformed_labels, pd.DataFrame) and transformed_labels.shape[1] == 1:
+            return transformed_labels.iloc[:, 0].values.ravel()
+            
+        return transformed_labels

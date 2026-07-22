@@ -1,4 +1,4 @@
-FROM brisedev/benchmark-dev:2.6.0
+FROM brisedev/benchmark-dev:2.6.1
 
 # Inner project dependencies
 COPY ./main_node/core_entities /home/benchmark_user/core_entities/
@@ -32,5 +32,5 @@ WORKDIR /home/benchmark_user
 RUN chown --recursive benchmark_user:benchmark_user .
 USER benchmark_user
 
-RUN echo "conda activate brise-260" >> ~/.bashrc
-CMD conda run -n brise-260 python3 ./entrypoint.py $MODE
+RUN echo "conda activate brise-261" >> ~/.bashrc
+CMD conda run -n brise-261 python3 ./entrypoint.py $MODE
