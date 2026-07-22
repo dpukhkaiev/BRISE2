@@ -68,7 +68,7 @@ jobs:
 
           # create badge url with percentage
           n=$(($PERCENT+0))
-          url="https://img.shields.io/badge/Code%20Coverage-${PERCENT}%25-${COLOR}?style=flat"
+          url="https://img.shields.io/badge/Code%20Coverage-${PERCENT}%25-${COLOR}"
           curl -sSL --fail "$url" -o badge-data/coverage.svg
       
           # Commit updated badge svg
