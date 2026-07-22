@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set Up Docker Compose
         run: |
@@ -87,7 +87,7 @@ jobs:
 
       # Save coverage report as artifact
       - name: Upload Coverage XML
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: code-coverage-report
           path: main_node/coverage.xml
