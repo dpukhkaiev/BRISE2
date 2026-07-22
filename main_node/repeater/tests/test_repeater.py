@@ -6,9 +6,9 @@ from core_entities.experiment import Experiment
 from core_entities.search_space import SearchSpace
 from repeater.repeater_selector import RepeaterOrchestration
 
-def test_0(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_0(mock_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Default Configuration
-    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(mock_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      0, Configuration.Type.DEFAULT,
                                                      {'enabled': True, 'evaluated': False, 'measured': False})
@@ -17,9 +17,9 @@ def test_0(replace_db, get_energy_configurations, get_energy_tasks, get_energy_e
     assert needed_tasks_count > 0
 
 
-def test_1(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_1(mock_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Default Configuration
-    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(mock_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      10, Configuration.Type.DEFAULT,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -28,9 +28,9 @@ def test_1(replace_db, get_energy_configurations, get_energy_tasks, get_energy_e
     assert needed_tasks_count == 0
 
 
-def test_2(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_2(mock_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Predicted Configuration
-    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(mock_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      0, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': False, 'measured': False})
@@ -39,9 +39,9 @@ def test_2(replace_db, get_energy_configurations, get_energy_tasks, get_energy_e
     assert needed_tasks_count > 0
 
 
-def test_3(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_3(mock_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with low relative error in results.
-    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(mock_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      2, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -50,9 +50,9 @@ def test_3(replace_db, get_energy_configurations, get_energy_tasks, get_energy_e
     assert needed_tasks_count == 0
 
 
-def test_4(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_4(mock_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with high relative error in results.
-    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(mock_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      8, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})
@@ -61,9 +61,9 @@ def test_4(replace_db, get_energy_configurations, get_energy_tasks, get_energy_e
     assert needed_tasks_count > 0
 
 
-def test_5(replace_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_5(mock_db, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with number of measured tasks = threshold.
-    configuration, needed_tasks_count = measure_task(replace_db, get_energy_configurations, get_energy_tasks,
+    configuration, needed_tasks_count = measure_task(mock_db, get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      10, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': True, 'measured': False})

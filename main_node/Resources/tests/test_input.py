@@ -30,7 +30,7 @@ class TestInput:
     """
     Test whether all corresponding entities are created correctly. W.o. the inner functionality
     """
-    def test_0(self, replace_db):
+    def test_0(self, mock_db):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'tpe', 'surr.vt.none', 'surr.ct',
         'optimizer.moea', 'opt.vt', 'opt.ct', 'validator.none', 'cs.best',
@@ -44,7 +44,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -77,7 +77,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)
 
 
-    def test_1(self, replace_db):
+    def test_1(self, mock_db):
         """
         ['1 float 1 nom', 'flat', '2-mo', 'scalar', 'sklearn', 'surr.vt', 'surr.ct',
         'optimizer.moea', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none' 'cs.random',
@@ -90,7 +90,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -117,7 +117,7 @@ class TestInput:
         assert "TransferLearning" not in experiment.description.keys()
 
 
-    def test_2(self, replace_db):
+    def test_2(self, mock_db):
         """
          ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
          'surr.vt.none', 'surr.ct',  'optimizer.nsga2-moead', 'opt.ct',, 'opt.vt.none'
@@ -131,7 +131,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -157,7 +157,7 @@ class TestInput:
             tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_3(self, replace_db):
+    def test_3(self, mock_db):
         """
          ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
          'surr.vt.none', 'surr.ct', 'optimizer.gaco', 'optimizer.gaco', 'optimizer.gaco',
@@ -171,7 +171,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -197,7 +197,7 @@ class TestInput:
             tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_4(self, replace_db):
+    def test_4(self, mock_db):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
         'optimizer.nsga2', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
@@ -209,7 +209,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -238,7 +238,7 @@ class TestInput:
         assert tl.transfer_submodules["Configuration_transfer"].is_few_shot
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, BaseMTL)
 
-    def test_5(self, replace_db):
+    def test_5(self, mock_db):
         """
         ['2 float', 'flat', '2-mo', 'dynamic', 'mock', 'sklearn', 'sklearn', 'sklearn', 'sklearn', 'surr.vt.none',
         'surr.ct.none', 'optimizer.moead', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal',
@@ -251,7 +251,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -277,7 +277,7 @@ class TestInput:
             tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id, experiment_description=experiment.description)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_6(self, replace_db):
+    def test_6(self, mock_db):
         """
          ['1 float 1 nom', 'flat', '5-mo', 'pf', 'gpr', 'lr', 'mock', 'surr.vt.none',
          'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct','validator.quality', 'validator.internal',
@@ -290,7 +290,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -315,7 +315,7 @@ class TestInput:
         assert "DefaultConfigurationHandler" not in experiment.description.keys()
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_7(self, replace_db):
+    def test_7(self, mock_db):
         """
          ['2 float', 'flat', '5-mo', 'pure', 'sklearn', 'surr.vt.none', 'surr.ct', 'optimizer.nsga2', 'opt.ct',
          'validator.quality', 'validator.internal.none','cs.random', 'ted.none', 'mr.none', 'mtl.none',
@@ -328,7 +328,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -356,7 +356,7 @@ class TestInput:
             assert isinstance(dch, RandomDefaultConfigurationHandler)
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_8(self, replace_db):
+    def test_8(self, mock_db):
         """
          ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
          'surr.vt', 'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct.none',
@@ -371,7 +371,7 @@ class TestInput:
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
         
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
@@ -395,7 +395,7 @@ class TestInput:
         assert "DefaultConfigurationHandler" not in experiment.description.keys()
         assert "TransferLearning" not in experiment.description.keys()
 
-    def test_9(self, replace_db):
+    def test_9(self, mock_db):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'mock', 'surr.vt.none', 'surr.ct.none',
         'optimizer.gaco', 'opt.vt.none', 'opt.ct',  'validator.mock', 'validator.internal.none', cs.random',
@@ -407,7 +407,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -441,7 +441,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, OldNewRatioDecorator)
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl.base_mtl, BaseMTL)
 
-    def test_10(self, replace_db):
+    def test_10(self, mock_db):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'gbr', 'surr.vt.none', 'surr.ct.none', 'optimizer.random',
         'opt.vt.none', 'opt.ct.none', 'validator.mock', 'validator.internal.none', 'cs.best',
@@ -453,7 +453,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -481,7 +481,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, BaseMTL)
         assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)
 
-    def test_11(self, replace_db):
+    def test_11(self, mock_db):
         """
         ['1 nom 1 float 1 nom 1 ord 1 float, 'hierarchical', 'so', 'mo.none', 'mab-brr',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.bee-gwo', 'opt.vt.none', 'opt.ct.y-none',
@@ -494,7 +494,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -528,7 +528,7 @@ class TestInput:
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl.base_mtl, BaseMTL)
         assert tl.transfer_submodules["Model_transfer"] is None
 
-    def test_12(self, replace_db):
+    def test_12(self, mock_db):
         """
         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', 'so', 'mo.none', 'framab-tpe',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.de-cmaes', 'opt.vt.none-af', 'opt.ct.y-none',
@@ -541,7 +541,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -571,7 +571,7 @@ class TestInput:
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], FewShotRecommendation)
 
-    def test_13(self, replace_db):
+    def test_13(self, mock_db):
         """
         ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
         'optimizer.sade', 'opt.vt.none', 'opt.ct', 'validator.mock', 'validator.internal.none', 'cs.random',
@@ -583,7 +583,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
@@ -610,7 +610,7 @@ class TestInput:
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)
 
-    def test_14(self, replace_db):
+    def test_14(self, mock_db):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'lr', 'surr.vt.none', 'surr.ct.none',
         'optimizer.pso', 'opt.vt.none', 'opt.ct.none',  'validator.mock', 'validator.internal.none', 'cs.best',
@@ -622,7 +622,7 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        seed_test_experiment(replace_db, experiment)
+        seed_test_experiment(mock_db, experiment)
 
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
