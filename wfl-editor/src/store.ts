@@ -127,7 +127,7 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     function createUniqueName(baseName: string): string {
-        const cleanedName = baseName.trim().replace(/[^a-zA-Z0-9]/g, '').replace(/^[0-9]+/, '')
+        const cleanedName = baseName.trim().replace(/[^a-zA-Z0-9_]/g, '').replace(/^[0-9]+/, '')
         let counter = 1
         let uniqueName = `${cleanedName}${counter}`
         // loop until found a name that any of the nodes have
@@ -145,7 +145,7 @@ export const useGraphStore = defineStore('graph', () => {
         saveCheckpoint()
         const node = nodes.value.find((n:Node) => n.id === nodeId) 
         if(node) {
-            node.data.name = newName.trim().replace(/[^a-zA-Z0-9]/g, '').replace(/^[0-9]+/, '')
+            node.data.name = newName.trim().replace(/[^a-zA-Z0-9_]/g, '').replace(/^[0-9]+/, '')
         }
     }
 
@@ -402,9 +402,6 @@ export const useGraphStore = defineStore('graph', () => {
                 n.data.childrenIds = n.data.childrenIds.filter((id: string) => !idsToDelete.includes(id));
             }
         });
-        
-        // 
-     
      
      // after all cases check for levels
      updateLevels()
@@ -435,7 +432,7 @@ export const useGraphStore = defineStore('graph', () => {
             nodeEl.setAttribute('id', node.id);
             const isCategorical = node.data?.super === 'NominalHyperparameter' || node.data?.super === 'OrdinalHyperparameter';
             // extract constraints and parameters for nummerical nodes
-          
+        
             if (node.data?.constraints) {
                 const constraintsEl = xmlDoc.createElement('Constraints');
                    let hasConstraints = false
