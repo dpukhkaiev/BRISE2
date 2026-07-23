@@ -162,20 +162,22 @@ def reconstruct_study(input_data):
     return study
     
 # directly callable functions    
-def calculate_importances(allRes):
+def calculate_importances(payload):
+    allRes = payload["trials"]
     print("allRes in calculate_importances:", allRes)
-    if not allRes["trials"]:
+    if len(allRes) < 2:
         return {}
-    study = reconstruct_study(allRes)
+    #study = reconstruct_study(payload)
 
-    importances = (
-        optuna.importance.get_param_importances(study)
-    )
-    print("importances: ", importances)
+    #importances = (
+    #    optuna.importance.get_param_importances(study)
+    #)
+    #print("importances: ", importances)
+    print("skipping optuna")
     return {
-        "importances":
-            importances
+        "importances": {}
+            #importances
     }
 
-def calculate_pareto(allRes):
+def calculate_pareto(payload):
     return 0

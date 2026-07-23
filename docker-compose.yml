@@ -16,7 +16,7 @@ services:
     ports:
       - 49153:49153
       - 49154:49154
-      - 49155:49155
+      - 15674:15674
     restart: on-failure
 
   mongo-db:

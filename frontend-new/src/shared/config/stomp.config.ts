@@ -3,7 +3,7 @@ import type { RxStompConfig } from "@stomp/rx-stomp";
 export const stompConfig: RxStompConfig = {
 
   // connection 
-  brokerURL: 'ws://localhost:49155/ws',
+  brokerURL: 'ws://localhost:15674/ws',
   // login data
   connectHeaders: {
     login: 'guest',

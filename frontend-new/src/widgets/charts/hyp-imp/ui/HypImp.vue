@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, toRaw } from 'vue'
 import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderHypImp } from '../render'
 import { storeToRefs } from 'pinia'
@@ -12,28 +12,38 @@ const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 const hypimp = ref<HTMLElement | null>(null)
 
+let rendering = false
+
 async function render() {
     await nextTick()
 
     if (!hypimp.value) return
-    const result = await MainClientApi.calculatePlot(
+    /*const result = await MainClientApi.calculatePlot(
         "hyperparameter_importances",
         {
-            experiment_description: experiment_description,
-            trials: plotStore.allRes
+            "experiment_description": experiment_description.value,
+            "trials": allRes.value
         }
-    )
-
+    )*/
+    const result = 0
     renderHypImp(hypimp.value, result)
 }
 
 watch(
     allRes,
-    () => {
-        render()
+    async () => {
+        console.log("allRes changed (inside watch)")
+        if (rendering) return;
+
+        rendering = true;
+        try {
+            await render();
+        } finally {
+            rendering = false;
+        }
     },
     { deep: true }
-)
+);
 </script>
 
 

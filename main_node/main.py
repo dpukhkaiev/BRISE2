@@ -281,11 +281,11 @@ class MainThread(threading.Thread):
 
 class PlotService:
 
-    def calculate_importances(self, allRes):
-        return optuna_service.calculate_importances(allRes)
+    def calculate_importances(self, payload):
+        return optuna_service.calculate_importances(payload)
 
-    def calculate_pareto(self, allRes):
-        return optuna_service.calculate_pareto(allRes)
+    def calculate_pareto(self, payload):
+        return optuna_service.calculate_pareto(payload)
         
 def run(experiment_setup=None):
     main = MainThread(experiment_setup)

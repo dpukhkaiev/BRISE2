@@ -201,9 +201,8 @@ class ConsumerThread(Thread):
         
     # call main.PlotService    
     def plot_callback(self, ch, method, props, body):
-
         request = json.loads(body)
-
+        
         plot = request["plot"]
         handler = self.plot_handlers[request["plot"]]
         result = handler(request["payload"])

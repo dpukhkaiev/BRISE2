@@ -1,12 +1,10 @@
-FROM brisedev/main-dev:2.6.1
+FROM brisedev/main-dev:opt
 
 # Copying project
 COPY . /root
 RUN rm /root/Dockerfile
 
 WORKDIR /root
-
-RUN conda env update -n brise-260 -f environment.yml
 
 ARG BRISE_EVENT_SERVICE_HOST
 ENV BRISE_EVENT_SERVICE_HOST=${BRISE_EVENT_SERVICE_HOST}
