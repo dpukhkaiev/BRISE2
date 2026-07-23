@@ -185,7 +185,7 @@ const defaultCategoryId = computed({
                 </p>
                 <label>Level</label>
                 <div>
-                    <span> {{ activeNode.data?.level }} </span>
+                    <span> {{ activeNode.data?.constraints.level }} </span>
                 </div>
             </div>
 
@@ -256,7 +256,7 @@ const defaultCategoryId = computed({
 
                 <label>Level</label>
                 <div>
-                    <span> {{ activeNode.data.level }} </span>
+                    <span> {{ activeNode.data?.constraints.level }} </span>
                 </div>
             </div>
 

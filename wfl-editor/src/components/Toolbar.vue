@@ -31,7 +31,8 @@ function clearLocalStorage() {
     <button class="btn" v-for="node in nodeTypes" :key="node.type" :class="node.type" @click="addNode(node)">
       {{ node.label }}
     </button>
-    <button class="btn" @click="clearLocalStorage()">reset state</button>
+    <button class="btn" @click="clearLocalStorage()">
+      reset state <font-awesome-icon icon="fa-solid fa-eraser" /></button>
   </div>
 
 

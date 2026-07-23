@@ -71,7 +71,7 @@ export function useXmlToWfl() {
             .map(line => '  ' + line)
             .join('\n')
 
-            return `Searchspace {\n${indentedContent}\n}`
+            return `SearchSpace {\n${indentedContent}\n}`
     }
     return { convert }
 }

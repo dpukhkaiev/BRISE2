@@ -44,6 +44,25 @@ export const useGraphStore = defineStore('graph', () => {
        
     }
 
+
+    const canExport = computed(() => {
+        return nodes.value.every((node: Node) => helperFunction(node))
+    })
+
+    function helperFunction(node: Node): boolean {
+        const c = node.data?.constraints
+        const isFilled = (value: any) =>value !== null && value !== undefined
+
+        if(node.type === 'float' || node.type === 'integer') {
+            return isFilled(c?.lower) && isFilled(c?.upper) && isFilled(c?.default)
+        }
+
+        if (node.type === 'nominal' || node.type === 'ordinal') {
+        return (node.data?.childrenIds?.length ?? 0) > 0 && isFilled(node.data?.defaultPathId)
+    }
+    return true
+    }
+
     function saveCheckpoint() {
     const snapshot = JSON.stringify({
         nodes: nodes.value,
@@ -63,9 +82,9 @@ export const useGraphStore = defineStore('graph', () => {
                 nodes: nodes.value,
                 edges: edges.value
             })
+
             redoStack.value.push(currentSnapshot)
 
-            
             const previousStateStr = undoStack.value.pop()
             if (previousStateStr) {
                 const previousState = JSON.parse(previousStateStr)
@@ -98,6 +117,7 @@ export const useGraphStore = defineStore('graph', () => {
             updateLevels()
         }
     }
+
     function loadFromLocalStorage() {
         const saved = localStorage.getItem('graph-state')
         if(!saved) {return}
@@ -107,13 +127,13 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     function createUniqueName(baseName: string): string {
-        const cleanedName = baseName.trim().replace(/\s+/g, '_')
+        const cleanedName = baseName.trim().replace(/[^a-zA-Z0-9]/g, '').replace(/^[0-9]+/, '')
         let counter = 1
-        let uniqueName = `${cleanedName}_${counter}`
+        let uniqueName = `${cleanedName}${counter}`
         // loop until found a name that any of the nodes have
         while (nodes.value.some((n: Node) => n.data?.name === uniqueName)) {
             counter++
-            uniqueName = `${cleanedName}_${counter}`
+            uniqueName = `${cleanedName}${counter}`
 
         }
 
@@ -125,7 +145,7 @@ export const useGraphStore = defineStore('graph', () => {
         saveCheckpoint()
         const node = nodes.value.find((n:Node) => n.id === nodeId) 
         if(node) {
-            node.data.name = newName.trim().replace(/\s+/g, '_')
+            node.data.name = newName.trim().replace(/[^a-zA-Z0-9]/g, '').replace(/^[0-9]+/, '')
         }
     }
 
@@ -185,26 +205,26 @@ export const useGraphStore = defineStore('graph', () => {
 
     function isDefaultOf(categoryId: string): boolean {
     return nodes.value.some((n: Node) => n.data?.defaultPathId === categoryId)
-}
+    }
 
-// calculate level
-function calculateLevelForNode(nodeId: string) {
- 
-    const ancestors = getAllAncestors(nodeId)
-        const realParentsCount = ancestors.filter((n: Node) => n.type !== 'category').length
-      return realParentsCount
+    // calculate level
+    function calculateLevelForNode(nodeId: string) {
     
-}
+        const ancestors = getAllAncestors(nodeId)
+            const realParentsCount = ancestors.filter((n: Node) => n.type !== 'category').length
+        return realParentsCount
+        
+    }
 
-// update node
-function updateLevels() {
-    nodes.value.forEach((n: Node) => {
-        if(n.type === 'category') return
+    // update node
+    function updateLevels() {
+        nodes.value.forEach((n: Node) => {
+            if(n.type === 'category') return
 
-        n.data.level = calculateLevelForNode(n.id)
-    })
+            n.data.constraints.level = calculateLevelForNode(n.id)
+        })
 
-}
+    }
 
     function getDirectCategories(nodeId: string): Node[] {
         const node = nodes.value.find((n: Node) => n.id === nodeId)
@@ -255,7 +275,6 @@ function updateLevels() {
         const ancestors = getAllAncestors(directParent.id)
 
         return [directParent, ...ancestors]
-
       
     }
 
@@ -296,7 +315,8 @@ function updateLevels() {
             posY = (sourceNode.position.y + targetNode.position.y) / 2 
         }
 
-        const finalName = categoryName || createUniqueName('Category')
+        const cleanedInput = categoryName ? categoryName.trim().replace(/[^a-zA-Z0-9]/g, '').replace(/^[0-9]+/, '') : undefined
+        const finalName = cleanedInput || createUniqueName('Category')
 
         // flag for custom categories, if no targetNode exists then true
         const isManualCategory = !targetNode 
@@ -396,7 +416,7 @@ function updateLevels() {
         .map((n: Node) => n.data?.name)
     
     const node = nodes.value.find((n: Node) => n.id === nodeId)
-    return ['Context', 'Searchspace', ...ancestorNames, node?.data?.name]
+    return ['Context', 'SearchSpace', ...ancestorNames, node?.data?.name]
         .filter(Boolean)
         .join('.')
 }
@@ -517,6 +537,7 @@ function updateLevels() {
         undoAction,
         redoAction,
         undoStack,
-        redoStack
+        redoStack,
+        canExport
     }
 })

@@ -56,14 +56,10 @@ const isDefaultOf = computed(() => {
   content: 'Default';
   position: absolute;
   top: -12px;
-
   right: 6px;
   background: #eff6ff;
-
   color: #2563eb;
-
   border: 1px solid #bfdbfe;
-
   font-size: 8px;
   line-height: 2;
   padding: 0px 4px;

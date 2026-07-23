@@ -10,6 +10,9 @@ defineEmits(['toggle'])
 const graphStore = useGraphStore()
 const { convert } = useXmlToWfl()
 
+// flag for blocking copy/download buttons
+const canExport = computed(() => graphStore.canExport)
+
 const wflCode = computed(() => {
   const xml = graphStore.exportGraphToXML()
   return convert(xml)
@@ -42,8 +45,8 @@ function saveConfig() {
     <div class="panel-content">
       <h3>Generated WFL Code</h3>
       <div class="actions">
-        <button class="action-btn" @click="saveConfig()">Download .wfl</button>
-        <button class="action-btn" @click="copyCode">{{ copied ? 'Copied!' : 'Copy' }}</button>
+        <button :disabled="!canExport" class="action-btn" @click="saveConfig()">Download .wfl</button>
+        <button :disabled="!canExport" class="action-btn" @click="copyCode">{{ copied ? 'Copied!' : 'Copy' }}</button>
       </div>
       <pre class="wfl-code">{{ wflCode }}</pre>
     </div>

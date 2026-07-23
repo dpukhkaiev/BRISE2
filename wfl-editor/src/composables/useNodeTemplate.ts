@@ -1,4 +1,4 @@
-import { ref, computed, pushScopeId } from 'vue'
+
 
 export interface FloatNode {
     type: 'float'
@@ -47,53 +47,54 @@ function indent(text: string, spaces: number = 2): string {
     return text.split('\n').map(line => pad + line).join('\n')
 }
 
+// function to check if the node has any content to wrap in the braces
+function renderBlock(header: string, lines: string[]): string {
+    if(lines.length === 0) {
+        return header
+    }
+
+    return [
+        `${header} {`,
+        ...lines.map(line => indent(line)),
+        `}`
+    ].join('\n')
+
+}
+
 function floatTemplate(node: FloatNode): string {
-
-
-    const constraints = [`${node.name}: FloatHyperparameter {`]
-    if (node.lower !== undefined) constraints.push(indent(`[Lower = ${node.lower}]`))
-    if (node.upper !== undefined) constraints.push(indent(`[Upper = ${node.upper}]`))
-    if (node.default !== undefined) constraints.push(indent(`[Default = ${node.default}]`))
+    const lines: string[] = []
+    if (node.lower !== undefined) lines.push(indent(`[Lower = ${node.lower}]`))
+    if (node.upper !== undefined) lines.push(indent(`[Upper = ${node.upper}]`))
+    if (node.default !== undefined) lines.push(indent(`[Default = ${node.default}]`))
  
-    constraints.push(`}`)
-    return constraints.join('\n')
+    return renderBlock(`${node.name}: FloatHyperparameter`, lines)
 }
 
 export function integerTemplate(node: IntegerNode ): string {
-  
-    const constraints = [`${node.name}: IntegerHyperparameter {`]
-    if (node.lower !== undefined) constraints.push(indent(`[Lower = ${node.lower}]`))
-    if (node.upper !== undefined) constraints.push(indent(`[Upper = ${node.upper}]`))
-    if (node.default !== undefined) constraints.push(indent(`[Default = ${node.default}]`))
+    const lines: string[] = []
+    if (node.lower !== undefined) lines.push(indent(`[Lower = ${node.lower}]`))
+    if (node.upper !== undefined) lines.push(indent(`[Upper = ${node.upper}]`))
+    if (node.default !== undefined) lines.push(indent(`[Default = ${node.default}]`))
    
-    constraints.push(`}`)
-    return constraints.join('\n')
+    return renderBlock(`${node.name}: IntegerHyperparameter`, lines)
 }
 
 export function nominalTemplate(node: NominalNode, childrenWfl: string[]): string {
-    const lines = [`${node.name} : NominalHyperparameter {` ]     
-    lines.push(...childrenWfl.map(c => indent(c)))
+    const lines: string[] = [...childrenWfl]   
     if(node.default !== undefined) lines.push(indent(`[Default = "${node.default}"]`))
-    lines.push(`}`)
-    return lines.join('\n')
+    return renderBlock(`${node.name} : NominalHyperparameter`, lines)
 }
 
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
-    const lines = [ `${node.name} : OrdinalHyperparameter {`]
-    lines.push(...childrenWfl.map(c =>indent(c))) 
+    const lines: string[] = [...childrenWfl]
     if (node.default !== undefined) lines.push(indent(`[Default = "${node.default}"]`))
-    lines.push(`}`)
-    return lines.join('\n')
+     return renderBlock(`${node.name} : OrdinalHyperparameter`, lines)
 }
 
 
 function categoryTemplate(node: CategoryNode, childrenWfl: string[]): string {
   
-    return [
-        `${node.name} : Category {`,
-        ...childrenWfl.map(c => indent(c)),
-        `}`
-    ].join('\n')
+    return renderBlock(`${node.name} : Category`, childrenWfl)
 }
     // templates together
     export const templates: Record<string, (node: any, children: string[]) => string> = {

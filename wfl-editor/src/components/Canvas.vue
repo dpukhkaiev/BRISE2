@@ -12,9 +12,16 @@ import CategoryNode from '../nodes/CategoryNode.vue'
 import CodeOutput from './CodeOutput.vue'
 //store
 import { useGraphStore } from '../store.ts'
-
+import { useLayout } from '../composables/useLayout.ts'
 // desctructure nodes, edges here (no need of ref([]))
-const { nodes: flowNodes, addEdges, onConnect, edges: flowEdges, addNodes, onNodesChange } = useVueFlow()
+const { nodes: flowNodes, addEdges, onConnect, edges: flowEdges, addNodes, onNodesChange, fitView } = useVueFlow()
+
+const { layout } = useLayout()
+
+
+async function layoutGraph() {
+
+}
 
 const graphStore = useGraphStore()
 
@@ -36,11 +43,11 @@ const activeModalView = ref<'categories' | 'nodes' | null>(null)
 
 onMounted(() => {
     graphStore.loadFromLocalStorage()
-    window.addEventListener('keydown', handleKeydown)
+
 })
 
 onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeydown)
+
 })
 
 onConnect((connection) => {
@@ -100,32 +107,6 @@ function onChange(changes: any[]) {
             graphStore.updateLevels()
         })
     }
-}
-
-function handleKeydown(e: KeyboardEvent) {
-    const activeEl = document.activeElement
-    if (activeEl && (activeEl.tageName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.hasAttribute('contenteditable'))) {
-        return
-    }
-    const isCtrlPressed = e.crtlKey || e.metaKey
-    const pressedKey = e.key.toLowerCase()
-
-    // check for undo: ctrl + z
-    if (isCtrlPressed && pressedKey === 'z') {
-        if (e.shiftKey) {
-            e.preventDefault()
-            graphStore.redoAction()
-        }
-        else {
-            e.preventDefault()
-            graphStore.undoAction()
-        }
-    }
-    if (isCtrlPressed && pressedKey === 'y') {
-        e.preventDefault()
-        graphStore.redoAction()
-    }
-
 }
 
 function onNodeClick(event: any) {
