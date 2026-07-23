@@ -441,12 +441,12 @@ export const useGraphStore = defineStore('graph', () => {
                    let hasConstraints = false
                    
                 Object.entries(node.data.constraints).forEach(([key, val]) => {
-                    if (val !== null && val !== undefined && key !== 'level' && val !== '') {
+                    if (val !== null && val !== undefined && val !== '') {
                         if (isCategorical && key === 'default') return;
                         const cEl = xmlDoc.createElement(key)
                         cEl.textContent = val.toString()
                         constraintsEl.appendChild(cEl)
-                           hasConstraints = true
+                        hasConstraints = true
                     }
                 })
         
