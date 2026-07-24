@@ -1,4 +1,6 @@
 import optuna 
+from optuna.importance import PedAnovaImportanceEvaluator
+
 FloatDistribution = optuna.distributions.FloatDistribution
 IntDistribution = optuna.distributions.IntDistribution
 CategoricalDistribution = (
@@ -133,29 +135,18 @@ def reconstruct_study(input_data):
 
     for t in input_data["trials"]:
 
-        params = t["parameters"]
+        params = t["configurations"]
 
-        objective_values = extract_objective_values(
-            t["objectives"]
+        objective_values = [
+            float(value)
+            for value in t["results"].values()
+        ]
+
+        frozen_trial = create_trial(
+            params=params,
+            distributions=distributions,
+            values=objective_values
         )
-
-        # SINGLE OBJECTIVE
-        if len(objective_values) == 1:
-
-            frozen_trial = create_trial(
-                params=params,
-                distributions=distributions,
-                value=objective_values[0]
-            )
-
-        # MULTI OBJECTIVE
-        else:
-
-            frozen_trial = create_trial(
-                params=params,
-                distributions=distributions,
-                values=objective_values
-            )
 
         study.add_trial(frozen_trial)
 
@@ -164,19 +155,18 @@ def reconstruct_study(input_data):
 # directly callable functions    
 def calculate_importances(payload):
     allRes = payload["trials"]
-    print("allRes in calculate_importances:", allRes)
+    print("allRes: ", allRes)
     if len(allRes) < 2:
         return {}
-    #study = reconstruct_study(payload)
+    study = reconstruct_study(payload)
 
-    #importances = (
-    #    optuna.importance.get_param_importances(study)
-    #)
-    #print("importances: ", importances)
-    print("skipping optuna")
+    importances = (
+        optuna.importance.get_param_importances(study, evaluator=PedAnovaImportanceEvaluator())
+    )
+    print("importances: ", importances)
     return {
-        "importances": {}
-            #importances
+        "importances": 
+            importances
     }
 
 def calculate_pareto(payload):

@@ -49,7 +49,6 @@ export async function calculatePlot(
     payload: any
 ): Promise<any> {
 
-    console.log("Before RPC");
     const response = await firstValueFrom(
         rxStompRPC.rpc({
             destination: 'main_plot_queue',
@@ -62,7 +61,6 @@ export async function calculatePlot(
             }
         })
     )
-    console.log("After RPC");
 
     return JSON.parse(response.body)
 }

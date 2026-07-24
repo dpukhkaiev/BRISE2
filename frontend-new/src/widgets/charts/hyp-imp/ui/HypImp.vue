@@ -18,21 +18,20 @@ async function render() {
     await nextTick()
 
     if (!hypimp.value) return
-    /*const result = await MainClientApi.calculatePlot(
+    const result = await MainClientApi.calculatePlot(
         "hyperparameter_importances",
         {
             "experiment_description": experiment_description.value,
             "trials": allRes.value
         }
-    )*/
-    const result = 0
+    )
+
     renderHypImp(hypimp.value, result)
 }
 
 watch(
     allRes,
     async () => {
-        console.log("allRes changed (inside watch)")
         if (rendering) return;
 
         rendering = true;

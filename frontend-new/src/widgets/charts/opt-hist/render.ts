@@ -20,7 +20,12 @@ export function renderOptHist(
         type: 'scattergl' as const,
         mode: 'lines+markers' as const,
         line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline' as const, dash: 'dot' as const },
-        text: Array.from(allRes).map((i: any) => String(i['configurations'])),
+        //text: Array.from(allRes).map((i: any) => String(i['configurations'])),
+        text: allRes.map(i =>
+            Object.entries(i.configurations)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("<br>")
+        ),
         marker: {
             color: 'rgba(255,64,129,1)',
             size: 8,

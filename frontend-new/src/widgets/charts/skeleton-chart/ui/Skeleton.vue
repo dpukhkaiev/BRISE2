@@ -54,8 +54,8 @@ function initMainEvents() {
                 const min = new Date().getMinutes();
                 const sec = new Date().getSeconds();
                 const temp: any = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
+                    'configurations': configuration.configurations,
+                    'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': allRes.value.length + 1
                 };
@@ -73,8 +73,8 @@ function initMainEvents() {
                 const min = new Date().getMinutes();
                 const sec = new Date().getSeconds();
                 const temp: any = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
+                    'configurations': configuration.configurations,
+                    'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': allRes.value.length + 1
                 };
@@ -86,8 +86,6 @@ function initMainEvents() {
 
     // add new point
     store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
-        console.log("NEW callback");
-        console.log(message);
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
 
@@ -107,15 +105,15 @@ function initMainEvents() {
                 const currentPointIndex = allRes.value.length + 1;
 
                 allRes.value.push({
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
+                    'configurations': configuration.configurations,
+                    'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': currentPointIndex
                 }) // add new point (result)
 
                 const temp: PointExp = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
+                    'configurations': configuration.configurations,
+                    'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': currentPointIndex
                 }
