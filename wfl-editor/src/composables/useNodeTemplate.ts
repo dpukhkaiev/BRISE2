@@ -6,6 +6,7 @@ export interface FloatNode {
     lower: number
     upper: number
     default: number
+    level: number
 }
 
 export interface IntegerNode {
@@ -14,28 +15,30 @@ export interface IntegerNode {
     lower: number
     upper: number
     default: number
+    level: number
 }
 
 export interface CategoryNode {
     type: 'category'
     name: string
     children: Children[]
+   
 }
 
 export interface NominalNode {
- type: 'nominal'
-    name: string
-    default: string
-     children: Children[]
-
-}
-
-export interface OrdinalNode {
- type: 'ordinal'
+    type: 'nominal'
     name: string
     default: string
     children: Children[]
+    level:number
+}
 
+export interface OrdinalNode {
+    type: 'ordinal'
+    name: string
+    default: string
+    children: Children[]
+    level:number
 }
 
 export type Children = FloatNode | IntegerNode | NominalNode | OrdinalNode | CategoryNode
@@ -66,6 +69,7 @@ function floatTemplate(node: FloatNode): string {
     if (node.lower !== undefined) lines.push(indent(`[Lower = ${node.lower}]`))
     if (node.upper !== undefined) lines.push(indent(`[Upper = ${node.upper}]`))
     if (node.default !== undefined) lines.push(indent(`[Default = ${node.default}]`))
+    if (node.level !== undefined) lines.push(indent(`[Level = ${node.level}]`))   
  
     return renderBlock(`${node.name}: FloatHyperparameter`, lines)
 }
@@ -75,20 +79,26 @@ export function integerTemplate(node: IntegerNode ): string {
     if (node.lower !== undefined) lines.push(indent(`[Lower = ${node.lower}]`))
     if (node.upper !== undefined) lines.push(indent(`[Upper = ${node.upper}]`))
     if (node.default !== undefined) lines.push(indent(`[Default = ${node.default}]`))
-   
+    if (node.level !== undefined) lines.push(indent(`[Level = ${node.level}]`))   
+ 
     return renderBlock(`${node.name}: IntegerHyperparameter`, lines)
 }
 
 export function nominalTemplate(node: NominalNode, childrenWfl: string[]): string {
     const lines: string[] = [...childrenWfl]   
     if(node.default !== undefined) lines.push(indent(`[Default = "${node.default}"]`))
-    return renderBlock(`${node.name} : NominalHyperparameter`, lines)
+    if (node.level !== undefined) lines.push(indent(`[Level = ${node.level}]`))   
+ 
+        return renderBlock(`${node.name} : NominalHyperparameter`, lines)
 }
 
 export function ordinalTemplate(node: OrdinalNode, childrenWfl: string[]): string {
     const lines: string[] = [...childrenWfl]
+       if (node.level !== undefined) lines.push(indent(`[Level = ${node.level}]`))   
+ 
     if (node.default !== undefined) lines.push(indent(`[Default = "${node.default}"]`))
-     return renderBlock(`${node.name} : OrdinalHyperparameter`, lines)
+ 
+        return renderBlock(`${node.name} : OrdinalHyperparameter`, lines)
 }
 
 

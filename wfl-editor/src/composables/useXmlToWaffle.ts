@@ -15,28 +15,29 @@ function parseXmlElement(el: Element): Children {
     const lowerText = constraintsEl?.querySelector('lower')?.textContent
     const upperText = constraintsEl?.querySelector('upper')?.textContent
     const defText = constraintsEl?.querySelector('default')?.textContent
-
+    const levelText = constraintsEl?.querySelector('level')?.textContent 
     const childElements = Array.from(el.children).filter(c => c.tagName !== 'Constraints')
-   const children = childElements.map(parseXmlElement)
+    const children = childElements.map(parseXmlElement)
 
-       const tagName = el.tagName
+    const tagName = el.tagName
     const type = tagToType[tagName]
     const name = el.getAttribute('name') || ''
 
     const lower = lowerText ? Number(lowerText) : undefined
     const upper = upperText ? Number(upperText) : undefined
     const def = defText ? String(defText) : undefined
-     const defN = defText ? Number(defText) : undefined
+    const defN = defText ? Number(defText) : undefined
+    const level = defText ? Number(levelText) : undefined 
 
     switch (type) {
         case 'float':
-            return { type: 'float', name, lower, upper, default: defN } as FloatNode
+            return { type: 'float', name, lower, upper, default: defN , level} as FloatNode
         case 'integer':
-            return { type: 'integer', name, lower, upper, default: defN } as IntegerNode
+            return { type: 'integer', name, lower, upper, default: defN, level } as IntegerNode
         case 'nominal':
-            return { type: 'nominal', name, lower, upper, default:def , children } as NominalNode
+            return { type: 'nominal', name, lower, upper, default:def , level, children } as NominalNode
         case 'ordinal':
-            return { type: 'ordinal', name, lower, upper, default: def, children } as OrdinalNode
+            return { type: 'ordinal', name, lower, upper, default: def, level, children } as OrdinalNode
         case 'category':
             return { type: 'category', name, children } as CategoryNode
         default:

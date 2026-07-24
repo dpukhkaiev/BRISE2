@@ -17,12 +17,15 @@ const tab = ref('info')
 const chartMenu = ref(false)
 const visibleCharts = ref(['multidim', 'impres', 'heatmap'])
 const drawer = ref(false)
-
+const searchSpace = ref(false)
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
 })
 
+function openSearchSpace() {
+  searchSpace.value = true
+}
 </script>
 
 <template>
@@ -53,9 +56,24 @@ onMounted(() => {
         <v-tab value="tasks" prepend-icon="mdi-format-list-checks">
           Task List
         </v-tab>
-        <v-tab value="wfl-editor" prepend-icon="mdi-open-in-new" href="http://localhost:3001" target="_blank">
+        <v-tab value="wfl-editor" prepend-icon="mdi-open-in-new" @click="openSearchSpace()">
           Open Searchspace Editor
         </v-tab>
+        <v-dialog v-model="searchSpace" width="90%">
+
+          <v-card title="Searchspace editor">
+            <v-card-text>
+              <iframe src="http://localhost:3001" style="width: 100%; height: 70vh; border: none;"></iframe>
+            </v-card-text>
+
+            <v-card-actions>
+              <v-spacer></v-spacer>
+
+              <v-btn text="Close Dialog" @click="searchSpace = false"></v-btn>
+            </v-card-actions>
+          </v-card>
+
+        </v-dialog>
         <v-tab value="waffle" prepend-icon="mdi-open-in-new" href="http://localhost:8000" target="_blank">
           Open Waffle
         </v-tab>
@@ -85,8 +103,8 @@ onMounted(() => {
         <v-list-item prepend-icon="mdi-text-box" title="Info" value="info" @click="tab = 'info'; drawer = false" />
         <v-list-item prepend-icon="mdi-format-list-checks" title="Task List" value="tasks"
           @click="tab = 'tasks'; drawer = false" />
-        <v-list-item title="Create Searchspace" @click="tab = 'searchspace'; drawer = false" />
-        <v-list-item title="Waffle" @click="tab = 'waffle'; drawer = false" />
+        <v-list-item title="Create Searchspace" @click="openSearchSpace(); drawer = false" />
+        <v-list-item title=" Waffle" @click="tab = 'waffle'; drawer = false" />
         <v-list-item prepend-icon="mdi-chart-line" title="Charts" value="charts"
           @click="tab = 'charts'; drawer = false" />
       </v-list>
