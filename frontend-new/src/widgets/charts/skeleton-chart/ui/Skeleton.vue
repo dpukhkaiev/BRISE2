@@ -86,6 +86,8 @@ function initMainEvents() {
 
     // add new point
     store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+        console.log("NEW callback");
+        console.log(message);
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
 
