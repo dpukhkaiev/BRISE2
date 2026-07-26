@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export interface PointExp {
-    configurations: Array<any>;
-    results: Array<any>;
-    time: any;
-    'measured points': number;
+    configurations: Record<string, any>;
+    results: Record<string, any>;
+    time: string;
+    "measured points": number;
 }
 
 export const usePlotStore = defineStore('plots', () => {

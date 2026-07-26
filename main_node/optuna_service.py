@@ -155,7 +155,6 @@ def reconstruct_study(input_data):
 # directly callable functions    
 def calculate_importances(payload):
     allRes = payload["trials"]
-    print("allRes: ", allRes)
     if len(allRes) < 2:
         return {}
     study = reconstruct_study(payload)
@@ -163,7 +162,6 @@ def calculate_importances(payload):
     importances = (
         optuna.importance.get_param_importances(study, evaluator=PedAnovaImportanceEvaluator())
     )
-    print("importances: ", importances)
     return {
         "importances": 
             importances

@@ -8,15 +8,14 @@ export function renderOptHist(
     bestRes: PointExp[],
     experiment_description: ExperimentDescription
 ) {
-
     // X-axis data
     const xBest = Array.from(bestRes).map((i: any) => i['measured points']);
     // Results
-    const yBest = Array.from(bestRes).map((i: any) => i['results'][0]);
+    const yBest = Array.from(bestRes).map((i: any) => Object.values(i.results as Record<string, number>)[0]);
 
     const allResultSet = { // Data for all results
         x: Array.from(allRes).map((i: any) => i['measured points']),
-        y: Array.from(allRes).map((i: any) => i['results'][0]),
+        y: Array.from(allRes).map((i: any) => Object.values(i.results as Record<string, number>)[0]),
         type: 'scattergl' as const,
         mode: 'lines+markers' as const,
         line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline' as const, dash: 'dot' as const },

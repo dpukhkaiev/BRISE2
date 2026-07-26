@@ -21,7 +21,7 @@ async function render() {
 }
 
 watch(
-    allRes,
+    bestRes,
     () => {
         render()
     },

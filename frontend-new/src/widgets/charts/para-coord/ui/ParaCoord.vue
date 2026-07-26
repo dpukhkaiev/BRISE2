@@ -8,16 +8,16 @@ import { useMainEventStore } from '../../../../entities/main'
 const store = useMainEventStore()
 const plotStore = usePlotStore()
 const { experiment_description, searchspace } = storeToRefs(store)
-const { allRes, bestRes } = storeToRefs(plotStore)
-const optHist = ref<HTMLElement | null>(null)
+const { allRes } = storeToRefs(plotStore)
+const paraCoord = ref<HTMLElement | null>(null)
 
 async function render() {
     await nextTick()
 
-    if (!optHist.value) return
+    if (!paraCoord.value) return
     if (!experiment_description.value) 
         return
-    renderParaCoord(optHist.value, allRes.value)
+    renderParaCoord(paraCoord.value, allRes.value, searchspace.value)
 }
 
 watch(

@@ -10,6 +10,7 @@ import { TaskList } from './widgets/task-list'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
 import { Heatmap } from './widgets/charts/heatmap'
+
 import { OptHist } from './widgets/charts/opt-hist'
 import { HypImp } from './widgets/charts/hyp-imp'
 import { ParaCoord } from './widgets/charts/para-coord'

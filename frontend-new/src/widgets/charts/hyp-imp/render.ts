@@ -1,10 +1,12 @@
 import Plotly from 'plotly.js-dist-min'
 
-export function renderHypImp(element: HTMLElement, result: Record<string, number>) {
-    console.log("rendering hypImp. Result: ", result)
-    const labels = Object.keys(result)
-    const values = Object.values(result) 
+export function renderHypImp(element: HTMLElement, result: { "importances": Record<string, number> }) {
+    
+    if (Object.keys(result.importances).length === 0) return;
 
+    const importances = result["importances"]
+    const labels = Object.keys(importances)
+    const values = Object.values(importances) 
     const data = [
         {
             x: labels,
