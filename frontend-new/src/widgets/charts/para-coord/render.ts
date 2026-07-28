@@ -4,76 +4,77 @@ import { ref } from 'vue'
 
 const currentDiagram = ref()
 
-function createParamsRange(searchspace: any): Map<string, any> {
-    const parameterNames = Object.keys(
-        searchspace.boundaries[0].Boundaries
-    );
-
-    const rangeValues = Object.values(
-        searchspace.boundaries[0].Boundaries
-    );
-
-    return new Map(
-        parameterNames.map((name, index) => [
-            name,
-            rangeValues[index]
-        ])
-    );
-}
-
 function factoryDimension(
     parameter: string,
-    valuesRange: Array<any>,
     allRes: PointExp[]
 ) {
-    let dimValues = allRes.map(point => point.configurations[parameter]);
+    const values = allRes.map(
+        point => point.configurations[parameter]
+    );
 
-    let dim: any = {
-        values: dimValues,
+    const dimension: any = {
         label: parameter.replace(/_/g, " ")
     };
 
-    if (
-        valuesRange &&
-        (typeof valuesRange[0] === "string" ||
-         typeof valuesRange[0] === "boolean")
-    ) {
-        dim.tickvals = Array.from(Array(valuesRange.length).keys());
-        dim.ticktext = valuesRange;
+    const firstValue = values.find(v => v !== undefined);
 
-        dim.values = dimValues.map(
-            value => dim.tickvals[dim.ticktext.indexOf(value)]
+    if (typeof firstValue === "number") {
+        dimension.values = values;
+        dimension.range = [
+            Math.min(...values),
+            Math.max(...values)
+        ];
+    } 
+    else {
+        const categories = Array.from(new Set(values));
+
+        dimension.values = values.map(
+            value => categories.indexOf(value)
+        );
+
+        dimension.tickvals = categories.map(
+            (_, i) => i
+        );
+
+        dimension.ticktext = categories.map(
+            String
         );
     }
 
-    return dim;
+    return dimension;
 }
 
-function dimensionsData(
-    allRes: PointExp[],
-    resultParamsRange: Map<string, any>
-) {
-    const data: any[] = [];
+function dimensionsData(allRes: PointExp[]) {
+    const parameters = Object.keys(allRes[0].configurations);
 
-    resultParamsRange.forEach(
-        (range: Array<any>, param: string) => {
-            console.log("parameter:", param);
-            if (param !== "root") {
-                data.push(factoryDimension(param, range, allRes));
-            }
-        }
-    )
+    const dimensions = parameters.map(
+        parameter => factoryDimension(parameter, allRes)
+    );
 
-    return data;
+    const objectiveName = Object.keys(allRes[0].results)[0];
+
+    const objectiveValues = allRes.map(
+        point => Number(point.results[objectiveName])
+    );
+
+    dimensions.push({
+        label: objectiveName,
+        values: objectiveValues
+    });
+
+    return dimensions;
 }
 
 export function renderParaCoord(
     element: HTMLElement,
     allRes: PointExp[],
-    searchspace: any
 ) {
-    const resultParamsRange = createParamsRange(searchspace);
-
+    if (allRes.length === 0) {
+        Plotly.purge(element)
+        return
+    }
+    //const resultParamsRange = createParamsRange(searchspace);
+    console.log("dimensionsData: ", dimensionsData(allRes))
     const trace = [{
         type: 'parcoords' as const,
         line: {
@@ -81,7 +82,7 @@ export function renderParaCoord(
             colorscale: 'Jet',
             color: allRes.map(point => Object.values(point.results)[0])
         },
-        dimensions: dimensionsData(allRes, resultParamsRange)
+        dimensions: dimensionsData(allRes)
     }];
 
     const layout = {
@@ -97,10 +98,6 @@ export function renderParaCoord(
             x: 0.05,
         }
     };
-
-    console.log("allRes:", allRes);
-    console.log("dimensions:", dimensionsData(allRes, resultParamsRange));
-    console.log("colors:", allRes.map(point => Object.values(point.results)[0]));
 
     Plotly.react(element, trace, layout);
 }

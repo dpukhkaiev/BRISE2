@@ -14,6 +14,7 @@ import { Heatmap } from './widgets/charts/heatmap'
 import { OptHist } from './widgets/charts/opt-hist'
 import { HypImp } from './widgets/charts/hyp-imp'
 import { ParaCoord } from './widgets/charts/para-coord'
+import { ParetoFront } from './widgets/charts/pareto-front'
 
 
 const store = useMainEventStore()
@@ -284,7 +285,7 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <!--<ParetoFront/>-->
+                <ParetoFront/>
               </v-col>
 
               <v-col

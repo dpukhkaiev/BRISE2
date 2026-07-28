@@ -7,7 +7,7 @@ import { useMainEventStore } from '../../../../entities/main'
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
-const { experiment_description, searchspace } = storeToRefs(store)
+const { experiment_description } = storeToRefs(store)
 const { allRes } = storeToRefs(plotStore)
 const paraCoord = ref<HTMLElement | null>(null)
 
@@ -17,7 +17,7 @@ async function render() {
     if (!paraCoord.value) return
     if (!experiment_description.value) 
         return
-    renderParaCoord(paraCoord.value, allRes.value, searchspace.value)
+    renderParaCoord(paraCoord.value, allRes.value)
 }
 
 watch(

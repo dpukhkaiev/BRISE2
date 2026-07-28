@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { usePlotStore } from '../../../../entities/main/model/plot.store'
-import { renderHypImp } from '../render'
+import { renderParetoFront } from '../render'
 import { storeToRefs } from 'pinia'
 import { MainClientApi } from '../../../../entities/main/api/main.client.store'
 import { useMainEventStore } from '../../../../entities/main'
@@ -10,23 +10,23 @@ const plotStore = usePlotStore()
 const store = useMainEventStore()
 const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
-const hypimp = ref<HTMLElement | null>(null)
+const paretofront = ref<HTMLElement | null>(null)
 
 let rendering = false
 
 async function render() {
     await nextTick()
 
-    if (!hypimp.value) return
+    if (!paretofront.value) return
     const result = await MainClientApi.calculatePlot(
-        "hyperparameter_importances",
+        "pareto_front",
         {
             "experiment_description": experiment_description.value,
             "trials": allRes.value
         }
     )
 
-    renderHypImp(hypimp.value, result)
+    renderParetoFront(paretofront.value, result)
 }
 
 watch(
@@ -49,6 +49,6 @@ watch(
 
 <template>
   <div
-    ref="hypimp"
+    ref="paretofront"
   ></div>
 </template>

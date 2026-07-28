@@ -168,4 +168,40 @@ def calculate_importances(payload):
     }
 
 def calculate_pareto(payload):
-    return 0
+    study = reconstruct_study(payload)
+    
+    objective_names = []
+  
+    for trial in payload["trials"]:
+        if "results" in trial:
+            objective_names = list(trial["results"].keys())
+            break
+        
+    all_points = [
+        {
+            "x": trial.values[0],
+            "y": trial.values[1],
+            "params": trial.params,
+            "number": trial.number,
+        }
+        for trial in study.trials
+        if trial.state == optuna.trial.TrialState.COMPLETE
+    ]
+
+    pareto_points = [
+        {
+            "x": trial.values[0],
+            "y": trial.values[1],
+            "params": trial.params,
+            "number": trial.number,
+        }
+        for trial in study.best_trials
+    ]
+    print("all points: ", all_points)
+    print("pareto points: ", pareto_points)
+    return {
+        "objective_names": objective_names,
+        "all_points": all_points, 
+        "pareto_points": pareto_points
+    }
+        
