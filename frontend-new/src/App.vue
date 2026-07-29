@@ -15,7 +15,9 @@ import { OptHist } from './widgets/charts/opt-hist'
 import { HypImp } from './widgets/charts/hyp-imp'
 import { ParaCoord } from './widgets/charts/para-coord'
 import { ParetoFront } from './widgets/charts/pareto-front'
-
+import { Slice } from './widgets/charts/slice'
+import { Rank } from './widgets/charts/rank'
+import { Contour } from './widgets/charts/contour'
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
@@ -245,7 +247,7 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <!--<Rank/>-->
+                <Rank/>
               </v-col>
 
               <v-col
@@ -265,7 +267,7 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <!--<Slice/>-->
+                <Slice/>
               </v-col>
 
               <v-col
@@ -275,7 +277,7 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <!--<Contour/>-->
+                <Contour/>
               </v-col>
 
               <v-col

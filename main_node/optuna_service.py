@@ -205,3 +205,19 @@ def calculate_pareto(payload):
         "pareto_points": pareto_points
     }
         
+def calculate_contour(payload):
+    study = reconstruct_study(payload)
+    fig = optuna.visualization.plot_contour(study)
+    print(fig.data)
+    objective_name = next(iter(
+        payload["experiment_description"]["Context"]["TaskConfiguration"]["Objectives"]
+    ))
+    contour = {
+        "x": list(fig.data[0].x),
+        "y": list(fig.data[0].y),
+        "z": fig.data[0].z,
+        "x_name": fig.layout.xaxis.title.text,
+        "y_name": fig.layout.yaxis.title.text,
+        "objective_name": objective_name
+    }
+    return {"contour": contour}

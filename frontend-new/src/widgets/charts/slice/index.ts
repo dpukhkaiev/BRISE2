@@ -1,0 +1,1 @@
+export { default as Slice } from './ui/Slice.vue'

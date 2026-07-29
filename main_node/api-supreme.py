@@ -44,6 +44,7 @@ class ConsumerThread(Thread):
         self.plot_handlers = {
             "hyperparameter_importances": self.plot_service.calculate_importances,
             "pareto_front": self.plot_service.calculate_pareto,
+            "contour": self.plot_service.calculate_contour
         }
        
 
