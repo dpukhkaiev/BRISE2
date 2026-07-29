@@ -8,6 +8,7 @@ import { TaskList } from './widgets/task-list'
 import { MultiDim } from './widgets/charts/multi-dim'
 import { ImpRes } from './widgets/charts/imp-res'
 import { Heatmap } from './widgets/charts/heatmap'
+import { HeatmapReg } from './widgets/charts/heatmap-reg'
 
 
 
@@ -15,7 +16,7 @@ const store = useMainEventStore()
 
 const tab = ref('info')
 const chartMenu = ref(false)
-const visibleCharts = ref(['multidim', 'impres', 'heatmap'])
+const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'heatmap-reg'])
 const drawer = ref(false)
 const searchSpace = ref(false)
 onMounted(() => {
@@ -90,7 +91,8 @@ function openSearchSpace() {
           <v-list-item v-for="chart in [
             { id: 'multidim', label: 'Multi-dim' },
             { id: 'impres', label: 'Imp-res' },
-            { id: 'heatmap', label: 'Heatmap' }
+            { id: 'heatmap', label: 'Heatmap' },
+            { id: 'heatmap-reg', label: 'Regression Heatmap' }
           ]" :key="chart.id">
             <v-checkbox v-model="visibleCharts" :value="chart.id" :label="chart.label" density="compact" hide-details
               color="green-darken-2" />
@@ -137,6 +139,9 @@ function openSearchSpace() {
               </v-col>
               <v-col v-show="visibleCharts.includes('multidim')" cols="12" md="10" class="pr-2">
                 <MultiDim />
+              </v-col>
+              <v-col v-show="visibleCharts.includes('heatmap-reg')" cols="12" md="10" class="pr-2">
+                <HeatmapReg />
               </v-col>
             </v-row>
           </v-tabs-window-item>

@@ -126,7 +126,7 @@ async function render() {
             }
         },
         yaxis: {
-            title: { text: experiment_description.value?.['TaskConfiguration']?.['Objectives'][0] } as const,
+            title: { text: Object.values(experiment_description.value?.Context?.TaskConfiguration?.Objectives ?? {})[0]?.Name ?? '' } as const,
             showgrid: false,
             zeroline: false,
             showline: true,
@@ -221,10 +221,6 @@ function initMainEvents() {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
 
-            // new x/y values for both traces
-            const newAllX: number[] = [], newAllY: number[] = [], newAllText: string[] = []
-            const newBestX: number[] = [], newBestY: number[] = []
-
             // check the best availbale point
             const descr = experiment_description.value
 
@@ -267,50 +263,6 @@ function initMainEvents() {
 
                 bestRes.value.push(temp) // add the best availbale point(result) 
 
-
-                // bestRes.value.length > 2 && render()
-
-                /*newAllX.push(allRes.value.length)
-                newAllY.push(configuration.results[0])
-                newAllText.push(String(Object.values(configuration.configurations)))
-
-                newBestX.push(temp['measured points'])
-                newBestY.push(temp.results[0])
-            })
-
-
-            // extendTraces allow to add data to traces in an existing graphDiv
-            const Plotly = store.plotlyInstance
-
-            if (!Plotly) return
-
-            if (!isChartInitialized.value) {
-                isVisible.value = true
-                nextTick(() => {
-                    render().then(() => { isChartInitialized.value = true })
-                })
-                return
-            }
-
-            Plotly.extendTraces(impr.value!, {
-                x: [newAllX, newBestX],
-                y: [newAllY, newBestY],
-                text: [newAllText]
-            }, [0])
-
-            Plotly.extendTraces(impr.value!, {
-                x: [newBestX],
-                y: [newBestY]
-            }, [1])
-
-            // startEndPoint update
-            const xBest = bestRes.value.map(i => i['measured points'])
-            const yBest = bestRes.value.map(i => i['results'][0])
-            Plotly.restyle(impr.value!, {
-                x: [[xBest[0], xBest[xBest.length - 1]]],
-                y: [[yBest[0], yBest[yBest.length - 1]]]
-            }, [2])
-        }*/
             })
             isVisible.value = true
             nextTick(() => {
@@ -328,8 +280,5 @@ function initMainEvents() {
 </script>
 
 <template>
-  <div
-    v-show="isVisible"
-    ref="impr"
-  />
+    <div v-show="isVisible" ref="impr" />
 </template>

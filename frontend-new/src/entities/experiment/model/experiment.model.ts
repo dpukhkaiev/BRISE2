@@ -2,29 +2,50 @@ export interface ExperimentDescription {
     DomainDescription?: DomainDescription
     Context: {
         TaskConfiguration: TaskConfiguration
-        SearchSpace: any
+        SearchSpace: unknown
     }
     TaskConfiguration?: TaskConfiguration
     Predictor?: Predictor
     SelectionAlgorithm?: SelectionAlgorithm
-    ConfigurationSelection?: any
-    RepetitionManager?: any
-    StopCondition?: any
+    ConfigurationSelection?: unknown
+    RepetitionManager?: unknown
+    StopCondition?: unknown
 }
 
 interface DomainDescription {
     DataFile: String
 }
+
+export interface SurrogateModel {
+  ConfigurationTransformers?: Record<string, any>
+  Instance?: {
+    LinearRegression?: {
+      MultiObjective?: boolean
+      Type?: string
+      Class?: string
+    }
+    [key: string]: any
+  }
+}
+
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number
     MaxTimeToRunTask: number
-    RepeaterDecisionFunction: string
-    Objectives: Array<string>
+Objectives: Record<string, Objective>
     ObjectivesDataTypes: Array<string>
     ObjectivesPriorities: Array<number>
     TaskName: string
-    Scenario: { ws_file: string }
+    Scenario: unknown
     TimeUnit: string
+}
+
+
+interface Objective {
+    Name: string
+    DataType: string
+    Minimization: boolean
+    MinExpectedValue?: number
+    MaxExpectedValue?: number
 }
 interface Predictor {
     models: Array<any>

@@ -66,13 +66,12 @@ function resetRes() {
 }
 
 const isModelType = computed(() => {
-    const model = experiment_description.value?.ConfigurationSelection?.Predictor?.Model
+    if (!experiment_description.value) return 'unknown'
+    const exp = experiment_description.value as Record<string, any>
+    const model = exp?.ConfigurationSelection?.Predictor?.Model
 
-    if (model?.Surrogate?.Instance?.LinearRegression) {
-        return 'regression'
-    }
-
-    return 'unknown'
+    const isReg = !!model?.Surrogate?.Instance?.LinearRegression
+    return isReg ? 'regression' : 'unknown'
 })
 
 async function zParser(data: Map<String, any>): Promise<Array<Array<any>>> {
@@ -221,7 +220,7 @@ function initMainEvents() {
         }
     });
 
-    // Default configuration
+    // Default message
     store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
@@ -248,31 +247,12 @@ onMounted(() => {
 
 </script>
 <template>
-  <div v-if="isModelType === 'regression'">
-    <div ref="map" />
-  </div>
-  <select
-    v-model="theme.color"
-    @change="render"
-  >
-    <option
-      v-for="col in colors"
-      :key="col"
-      :value="col"
-    >
-      {{ col }}
-    </option>
-  </select>
-  <select
-    v-model="theme.type"
-    @change="render"
-  >
-    <option
-      v-for="type in types"
-      :key="type"
-      :value="type"
-    >
-      {{ type }}
-    </option>
-  </select>
+    <div v-if="isModelType === 'regression'">
+        <div ref="map" />
+    </div>
+    <select v-model="theme.color" @change="render">
+        <option v-for="col in colors" :key="col" :value="col">
+
+        </option>
+    </select>
 </template>
