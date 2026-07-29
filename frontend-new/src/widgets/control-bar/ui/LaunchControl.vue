@@ -1,84 +1,32 @@
 <script setup lang="ts">
 import '@mdi/font/css/materialdesignicons.css'
-import { onMounted, ref, computed } from 'vue'
-import { storeToRefs } from 'pinia'
-// services
-import { useMainEventStore } from '../../../entities/main'
-import { MainClientApi } from '../../../entities/main'
-//data
-import { MainEvent } from '../../../entities/main'
+import { onMounted, computed } from 'vue'
 
 
 // download feature
 import { DownloadPopup } from '../../../features/download-popup'
-const isRunning = ref(false)
-// Flag for finish experiment
-const isFinish = ref(false)
 
-// create a store 
-const store = useMainEventStore()
-// destructure reactive value from main.event.store
-const { experiment_description, searchspace, globalConfig, isConnected } = storeToRefs(store)
+import { useLaunchControl } from '../model/use-control-bar'
+import { resolveScenarioLabel } from '../../../entities/experiment/lib/resolve-exp-label'
 
-const showDownload = ref(false)
+const {
+  isRunning,
+  isFinish,
+  showDownload,
+  selectedFile,
+  experiment_description,
+  isConnected,
+  openDownloadOption,
 
-function openDownloadOption(): void {
-  showDownload.value = true
-}
-
-function startMainControl(): any {
-  if (isRunning.value === false) {
-    //  stopMainControl();
-    MainClientApi.startMain(JSON.parse(JSON.stringify(experiment_description.value)));
-    isRunning.value = true
-    isFinish.value = false
+  startMainControl,
+  stopMainControl,
+  uploadFile } = useLaunchControl()
 
 
-  }
-  console.log('sending:', experiment_description.value)
-}
 
-function stopMainControl(): any {
-  if (isRunning.value === true) {
-    MainClientApi.stopMain();
-    isRunning.value = false;
-  }
-
-}
-
-function initMainEvents(): void {
-  store.onEvent(MainEvent.FINAL)?.subscribe(() => {
-    isRunning.value = false;
-    isFinish.value = true;
-  })
-
-}
-const selectedFile = ref<any>(null)
-
-const uploadFile = async () => {
-
-  console.log('selectedFile:', selectedFile.value)
-  if (!selectedFile.value) return
-
-  const file = selectedFile.value!
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    const clean = (reader.result as string).replace(/:\s*Infinity/g, ': 1e308')
-    const parsed = JSON.parse(clean)
-    store.experiment_description = parsed
-    store.searchspace = store.searchspace = parsed["Context"]["SearchSpace"]
-
-  }
-
-  reader.readAsText(file)
-
-}
-
-onMounted(() => {
-  initMainEvents()
-})
-
+const scenarioLabel = computed(() =>
+  resolveScenarioLabel(experiment_description.value?.Context?.TaskConfiguration?.Scenario)
+)
 </script>
 <template>
   <div class="button-row">
@@ -92,7 +40,7 @@ onMounted(() => {
       <v-card-item>
         <div class="info-row">
           <span class="label">Scenario</span>
-          <span class="value mono">{{ experiment_description?.Context?.TaskConfiguration?.Scenario }}</span>
+          <span class="value mono">{{ scenarioLabel }}</span>
         </div>
       </v-card-item>
       <v-card-actions>

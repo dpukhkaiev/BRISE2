@@ -3,206 +3,174 @@ import { onMounted, ref, watch, shallowRef, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 // Constant
 import { MainEvent } from '../../../entities/main'
-import type { Solution } from '../../../entities/task/model/task-data.model';
 
+import { resolveExperimentLabel } from '../../../entities/experiment/lib/resolve-exp-label'
 //service
 import { useMainEventStore } from '../../../entities/main'
 
 import { Subscription } from 'rxjs'
 
-interface NewsPoint {
-    'time': any;
-    'message': string;
-}
-
+import { useInfoBoard } from '../model/use-info-board'
+import { normalizeConfigKeys } from '../../../shared/lib'
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
 const { experiment_description, searchspace } = storeToRefs(store)
 
-// information log
-const news = ref<NewsPoint[]>([])
 
-// new: shallowRef to imporve performance, 1 shallowRef, 1 render
-const solutionState = shallowRef<{
-    solution: Solution | undefined,
-    configWithNones: string,
-    result: string
-}>({ solution: undefined, configWithNones: '', result: '' })
-
+const {
+  news,
+  snackbar,
+  snackbarMsg,
+  solutionState,
+  pushNews,
+  triggerSnackbar,
+  refresh,
+  formatPercent
+} = useInfoBoard()
 
 let default_configuration: any
 let sol: any
 let dc: any
 
 const duration = 3000
-const snackbar = ref(false)
-const snackbarMsg = ref('')
 
 const subscriptions = new Subscription()
 
 let stopWatch: () => void = () => { }
 
-function refresh(): void {
-    solutionState.value = {
-        solution: undefined,
-        configWithNones: '',
-        result: ''
-    }
-    news.value = []
-}
-
-// threshold for event news messages
-function pushNews(message: string): void {
-    const updated = [...news.value, { time: Date.now(), message }]
-    news.value = updated.length > 30 ? updated.slice(-30) : updated
-}
-
 function initMainEvents(): void {
-    // Main events
-    subscriptions.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            let obj = JSON.parse(message.body)
-            default_configuration = obj[0]
-            let temp = { 'time': Date.now(), 'message': 'Default configuration results received' }
-            snackbarMsg.value = temp['message']
-            snackbar.value = true
-            //SpushNews(temp.message)
-            // snackbar.open(temp['message'], '×', {
-            //   duration: 3000
-            // });
-        }
+  // Main events
+  subscriptions.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let obj = JSON.parse(message.body)
+      default_configuration = obj[0]
+      let temp = { 'time': Date.now(), 'message': 'Default configuration results received' }
+      triggerSnackbar(temp.message)
+      //SpushNews(temp.message)
+      // snackbar.open(temp['message'], '×', {
+      //   duration: 3000
+      // });
+    }
 
-    })
-    );
+  })
+  );
 
-    subscriptions.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            let obj = JSON.parse(message.body)
-            const s = obj[0]
-            let config = JSON.stringify(s?.configurations, null, '\t')
-            config = config.replace(",,", ",None,")
+  subscriptions.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let obj = JSON.parse(message.body)
+      const s = obj[0]
+      const cleanConfigObj = normalizeConfigKeys(s?.configurations ?? {})
+      const config = JSON.stringify(cleanConfigObj, null, 2)
 
-            if (!default_configuration) {
-                console.warn('default_configuration not set yet')
-                dc = []
-            } else {
-                dc = Object.values(default_configuration.results)
-                sol = Object.values(s?.results ?? {})
-            }
-            config = config.replace(",,", ",None,")
-            solutionState.value = {
-                solution: s,
-                configWithNones: config,
-                result: JSON.stringify(s?.results)
-            }
-            // NewsPoint type everywhere?
-            let temp = {
-                'time': Date.now(),
-                'message': '★★★ The optimum result is found. The best point is reached ★★★'
-            }
-            snackbarMsg.value = temp['message']
-            snackbar.value = true
-            pushNews(temp.message)
+      if (!default_configuration) {
+        console.warn('default_configuration not set yet')
+        dc = []
+      } else {
+        dc = Object.values(default_configuration.results)
+        sol = Object.values(s?.results ?? {})
+      }
 
-        }
-    })
-    );
+      solutionState.value = {
+        solution: s,
+        configWithNones: config,
+        result: JSON.stringify(s?.results)
+      }
+      // NewsPoint type everywhere?
+      let temp = {
+        'time': Date.now(),
+        'message': '★★★ The optimum result is found. The best point is reached ★★★'
+      }
+      triggerSnackbar(temp.message)
+      pushNews(temp.message)
 
-    // For information messages
-    subscriptions.add(store.onEvent(MainEvent.LOG)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'info' || message.headers['message_subtype'] === 'error') {
-            let obj = JSON.parse(message.body)
-            let temp = { 'time': Date.now(), 'message': obj }
-            snackbarMsg.value = temp['message']
-            snackbar.value = true
-            pushNews(temp.message)
-        }
-    })
-    );
+    }
+  })
+  );
 
-    // oldValue, newValue?
-    stopWatch = watch(experiment_description, () => {
-        console.log('experiment_description:', JSON.stringify(experiment_description.value, null, 2))
-        refresh()
-        /* if (searchspace.value && searchspace.value['size']) {
-             searchspace.value['size'] = parseFloat(searchspace.value['size'])
-         }*/
-        let temp = {
+  // For information messages
+  subscriptions.add(store.onEvent(MainEvent.LOG)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'info' || message.headers['message_subtype'] === 'error') {
+      let obj = JSON.parse(message.body)
+      let temp = { 'time': Date.now(), 'message': obj }
+      triggerSnackbar(temp.message)
+      pushNews(temp.message)
+    }
+  })
+  );
+
+  // oldValue, newValue?
+  stopWatch = watch(experiment_description, () => {
+    console.log('experiment_description:', JSON.stringify(experiment_description.value, null, 2))
+    refresh()
+    /* if (searchspace.value && searchspace.value['size']) {
+         searchspace.value['size'] = parseFloat(searchspace.value['size'])
+     }*/
+    let temp = {
+      'time': Date.now(),
+      'message': 'The main configurations of the experiment are obtained. Let\'s go! '
+    }
+    triggerSnackbar(temp.message)
+    pushNews(temp.message)
+  },
+    // reactive object from store, need deep to tracl properties of the object
+    { deep: true })
+
+  subscriptions.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let configs = JSON.parse(message.body)
+      configs.forEach((configuration: any) => {
+        if (configuration?.configurations) {
+          const cleanConfig = normalizeConfigKeys(configuration.configurations)
+          let temp = {
             'time': Date.now(),
-            'message': 'The main configurations of the experiment are obtained. Let\'s go! '
+            'message': 'New results for ' + JSON.stringify(cleanConfig, null, 2)
+          }
+          triggerSnackbar(temp.message)
+          pushNews(temp.message)
+        } else {
+          console.log("Empty configuration")
         }
-        snackbarMsg.value = temp['message']
-        pushNews(temp.message)
-    },
-        // reactive object from store, need deep to tracl properties of the object
-        { deep: true })
+      })
+    }
+  })
+  );
 
-    subscriptions.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            let configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
-                if (configuration) {
-                    let temp = {
-                        'time': Date.now(),
-                        'message': 'New results for ' + JSON.stringify(configuration["configurations"], null, '\t')
-                    }
-                    snackbarMsg.value = temp['message']
-                    snackbar.value = true
-                    pushNews(temp.message)
-                } else {
-                    console.log("Empty configuration")
-                }
-            })
-        }
-    })
-    );
-
-    subscriptions.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe((message: any) => {
-        if (message.headers['message_subtype'] === 'configuration') {
-            let obj = JSON.parse(message.body)
-            let temp = {
-                'time': Date.now(),
-                'message': 'Prediction obtained. ' + obj.length + ' predictions'
-            }
-            snackbarMsg.value = temp['message']
-            snackbar.value = true
-            pushNews(temp.message)
-        }
-    })
-    );
+  subscriptions.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let obj = JSON.parse(message.body)
+      let temp = {
+        'time': Date.now(),
+        'message': 'Prediction obtained. ' + obj.length + ' predictions'
+      }
+      triggerSnackbar(temp.message)
+      pushNews(temp.message)
+    }
+  })
+  );
 }
 
 onMounted(() => {
-    initMainEvents()
+  initMainEvents()
 })
 
 onUnmounted(() => {
-    subscriptions.unsubscribe()
-    stopWatch()
+  subscriptions.unsubscribe()
+  stopWatch()
 })
 
-// decimalPipe alternative
-function formatPercent(value: number): string {
-    return value.toFixed(2)
-}
+
 
 </script>
 
 <template>
-  <v-expansion-panels
-    elevation="2"
-    multiple
-  >
+  <v-expansion-panels elevation="2" multiple>
     <!-- Panel 1 -->
     <v-expansion-panel :disabled="news.length === 0">
       <v-expansion-panel-title class="info">
         Info messages
 
-        <v-icon
-          icon="mdi-text-box"
-          class="mx-2"
-        />
+        <v-icon icon="mdi-text-box" class="mx-2" />
         <p class="ml-4">
           Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
         </p>
@@ -210,15 +178,8 @@ function formatPercent(value: number): string {
       <v-expansion-panel-text>
         <!-- Logs list -->
 
-        <v-list
-          v-if="news.length != 0"
-          lines="two"
-        >
-          <v-list-item
-            v-for="info in news"
-            :key="info.time"
-            prepend-icon="mdi-check"
-          >
+        <v-list v-if="news.length != 0" lines="two">
+          <v-list-item v-for="info in news" :key="info.time" prepend-icon="mdi-check">
             <v-list-item-title>{{ info.message }}</v-list-item-title>
             <v-list-item-subtitle>
               {{ new Date(info.time).toLocaleDateString() }}
@@ -240,10 +201,7 @@ function formatPercent(value: number): string {
         A solution that is found by BRISE ({{ solutionState.solution ? 'Done' : 'Please stand by..' }})
       </v-expansion-panel-text>
       <v-expansion-panel-text>
-        <v-list
-          v-if="solutionState.solution"
-          class="solution"
-        >
+        <v-list v-if="solutionState.solution" class="solution">
           <v-list-item prepend-icon="mdi-flag">
             <span class="desc">Configuration: </span> <span>{{ solutionState.configWithNones }}</span>
           </v-list-item>
@@ -282,10 +240,7 @@ function formatPercent(value: number): string {
   </v-expansion-panels>
 
   <!-- Snackbar global -->
-  <v-snackbar
-    v-model="snackbar"
-    :timeout="duration"
-  >
+  <v-snackbar v-model="snackbar" :timeout="duration">
     {{ snackbarMsg }}
   </v-snackbar>
 </template>

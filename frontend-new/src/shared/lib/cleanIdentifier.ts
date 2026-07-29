@@ -6,7 +6,8 @@ export function cleanIdentifier(s: unknown): string {
 export function normalizeConfigKeys(config: Record<string, unknown>): Record<string, unknown> {
   const normalized: Record<string, unknown> = {}
   Object.entries(config ?? {}).forEach(([k, v]) => {
-    normalized[cleanIdentifier(k)] = v
+    const cleanValue = typeof v === 'string' ? cleanIdentifier(v) : v
+    normalized[cleanIdentifier(k)] = cleanValue
   })
   return normalized
 }

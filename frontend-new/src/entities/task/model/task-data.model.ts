@@ -49,7 +49,7 @@ interface MetaData {
 }
 
 interface Configuration {
-    ws_file: String
+    ws_file?: String
 }
 
 interface Run {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch, onUnmounted } from 'vue'
+import { onMounted, ref, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Subscription } from 'rxjs'
 
@@ -7,7 +7,8 @@ import { MainEvent } from '../../../entities/main'
 import { Task } from '../../../entities/task/model/task-data.model';
 //service
 import { useMainEventStore } from '../../../entities/main'
-import { cleanIdentifier, normalizeConfigKeys } from '../../../shared/lib'
+
+import { cleanIdentifier } from '../../../shared/lib'
 
 import { useTaskMetrics } from '../model/task-metrics'
 
@@ -152,7 +153,7 @@ defineExpose({
                 <template #expanded-row="{ item }">
                     <div v-memo="[item.id, expanded.includes(item.id)]">
                         <v-chip v-for="(value, key) in item.config" :key="key">
-                            {{ key }}: {{ value }}
+                            {{ cleanIdentifier(key) }}: {{ cleanIdentifier(value) }}
                         </v-chip>
                     </div>
 
