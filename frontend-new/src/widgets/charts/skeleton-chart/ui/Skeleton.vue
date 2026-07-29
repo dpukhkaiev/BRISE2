@@ -46,6 +46,28 @@ function initMainEvents() {
         immediate: true
     })
 
+    function addBest(temp: PointExp) {
+        // check the best availbale point
+        const descr = experiment_description.value
+
+        let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
+        if (!objectives) return
+        const firstObjectiveKey = Object.keys(objectives)[0]
+        const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
+
+        // compare to the last best point
+        const lastBest = bestRes.value.at(-1)
+        if (lastBest) {
+            const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
+            if (!isBetter) {
+                temp.results = lastBest.results
+                temp.configurations = lastBest.configurations
+            }
+        }
+
+        bestRes.value.push(temp) // add the best availbale point(result)
+    }
+
     // add start point
     store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
@@ -79,7 +101,7 @@ function initMainEvents() {
                     'measured points': allRes.value.length + 1
                 };
                 allRes.value.push(temp);
-                bestRes.value.push(temp); // There is no check if this solution is the best decision
+                addBest(temp); 
             });
         }
     })
@@ -94,8 +116,6 @@ function initMainEvents() {
 
             let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
             if (!objectives) return
-            const firstObjectiveKey = Object.keys(objectives)[0]
-            const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
 
 
             configs.forEach((configuration: any) => {
@@ -118,17 +138,7 @@ function initMainEvents() {
                     'measured points': currentPointIndex
                 }
 
-                // compare to the last best point
-                const lastBest = bestRes.value.at(-1)
-                if (lastBest) {
-                    const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
-                    if (!isBetter) {
-                        temp.results = lastBest.results
-                        temp.configurations = lastBest.configurations
-                    }
-                }
-
-                bestRes.value.push(temp) // add the best availbale point(result)
+                addBest(temp)
             })
         }
     })
