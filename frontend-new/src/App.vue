@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from './entities/main/model/main.event.store'
 import { usePlotStore } from './entities/main/model/plot.store'
@@ -27,8 +27,11 @@ const tab = ref('info')
 const chartMenu = ref(false)
 //const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'hypImp'])
 const drawer = ref(false)
-
-//const hypImpRef = ref<InstanceType<typeof HypImp> | null>(null)
+const selectedCharts = computed(() =>
+  Object.keys(selected.value).filter(
+    (chart) => selected.value[chart as keyof typeof selected.value]
+  )
+)
 
 onMounted(() => {
   store.initEvent()
@@ -121,18 +124,13 @@ onMounted(() => {
         >
           <v-list-subheader>Visible charts</v-list-subheader>
           <v-list-item
-            v-for="chart in [
-              { id: 'multidim', label: 'Multi-dim' },
-              { id: 'impres', label: 'Imp-res' },
-              { id: 'heatmap', label: 'Heatmap' },
-              { id: 'hypImp', label: 'Importances' }
-            ]"
-            :key="chart.id"
+            v-for="chart in selectedCharts"
+            :key="chart"
           >
             <v-checkbox
               v-model="visibleCharts"
-              :value="chart.id"
-              :label="chart.label"
+              :value="chart"
+              :label="chart"
               density="compact"
               hide-details
               color="green-darken-2"
@@ -221,8 +219,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.optHist"
-                v-show="visibleCharts.includes('optHist')"
+                v-if="selected['Optimization History']"
+                v-show="visibleCharts.includes('Optimization History')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -231,8 +229,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.paraCoord"
-                v-show="visibleCharts.includes('paraCoord')"
+                v-if="selected['Parallel Coordinates']"
+                v-show="visibleCharts.includes('Parallel Coordinates')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -241,8 +239,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.rank"
-                v-show="visibleCharts.includes('rank')"
+                v-if="selected['Rank Plot']"
+                v-show="visibleCharts.includes('Rank Plot')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -251,8 +249,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.hypImp"
-                v-show="visibleCharts.includes('hypImp')"
+                v-if="selected['Hyperparameter Importances']"
+                v-show="visibleCharts.includes('Hyperparameter Importances')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -261,8 +259,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.slice"
-                v-show="visibleCharts.includes('slice')"
+                v-if="selected['Slice Plot']"
+                v-show="visibleCharts.includes('Slice Plot')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -271,8 +269,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.contour"
-                v-show="visibleCharts.includes('contour')"
+                v-if="selected['Contour Plot']"
+                v-show="visibleCharts.includes('Contour Plot')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -281,8 +279,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.paretoFront"
-                v-show="visibleCharts.includes('paretoFront')"
+                v-if="selected['Pareto Front']"
+                v-show="visibleCharts.includes('Pareto Front')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -291,8 +289,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.edf"
-                v-show="visibleCharts.includes('edf')"
+                v-if="selected['EDF Plot']"
+                v-show="visibleCharts.includes('EDF Plot')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -301,8 +299,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.intVal"
-                v-show="visibleCharts.includes('intVal')"
+                v-if="selected['Intermediate Values']"
+                v-show="visibleCharts.includes('Intermediate Values')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -311,8 +309,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.termImpr"
-                v-show="visibleCharts.includes('termImpr')"
+                v-if="selected['Terminator Improvement']"
+                v-show="visibleCharts.includes('Terminator Improvement')"
                 cols="12"
                 md="10"
                 class="pr-2"
@@ -321,8 +319,8 @@ onMounted(() => {
               </v-col>
 
               <v-col
-                v-if="selected.timeline"
-                v-show="visibleCharts.includes('timeline')"
+                v-if="selected['Timeline Plot']"
+                v-show="visibleCharts.includes('Timeline Plot')"
                 cols="12"
                 md="10"
                 class="pr-2"

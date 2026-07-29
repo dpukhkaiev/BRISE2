@@ -73,8 +73,7 @@ export function renderParaCoord(
         Plotly.purge(element)
         return
     }
-    //const resultParamsRange = createParamsRange(searchspace);
-    console.log("dimensionsData: ", dimensionsData(allRes))
+
     const trace = [{
         type: 'parcoords' as const,
         line: {

@@ -10,17 +10,17 @@ export interface PointExp {
 
 export const usePlotStore = defineStore('plots', () => {
     const selected = ref({
-        optHist: false,
-        paraCoord : false,
-        rank : false,
-        hypImp : false,
-        slice : false,
-        contour : false,
-        paretoFront : false,
-        edf : false,
-        intVal : false,
-        termImpr : false,
-        timeline : false
+        "Optimization History": false,
+        "Parallel Coordinates": false,
+        "Rank Plot": false,
+        "Hyperparameter Importances": false,
+        "Slice Plot": false,
+        "Contour Plot": false,
+        "Pareto Front": false,
+        "EDF Plot": false,
+        "Intermediate Values": false,
+        "Terminator Improvement": false,
+        "Timeline Plot": false
     })
     
     const visibleCharts = ref<string[]>([])

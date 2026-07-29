@@ -26,21 +26,20 @@ function initMainEvents() {
     watch(experiment_description, () => {
         bestRes.value = []
         allRes.value = []
-        selected.value.optHist = !!experiment_description.value?.PlotSelection?.Plot?.OptimizationHistory
-        selected.value.paraCoord = !!experiment_description.value?.PlotSelection?.Plot?.ParallelCoordinates
-        selected.value.rank = !!experiment_description.value?.PlotSelection?.Plot?.RankPlot
-        selected.value.hypImp= !!experiment_description.value?.PlotSelection?.Plot?.HyperparameterImportances
-        selected.value.slice = !!experiment_description.value?.PlotSelection?.Plot?.SlicePlot
-        selected.value.contour = !!experiment_description.value?.PlotSelection?.Plot?.ContourPlot
-        selected.value.paretoFront = !!experiment_description.value?.PlotSelection?.Plot?.ParetoFront
-        selected.value.edf = !!experiment_description.value?.PlotSelection?.Plot?.EDFPlot
-        selected.value.intVal = !!experiment_description.value?.PlotSelection?.Plot?.IntermediateValues
-        selected.value.termImpr= !!experiment_description.value?.PlotSelection?.Plot?.TerminatorImprovement
-        selected.value.timeline = !!experiment_description.value?.PlotSelection?.Plot?.TimelinePlot
+        selected.value['Optimization History'] = !!experiment_description.value?.PlotSelection?.Plot?.OptimizationHistory
+        selected.value['Parallel Coordinates'] = !!experiment_description.value?.PlotSelection?.Plot?.ParallelCoordinates
+        selected.value['Rank Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.RankPlot
+        selected.value['Hyperparameter Importances']= !!experiment_description.value?.PlotSelection?.Plot?.HyperparameterImportances
+        selected.value['Slice Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.SlicePlot
+        selected.value['Contour Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.ContourPlot
+        selected.value['Pareto Front'] = !!experiment_description.value?.PlotSelection?.Plot?.ParetoFront
+        selected.value['EDF Plot']= !!experiment_description.value?.PlotSelection?.Plot?.EDFPlot
+        selected.value['Intermediate Values'] = !!experiment_description.value?.PlotSelection?.Plot?.IntermediateValues
+        selected.value['Terminator Improvement'] = !!experiment_description.value?.PlotSelection?.Plot?.TerminatorImprovement
+        selected.value['Timeline Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.TimelinePlot
         visibleCharts.value = Object.entries(selected.value)
             .filter(([_, enabled]) => enabled)
             .map(([name]) => name)
-        //console.log("hypImp value: ", selected.value.hypImp)
     }, {
         deep: true,
         immediate: true

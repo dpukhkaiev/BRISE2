@@ -94,6 +94,6 @@ export function renderOptHist(
             }
         },
     };
-    console.log(data)
+
     Plotly.react(element, data, layout);
 }
