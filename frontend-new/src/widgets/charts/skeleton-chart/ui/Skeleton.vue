@@ -33,10 +33,8 @@ function initMainEvents() {
         selected.value['Slice Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.SlicePlot
         selected.value['Contour Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.ContourPlot
         selected.value['Pareto Front'] = !!experiment_description.value?.PlotSelection?.Plot?.ParetoFront
-        selected.value['EDF Plot']= !!experiment_description.value?.PlotSelection?.Plot?.EDFPlot
-        selected.value['Intermediate Values'] = !!experiment_description.value?.PlotSelection?.Plot?.IntermediateValues
-        selected.value['Terminator Improvement'] = !!experiment_description.value?.PlotSelection?.Plot?.TerminatorImprovement
-        selected.value['Timeline Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.TimelinePlot
+        selected.value['EDF Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.EDFPlot
+        selected.value['Configuration Scatter Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.ConfigurationScatterPlot
         visibleCharts.value = Object.entries(selected.value)
             .filter(([_, enabled]) => enabled)
             .map(([name]) => name)

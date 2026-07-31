@@ -18,9 +18,7 @@ export const usePlotStore = defineStore('plots', () => {
         "Contour Plot": false,
         "Pareto Front": false,
         "EDF Plot": false,
-        "Intermediate Values": false,
-        "Terminator Improvement": false,
-        "Timeline Plot": false
+        "Configuration Scatter Plot": false
     })
     
     const visibleCharts = ref<string[]>([])

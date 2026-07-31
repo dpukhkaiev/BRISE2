@@ -18,20 +18,43 @@ import { ParetoFront } from './widgets/charts/pareto-front'
 import { Slice } from './widgets/charts/slice'
 import { Rank } from './widgets/charts/rank'
 import { Contour } from './widgets/charts/contour'
+import { Edf } from './widgets/charts/edf'
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
 const { selected, visibleCharts } = storeToRefs(plotStore)
+const { experiment_description, searchspace } = storeToRefs(store)
+
 
 const tab = ref('info')
 const chartMenu = ref(false)
-//const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'hypImp'])
+
 const drawer = ref(false)
 const selectedCharts = computed(() =>
   Object.keys(selected.value).filter(
     (chart) => selected.value[chart as keyof typeof selected.value]
   )
 )
+
+const objectiveNames = computed(() => {
+    const objectives = experiment_description.value?.Context?.TaskConfiguration?.Objectives ?? {}
+
+    return Object.keys(objectives)
+})
+
+const parameterNames = computed(() => {
+    Object.entries(searchspace)
+      .filter(([_, value]) => 
+          typeof value === 'object' &&
+          value !== null &&
+          'Type' in value
+      )
+      .map(([name]) => name)
+})
+
+const heatmapParam1 = ref('')
+const heatmapParam2 = ref('')
+
 
 onMounted(() => {
   store.initEvent()
@@ -211,10 +234,30 @@ onMounted(() => {
               </v-col>
 
               <v-col
+                v-if="selected['Configuration Scatter Plot']"
+                v-show="visibleCharts.includes('Configuration Scatter Plot')"
                 cols="12"
                 md="8"
                 class="pr-2"
               >
+                <select v-model="heatmapParam1">
+                    <option
+                        v-for="parameter in parameterNames"
+                        :key="parameter"
+                        :value="parameter"
+                    >
+                        {{ parameter }}
+                    </option>
+                </select>
+                <select v-model="heatmapParam2">
+                    <option
+                        v-for="parameter in parameterNames"
+                        :key="parameter"
+                        :value="parameter"
+                    >
+                        {{ parameter }}
+                    </option>
+                </select>
                 <Heatmap/>
               </v-col>
 
@@ -295,37 +338,7 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <!--<Edf/>-->
-              </v-col>
-
-              <v-col
-                v-if="selected['Intermediate Values']"
-                v-show="visibleCharts.includes('Intermediate Values')"
-                cols="12"
-                md="10"
-                class="pr-2"
-              >
-                <!--<IntVal/>-->
-              </v-col>
-
-              <v-col
-                v-if="selected['Terminator Improvement']"
-                v-show="visibleCharts.includes('Terminator Improvement')"
-                cols="12"
-                md="10"
-                class="pr-2"
-              >
-                <!--<TermImpr/>-->
-              </v-col>
-
-              <v-col
-                v-if="selected['Timeline Plot']"
-                v-show="visibleCharts.includes('Timeline Plot')"
-                cols="12"
-                md="10"
-                class="pr-2"
-              >
-                <!--<Timeline/>-->
+                <Edf/>
               </v-col>
             </v-row>
           </v-tabs-window-item>
