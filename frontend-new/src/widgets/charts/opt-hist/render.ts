@@ -5,25 +5,55 @@ import type { ExperimentDescription } from '../../../entities/experiment/model/e
 export function renderOptHist(
     element: HTMLElement,
     allRes: PointExp[],
-    bestRes: PointExp[],
-    experiment_description: ExperimentDescription
+    experiment_description: ExperimentDescription,
+    optHistObjective: string
 ) {
-    // X-axis data
-    const xBest = Array.from(bestRes).map((i: any) => i['measured points']);
-    // Results
-    const yBest = Array.from(bestRes).map((i: any) => Object.values(i.results as Record<string, number>)[0]);
+    if (allRes.length === 0) {
+        Plotly.purge(element);
+        return;
+    }
 
-    const allResultSet = { // Data for all results
-        x: Array.from(allRes).map((i: any) => i['measured points']),
-        y: Array.from(allRes).map((i: any) => Object.values(i.results as Record<string, number>)[0]),
+    const objectives = experiment_description.TaskConfiguration?.Objectives;
+
+    const minimize = objectives?.[optHistObjective]?.Minimization ?? true;
+  
+    // Calculate the best-so-far points for the selected objective
+    const bestRes: PointExp[] = [];
+    let bestValue = minimize ? Infinity : -Infinity;
+
+    for (const point of allRes) {
+        const value = point.results[optHistObjective];
+
+        if (value === undefined) continue;
+
+        const isBetter = minimize
+            ? value < bestValue
+            : value > bestValue;
+
+        if (isBetter) {
+            bestValue = value;
+            bestRes.push(point);
+        }
+    }
+
+    const xBest = bestRes.map(i => i["measured points"]);
+    const yBest = bestRes.map(i => i.results[optHistObjective]);
+
+    const allResultSet = {
+        x: allRes.map(i => i["measured points"]),
+        y: allRes.map(i => i.results[optHistObjective]),
         type: 'scattergl' as const,
         mode: 'lines+markers' as const,
-        line: { color: 'rgba(67,67,67,1)', width: 1, shape: 'spline' as const, dash: 'dot' as const },
-        //text: Array.from(allRes).map((i: any) => String(i['configurations'])),
+        line: {
+            color: 'rgba(67,67,67,1)',
+            width: 1,
+            shape: 'spline' as const,
+            dash: 'dot' as const
+        },
         text: allRes.map(i =>
             Object.entries(i.configurations)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join("<br>")
+                .map(([key, value]) => `${key}: ${value}`)
+                .join("<br>")
         ),
         marker: {
             color: 'rgba(255,64,129,1)',
@@ -32,34 +62,48 @@ export function renderOptHist(
         },
         name: 'results'
     };
-    const bestPointSet = { // Data for the best available results
+
+    const bestPointSet = {
         x: xBest,
         y: yBest,
         type: 'scattergl' as const,
         mode: 'lines+markers' as const,
-        line: { color: 'rgba(67,67,67,1)', width: 2, shape: 'spline' as const },
+        line: {
+            color: 'rgba(67,67,67,1)',
+            width: 2,
+            shape: 'spline' as const
+        },
         name: 'best point',
-        marker: { size: 6, symbol: 'x' as const, color: 'rgba(67,67,67,1)' }
+        marker: {
+            size: 6,
+            symbol: 'x' as const,
+            color: 'rgba(67,67,67,1)'
+        }
     };
 
-    const startEndPoint = { // Start & Finish markers
+    const startEndPoint = {
         x: [xBest[0], xBest[xBest.length - 1]],
         y: [yBest[0], yBest[yBest.length - 1]],
         type: 'scattergl' as const,
         mode: 'markers' as const,
         hoverinfo: 'none' as const,
         showlegend: false,
-        marker: { color: 'rgba(255,64,129,1)', size: 10 }
+        marker: {
+            color: 'rgba(255,64,129,1)',
+            size: 10
+        }
     };
 
     const data = [allResultSet, bestPointSet, startEndPoint];
 
     const layout = {
-        title: { text: 'The best results' } as const,
+        title: {
+            text: 'The best results'
+        },
         showlegend: true,
         autosize: true,
         xaxis: {
-            title: { text: 'Sequence number' } as const,
+            title: { text: 'Sequence number' },
             showline: true,
             showgrid: false,
             zeroline: false,
@@ -78,7 +122,7 @@ export function renderOptHist(
             }
         },
         yaxis: {
-            title: { text: experiment_description['TaskConfiguration']?.['Objectives'][0] } as const,
+            title: { text: optHistObjective },
             showgrid: false,
             zeroline: false,
             showline: true,
@@ -92,7 +136,7 @@ export function renderOptHist(
                 size: 12,
                 color: 'rgb(82, 82, 82)'
             }
-        },
+        }
     };
 
     Plotly.react(element, data, layout);

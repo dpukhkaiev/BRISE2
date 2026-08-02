@@ -8,8 +8,11 @@ import { useMainEventStore } from '../../../../entities/main'
 const store = useMainEventStore()
 const plotStore = usePlotStore()
 const { experiment_description } = storeToRefs(store)
-const { allRes, bestRes } = storeToRefs(plotStore)
+const { allRes } = storeToRefs(plotStore)
 const optHist = ref<HTMLElement | null>(null)
+const props = defineProps<{
+    optHistObjective: string
+}>();
 
 async function render() {
     await nextTick()
@@ -17,11 +20,11 @@ async function render() {
     if (!optHist.value) return
     if (!experiment_description.value) 
         return
-    renderOptHist(optHist.value, allRes.value, bestRes.value, experiment_description.value)
+    renderOptHist(optHist.value, allRes.value, experiment_description.value, props.optHistObjective)
 }
 
 watch(
-    bestRes,
+    allRes,
     () => {
         render()
     },

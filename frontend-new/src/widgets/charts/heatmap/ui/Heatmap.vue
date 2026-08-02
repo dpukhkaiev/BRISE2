@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!--<script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
@@ -60,4 +60,4 @@ watch(
   <div
     ref="heatmap"
   ></div>
-</template>
+</template>-->

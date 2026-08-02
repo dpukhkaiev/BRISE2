@@ -20,7 +20,7 @@ interface TaskConfiguration {
     MaxTasksPerConfiguration: number
     MaxTimeToRunTask: number
     RepeaterDecisionFunction: string
-    Objectives: Array<string>
+    Objectives: Record<string, Objective>
     ObjectivesDataTypes: Array<string>
     ObjectivesPriorities: Array<number>
     TaskName: string
@@ -33,4 +33,11 @@ interface Predictor {
 }
 interface SelectionAlgorithm {
     SelectionType: String
+}
+interface Objective {
+    Name: string
+    DataType: string
+    Minimization: boolean
+    MinExpectedValue: any
+    MaxExpectedValue: any
 }

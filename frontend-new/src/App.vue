@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from './entities/main/model/main.event.store'
 import { usePlotStore } from './entities/main/model/plot.store'
@@ -9,7 +9,7 @@ import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
-import { Heatmap } from './widgets/charts/heatmap'
+//import { Heatmap } from './widgets/charts/heatmap'
 
 import { OptHist } from './widgets/charts/opt-hist'
 import { HypImp } from './widgets/charts/hyp-imp'
@@ -36,11 +36,11 @@ const selectedCharts = computed(() =>
   )
 )
 
-const objectiveNames = computed(() => {
-    const objectives = experiment_description.value?.Context?.TaskConfiguration?.Objectives ?? {}
-
-    return Object.keys(objectives)
-})
+const objectiveNames = computed(() =>
+    Object.keys(
+        experiment_description.value?.Context?.TaskConfiguration?.Objectives ?? {}
+    )
+)
 
 const parameterNames = computed(() => {
     Object.entries(searchspace)
@@ -52,15 +52,22 @@ const parameterNames = computed(() => {
       .map(([name]) => name)
 })
 
-const heatmapParam1 = ref('')
-const heatmapParam2 = ref('')
-
+const optHistObjective = ref("")
 
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
 })
 
+watch(objectiveNames, (objectives) => {
+    if (objectives.length && !optHistObjective.value) {
+        optHistObjective.value = objectives[0];
+        //add others...
+    }
+});
+
+console.log("objectiveNames: ", objectiveNames)
+console.log("parameterNames: ", parameterNames)
 </script>
 
 <template>
@@ -232,7 +239,7 @@ onMounted(() => {
               >
                 <Skeleton/>
               </v-col>
-
+<!--
               <v-col
                 v-if="selected['Configuration Scatter Plot']"
                 v-show="visibleCharts.includes('Configuration Scatter Plot')"
@@ -260,7 +267,7 @@ onMounted(() => {
                 </select>
                 <Heatmap/>
               </v-col>
-
+-->
               <v-col
                 v-if="selected['Optimization History']"
                 v-show="visibleCharts.includes('Optimization History')"
@@ -268,7 +275,16 @@ onMounted(() => {
                 md="10"
                 class="pr-2"
               >
-                <OptHist/>
+                <select v-model="optHistObjective">
+                    <option
+                        v-for="objective in objectiveNames"
+                        :key="objective"
+                        :value="objective"
+                    >
+                        {{ objective }}
+                    </option>
+                </select>
+                <OptHist :optHistObjective="optHistObjective" />
               </v-col>
 
               <v-col

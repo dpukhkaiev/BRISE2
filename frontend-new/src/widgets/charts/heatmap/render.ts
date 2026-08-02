@@ -1,4 +1,4 @@
-import Plotly from 'plotly.js-dist-min'
+/*import Plotly from 'plotly.js-dist-min'
 import type { Data } from 'plotly.js'
 import type { Solution } from '../../../entities/task/model/task-data.model'
 
@@ -111,4 +111,4 @@ export async function renderHeatmap(
     }
 
     Plotly.react(element, data, layout)
-}
+}*/
