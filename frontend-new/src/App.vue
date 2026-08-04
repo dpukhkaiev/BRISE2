@@ -23,7 +23,7 @@ import { Edf } from './widgets/charts/edf'
 const store = useMainEventStore()
 const plotStore = usePlotStore()
 const { selected, visibleCharts } = storeToRefs(plotStore)
-const { experiment_description, searchspace } = storeToRefs(store)
+const { experiment_description } = storeToRefs(store)
 
 
 const tab = ref('info')
@@ -45,20 +45,35 @@ const objectiveNames = computed(() =>
 
 // compute parameters of the experiment for dropdown options
 const parameterNames = computed(() => {
-    return Object.entries(searchspace)
-        .filter(([_, value]) =>
+    const searchSpace =
+        experiment_description.value?.Context?.SearchSpace ?? {};
+
+    return Object.entries(searchSpace)
+        .filter(([name, value]) =>
+            name !== "Structure" &&
             typeof value === "object" &&
             value !== null &&
             "Type" in value
         )
         .map(([name]) => name);
-})
+});
 
 // manage selected dropdown values
 const optHistObjective = ref("")
 const selectedOptHistObjective = computed(() => {
     return optHistObjective.value || objectiveNames.value[0] || "";
-});
+})
+
+const paraCoordParams = ref<string[]>([])
+const selectedParaCoordParams = computed(() => {
+    return paraCoordParams.value.length
+        ? paraCoordParams.value
+        : parameterNames.value.slice(0, 1)
+})
+const paraCoordObjective = ref("")
+const selectedParaCoordObjective = computed(() => {
+    return paraCoordObjective.value || objectiveNames.value[0] || "";
+})
 
 onMounted(() => {
   store.initEvent()
@@ -69,10 +84,19 @@ onMounted(() => {
 watch(
     objectiveNames,
     (objectives) => {
-        optHistObjective.value = objectives[0] ?? "";
+        optHistObjective.value = objectives[0] ?? ""
+        paraCoordObjective.value = objectives[0] ?? ""
     },
     { immediate: true }
-);
+)
+
+watch(
+    parameterNames,
+    (parameters) => {
+        paraCoordParams.value = [...parameters]
+    },
+    { immediate: true }
+)
 </script>
 
 <template>
@@ -298,7 +322,41 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <ParaCoord/>
+                <v-list
+                  density="compact"
+                  min-width="180"
+                >
+                  <v-list-subheader>Parameters</v-list-subheader>
+                  <v-list-item
+                    v-for="param in parameterNames"
+                    :key="param"
+                  >
+                    <v-checkbox
+                      v-model="paraCoordParams"
+                      :value="param"
+                      :label="param"
+                      density="compact"
+                      hide-details
+                      color="green-darken-2"
+                    />
+                  </v-list-item>
+                </v-list>
+                <v-radio-group
+                    v-model="paraCoordObjective"
+                    label="Objective"
+                    inline
+                >
+                    <v-radio
+                        v-for="objective in objectiveNames"
+                        :key="objective"
+                        :label="objective"
+                        :value="objective"
+                    />
+                </v-radio-group>
+                <ParaCoord
+                    :paraCoordParams="selectedParaCoordParams"
+                    :paraCoordObjective="selectedParaCoordObjective"
+                />
               </v-col>
 
               <v-col

@@ -44,21 +44,21 @@ function factoryDimension(
     return dimension;
 }
 
-function dimensionsData(allRes: PointExp[]) {
-    const parameters = Object.keys(allRes[0].configurations);
-
-    const dimensions = parameters.map(
-        parameter => factoryDimension(parameter, allRes)
+function dimensionsData(
+    allRes: PointExp[],
+    paraCoordParams: string[],
+    paraCoordObjective: string
+) {
+    const dimensions = paraCoordParams.map(parameter =>
+        factoryDimension(parameter, allRes)
     );
 
-    const objectiveName = Object.keys(allRes[0].results)[0];
-
     const objectiveValues = allRes.map(
-        point => Number(point.results[objectiveName])
+        point => Number(point.results[paraCoordObjective])
     );
 
     dimensions.push({
-        label: objectiveName,
+        label: paraCoordObjective,
         values: objectiveValues
     });
 
@@ -68,20 +68,34 @@ function dimensionsData(allRes: PointExp[]) {
 export function renderParaCoord(
     element: HTMLElement,
     allRes: PointExp[],
+    paraCoordParams: string[],
+    paraCoordObjective: string
 ) {
-    if (allRes.length === 0) {
-        Plotly.purge(element)
-        return
+    if (
+        allRes.length === 0 ||
+        paraCoordParams.length === 0 ||
+        !paraCoordObjective
+    ) {
+        Plotly.purge(element);
+        return;
     }
+
+    const objectiveValues = allRes.map(
+        point => Number(point.results[paraCoordObjective])
+    );
 
     const trace = [{
         type: 'parcoords' as const,
         line: {
             showscale: true,
             colorscale: 'Jet',
-            color: allRes.map(point => Object.values(point.results)[0])
+            color: objectiveValues
         },
-        dimensions: dimensionsData(allRes)
+        dimensions: dimensionsData(
+            allRes,
+            paraCoordParams,
+            paraCoordObjective
+        )
     }];
 
     const layout = {

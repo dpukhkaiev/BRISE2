@@ -55,7 +55,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
             experiment_description.value = body.experiment_description
             searchspace.value = body.searchspace_description
             globalConfig.value = body.global_configuration
-
+            console.log("after init: ", searchspace.value)
          }
       })
    }
