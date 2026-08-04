@@ -16,8 +16,8 @@ A Vue 3 rewrite of the legacy BRISE Angular frontend — a live dashboard for mo
 ## Requirements
 
 - Node.js (check `.nvmrc` / CI config if present — otherwise a current LTS version is recommended)
-- A running instance of the BRISE `main-node` backend, running as its **own Docker container** separate from this frontend (this frontend is itself intended to run as a container too) — see [BRISE2](https://github.com/dpukhkaiev/BRISEv2)
-- The frontend connects to `main-node` over STOMP/WebSocket, so `main-node` must be reachable at the configured broker URL
+- A running instance of the BRISE `main-node` backend, running as its **own Docker container** separate from this frontend 
+- The frontend connects to `main-node` over STOMP/WebSocket
 
 
 Start the whole stack from the BRISE repository root:
