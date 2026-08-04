@@ -36,38 +36,43 @@ const selectedCharts = computed(() =>
   )
 )
 
+// compute objectives of the experiment for dropdown options
 const objectiveNames = computed(() =>
     Object.keys(
         experiment_description.value?.Context?.TaskConfiguration?.Objectives ?? {}
     )
 )
 
+// compute parameters of the experiment for dropdown options
 const parameterNames = computed(() => {
-    Object.entries(searchspace)
-      .filter(([_, value]) => 
-          typeof value === 'object' &&
-          value !== null &&
-          'Type' in value
-      )
-      .map(([name]) => name)
+    return Object.entries(searchspace)
+        .filter(([_, value]) =>
+            typeof value === "object" &&
+            value !== null &&
+            "Type" in value
+        )
+        .map(([name]) => name);
 })
 
+// manage selected dropdown values
 const optHistObjective = ref("")
+const selectedOptHistObjective = computed(() => {
+    return optHistObjective.value || objectiveNames.value[0] || "";
+});
 
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
 })
 
-watch(objectiveNames, (objectives) => {
-    if (objectives.length && !optHistObjective.value) {
-        optHistObjective.value = objectives[0];
-        //add others...
-    }
-});
-
-console.log("objectiveNames: ", objectiveNames)
-console.log("parameterNames: ", parameterNames)
+// update default dropdown values on initialization and new experiment description
+watch(
+    objectiveNames,
+    (objectives) => {
+        optHistObjective.value = objectives[0] ?? "";
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -239,7 +244,7 @@ console.log("parameterNames: ", parameterNames)
               >
                 <Skeleton/>
               </v-col>
-<!--
+              <!--
               <v-col
                 v-if="selected['Configuration Scatter Plot']"
                 v-show="visibleCharts.includes('Configuration Scatter Plot')"
@@ -267,7 +272,7 @@ console.log("parameterNames: ", parameterNames)
                 </select>
                 <Heatmap/>
               </v-col>
--->
+              -->
               <v-col
                 v-if="selected['Optimization History']"
                 v-show="visibleCharts.includes('Optimization History')"
@@ -275,16 +280,15 @@ console.log("parameterNames: ", parameterNames)
                 md="10"
                 class="pr-2"
               >
-                <select v-model="optHistObjective">
-                    <option
-                        v-for="objective in objectiveNames"
-                        :key="objective"
-                        :value="objective"
-                    >
-                        {{ objective }}
-                    </option>
-                </select>
-                <OptHist :optHistObjective="optHistObjective" />
+                <v-select
+                    v-model="optHistObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <OptHist :optHistObjective="selectedOptHistObjective" />
               </v-col>
 
               <v-col

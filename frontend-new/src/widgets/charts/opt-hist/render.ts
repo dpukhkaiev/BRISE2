@@ -13,12 +13,14 @@ export function renderOptHist(
         return;
     }
 
-    const objectives = experiment_description.TaskConfiguration?.Objectives;
+    const objectives = experiment_description.Context?.TaskConfiguration?.Objectives;
 
     const minimize = objectives?.[optHistObjective]?.Minimization ?? true;
   
     // Calculate the best-so-far points for the selected objective
-    const bestRes: PointExp[] = [];
+    const xBest: number[] = [];
+    const yBest: number[] = [];
+
     let bestValue = minimize ? Infinity : -Infinity;
 
     for (const point of allRes) {
@@ -26,18 +28,15 @@ export function renderOptHist(
 
         if (value === undefined) continue;
 
-        const isBetter = minimize
-            ? value < bestValue
-            : value > bestValue;
-
-        if (isBetter) {
-            bestValue = value;
-            bestRes.push(point);
+        if (minimize) {
+            bestValue = Math.min(bestValue, value);
+        } else {
+            bestValue = Math.max(bestValue, value);
         }
-    }
 
-    const xBest = bestRes.map(i => i["measured points"]);
-    const yBest = bestRes.map(i => i.results[optHistObjective]);
+        xBest.push(point["measured points"]);
+        yBest.push(bestValue);
+    }
 
     const allResultSet = {
         x: allRes.map(i => i["measured points"]),
@@ -139,5 +138,6 @@ export function renderOptHist(
         }
     };
 
+    console.log(data);
     Plotly.react(element, data, layout);
 }
