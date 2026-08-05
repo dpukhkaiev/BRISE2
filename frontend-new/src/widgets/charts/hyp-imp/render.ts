@@ -2,7 +2,7 @@ import Plotly from 'plotly.js-dist-min'
 
 export function renderHypImp(element: HTMLElement, result: { "importances": Record<string, number> }) {
 
-    if (Object.keys(result.importances).length === 0) {
+    if (Object.keys(result.importances).length === 0 || result.importances == undefined) {
         Plotly.purge(element)
         return
     }

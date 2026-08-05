@@ -97,6 +97,17 @@ const selectedSliceObjective = computed(() => {
     return sliceObjective.value || objectiveNames.value[0] || ""
 })
 
+const hypImpParams = ref<string[]>([])
+const selectedHypImpParams = computed(() => {
+    return hypImpParams.value.length
+        ? hypImpParams.value
+        : parameterNames.value.slice(0, 1)
+})
+const hypImpObjective = ref("")
+const selectedHypImpObjective = computed(() => {
+    return hypImpObjective.value || objectiveNames.value[0] || ""
+})
+
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
@@ -110,6 +121,7 @@ watch(
         paraCoordObjective.value = objectives[0] ?? ""
         rankObjective.value = objectives[0] ?? ""
         sliceObjective.value = objectives[0] ?? ""
+        hypImpObjective.value = objectives[0] ?? ""
     },
     { immediate: true }
 )
@@ -121,6 +133,7 @@ watch(
         rankParam1.value = parameters[0] ?? ""
         rankParam2.value = parameters[1] ?? ""
         sliceParam.value = parameters[0] ?? ""
+        hypImpParams.value = [...parameters]
     },
     { immediate: true }
 )
@@ -427,7 +440,37 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <HypImp/>
+                <v-list
+                  density="compact"
+                  min-width="180"
+                >
+                  <v-list-subheader>Parameters</v-list-subheader>
+                  <v-list-item
+                    v-for="param in parameterNames"
+                    :key="param"
+                  >
+                    <v-checkbox
+                      v-model="hypImpParams"
+                      :value="param"
+                      :label="param"
+                      density="compact"
+                      hide-details
+                      color="green-darken-2"
+                    />
+                  </v-list-item>
+                </v-list>
+                <v-select
+                    v-model="hypImpObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <HypImp
+                    :hypImpParams="selectedHypImpParams"
+                    :hypImpObjective="selectedHypImpObjective"
+                />
               </v-col>
 
               <v-col

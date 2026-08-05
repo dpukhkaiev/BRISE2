@@ -157,14 +157,32 @@ def calculate_importances(payload):
     allRes = payload["trials"]
     if len(allRes) < 2:
         return {}
+
     study = reconstruct_study(payload)
 
-    importances = (
-        optuna.importance.get_param_importances(study, evaluator=PedAnovaImportanceEvaluator())
+    parameters = payload.get("parameters", [])
+    objective = payload.get("objective")
+
+    experiment_description = payload["experiment_description"]
+
+    objective_names = list(
+        experiment_description["Context"]
+        ["TaskConfiguration"]
+        ["Objectives"]
+        .keys()
     )
+
+    objective_index = objective_names.index(objective)
+
+    importances = optuna.importance.get_param_importances(
+        study,
+        evaluator=PedAnovaImportanceEvaluator(),
+        params=parameters if parameters else None,
+        target=lambda trial: trial.values[objective_index]
+    )
+
     return {
-        "importances": 
-            importances
+        "importances": importances
     }
 
 def calculate_pareto(payload):

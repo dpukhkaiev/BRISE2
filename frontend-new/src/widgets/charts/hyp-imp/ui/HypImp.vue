@@ -12,6 +12,11 @@ const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 const hypimp = ref<HTMLElement | null>(null)
 
+const props = defineProps<{
+    hypImpParams: string[]
+    hypImpObjective: string
+}>()
+
 let rendering = false
 
 async function render() {
@@ -22,7 +27,9 @@ async function render() {
         "hyperparameter_importances",
         {
             "experiment_description": experiment_description.value,
-            "trials": allRes.value
+            "trials": allRes.value,
+            "parameters": props.hypImpParams,
+            "objective": props.hypImpObjective
         }
     )
 
