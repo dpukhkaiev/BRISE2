@@ -7,44 +7,50 @@ export function renderEdf(
 ) {
     if (allRes.length === 0) {
         Plotly.purge(element);
-        return;
+        return
     }
 
-    // Objective name (single-objective optimization)
-    const objectiveName = Object.keys(allRes[0].results)[0];
+    const objectiveNames = Object.keys(allRes[0].results);
 
-    // Extract and sort objective values
-    const values = allRes
-        .map(point => Number(Object.values(point.results)[0]))
-        .sort((a, b) => a - b);
+    const traces: Plotly.Data[] = objectiveNames.map(objectiveName => {
+        const values = allRes
+            .map(point => Number(point.results[objectiveName]))
+            .sort((a, b) => a - b);
 
-    const n = values.length;
+        const n = values.length;
 
-    // Empirical cumulative distribution
-    const probabilities = values.map((_, i) => (i + 1) / n);
+        const probabilities = values.map((_, i) => (i + 1) / n);
 
-    const trace = {
-        x: values,
-        y: probabilities,
-        type: "scatter" as const,
-        mode: "lines" as const,
-        line: {
-            shape: "hv" as const, // staircase EDF
-            width: 2
-        },
-        hovertemplate:
-            `${objectiveName}: %{x}<br>` +
-            `EDF: %{y:.2f}<extra></extra>`
-    };
+        return {
+            x: values,
+            y: probabilities,
+            type: "scatter",
+            mode: "lines",
+            name: objectiveName,
+            line: {
+                shape: "hv",
+                width: 2
+            },
+            hovertemplate:
+                `${objectiveName}: %{x}<br>` +
+                `EDF: %{y:.2f}<extra></extra>`
+        }
+    })
 
-    const layout = {
+    const layout: Partial<Plotly.Layout> = {
         title: {
             text: "Empirical Distribution Function"
         },
         autosize: true,
+        showlegend: true,
+        legend: {
+            title: {
+                text: "Objectives"
+            }
+        },
         xaxis: {
             title: {
-                text: objectiveName
+                text: "Objective value"
             }
         },
         yaxis: {
@@ -53,8 +59,8 @@ export function renderEdf(
             },
             range: [0, 1]
         },
-        hovermode: "closest" as const
-    };
+        hovermode: "closest"
+    }
 
-    Plotly.react(element, [trace], layout);
+    Plotly.react(element, traces, layout);
 }

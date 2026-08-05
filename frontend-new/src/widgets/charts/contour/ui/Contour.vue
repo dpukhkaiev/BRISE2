@@ -12,6 +12,12 @@ const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 const contour = ref<HTMLElement | null>(null)
 
+const props = defineProps<{
+    contourParam1: string
+    contourParam2: string
+    contourObjective: string
+}>()
+
 let rendering = false
 
 async function render() {
@@ -22,7 +28,10 @@ async function render() {
         "contour",
         {
             "experiment_description": experiment_description.value,
-            "trials": allRes.value
+            "trials": allRes.value,
+            "param1": props.contourParam1,
+            "param2": props.contourParam2,
+            "objective": props.contourObjective
         }
     )
 

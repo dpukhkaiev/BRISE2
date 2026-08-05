@@ -118,6 +118,19 @@ const selectedParetoObjective2 = computed(() => {
 })
 const onlyShowParetoFront = ref(false)
 
+const contourParam1 = ref("")
+const selectedContourParam1 = computed(() => {
+    return contourParam1.value || parameterNames.value[0] || ""
+})
+const contourParam2 = ref("")
+const selectedContourParam2 = computed(() => {
+    return contourParam2.value || parameterNames.value[1] || ""
+})
+const contourObjective = ref("")
+const selectedContourObjective = computed(() => {
+    return contourObjective.value || objectiveNames.value[0] || ""
+})
+
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
@@ -135,6 +148,7 @@ watch(
         paretoObjective1.value = objectives[0] ?? ""
         paretoObjective2.value = objectives[1] ?? ""
         onlyShowParetoFront.value = false
+        contourObjective.value = objectives[0] ?? ""
     },
     { immediate: true }
 )
@@ -147,6 +161,8 @@ watch(
         rankParam2.value = parameters[1] ?? ""
         sliceParam.value = parameters[0] ?? ""
         hypImpParams.value = [...parameters]
+        contourParam1.value = parameters[0] ?? ""
+        contourParam2.value = parameters[1] ?? ""
     },
     { immediate: true }
 )
@@ -522,7 +538,35 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <Contour/>
+                <v-select
+                    v-model="contourParam1"
+                    :items="parameterNames"
+                    label="Parameter 1"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-select
+                    v-model="contourParam2"
+                    :items="parameterNames"
+                    label="Parameter 2"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-select
+                    v-model="contourObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <Contour
+                    :contourParam1="selectedContourParam1"
+                    :contourParam2="selectedContourParam2"
+                    :contourObjective="selectedContourObjective"
+                />
               </v-col>
 
               <v-col

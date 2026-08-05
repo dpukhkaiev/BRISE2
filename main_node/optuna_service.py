@@ -232,17 +232,41 @@ def calculate_pareto(payload):
         
 def calculate_contour(payload):
     study = reconstruct_study(payload)
-    fig = optuna.visualization.plot_contour(study)
+    
+    param1 = payload["param1"]
+    param2 = payload["param2"]
+    objective = payload["objective"]
+    
+    objective_names = list(
+        payload["experiment_description"]["Context"]
+        ["TaskConfiguration"]["Objectives"]
+        .keys()
+    )
+
+    objective_index = objective_names.index(objective)
+
+    fig = optuna.visualization.plot_contour(
+        study,
+        params=[param1, param2],
+        target=lambda trial: trial.values[objective_index],
+        target_name=objective,
+    )
+    
     print(fig.data)
+    
     objective_name = next(iter(
         payload["experiment_description"]["Context"]["TaskConfiguration"]["Objectives"]
     ))
+    
+    trace = fig.data[0]
+
     contour = {
-        "x": list(fig.data[0].x),
-        "y": list(fig.data[0].y),
-        "z": fig.data[0].z,
-        "x_name": fig.layout.xaxis.title.text,
-        "y_name": fig.layout.yaxis.title.text,
-        "objective_name": objective_name
+        "x": list(trace.x),
+        "y": list(trace.y),
+        "z": trace.z,
+        "x_name": param1,
+        "y_name": param2,
+        "objective_name": objective,
     }
+    
     return {"contour": contour}
