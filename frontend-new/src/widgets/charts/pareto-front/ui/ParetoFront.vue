@@ -12,6 +12,12 @@ const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 const paretofront = ref<HTMLElement | null>(null)
 
+const props = defineProps<{
+    paretoObjective1: string
+    paretoObjective2: string
+    onlyShowParetoFront: boolean
+}>()
+
 let rendering = false
 
 async function render() {
@@ -22,11 +28,13 @@ async function render() {
         "pareto_front",
         {
             "experiment_description": experiment_description.value,
-            "trials": allRes.value
+            "trials": allRes.value,
+            "objective1": props.paretoObjective1,
+            "objective2": props.paretoObjective2
         }
     )
 
-    renderParetoFront(paretofront.value, result)
+    renderParetoFront(paretofront.value, result, props.onlyShowParetoFront)
 }
 
 watch(

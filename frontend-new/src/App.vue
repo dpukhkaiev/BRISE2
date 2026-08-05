@@ -108,6 +108,16 @@ const selectedHypImpObjective = computed(() => {
     return hypImpObjective.value || objectiveNames.value[0] || ""
 })
 
+const paretoObjective1 = ref("")
+const selectedParetoObjective1 = computed(() => {
+    return paretoObjective1.value || objectiveNames.value[0] || ""
+})
+const paretoObjective2 = ref("")
+const selectedParetoObjective2 = computed(() => {
+    return paretoObjective2.value || objectiveNames.value[1] || ""
+})
+const onlyShowParetoFront = ref(false)
+
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
@@ -122,6 +132,9 @@ watch(
         rankObjective.value = objectives[0] ?? ""
         sliceObjective.value = objectives[0] ?? ""
         hypImpObjective.value = objectives[0] ?? ""
+        paretoObjective1.value = objectives[0] ?? ""
+        paretoObjective2.value = objectives[1] ?? ""
+        onlyShowParetoFront.value = false
     },
     { immediate: true }
 )
@@ -519,7 +532,33 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <ParetoFront/>
+                <v-select
+                    v-model="paretoObjective1"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-select
+                    v-model="paretoObjective2"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-switch
+                    v-model="onlyShowParetoFront"
+                    label="Show only Pareto front"
+                    color="primary"
+                    hide-details
+                />
+                <ParetoFront
+                    :paretoObjective1="selectedParetoObjective1"
+                    :paretoObjective2="selectedParetoObjective2"
+                    :only-show-pareto-front="onlyShowParetoFront"
+                />
               </v-col>
 
               <v-col

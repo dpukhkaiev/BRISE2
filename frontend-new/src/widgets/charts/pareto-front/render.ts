@@ -6,7 +6,9 @@ export function renderParetoFront(
         "objective_names": string[],
         "all_points": Record<string, any>[], 
         "pareto_points": Record<string, any>[]
-    }) {
+    },
+    onlyShowParetoFront: boolean
+) {
 
     if (result.objective_names.length === 0) {
         Plotly.purge(element)
@@ -29,7 +31,7 @@ export function renderParetoFront(
             ": %{x}<br>" +
             result.objective_names[1] +
             ": %{y}<extra></extra>"
-    };
+    }
 
     const paretoTrace = {
         x: result.pareto_points.map(p => p.x),
@@ -49,7 +51,7 @@ export function renderParetoFront(
             ": %{x}<br>" +
             result.objective_names[1] +
             ": %{y}<extra></extra>"
-    };
+    }
 
     const layout = {
         title: {
@@ -66,7 +68,11 @@ export function renderParetoFront(
             }
         },
         hovermode: "closest" as const
-    };
+    }
 
-    Plotly.react(element, [allTrace, paretoTrace], layout);
+    const data = onlyShowParetoFront
+    ? [paretoTrace]
+    : [allTrace, paretoTrace]
+    
+    Plotly.react(element, data, layout);
 }

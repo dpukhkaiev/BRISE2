@@ -187,18 +187,26 @@ def calculate_importances(payload):
 
 def calculate_pareto(payload):
     study = reconstruct_study(payload)
-    
-    objective_names = []
-  
-    for trial in payload["trials"]:
-        if "results" in trial:
-            objective_names = list(trial["results"].keys())
-            break
-        
+
+    experiment_description = payload["experiment_description"]
+
+    objective_names = list(
+        experiment_description["Context"]
+        ["TaskConfiguration"]
+        ["Objectives"]
+        .keys()
+    )
+
+    objective1 = payload["objective1"]
+    objective2 = payload["objective2"]
+
+    x_index = objective_names.index(objective1)
+    y_index = objective_names.index(objective2)
+
     all_points = [
         {
-            "x": trial.values[0],
-            "y": trial.values[1],
+            "x": trial.values[x_index],
+            "y": trial.values[y_index],
             "params": trial.params,
             "number": trial.number,
         }
@@ -208,19 +216,18 @@ def calculate_pareto(payload):
 
     pareto_points = [
         {
-            "x": trial.values[0],
-            "y": trial.values[1],
+            "x": trial.values[x_index],
+            "y": trial.values[y_index],
             "params": trial.params,
             "number": trial.number,
         }
         for trial in study.best_trials
     ]
-    print("all points: ", all_points)
-    print("pareto points: ", pareto_points)
+
     return {
-        "objective_names": objective_names,
-        "all_points": all_points, 
-        "pareto_points": pareto_points
+        "objective_names": [objective1, objective2],
+        "all_points": all_points,
+        "pareto_points": pareto_points,
     }
         
 def calculate_contour(payload):
