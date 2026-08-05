@@ -4,43 +4,35 @@ import type { PointExp } from "../../../entities/main/model/plot.store";
 export function renderRank(
     element: HTMLElement,
     allRes: PointExp[],
+    rankParam1: string,
+    rankParam2: string,
+    rankObjective: string
 ) {
     if (allRes.length === 0) {
         Plotly.purge(element);
         return;
     }
 
-    const parameters = Object.keys(allRes[0].configurations);
-
-    if (parameters.length < 2) {
-        return;
-    }
-
-    const objective = Object.keys(allRes[0].results)[0];
-
-    const xParam = parameters[0];
-    const yParam = parameters[1];
-
     const trace: Plotly.Data = {
         type: "scatter",
         mode: "markers",
-        x: allRes.map(p => p.configurations[xParam]),
-        y: allRes.map(p => p.configurations[yParam]),
+        x: allRes.map(p => p.configurations[rankParam1]),
+        y: allRes.map(p => p.configurations[rankParam2]),
         marker: {
             size: 10,
-            color: allRes.map(p => Number(p.results[objective])),
+            color: allRes.map(p => Number(p.results[rankObjective])),
             colorscale: "Viridis",
             colorbar: {
                 title: {
-                    text: objective
+                    text: rankObjective
                 }
             }
         },
         text: allRes.map((_, i) => `Trial ${i + 1}`),
         hovertemplate:
-            `${xParam}: %{x}<br>` +
-            `${yParam}: %{y}<br>` +
-            `${objective}: %{marker.color}<extra></extra>`
+            `${rankParam1}: %{x}<br>` +
+            `${rankParam2}: %{y}<br>` +
+            `${rankObjective}: %{marker.color}<extra></extra>`
     };
 
     const layout: Partial<Plotly.Layout> = {
@@ -49,12 +41,12 @@ export function renderRank(
         },
         xaxis: {
             title: {
-                text: xParam
+                text: rankParam1
             }
         },
         yaxis: {
             title: {
-                text: yParam
+                text: rankParam2
             }
         },
         hovermode: "closest"

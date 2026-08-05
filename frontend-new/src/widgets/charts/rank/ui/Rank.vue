@@ -11,13 +11,19 @@ const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 const rank = ref<HTMLElement | null>(null)
 
+const props = defineProps<{
+    rankParam1: string
+    rankParam2: string
+    rankObjective: string
+}>()
+
 async function render() {
     await nextTick()
 
     if (!rank.value) return
     if (!experiment_description.value) 
         return
-    renderRank(rank.value, allRes.value)
+    renderRank(rank.value, allRes.value, props.rankParam1, props.rankParam2, props.rankObjective)
 }
 
 watch(

@@ -11,13 +11,18 @@ const { allRes } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 const slice = ref<HTMLElement | null>(null)
 
+const props = defineProps<{
+    sliceParam: string
+    sliceObjective: string
+}>()
+
 async function render() {
     await nextTick()
 
     if (!slice.value) return
     if (!experiment_description.value) 
         return
-    renderSlice(slice.value, allRes.value)
+    renderSlice(slice.value, allRes.value, props.sliceParam, props.sliceObjective)
 }
 
 watch(

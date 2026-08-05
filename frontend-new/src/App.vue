@@ -61,7 +61,7 @@ const parameterNames = computed(() => {
 // manage selected dropdown values
 const optHistObjective = ref("")
 const selectedOptHistObjective = computed(() => {
-    return optHistObjective.value || objectiveNames.value[0] || "";
+    return optHistObjective.value || objectiveNames.value[0] || ""
 })
 
 const paraCoordParams = ref<string[]>([])
@@ -72,7 +72,29 @@ const selectedParaCoordParams = computed(() => {
 })
 const paraCoordObjective = ref("")
 const selectedParaCoordObjective = computed(() => {
-    return paraCoordObjective.value || objectiveNames.value[0] || "";
+    return paraCoordObjective.value || objectiveNames.value[0] || ""
+})
+
+const rankParam1 = ref("")
+const selectedRankParam1 = computed(() => {
+    return rankParam1.value || parameterNames.value[0] || ""
+})
+const rankParam2 = ref("")
+const selectedRankParam2 = computed(() => {
+    return rankParam2.value || parameterNames.value[1] || ""
+})
+const rankObjective = ref("")
+const selectedRankObjective = computed(() => {
+    return rankObjective.value || objectiveNames.value[0] || ""
+})
+
+const sliceParam = ref("")
+const selectedSliceParam = computed(() => {
+    return sliceParam.value || parameterNames.value[0] || ""
+})
+const sliceObjective = ref("")
+const selectedSliceObjective = computed(() => {
+    return sliceObjective.value || objectiveNames.value[0] || ""
 })
 
 onMounted(() => {
@@ -86,6 +108,8 @@ watch(
     (objectives) => {
         optHistObjective.value = objectives[0] ?? ""
         paraCoordObjective.value = objectives[0] ?? ""
+        rankObjective.value = objectives[0] ?? ""
+        sliceObjective.value = objectives[0] ?? ""
     },
     { immediate: true }
 )
@@ -94,6 +118,9 @@ watch(
     parameterNames,
     (parameters) => {
         paraCoordParams.value = [...parameters]
+        rankParam1.value = parameters[0] ?? ""
+        rankParam2.value = parameters[1] ?? ""
+        sliceParam.value = parameters[0] ?? ""
     },
     { immediate: true }
 )
@@ -341,18 +368,14 @@ watch(
                     />
                   </v-list-item>
                 </v-list>
-                <v-radio-group
+                <v-select
                     v-model="paraCoordObjective"
+                    :items="objectiveNames"
                     label="Objective"
-                    inline
-                >
-                    <v-radio
-                        v-for="objective in objectiveNames"
-                        :key="objective"
-                        :label="objective"
-                        :value="objective"
-                    />
-                </v-radio-group>
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
                 <ParaCoord
                     :paraCoordParams="selectedParaCoordParams"
                     :paraCoordObjective="selectedParaCoordObjective"
@@ -366,7 +389,35 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <Rank/>
+                <v-select
+                    v-model="rankParam1"
+                    :items="parameterNames"
+                    label="Parameter 1"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-select
+                    v-model="rankParam2"
+                    :items="parameterNames"
+                    label="Parameter 2"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-select
+                    v-model="rankObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <Rank
+                    :rankParam1="selectedRankParam1"
+                    :rankParam2="selectedRankParam2"
+                    :rankObjective="selectedRankObjective"
+                />
               </v-col>
 
               <v-col
@@ -386,7 +437,26 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <Slice/>
+                <v-select
+                    v-model="sliceParam"
+                    :items="parameterNames"
+                    label="Parameter"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <v-select
+                    v-model="sliceObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                />
+                <Slice
+                    :sliceParam="selectedSliceParam"
+                    :sliceObjective="selectedSliceObjective"
+                />
               </v-col>
 
               <v-col
