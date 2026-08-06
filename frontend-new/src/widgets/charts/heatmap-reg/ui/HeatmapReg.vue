@@ -14,7 +14,7 @@ const result = ref(new Map<string, any>())
 const prediction = ref(new Map<string, any>())
 const measPoints = ref<Array<[any, any]>>([])
 
-// Reaktive Achsen & Titel
+
 const x = ref<string[]>([])
 const y = ref<string[]>([])
 const xTitle = ref<string>('X Axis')
@@ -66,13 +66,7 @@ const optimumPoint = computed(() => {
     const xExists = x.value.includes(cleanX)
     const yExists = y.value.includes(cleanY)
 
-    console.group('[Heatmap Debug] Optimum Evaluation');
-    console.log('Raw Solution:', solution.value);
 
-    console.log('Cleaned:', { cleanX, cleanY });
-    console.log('Current X Axis Array:', x.value, '-> Matches?', xExists);
-    console.log('Current Y Axis Array:', y.value, '-> Matches?', yExists);
-    console.groupEnd();
 
     if (!cleanX || !cleanY || !xExists || !yExists) {
         console.warn('Optimum point is out of axis bounds or invalid:', { cleanX, cleanY })
@@ -148,16 +142,7 @@ async function render(): Promise<void> {
         }
     }
 
-    console.log('[Heatmap-Reg] RENDER STATE', {
-        x: x.value,
-        y: y.value,
-        xTitle: xTitle.value,
-        yTitle: yTitle.value,
-        predictionSize: prediction.value.size,
-        hasSolution: !!solution.value,
-        optimum: optimumPoint.value
-    })
-    console.log('map size:', map.value?.clientWidth, map.value?.clientHeight)
+
     await Plotly.react(map.value, data, layout, { responsive: true })
 }
 
@@ -234,7 +219,6 @@ function initMainEvents() {
 
 
     store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
-        console.log('[Heatmap Debug] Received FINAL event:', message);
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body)
             const res = configs?.[0]
