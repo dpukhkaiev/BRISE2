@@ -49,6 +49,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
          console.log('EXPERIMENT message received:', message.headers['message_subtype'])
          if (message.headers['message_subtype'] === 'description') {
             console.log(message.body)
+            // cleans invalid json parts
             const clean = message.body.replace(/:\s*Infinity/g, ': null')
             const body = JSON.parse(clean) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any }
             console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)

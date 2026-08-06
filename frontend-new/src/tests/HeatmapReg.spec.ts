@@ -4,6 +4,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import HeatmapReg from '@/widgets/charts/heatmap-reg/ui/HeatmapReg.vue'
 
+
+globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
 vi.mock('plotly.js-dist-min', () => {
     const mockPlotly = {
         react: vi.fn().mockResolvedValue(undefined),
@@ -48,7 +54,7 @@ vi.mock('../entities/main', () => ({
             })
         }))
     })),
-    MainEvent: { NEW: 'NEW', FINAL: 'FINAL', DEFAULT: 'DEFAULT' }
+    MainEvent: { NEW: 'NEW', FINAL: 'FINAL', DEFAULT: 'DEFAULT', PREDICTIONS: 'PREDICTIONS'}
 }))
 
 let eventCallbacks: Record<string, Function> = {}
@@ -90,7 +96,7 @@ describe('HeatmapReg.vue', () => {
     })
 
     it('matches optimum point only when axis values exist in x/y arrays', async () => {
-        // Testet den Kern-Bug: cleanIdentifier-Matching zwischen Solution und Achsen
+        
         const wrapper = mountComponent()
         await flushPromises()
 
@@ -102,7 +108,7 @@ describe('HeatmapReg.vue', () => {
 
         const data = vi.mocked(PlotlyMock.react).mock.calls[0]?.[1]
         const starTrace = data?.find((t: any) => t.name === 'Optimum')
-        expect(starTrace).toBeFalsy() // kein Match -> kein Stern
+        expect(starTrace).toBeFalsy() // no match, no star
     })
 
     it('populates the heatmap surface when PREDICTIONS events arrive', async () => {

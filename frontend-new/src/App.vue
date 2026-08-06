@@ -127,9 +127,7 @@ function openSearchSpace() {
             <TaskList />
           </v-tabs-window-item>
 
-
-
-          <v-tabs-window-item value="charts">
+          <v-tabs-window-item value="charts" eager>
             <v-row no-gutters>
               <v-col v-show="visibleCharts.includes('impres')" cols="12" md="8" class="pr-2">
                 <ImpRes />

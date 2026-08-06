@@ -35,6 +35,7 @@
     "@types/plotly.js-dist-min": "^2.3.4",
     "@typescript-eslint/parser": "^8.62.0",
     "@vitejs/plugin-vue": "^6.0.5",
+    "@vitest/coverage-v8": "^4.1.7",
     "@vue/test-utils": "^2.4.10",
     "@vue/tsconfig": "^0.9.1",
     "eslint": "^10.6.0",

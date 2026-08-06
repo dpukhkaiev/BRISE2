@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 // Constant
 import { MainEvent } from '../../../entities/main'
 
-import { resolveExperimentLabel } from '../../../entities/experiment/lib/resolve-exp-label'
 //service
 import { useMainEventStore } from '../../../entities/main'
 
@@ -15,7 +14,7 @@ import { normalizeConfigKeys } from '../../../shared/lib'
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace } = storeToRefs(store)
+const { experiment_description } = storeToRefs(store)
 
 
 const {
@@ -23,15 +22,16 @@ const {
   snackbar,
   snackbarMsg,
   solutionState,
+  sol,
+  dc,
+  default_configuration,
   pushNews,
   triggerSnackbar,
   refresh,
   formatPercent
 } = useInfoBoard()
 
-let default_configuration: any
-let sol: any
-let dc: any
+
 
 const duration = 3000
 
@@ -44,7 +44,8 @@ function initMainEvents(): void {
   subscriptions.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
     if (message.headers['message_subtype'] === 'configuration') {
       let obj = JSON.parse(message.body)
-      default_configuration = obj[0]
+
+      default_configuration.value = obj[0]
       let temp = { 'time': Date.now(), 'message': 'Default configuration results received' }
       triggerSnackbar(temp.message)
       //SpushNews(temp.message)
@@ -63,12 +64,14 @@ function initMainEvents(): void {
       const cleanConfigObj = normalizeConfigKeys(s?.configurations ?? {})
       const config = JSON.stringify(cleanConfigObj, null, 2)
 
-      if (!default_configuration) {
+      if (!default_configuration.value) {
         console.warn('default_configuration not set yet')
-        dc = []
+        dc.value = []
+        // why should I reset sol too?
+        sol.value = []
       } else {
-        dc = Object.values(default_configuration.results)
-        sol = Object.values(s?.results ?? {})
+        dc.value = Object.values(default_configuration.value.results)
+        sol.value = Object.values(s?.results ?? {})
       }
 
       solutionState.value = {
@@ -122,9 +125,10 @@ function initMainEvents(): void {
       configs.forEach((configuration: any) => {
         if (configuration?.configurations) {
           const cleanConfig = normalizeConfigKeys(configuration.configurations)
+          const cleanResults = configuration.results ?? {}
           let temp = {
             'time': Date.now(),
-            'message': 'New results for ' + JSON.stringify(cleanConfig, null, 2)
+            'message': 'New results for ' + JSON.stringify(cleanConfig) + ' → ' + JSON.stringify(cleanResults)
           }
           triggerSnackbar(temp.message)
           pushNews(temp.message)
@@ -211,7 +215,7 @@ onUnmounted(() => {
           </v-list-item>
 
           <v-list-item prepend-icon="mdi-network">
-            <span class="desc">Quality gain: </span>
+            <span v-if="dc.length && sol.length" class="desc">Quality gain: </span>
             <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
               %</span>
           </v-list-item>

@@ -12,6 +12,11 @@ export function useInfoBoard() {
   const snackbar = ref(false)
   const snackbarMsg = ref('')
 
+  const default_configuration = ref<any>(null)
+  // reactive to make them more robust
+  let sol= ref<number[]>([])
+  let dc = ref<number[]>([])
+
   // new: shallowRef to imporve performance, 1 shallowRef, 1 render
   const solutionState = shallowRef<{
     solution: Solution | undefined
@@ -36,6 +41,7 @@ export function useInfoBoard() {
       configWithNones: '',
       result: ''
     }
+    default_configuration.value = null
     news.value = []
   }
 
@@ -49,6 +55,9 @@ function formatPercent(value: number): string {
     snackbar,
     snackbarMsg,
     solutionState,
+    sol, 
+    dc,
+    default_configuration,
     pushNews,
     triggerSnackbar,
     refresh,
