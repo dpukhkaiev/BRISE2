@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, nextTick } from 'vue'
+import { ref, onMounted, watch, computed, nextTick, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
@@ -166,6 +166,10 @@ onMounted(() => {
 }
 )
 
+onUnmounted(() => {
+    resizeObserver?.disconnect()
+    resizeObserver = null
+})
 
 function initMainEvents() {
     store.onEvent(MainEvent.PREDICTIONS)?.subscribe(async (message: any) => {
