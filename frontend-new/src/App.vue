@@ -8,17 +8,22 @@ import { TaskList } from './widgets/task-list'
 import { MultiDim } from './widgets/charts/multi-dim'
 import { ImpRes } from './widgets/charts/imp-res'
 import { Heatmap } from './widgets/charts/heatmap'
-import { HeatmapReg } from './widgets/charts/heatmap-reg'
-
-
+import { defineAsyncComponent } from 'vue'
 
 const store = useMainEventStore()
 
 const tab = ref('info')
 const chartMenu = ref(false)
+
+const HeatmapReg = defineAsyncComponent(() =>
+  import('./widgets/charts/heatmap-reg')
+)
+
 const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'heatmap-reg'])
 const drawer = ref(false)
 const searchSpace = ref(false)
+
+
 onMounted(() => {
   store.initEvent()
   store.loadPlotly()
@@ -132,7 +137,7 @@ function openSearchSpace() {
               <v-col v-show="visibleCharts.includes('impres')" cols="12" md="8" class="pr-2">
                 <ImpRes />
               </v-col>
-              <v-col v-show="visibleCharts.includes('heatmap')" cols="12" md="8" class="pr-2">
+              <v-col v-if="visibleCharts.includes('heatmap')" cols="12" md="8" class="pr-2">
                 <Heatmap />
               </v-col>
               <v-col v-show="visibleCharts.includes('multidim')" cols="12" md="10" class="pr-2">

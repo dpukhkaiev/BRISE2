@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
-import { HeatmapDataTransformer } from '../../../../entities/experiment/lib/heatmap-data.transformer'
+import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 
 const store = useMainEventStore()
 const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
@@ -47,7 +47,7 @@ const isModelType = computed(() => {
 
 
 const zMatrix = computed(() => {
-    return HeatmapDataTransformer.buildZMatrix(x.value, y.value, prediction.value)
+    return DataTransformer.buildZMatrix(x.value, y.value, prediction.value)
 })
 
 
@@ -59,8 +59,8 @@ const optimumPoint = computed(() => {
     const rawYVal = configs?.[yParamKey.value]
 
 
-    const cleanX = HeatmapDataTransformer.cleanIdentifier(rawXVal)
-    const cleanY = HeatmapDataTransformer.cleanIdentifier(rawYVal)
+    const cleanX = DataTransformer.cleanIdentifier(rawXVal)
+    const cleanY = DataTransformer.cleanIdentifier(rawYVal)
 
 
     const xExists = x.value.includes(cleanX)
@@ -180,8 +180,8 @@ function initMainEvents() {
                 const rawXVal = item.configurations[xParamKey.value]
                 const rawYVal = item.configurations[yParamKey.value]
 
-                const cleanX = HeatmapDataTransformer.cleanIdentifier(rawXVal)
-                const cleanY = HeatmapDataTransformer.cleanIdentifier(rawYVal)
+                const cleanX = DataTransformer.cleanIdentifier(rawXVal)
+                const cleanY = DataTransformer.cleanIdentifier(rawYVal)
 
                 prediction.value.set(`${cleanY},${cleanX}`, item['results'])
             }
@@ -204,18 +204,18 @@ function initMainEvents() {
 
         const keys = Object.keys(boundaryObj).filter(k => k !== 'root')
         if (keys.length >= 2) {
-            xParamKey.value = keys[0]   // z.B. "frequency" ODER "mutation_type" ODER was auch immer
+            xParamKey.value = keys[0]
             yParamKey.value = keys[1]
-            xTitle.value = HeatmapDataTransformer.cleanIdentifier(keys[0])
-            yTitle.value = HeatmapDataTransformer.cleanIdentifier(keys[1])
+            xTitle.value = DataTransformer.cleanIdentifier(keys[0])
+            yTitle.value = DataTransformer.cleanIdentifier(keys[1])
 
 
             const rawX = boundaryObj[keys[0]] ?? []
             const rawY = boundaryObj[keys[1]] ?? []
 
 
-            y.value = rawY.map((item: any) => HeatmapDataTransformer.cleanIdentifier(item))
-            x.value = rawX.map((item: any) => HeatmapDataTransformer.cleanIdentifier(item))
+            y.value = rawY.map((item: any) => DataTransformer.cleanIdentifier(item))
+            x.value = rawX.map((item: any) => DataTransformer.cleanIdentifier(item))
         }
     }, { deep: true, immediate: true })
 

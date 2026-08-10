@@ -12,7 +12,7 @@ import type { Solution } from '../../../../entities/task/model/task-data.model';
 
 //service
 import { useMainEventStore } from '../../../../entities/main'
-
+import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 interface Configuration {
     configurations: Array<any>;
     results: any;

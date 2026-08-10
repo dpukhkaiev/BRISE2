@@ -1,11 +1,11 @@
-export interface HeatmapMatrixPayload {
+export interface MatrixPayload {
   xAxis: string[]
   yAxis: string[]
   zMatrix: (number | null)[][]
 }
 
  
-export class HeatmapDataTransformer {
+export class DataTransformer {
   // cleans domain string identifiers (e.g., "Context.SearchSpace.threads.one" -> "one")
    
   public static cleanIdentifier(s: string): string {

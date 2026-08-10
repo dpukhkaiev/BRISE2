@@ -8,9 +8,9 @@ import type { Solution } from '../../../../entities/task/model/task-data.model';
 
 // services
 import { useMainEventStore } from '../../../../entities/main'
-import { HeatmapDataTransformer } from '../../../../entities/experiment/lib/heatmap-data.transformer'
+import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 
-const clean = HeatmapDataTransformer.cleanIdentifier
+const clean = DataTransformer.cleanIdentifier
 
 // initialize store
 const store = useMainEventStore()
