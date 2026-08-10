@@ -117,9 +117,10 @@ function closeExportDialog() {
 }
 
 // Larger fonts for the exported figure (the on-screen plot is left untouched).
-const EXPORT_FONT_SIZE = 16;
-const EXPORT_LEGEND_FONT_SIZE = 20;
-const EXPORT_AXIS_TITLE_FONT_SIZE = 20;
+const EXPORT_FONT_SIZE = 18;              // base font (plot title, annotations, fallback)
+const EXPORT_TICK_FONT_SIZE = 20;         // axis tick numbers
+const EXPORT_LEGEND_FONT_SIZE = 22;
+const EXPORT_AXIS_TITLE_FONT_SIZE = 22;   // axis title labels ("x label" / "y label")
 // Two-column layout tunables (px).
 const LEGEND_NUM_COLUMNS = 2;       // entries are split across this many columns
 const LEGEND_COLUMN_GAP_PX = 18;    // horizontal gap between columns
@@ -207,6 +208,8 @@ function enlargeAxisTitle(layout, key) {
                                                  : Object.assign({}, axis.title);
     title.font = Object.assign({}, title.font, {size: EXPORT_AXIS_TITLE_FONT_SIZE});
     axis.title = title;
+    // Tick numbers otherwise inherit the global font; give them a dedicated size.
+    axis.tickfont = Object.assign({}, axis.tickfont, {size: EXPORT_TICK_FONT_SIZE});
     layout[key] = axis;
 }
 
