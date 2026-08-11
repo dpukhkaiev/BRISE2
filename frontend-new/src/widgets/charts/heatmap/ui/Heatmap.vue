@@ -12,7 +12,10 @@ import type { Solution } from '../../../../entities/task/model/task-data.model';
 
 //service
 import { useMainEventStore } from '../../../../entities/main'
+import { cleanIdentifier } from '../../../../shared/lib'
+
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
+
 interface Configuration {
     configurations: Array<any>;
     results: any;
@@ -32,8 +35,7 @@ const prediction = ref(new Map<string, any>())
 // best point
 let solution: Solution
 const configWithNones = ref('')
-// Measured points for the Regresion model from worker-service
-// is always an array of arrays (a tuple)
+
 const measPoints = ref<Array<[any, any]>>([])
 let defaultConfiguration: Configuration
 let sol: any = ref()
@@ -54,8 +56,7 @@ const theme = ref({
 
 // values that possible to use in template
 const colors = Color
-const types = PlotType
-const smoothOpt = Smooth
+
 
 const map = ref<HTMLElement | null>(null)
 
@@ -74,25 +75,16 @@ const isModelType = computed(() => {
     return isReg ? 'regression' : 'unknown'
 })
 
-async function zParser(data: Map<String, any>): Promise<Array<Array<any>>> {
-    // Parse the answears in to array of Y rows
-    const z: any = []
-    for (const yVal of y.value) {
-        const row: any = [];
-        for (const xVal of x.value) {
-            const results = data.get(String([yVal, xVal])); // To get horizontal orientation - change to [x,y], vertical - [y,x]
-            row.push(results && results[0]); // Get the first result from an array or mark it as undefined.
-        }
-        z.push(row);
-        // breaking a long task in a lot of short ones
-        if ('scheduler' in window && typeof scheduler.yield === 'function') {
-            await scheduler.yield();
-        }
-
-    }
-
-    return z;
-}
+// 
+const resultLookup = computed(() => {
+    const map = new Map<string, number>()
+    result.value.forEach((v, k) => map.set(k, v?.[0]))
+    return map
+})
+const zMatrix = computed(() => DataTransformer.buildZMatrix(
+    x.value.map(String),
+    y.value.map(String),
+    resultLookup.value))
 
 
 async function render(): Promise<void> {
@@ -100,7 +92,7 @@ async function render(): Promise<void> {
 
     if (!Plotly) return
     if (isModelType.value === 'regression') {
-        const zData = await zParser(result.value);
+        const zData = DataTransformer.buildZMatrix(x.value.map(String), y.value.map(String), resultLookup.value)
         const element = map.value
         const data: any[] = [
             { // defined X and Y axises with data, type and color
@@ -118,7 +110,7 @@ async function render(): Promise<void> {
                 x: measPoints.value.map(arr => arr[1]),
                 y: measPoints.value.map(arr => arr[0])
             },
-            { // Best point. Solution
+            { // Best point solution
                 type: 'scatter' as const,
                 mode: 'markers' as const,
                 hoverinfo: 'none' as const,
@@ -158,7 +150,6 @@ async function render(): Promise<void> {
     }
 }
 
-const lastName = (s: string) => String(s).split('.').pop() ?? String(s)
 function initMainEvents() {
     watch(experiment_description, () => {
         if (!experiment_description.value || !searchspace.value || !globalConfig.value) {
@@ -166,8 +157,8 @@ function initMainEvents() {
         }
         resetRes()
         const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
-        x.value = (boundaryObj?.threads ?? []).map(lastName)
-        y.value = (boundaryObj?.frequency ?? []).map(lastName)
+        x.value = (boundaryObj?.threads ?? []).map(cleanIdentifier)
+        y.value = (boundaryObj?.frequency ?? []).map(cleanIdentifier)
     }, {
         deep: true,
         immediate: true
@@ -180,8 +171,8 @@ function initMainEvents() {
         for (const configuration of configs) {
             if (configuration) {
                 const conf = configuration['configurations'];
-                const freq = lastName(conf.frequency);
-                const threads = lastName(conf.threads);
+                const freq = cleanIdentifier(conf.frequency);
+                const threads = cleanIdentifier(conf.threads);
                 result.value.set(String([freq, threads]), configuration['results']);
                 measPoints.value.push([freq, threads]);
             }
@@ -190,7 +181,7 @@ function initMainEvents() {
                 await scheduler.yield();
             }
         }
-        // collect all configs first, then render once after Vue's DOM update
+        // collect all configs first, then render 
         nextTick(() => render())
     })
 
@@ -207,8 +198,8 @@ function initMainEvents() {
                     configWithNones.value = configWithNones.value.replace(',,', ',None,');
                     results.value = JSON.stringify(solution.results)
                     const conf = configuration['configurations'];
-                    result.value.set(String([lastName(conf.frequency), lastName(conf.threads)]), configuration['results']);
-                    measPoints.value.push([lastName(conf.frequency), lastName(conf.threads)]);
+                    result.value.set(String([cleanIdentifier(conf.frequency), cleanIdentifier(conf.threads)]), configuration['results']);
+                    measPoints.value.push([cleanIdentifier(conf.frequency), cleanIdentifier(conf.threads)]);
                     sol.value = Object.values(solution.results)
                     dc.value = Object.values(defaultConfiguration.results)
 

@@ -1,7 +1,7 @@
-import { ref, computed, watch  } from 'vue'
+import { ref, computed  } from 'vue'
 
 import { Task } from '../../../entities/task/model/task-data.model'
-
+import { cleanIdentifier, normalizeConfigKeys } from '../../../shared/lib'
 
 export function useTaskMetrics() {
     const result = ref<Task[]>([])
@@ -26,7 +26,8 @@ export function useTaskMetrics() {
         return result.value.filter(task => {
             let params = ''
             let results = ''
-            Object.values(task.config).forEach((param: any) => { params += param })
+            const cleanConfig = normalizeConfigKeys(task.config)
+            Object.values(cleanConfig).forEach((param: any) => { params += param })
             Object.values(task.meta.result).forEach(res => { results += String(res) })
 
             const dataStr = task.id + params + results
@@ -75,9 +76,10 @@ export function useTaskMetrics() {
     }
 
     function cachedAvg(config: Record<string, any>): any[] {
-        const key = JSON.stringify(config)
+        const normalizedConfig = normalizeConfigKeys(config)
+        const key = JSON.stringify(normalizedConfig)
         if (avgResultCache.has(key)) return avgResultCache.get(key)!
-        const avg = getAverageResult(config)
+        const avg = getAverageResult(normalizedConfig)
         avgResultCache.set(key, avg)
         return avg
     }

@@ -1,3 +1,4 @@
+import {cleanIdentifier} from '../../../shared/lib'
 export interface MatrixPayload {
   xAxis: string[]
   yAxis: string[]
@@ -6,25 +7,22 @@ export interface MatrixPayload {
 
  
 export class DataTransformer {
-  // cleans domain string identifiers (e.g., "Context.SearchSpace.threads.one" -> "one")
    
-  public static cleanIdentifier(s: string): string {
-    return String(s || '').split('.').pop() ?? String(s)
-  }
+
 
   //Extracts clean axis categories from SearchSpace parameters
 
   public static extractAxisCategories(paramObj: any): string[] {
     if (!paramObj) return []
     if (Array.isArray(paramObj)) {
-      return paramObj.map(this.cleanIdentifier)
+      return paramObj.map(cleanIdentifier)
     }
     if (paramObj.Categories && Array.isArray(paramObj.Categories)) {
-      return paramObj.Categories.map(this.cleanIdentifier)
+      return paramObj.Categories.map(cleanIdentifier)
     }
     return Object.keys(paramObj)
       .filter(k => !['Type', 'Default', 'Level'].includes(k))
-      .map(this.cleanIdentifier)
+      .map(cleanIdentifier)
   }
 
   // builds the 2D Z-Matrix required for Plotly from raw prediction map and clean axis categories
@@ -65,8 +63,8 @@ export class DataTransformer {
     }
 
     return {
-      yVal: this.cleanIdentifier(rawY),
-      xVal: this.cleanIdentifier(rawX)
+      yVal: cleanIdentifier(rawY),
+      xVal: cleanIdentifier(rawX)
     }
   }
 }

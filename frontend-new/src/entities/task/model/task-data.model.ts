@@ -24,8 +24,6 @@ export class Task {
         this.run = item[0].run;
         this.config = item[0].configurations;
         this.meta = item[0].results;
-        // Suggested in https://github.com/dpukhkaiev/BRISEv2/pull/145#discussion_r440138361
-        // Calculates precision class to properly round and display results.
         this.roundedResults = {};
         for (const [result_key, result_value] of Object.entries(item[0].results.result)) {
             this.roundedResults[result_key] = typeof result_value === 'number'

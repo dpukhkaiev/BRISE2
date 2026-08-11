@@ -8,7 +8,7 @@ import { Task } from '../../../entities/task/model/task-data.model';
 //service
 import { useMainEventStore } from '../../../entities/main'
 
-import { cleanIdentifier } from '../../../shared/lib'
+import { cleanIdentifier, normalizeConfigKeys } from '../../../shared/lib'
 
 import { useTaskMetrics } from '../model/task-metrics'
 
@@ -138,12 +138,12 @@ defineExpose({
                 :items="filteredResult">
                 <!-- Configuration Column -->
                 <template #item.run="{ item }">
-                    <span v-for="(value, key) in item.config" :key="key">
-                        {{ cleanIdentifier(key) }} = {{ cleanIdentifier(value) }} ;
+                    <span v-for="(value, key) in normalizeConfigKeys(item.config)" :key="key">
+                        {{ (key) }} = {{ (value) }} ;
                     </span>
                 </template>
                 <template #item.roundedResults="{ item }">
-                    <span v-for="(value, key) in item.roundedResults" :key="key">
+                    <span v-for="(value, key) in normalizeConfigKeys(item.roundedResults)" :key="key">
                         {{ key }} = {{ value }} ;
                     </span>
                 </template>
@@ -152,8 +152,8 @@ defineExpose({
                 <!-- Expanded Content Column -->
                 <template #expanded-row="{ item }">
                     <div v-memo="[item.id, expanded.includes(item.id)]">
-                        <v-chip v-for="(value, key) in item.config" :key="key">
-                            {{ cleanIdentifier(key) }}: {{ cleanIdentifier(value) }}
+                        <v-chip v-for="(value, key) in normalizeConfigKeys(item.config)" :key="key">
+                            {{ key }}: {{ value }}
                         </v-chip>
                     </div>
 

@@ -2,7 +2,6 @@ import { stompClient } from '../../../shared/api/stomp.client'
 import { RxStompRPC } from '@stomp/rx-stomp'
 import { firstValueFrom } from 'rxjs';
 
-// where is tasks[] used?
 // return a promise
 
 const rxStompRPC = new RxStompRPC(stompClient)

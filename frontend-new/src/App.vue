@@ -8,16 +8,13 @@ import { TaskList } from './widgets/task-list'
 import { MultiDim } from './widgets/charts/multi-dim'
 import { ImpRes } from './widgets/charts/imp-res'
 import { Heatmap } from './widgets/charts/heatmap'
-import { defineAsyncComponent } from 'vue'
+import { HeatmapReg } from './widgets/charts/heatmap-reg'
 
-const store = useMainEventStore()
+
 
 const tab = ref('info')
 const chartMenu = ref(false)
 
-const HeatmapReg = defineAsyncComponent(() =>
-  import('./widgets/charts/heatmap-reg')
-)
 
 const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'heatmap-reg'])
 const drawer = ref(false)
@@ -25,6 +22,7 @@ const searchSpace = ref(false)
 
 
 onMounted(() => {
+  const store = useMainEventStore()
   store.initEvent()
   store.loadPlotly()
 })

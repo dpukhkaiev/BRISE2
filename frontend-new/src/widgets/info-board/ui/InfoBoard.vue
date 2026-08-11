@@ -116,7 +116,7 @@ function initMainEvents(): void {
     triggerSnackbar(temp.message)
     pushNews(temp.message)
   },
-    // reactive object from store, need deep to tracl properties of the object
+    // reactive object from store, need deep to trace properties of the object
     { deep: true })
 
   subscriptions.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
@@ -225,19 +225,6 @@ onUnmounted(() => {
             <span>{{ solutionState.solution['performed_measurements'] }}</span>
           </v-list-item>
 
-          <!--  <v-list-item v-if="searchspace['size'] != 'Infinity'">
-                        <span class="desc">Saved efforts: </span>
-                        <span>
-                            {{
-                                formatPercent((1 - solution['performed_measurements'] /
-                                    ((searchspace['size'] as any) *
-                                        (experiment_description as
-                                            any)?.['RepetitionManager']?.['Instance']?.['AcceptableErrorBased']?.['MaxTasksPerConfiguration'])
-                                ) * 100
-                                ) }} %
-                        </span>
-
-                    </v-list-item> -->
         </v-list>
       </v-expansion-panel-text>
     </v-expansion-panel>

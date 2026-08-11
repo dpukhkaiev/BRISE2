@@ -3,14 +3,12 @@ import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
 // constant
-import { MainEvent } from '../../../../entities/main'
+import { MainEvent, useMainEventStore } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model';
 
-// services
-import { useMainEventStore } from '../../../../entities/main'
-import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
+import { cleanIdentifier } from '../../../../shared/lib'
 
-const clean = DataTransformer.cleanIdentifier
+import { zip, unpack, dimmensionsData } from '../model/dimension-lib'
 
 // initialize store
 const store = useMainEventStore()
@@ -37,32 +35,14 @@ function resetRes() {
     defaultPoint = null
 }
 
-const lastName = (s: string) => clean(s)
 
-// return an array of values by key from all maps
-function unpack(set: any, key: any) {
-    let selection: any = []
-    set.forEach((point: any) => {
-        selection.push(point.get(key));
-    });
-    return selection
-}
-
-// merge key and values arrays into a Map
-function zip(keys: Array<any>, values: Array<any>) {
-    let result = new Map()
-    if (keys.length == values.length) {
-        keys.forEach((key, i) => result.set(key, values[i]))
-    }
-    return result
-}
 
 async function chose() {
     if (!rootParam.value || rootParam.value.length === 0) return
 
     let index = rootParam.value.indexOf(experiment)
     if (index === -1) {
-        index = rootParam.value.findIndex(p => lastName(p) === experiment)
+        index = rootParam.value.findIndex(p => cleanIdentifier(p) === experiment)
     }
     if (index === -1) index = 0 // fallback
 
@@ -73,7 +53,7 @@ async function chose() {
 
     parameter_names.value = Object.keys(boundariesObj)
     let rangeValues = Object.values(boundariesObj)
-    const shortNames = parameter_names.value.map(lastName)
+    const shortNames = parameter_names.value.map(cleanIdentifier)
 
     resultParamsRange.value = zip(shortNames, rangeValues)
     resultParamsRange.value.set('result', undefined)
@@ -117,9 +97,9 @@ function initMainEvents() {
                     parameter_names.value.forEach((key: any) => {
                         const rawVal = configuration.configurations[key]
                         // cleaning the labels 
-                        alphas.push(clean(rawVal))
+                        alphas.push(cleanIdentifier(rawVal))
                     })
-                    let point = zip(parameter_names.value.map(lastName), alphas)
+                    let point = zip(parameter_names.value.map(cleanIdentifier), alphas)
                     point.set('result', configuration.results[keyParam.value])
                     allPoints.value.push(point)
                 }
@@ -156,9 +136,9 @@ function initMainEvents() {
                     var alphas = new Array();
                     parameter_names.value.forEach((key: any) => {
                         const rawVal = configuration.configurations[key]
-                        alphas.push(clean(rawVal))
+                        alphas.push(cleanIdentifier(rawVal))
                     })
-                    let point = zip(parameter_names.value.map(lastName), alphas)
+                    let point = zip(parameter_names.value.map(cleanIdentifier), alphas)
                     point.set('result', configuration.results[keyParam.value])
                     allPoints.value.push(point)
                 }
@@ -183,16 +163,19 @@ function initMainEvents() {
     // Final message
     store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
+            if (!parameter_names.value) return
             let configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
                 if (configuration) {
                     solution = configuration
-                }
-            })
-        }
-    });
-}
 
+                }
+
+
+            });
+        }
+    })
+}
 async function render(): Promise<void> {
     if (!currentDiagram.value) return
 
@@ -204,7 +187,7 @@ async function render(): Promise<void> {
         return
     }
 
-    const dims = dimmensionsData()
+    const dims = dimmensionsData(resultParamsRange.value, experiment, allPoints.value)
     if (!dims || dims.length === 0) return
 
     var trace = [{
@@ -220,7 +203,7 @@ async function render(): Promise<void> {
     var layout = {
         margin: { l: 200, r: 50, b: 50, t: 50 },
         title: {
-            text: lastName(currentDiagram.value),
+            text: cleanIdentifier(currentDiagram.value),
             font: { size: 18 }
         }
     }
@@ -228,54 +211,7 @@ async function render(): Promise<void> {
     Plotly.react(element, trace, layout)
 }
 
-function factoryDimension(parameter: String, valuesRange: Array<any>) {
-    let rawDimValues = unpack(allPoints.value, parameter)
-    // cleaning the row values
-    let cleanedValues = rawDimValues.map((v: any) => clean(v))
 
-    let dim: any = {
-        label: String(parameter).replace(/_/g, " ")
-    }
-
-    // check if values are nummeric
-    const isNumeric = cleanedValues.every((v: any) => v !== '' && v !== null && !isNaN(Number(v)))
-
-    if (isNumeric) {
-        dim.values = cleanedValues.map((v: any) => Number(v))
-    } else {
-        let categories: string[] = []
-
-        if (valuesRange && Array.isArray(valuesRange) && valuesRange.length > 0) {
-            categories = valuesRange.map((v: any) => clean(v))
-        } else {
-            // extract categories
-            categories = Array.from(new Set(cleanedValues))
-        }
-
-
-        dim.tickvals = Array.from(Array(categories.length).keys())
-        dim.ticktext = categories.map(String)
-
-        // limit dim.values to only have numbers 
-        dim.values = cleanedValues.map((val: any) => {
-            const idx = dim.ticktext.indexOf(String(val))
-            return idx !== -1 ? idx : 0
-        })
-    }
-
-    return dim
-}
-
-function dimmensionsData() {
-    let data: any = []
-    resultParamsRange.value?.size && resultParamsRange.value.forEach((range: Array<any>, param: String) => {
-        if (param != experiment) {
-            let dim = factoryDimension(param, range)
-            data.push(dim)
-        }
-    })
-    return data
-}
 
 onMounted(() => {
     initMainEvents()

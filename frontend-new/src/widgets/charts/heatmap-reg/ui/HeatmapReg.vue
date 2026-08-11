@@ -5,7 +5,7 @@ import { Color, PlotType, Smooth } from '../../model/chart.types'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
-
+import { cleanIdentifier } from '../../../../shared/lib'
 const store = useMainEventStore()
 const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
 
@@ -59,8 +59,8 @@ const optimumPoint = computed(() => {
     const rawYVal = configs?.[yParamKey.value]
 
 
-    const cleanX = DataTransformer.cleanIdentifier(rawXVal)
-    const cleanY = DataTransformer.cleanIdentifier(rawYVal)
+    const cleanX = cleanIdentifier(rawXVal)
+    const cleanY = cleanIdentifier(rawYVal)
 
 
     const xExists = x.value.includes(cleanX)
@@ -180,8 +180,8 @@ function initMainEvents() {
                 const rawXVal = item.configurations[xParamKey.value]
                 const rawYVal = item.configurations[yParamKey.value]
 
-                const cleanX = DataTransformer.cleanIdentifier(rawXVal)
-                const cleanY = DataTransformer.cleanIdentifier(rawYVal)
+                const cleanX = cleanIdentifier(rawXVal)
+                const cleanY = cleanIdentifier(rawYVal)
 
                 prediction.value.set(`${cleanY},${cleanX}`, item['results'])
             }
@@ -206,16 +206,16 @@ function initMainEvents() {
         if (keys.length >= 2) {
             xParamKey.value = keys[0]
             yParamKey.value = keys[1]
-            xTitle.value = DataTransformer.cleanIdentifier(keys[0])
-            yTitle.value = DataTransformer.cleanIdentifier(keys[1])
+            xTitle.value = cleanIdentifier(keys[0])
+            yTitle.value = cleanIdentifier(keys[1])
 
 
             const rawX = boundaryObj[keys[0]] ?? []
             const rawY = boundaryObj[keys[1]] ?? []
 
 
-            y.value = rawY.map((item: any) => DataTransformer.cleanIdentifier(item))
-            x.value = rawX.map((item: any) => DataTransformer.cleanIdentifier(item))
+            y.value = rawY.map((item: any) => cleanIdentifier(item))
+            x.value = rawX.map((item: any) => cleanIdentifier(item))
         }
     }, { deep: true, immediate: true })
 

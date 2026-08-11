@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import type { Solution } from '../../../entities/task/model/task-data.model'
 
+
 export interface NewsPoint {
   time: number
   message: string

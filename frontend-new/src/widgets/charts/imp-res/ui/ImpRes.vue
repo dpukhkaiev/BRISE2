@@ -11,6 +11,8 @@ import type { Solution } from '../../../../entities/task/model/task-data.model';
 //service
 import { useMainEventStore } from '../../../../entities/main'
 
+import { useResultTracker } from '../model/result-calc'
+
 interface PointExp {
     configurations: Array<any>;
     results: Array<any>;
@@ -31,10 +33,7 @@ const isVisible = ref(false)
 
 let plotlyInstance: typeof import('plotly.js-dist-min') | null = null
 
-//best point 
-const bestRes = ref<PointExp[]>([])
-// experiment results
-const allRes = ref<PointExp[]>([])
+const { allRes, bestRes, reset, pushInitial, pushTracked } = useResultTracker()
 
 const impr = ref<HTMLElement | null>(null)
 
@@ -149,8 +148,7 @@ async function render() {
 
 function initMainEvents() {
     watch(experiment_description, () => {
-        bestRes.value = []
-        allRes.value = []
+        reset()
         // pointer to dom element 
         const element = impr.value
         isVisible.value = false
@@ -171,16 +169,7 @@ function initMainEvents() {
             const configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
                 solution = configuration
-                const min = new Date().getMinutes();
-                const sec = new Date().getSeconds();
-                const temp: any = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': allRes.value.length + 1
-                };
-                allRes.value.push(temp)
-                bestRes.value.push(temp)
+                pushInitial(configuration)
             })
             // render when chart is initialized
             isVisible.value = true
@@ -197,23 +186,13 @@ function initMainEvents() {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {
                 solution = configuration;
-                const min = new Date().getMinutes();
-                const sec = new Date().getSeconds();
-                const temp: any = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': allRes.value.length + 1
-                };
-                allRes.value.push(temp);
-                bestRes.value.push(temp); // There is no check if this solution is the best decision
+                pushInitial(configuration)
             });
             isVisible.value = true
             nextTick(() => {
                 render()
             })
         }
-
     })
 
     // add new point
