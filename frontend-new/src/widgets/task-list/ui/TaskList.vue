@@ -8,7 +8,7 @@ import { Task } from '../../../entities/task/model/task-data.model';
 //service
 import { useMainEventStore } from '../../../entities/main'
 
-import { cleanIdentifier, normalizeConfigKeys } from '../../../shared/lib'
+import { normalizeConfigKeys } from '../../../shared/lib'
 
 import { useTaskMetrics } from '../model/task-metrics'
 

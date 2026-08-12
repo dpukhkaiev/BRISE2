@@ -29,7 +29,7 @@ export function stopMain(): void {
     //stompClient.publish({destination: myServiceEndPoint, body:''}) 
     firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: '' })
     ).catch(err => console.error('stopMain error: ', err))
-}
+} 
 
 export async function downloadDump(format = 'pkl'): Promise<any> {
     const myServiceEndPoint = 'main_download_dump_queue'
