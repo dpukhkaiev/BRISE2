@@ -41,7 +41,8 @@ watch(
     [
         allRes, 
         () => props.paretoObjective1, 
-        () => props.paretoObjective2
+        () => props.paretoObjective2,
+        () => props.onlyShowParetoFront
     ],
     async () => {
         if (rendering) return;
