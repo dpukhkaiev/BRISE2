@@ -8,7 +8,7 @@ import type { Solution } from '../../../../entities/task/model/task-data.model';
 
 import { cleanIdentifier } from '../../../../shared/lib'
 
-import { zip, unpack, dimmensionsData } from '../model/dimension-lib'
+import { zip, unpack, dimmensionsData } from '../lib/dimension-lib'
 
 // initialize store
 const store = useMainEventStore()
@@ -183,7 +183,6 @@ async function render(): Promise<void> {
     const element = document.getElementById(currentDiagram.value)
 
     if (!Plotly || !element) {
-        console.warn('DOM Element noch nicht bereit für ID:', currentDiagram.value)
         return
     }
 

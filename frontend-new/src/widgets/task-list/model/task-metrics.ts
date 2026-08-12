@@ -1,7 +1,7 @@
 import { ref, computed  } from 'vue'
 
 import { Task } from '../../../entities/task/model/task-data.model'
-import { cleanIdentifier, normalizeConfigKeys } from '../../../shared/lib'
+import { normalizeConfigKeys } from '../../../shared/lib'
 
 export function useTaskMetrics() {
     const result = ref<Task[]>([])
