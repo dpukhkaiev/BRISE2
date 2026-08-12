@@ -21,11 +21,15 @@ async function render() {
     if (!paraCoord.value) return
     if (!experiment_description.value) 
         return
-    renderParaCoord(paraCoord.value, allRes.value, props.paraCoordParams, props.paraCoordObjective)
+    renderParaCoord(paraCoord.value, allRes.value, props.paraCoordParams, props.paraCoordObjective, experiment_description.value)
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.paraCoordParams, 
+        () => props.paraCoordObjective
+    ],
     () => {
         render()
     },

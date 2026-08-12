@@ -22,11 +22,15 @@ async function render() {
     if (!slice.value) return
     if (!experiment_description.value) 
         return
-    renderSlice(slice.value, allRes.value, props.sliceParam, props.sliceObjective)
+    renderSlice(slice.value, allRes.value, props.sliceParam, props.sliceObjective, experiment_description.value)
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.sliceParam, 
+        () => props.sliceObjective
+    ],
     () => {
         render()
     },

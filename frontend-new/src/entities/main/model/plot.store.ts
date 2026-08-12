@@ -18,18 +18,17 @@ export const usePlotStore = defineStore('plots', () => {
         "Contour Plot": false,
         "Pareto Front": false,
         "EDF Plot": false,
-        "Configuration Scatter Plot": false
     })
     
     const visibleCharts = ref<string[]>([])
 
-    const bestRes = ref<PointExp[]>([])
+    //const bestRes = ref<PointExp[]>([])
     const allRes = ref<PointExp[]>([])
     
     return {
         selected,
         visibleCharts,
-        bestRes,
+        //bestRes,
         allRes
     }
 })

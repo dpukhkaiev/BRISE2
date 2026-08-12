@@ -24,7 +24,10 @@ async function render() {
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.optHistObjective
+    ],
     () => {
         render()
     },

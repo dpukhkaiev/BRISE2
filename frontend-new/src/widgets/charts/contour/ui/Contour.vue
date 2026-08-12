@@ -39,7 +39,12 @@ async function render() {
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.contourParam1, 
+        () => props.contourParam2, 
+        () => props.contourObjective
+    ],
     async () => {
         if (rendering) return;
 

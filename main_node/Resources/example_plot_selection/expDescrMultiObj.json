@@ -283,7 +283,7 @@
     "PlotSelection": {
     	"Plot": {
     	    "OptimizationHistory": {},
-	    "ParallelCoordintes": {},
+	    "ParallelCoordinates": {},
 	    "RankPlot": {},
 	    "HyperparameterImportances": {},
 	    "SlicePlot": {},

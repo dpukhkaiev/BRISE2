@@ -37,7 +37,11 @@ async function render() {
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.hypImpParams, 
+        () => props.hypImpObjective
+    ],
     async () => {
         if (rendering) return;
 

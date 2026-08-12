@@ -1,12 +1,14 @@
 import Plotly from 'plotly.js-dist-min'
 import type { PointExp } from '../../../entities/main/model/plot.store'
 import { ref } from 'vue'
+import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
 
 const currentDiagram = ref()
 
 function factoryDimension(
     parameter: string,
-    allRes: PointExp[]
+    allRes: PointExp[],
+    experiment_description: ExperimentDescription
 ) {
     const values = allRes.map(
         point => point.configurations[parameter]
@@ -20,25 +22,62 @@ function factoryDimension(
 
     if (typeof firstValue === "number") {
         dimension.values = values;
+
+        const numericValues = values.filter(
+            (value): value is number => typeof value === "number"
+        );
+
         dimension.range = [
-            Math.min(...values),
-            Math.max(...values)
+            Math.min(...numericValues),
+            Math.max(...numericValues)
         ];
-    } 
+    }
     else {
-        const categories = Array.from(new Set(values));
+        const searchSpace =
+            experiment_description.Context?.SearchSpace?.[parameter];
+
+        let categories: string[];
+
+        // Use the Categories order for ordinal parameters
+        if (
+            searchSpace?.Type === "OrdinalHyperparameter" &&
+            Array.isArray(searchSpace.Categories)
+        ) {
+            categories = searchSpace.Categories;
+        }
+        else {
+            // Normal categorical parameter:
+            // preserve the order in which values occur
+            categories = Array.from(
+                new Set(
+                    values.filter(
+                        (value): value is string =>
+                            value !== undefined
+                    )
+                )
+            );
+        }
 
         dimension.values = values.map(
             value => categories.indexOf(value)
         );
 
         dimension.tickvals = categories.map(
-            (_, i) => i
+            (_, index) => index
         );
 
         dimension.ticktext = categories.map(
-            String
+            category => {
+                // Make the labels more readable:
+                // Context.SearchSpace.frequency.fourteen_hundred_hertz
+                // -> fourteen hundred hertz
+                const lastPart = category.split(".").pop() ?? category;
+
+                return lastPart.replace(/_/g, " ");
+            }
         );
+
+        dimension.range = [0, categories.length - 1];
     }
 
     return dimension;
@@ -47,10 +86,16 @@ function factoryDimension(
 function dimensionsData(
     allRes: PointExp[],
     paraCoordParams: string[],
-    paraCoordObjective: string
+    paraCoordObjective: string,
+    experiment_description: ExperimentDescription
 ) {
-    const dimensions = paraCoordParams.map(parameter =>
-        factoryDimension(parameter, allRes)
+    const dimensions = paraCoordParams.map(
+        parameter =>
+            factoryDimension(
+                parameter,
+                allRes,
+                experiment_description
+            )
     );
 
     const objectiveValues = allRes.map(
@@ -69,7 +114,8 @@ export function renderParaCoord(
     element: HTMLElement,
     allRes: PointExp[],
     paraCoordParams: string[],
-    paraCoordObjective: string
+    paraCoordObjective: string,
+    experiment_description: ExperimentDescription
 ) {
     if (
         allRes.length === 0 ||
@@ -86,15 +132,18 @@ export function renderParaCoord(
 
     const trace = [{
         type: 'parcoords' as const,
+
         line: {
             showscale: true,
             colorscale: 'Jet',
             color: objectiveValues
         },
+
         dimensions: dimensionsData(
             allRes,
             paraCoordParams,
-            paraCoordObjective
+            paraCoordObjective,
+            experiment_description
         )
     }];
 
@@ -102,6 +151,7 @@ export function renderParaCoord(
         margin: {
             l: 150,
         },
+
         title: {
             text: currentDiagram.value,
             font: {

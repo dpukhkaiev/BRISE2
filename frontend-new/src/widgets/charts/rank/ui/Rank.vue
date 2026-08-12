@@ -23,11 +23,16 @@ async function render() {
     if (!rank.value) return
     if (!experiment_description.value) 
         return
-    renderRank(rank.value, allRes.value, props.rankParam1, props.rankParam2, props.rankObjective)
+    renderRank(rank.value, allRes.value, props.rankParam1, props.rankParam2, props.rankObjective, experiment_description.value)
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.rankParam1, 
+        () => props.rankParam2, 
+        () => props.rankObjective
+    ],
     () => {
         render()
     },

@@ -337,35 +337,7 @@ watch(
               >
                 <Skeleton/>
               </v-col>
-              <!--
-              <v-col
-                v-if="selected['Configuration Scatter Plot']"
-                v-show="visibleCharts.includes('Configuration Scatter Plot')"
-                cols="12"
-                md="8"
-                class="pr-2"
-              >
-                <select v-model="heatmapParam1">
-                    <option
-                        v-for="parameter in parameterNames"
-                        :key="parameter"
-                        :value="parameter"
-                    >
-                        {{ parameter }}
-                    </option>
-                </select>
-                <select v-model="heatmapParam2">
-                    <option
-                        v-for="parameter in parameterNames"
-                        :key="parameter"
-                        :value="parameter"
-                    >
-                        {{ parameter }}
-                    </option>
-                </select>
-                <Heatmap/>
-              </v-col>
-              -->
+  
               <v-col
                 v-if="selected['Optimization History']"
                 v-show="visibleCharts.includes('Optimization History')"
@@ -579,7 +551,7 @@ watch(
                 <v-select
                     v-model="paretoObjective1"
                     :items="objectiveNames"
-                    label="Objective"
+                    label="Objective 1"
                     density="compact"
                     variant="outlined"
                     hide-details
@@ -587,7 +559,7 @@ watch(
                 <v-select
                     v-model="paretoObjective2"
                     :items="objectiveNames"
-                    label="Objective"
+                    label="Objective 2"
                     density="compact"
                     variant="outlined"
                     hide-details

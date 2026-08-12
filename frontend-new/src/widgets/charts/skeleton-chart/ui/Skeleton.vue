@@ -16,7 +16,7 @@ const store = useMainEventStore()
 const plotStore = usePlotStore()
 // destructure reactive value from main.event.store
 const { experiment_description } = storeToRefs(store)
-const { selected, visibleCharts, bestRes, allRes } = storeToRefs(plotStore)
+const { selected, visibleCharts, allRes } = storeToRefs(plotStore)
 
 onMounted(() => {
     initMainEvents()
@@ -24,7 +24,7 @@ onMounted(() => {
 
 function initMainEvents() {
     watch(experiment_description, () => {
-        bestRes.value = []
+        //bestRes.value = []
         allRes.value = []
         selected.value['Optimization History'] = !!experiment_description.value?.PlotSelection?.Plot?.OptimizationHistory
         selected.value['Parallel Coordinates'] = !!experiment_description.value?.PlotSelection?.Plot?.ParallelCoordinates
@@ -34,7 +34,6 @@ function initMainEvents() {
         selected.value['Contour Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.ContourPlot
         selected.value['Pareto Front'] = !!experiment_description.value?.PlotSelection?.Plot?.ParetoFront
         selected.value['EDF Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.EDFPlot
-        selected.value['Configuration Scatter Plot'] = !!experiment_description.value?.PlotSelection?.Plot?.ConfigurationScatterPlot
         visibleCharts.value = Object.entries(selected.value)
             .filter(([_, enabled]) => enabled)
             .map(([name]) => name)
@@ -42,7 +41,7 @@ function initMainEvents() {
         deep: true,
         immediate: true
     })
-
+/*
     function addBest(temp: PointExp) {
         // check the best availbale point
         const descr = experiment_description.value
@@ -64,7 +63,7 @@ function initMainEvents() {
 
         bestRes.value.push(temp) // add the best availbale point(result)
     }
-
+*/
     // add start point
     store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
@@ -72,14 +71,14 @@ function initMainEvents() {
             configs.forEach((configuration: any) => {
                 const min = new Date().getMinutes();
                 const sec = new Date().getSeconds();
-                const temp: any = {
+                const temp: PointExp = {
                     'configurations': configuration.configurations,
                     'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': allRes.value.length + 1
                 };
                 allRes.value.push(temp)
-                bestRes.value.push(temp)
+                //bestRes.value.push(temp)
             })
         }
     })
@@ -91,14 +90,14 @@ function initMainEvents() {
             configs.forEach((configuration: any) => {
                 const min = new Date().getMinutes();
                 const sec = new Date().getSeconds();
-                const temp: any = {
+                const temp: PointExp = {
                     'configurations': configuration.configurations,
                     'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': allRes.value.length + 1
                 };
                 allRes.value.push(temp);
-                addBest(temp); 
+                //addBest(temp); 
             });
         }
     })
@@ -121,21 +120,23 @@ function initMainEvents() {
                 // number der measuret points before pushing into an array
                 const currentPointIndex = allRes.value.length + 1;
 
-                allRes.value.push({
+                const temp: PointExp = {
                     'configurations': configuration.configurations,
                     'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': currentPointIndex
-                }) // add new point (result)
+                };
 
+                allRes.value.push(temp) // add new point (result)
+/*
                 const temp: PointExp = {
                     'configurations': configuration.configurations,
                     'results': configuration.results,
                     'time': min + 'm ' + sec + 's',
                     'measured points': currentPointIndex
                 }
-
-                addBest(temp)
+*/
+                //addBest(temp)
             })
         }
     })

@@ -38,7 +38,11 @@ async function render() {
 }
 
 watch(
-    allRes,
+    [
+        allRes, 
+        () => props.paretoObjective1, 
+        () => props.paretoObjective2
+    ],
     async () => {
         if (rendering) return;
 
