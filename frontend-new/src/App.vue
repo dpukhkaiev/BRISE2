@@ -9,7 +9,6 @@ import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
-//import { Heatmap } from './widgets/charts/heatmap'
 
 import { OptHist } from './widgets/charts/opt-hist'
 import { HypImp } from './widgets/charts/hyp-imp'
@@ -352,6 +351,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <OptHist :optHistObjective="selectedOptHistObjective" />
               </v-col>
@@ -366,6 +366,7 @@ watch(
                 <v-list
                   density="compact"
                   min-width="180"
+                  class="user-input"
                 >
                   <v-list-subheader>Parameters</v-list-subheader>
                   <v-list-item
@@ -389,6 +390,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <ParaCoord
                     :paraCoordParams="selectedParaCoordParams"
@@ -410,6 +412,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-select
                     v-model="rankParam2"
@@ -418,6 +421,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-select
                     v-model="rankObjective"
@@ -426,6 +430,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <Rank
                     :rankParam1="selectedRankParam1"
@@ -444,6 +449,7 @@ watch(
                 <v-list
                   density="compact"
                   min-width="180"
+                  class="user-input"
                 >
                   <v-list-subheader>Parameters</v-list-subheader>
                   <v-list-item
@@ -467,6 +473,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <HypImp
                     :hypImpParams="selectedHypImpParams"
@@ -488,6 +495,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-select
                     v-model="sliceObjective"
@@ -496,6 +504,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <Slice
                     :sliceParam="selectedSliceParam"
@@ -517,6 +526,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-select
                     v-model="contourParam2"
@@ -525,6 +535,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-select
                     v-model="contourObjective"
@@ -533,6 +544,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <Contour
                     :contourParam1="selectedContourParam1"
@@ -555,6 +567,7 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-select
                     v-model="paretoObjective2"
@@ -563,12 +576,14 @@ watch(
                     density="compact"
                     variant="outlined"
                     hide-details
+                    class="user-input"
                 />
                 <v-switch
                     v-model="onlyShowParetoFront"
                     label="Show only Pareto front"
                     color="primary"
                     hide-details
+                    class="user-input"
                 />
                 <ParetoFront
                     :paretoObjective1="selectedParetoObjective1"
@@ -625,5 +640,9 @@ watch(
 .logo {
   width: 100%;
   height: auto;
+}
+
+.user-input {
+  margin: 10px
 }
 </style>
