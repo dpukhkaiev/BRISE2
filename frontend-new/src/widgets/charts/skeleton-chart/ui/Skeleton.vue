@@ -24,7 +24,7 @@ onMounted(() => {
 
 function initMainEvents() {
     watch(experiment_description, () => {
-        //bestRes.value = []
+        console.log("initMainEvents in skeleton")
         allRes.value = []
         selected.value['Optimization History'] = !!experiment_description.value?.PlotSelection?.Plot?.OptimizationHistory
         selected.value['Parallel Coordinates'] = !!experiment_description.value?.PlotSelection?.Plot?.ParallelCoordinates
@@ -41,29 +41,7 @@ function initMainEvents() {
         deep: true,
         immediate: true
     })
-/*
-    function addBest(temp: PointExp) {
-        // check the best availbale point
-        const descr = experiment_description.value
 
-        let objectives = descr?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
-        if (!objectives) return
-        const firstObjectiveKey = Object.keys(objectives)[0]
-        const isMinimization = objectives?.[firstObjectiveKey]?.['Minimization']
-
-        // compare to the last best point
-        const lastBest = bestRes.value.at(-1)
-        if (lastBest) {
-            const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
-            if (!isBetter) {
-                temp.results = lastBest.results
-                temp.configurations = lastBest.configurations
-            }
-        }
-
-        bestRes.value.push(temp) // add the best availbale point(result)
-    }
-*/
     // add start point
     store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
@@ -78,7 +56,6 @@ function initMainEvents() {
                     'measured points': allRes.value.length + 1
                 };
                 allRes.value.push(temp)
-                //bestRes.value.push(temp)
             })
         }
     })
@@ -97,7 +74,6 @@ function initMainEvents() {
                     'measured points': allRes.value.length + 1
                 };
                 allRes.value.push(temp);
-                //addBest(temp); 
             });
         }
     })
@@ -128,15 +104,6 @@ function initMainEvents() {
                 };
 
                 allRes.value.push(temp) // add new point (result)
-/*
-                const temp: PointExp = {
-                    'configurations': configuration.configurations,
-                    'results': configuration.results,
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': currentPointIndex
-                }
-*/
-                //addBest(temp)
             })
         }
     })

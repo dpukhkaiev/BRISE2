@@ -16,7 +16,6 @@ export function startMain(description: any): void {
     firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: request, headers })
     ).then(() => console.log('startMain sent'))
         .catch(err => console.error('startMain error: ', err))
-
 }
 
 export function getMainStatus(): void {

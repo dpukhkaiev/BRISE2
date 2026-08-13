@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@mdi/font/css/materialdesignicons.css'
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 // services
 import { useMainEventStore } from '../../../entities/main'
@@ -18,7 +18,7 @@ const isFinish = ref(false)
 // create a store 
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace, globalConfig, isConnected } = storeToRefs(store)
+const { experiment_description, isConnected } = storeToRefs(store)
 
 const showDownload = ref(false)
 

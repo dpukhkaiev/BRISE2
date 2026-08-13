@@ -48,14 +48,12 @@ export const useMainEventStore = defineStore('mainEvent', () => {
       onEvent(MainEvent.EXPERIMENT)?.subscribe((message: any) => {
          console.log('EXPERIMENT message received:', message.headers['message_subtype'])
          if (message.headers['message_subtype'] === 'description') {
-            console.log(message.body)
             const clean = message.body.replace(/:\s*Infinity/g, ': null')
             const body = JSON.parse(clean) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any }
             console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)
             experiment_description.value = body.experiment_description
             searchspace.value = body.searchspace_description
             globalConfig.value = body.global_configuration
-            console.log("after init: ", searchspace.value)
          }
       })
    }
