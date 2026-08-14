@@ -2,10 +2,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import { OptHist } from '../../widgets/charts/opt-hist'
+import { Rank } from '../../widgets/charts/rank'
 
-const { renderOptHistMock } = vi.hoisted(() => ({
-    renderOptHistMock: vi.fn()
+const { renderRankMock } = vi.hoisted(() => ({
+    renderRankMock: vi.fn()
 }))
 
 const allRes = ref<any[]>([])
@@ -40,11 +40,11 @@ vi.mock('../../entities/main', () => ({
     }))
 }))
 
-vi.mock('../../widgets/charts/opt-hist/render', () => ({
-    renderOptHist: renderOptHistMock
+vi.mock('../../widgets/charts/rank/render', () => ({
+    renderRank: renderRankMock
 }))
 
-describe('Optimization History', () => {
+describe('Rank Plot', () => {
 
     beforeEach(() => {
         setActivePinia(createPinia())
@@ -73,9 +73,11 @@ describe('Optimization History', () => {
     })
 
    const mountComponent = () => {
-        return mount(OptHist, {
+        return mount(Rank, {
             props: {
-                optHistObjective: 'runtime'
+                rankParam1: 'threads',
+                rankParam2: 'frequency',
+                rankObjective: 'runtime'
             },
             global: {
                 plugins: [createPinia()]
@@ -88,7 +90,7 @@ describe('Optimization History', () => {
 
         await flushPromises()
 
-        const callsBeforeChange = renderOptHistMock.mock.calls.length
+        const callsBeforeChange = renderRankMock.mock.calls.length
 
         allRes.value.push({
             configurations: {
@@ -102,24 +104,58 @@ describe('Optimization History', () => {
 
         await flushPromises()
 
-        expect(renderOptHistMock.mock.calls.length)
+        expect(renderRankMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
 
-    it('rerenders when optHistObjective changes', async () => {
+    it('rerenders when rankParam1 changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
 
-        const callsBeforeChange = renderOptHistMock.mock.calls.length
+        const callsBeforeChange = renderRankMock.mock.calls.length
 
         await wrapper.setProps({
-            optHistObjective: 'energy'
+            rankParam1: 'frequency'
         })
 
         await flushPromises()
 
-        expect(renderOptHistMock.mock.calls.length)
+        expect(renderRankMock.mock.calls.length)
+            .toBeGreaterThan(callsBeforeChange)
+    })
+
+    it('rerenders when rankParam2 changes', async () => {
+        const wrapper = mountComponent()
+
+        await flushPromises()
+
+        const callsBeforeChange = renderRankMock.mock.calls.length
+
+        await wrapper.setProps({
+            rankParam2: 'threads'
+        })
+
+        await flushPromises()
+
+        expect(renderRankMock.mock.calls.length)
+            .toBeGreaterThan(callsBeforeChange)
+    })
+
+    it('rerenders when rankObjective changes', async () => {
+        const wrapper = mountComponent()
+
+        await flushPromises()
+
+        const callsBeforeChange = renderRankMock.mock.calls.length
+
+        await wrapper.setProps({
+            rankObjective: 'energy'
+        })
+
+        await flushPromises()
+
+        expect(renderRankMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
 })

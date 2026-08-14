@@ -3,8 +3,6 @@ import type { PointExp } from '../../../entities/main/model/plot.store'
 import { ref } from 'vue'
 import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
 
-const currentDiagram = ref()
-
 function factoryDimension(
     parameter: string,
     allRes: PointExp[],
@@ -153,7 +151,7 @@ export function renderParaCoord(
         },
 
         title: {
-            text: currentDiagram.value,
+            text: 'Parallel Coordinates',
             font: {
                 size: 20
             },

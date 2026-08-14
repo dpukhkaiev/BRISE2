@@ -2,10 +2,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import { OptHist } from '../../widgets/charts/opt-hist'
+import { Slice } from '../../widgets/charts/slice'
 
-const { renderOptHistMock } = vi.hoisted(() => ({
-    renderOptHistMock: vi.fn()
+const { renderSliceMock } = vi.hoisted(() => ({
+    renderSliceMock: vi.fn()
 }))
 
 const allRes = ref<any[]>([])
@@ -40,11 +40,11 @@ vi.mock('../../entities/main', () => ({
     }))
 }))
 
-vi.mock('../../widgets/charts/opt-hist/render', () => ({
-    renderOptHist: renderOptHistMock
+vi.mock('../../widgets/charts/slice/render', () => ({
+    renderSlice: renderSliceMock
 }))
 
-describe('Optimization History', () => {
+describe('Slice Plot', () => {
 
     beforeEach(() => {
         setActivePinia(createPinia())
@@ -73,9 +73,10 @@ describe('Optimization History', () => {
     })
 
    const mountComponent = () => {
-        return mount(OptHist, {
+        return mount(Slice, {
             props: {
-                optHistObjective: 'runtime'
+                sliceObjective: 'runtime',
+                sliceParam: 'frequency'
             },
             global: {
                 plugins: [createPinia()]
@@ -88,7 +89,7 @@ describe('Optimization History', () => {
 
         await flushPromises()
 
-        const callsBeforeChange = renderOptHistMock.mock.calls.length
+        const callsBeforeChange = renderSliceMock.mock.calls.length
 
         allRes.value.push({
             configurations: {
@@ -102,24 +103,41 @@ describe('Optimization History', () => {
 
         await flushPromises()
 
-        expect(renderOptHistMock.mock.calls.length)
+        expect(renderSliceMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
 
-    it('rerenders when optHistObjective changes', async () => {
+    it('rerenders when sliceParam changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
 
-        const callsBeforeChange = renderOptHistMock.mock.calls.length
+        const callsBeforeChange = renderSliceMock.mock.calls.length
 
         await wrapper.setProps({
-            optHistObjective: 'energy'
+            sliceParam: 'threads'
         })
 
         await flushPromises()
 
-        expect(renderOptHistMock.mock.calls.length)
+        expect(renderSliceMock.mock.calls.length)
+            .toBeGreaterThan(callsBeforeChange)
+    })
+
+    it('rerenders when sliceObjective changes', async () => {
+        const wrapper = mountComponent()
+
+        await flushPromises()
+
+        const callsBeforeChange = renderSliceMock.mock.calls.length
+
+        await wrapper.setProps({
+            sliceObjective: 'energy'
+        })
+
+        await flushPromises()
+
+        expect(renderSliceMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
 })

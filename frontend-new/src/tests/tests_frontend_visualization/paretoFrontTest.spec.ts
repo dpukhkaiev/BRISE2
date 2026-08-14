@@ -2,21 +2,34 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import { HypImp } from '../../widgets/charts/hyp-imp'
+import { ParetoFront } from '../../widgets/charts/pareto-front'
 
 const result = {
-    importances: {
-        frequency: 0.8,
-        threads: 0.2
-    }
+    "objective_names": ['energy', 'runtime'],
+    "all_points": [
+        {
+            'energy': 100,
+            'runtime': 150
+        },
+        {
+            'energy': 120,
+            'runtime': 160
+        }
+    ],
+    "pareto_points": [
+        {
+            'energy': 100,
+            'runtime': 150
+        } 
+    ]
 }
 
 const { calculatePlotMock } = vi.hoisted(() => ({
     calculatePlotMock: vi.fn()
 }))
 
-const { renderHypImpMock } = vi.hoisted(() => ({
-    renderHypImpMock: vi.fn()
+const { renderParetoFrontMock } = vi.hoisted(() => ({
+    renderParetoFrontMock: vi.fn()
 }))
 
 const allRes = ref<any[]>([])
@@ -39,7 +52,7 @@ const experiment_description = ref({
     },
     PlotSelection: {
         Plot: {
-            HyperparameterImportances: {}
+            ParetoFront: {}
         }
     }
 })
@@ -62,18 +75,18 @@ vi.mock('../../entities/main/api/main.client.store', () => ({
     }
 }))
 
-vi.mock('../../widgets/charts/hyp-imp/render', () => ({
-    renderHypImp: renderHypImpMock
+vi.mock('../../widgets/charts/pareto-front/render', () => ({
+    renderParetoFront: renderParetoFrontMock
 }))
 
 
 
-describe('Hyperparameter Importances', () => {
+describe('Pareto Front', () => {
 
     beforeEach(() => {
         setActivePinia(createPinia())
 
-        vi.clearAllMocks()
+        vi.resetAllMocks()
 
         allRes.value = []
 
@@ -95,17 +108,18 @@ describe('Hyperparameter Importances', () => {
             },
             PlotSelection: {
                 Plot: {
-                    HyperparameterImportances: {}
+                    ParetoFront: {}
                 }
             }
         }
     })
 
     const mountComponent = () => {
-        return mount(HypImp, {
+        return mount(ParetoFront, {
             props: {
-                hypImpParams: ['frequency', 'threads'],
-                hypImpObjective: 'runtime'
+                paretoObjective1: 'energy',
+                paretoObjective2: 'runtime',
+                onlyShowParetoFront: false
             },
             global: {
                 plugins: [createPinia()]
@@ -113,7 +127,7 @@ describe('Hyperparameter Importances', () => {
         })
     }
 
-    it('calls backend with the correct parameters and objective when allRes changes', async () => {
+    it('calls backend with the correct objectives when allRes changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
@@ -124,7 +138,7 @@ describe('Hyperparameter Importances', () => {
                     frequency: 50,
                     threads: 4
                 },
-                results: [123.4],
+                results: [123.4, 234.5],
                 time: '10m 20s',
                 'measured points': 1
             }
@@ -135,12 +149,12 @@ describe('Hyperparameter Importances', () => {
         expect(calculatePlotMock).toHaveBeenCalled()
 
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
-            'hyperparameter_importances',
+            'pareto_front',
             {
                 experiment_description: experiment_description.value,
                 trials: allRes.value,
-                parameters: ['frequency', 'threads'],
-                objective: 'runtime'
+                objective1: 'energy',
+                objective2: 'runtime'
             }
         )
     })
@@ -159,17 +173,27 @@ describe('Hyperparameter Importances', () => {
                         frequency: 50,
                         threads: 4
                     },
-                    results: [123.4],
+                    results: [100, 150],
                     time: '10m 20s',
+                    'measured points': 1
+                },
+                {
+                    configurations: {
+                        frequency: 60,
+                        threads: 8
+                    },
+                    results: [120, 160],
+                    time: '10m 30s',
                     'measured points': 1
                 }
             ]
         
         await flushPromises()
 
-        expect(renderHypImpMock).toHaveBeenCalledWith(
+        expect(renderParetoFrontMock).toHaveBeenCalledWith(
             wrapper.find('div').element,
-            result
+            result,
+            false
         )
     })
 
@@ -194,7 +218,7 @@ describe('Hyperparameter Importances', () => {
             .toBeGreaterThan(callsBeforeChange)
     })
 
-    it('rerenders when hypImpParams changes', async () => {
+    it('rerenders when paretoObjective1 changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
@@ -202,7 +226,7 @@ describe('Hyperparameter Importances', () => {
         const callsBeforeChange = calculatePlotMock.mock.calls.length
 
         await wrapper.setProps({
-            hypImpParams: ['frequency']
+            paretoObjective1: 'runtime'
         })
 
         await flushPromises()
@@ -211,14 +235,14 @@ describe('Hyperparameter Importances', () => {
             .toBeGreaterThan(callsBeforeChange)
 
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
-            'hyperparameter_importances',
+            'pareto_front',
             expect.objectContaining({
-                parameters: ['frequency']
+                objective1: 'runtime'
             })
         )
     })
 
-    it('rerenders when hypImpObjective changes', async () => {
+   it('rerenders when paretoObjective2 changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
@@ -226,7 +250,7 @@ describe('Hyperparameter Importances', () => {
         const callsBeforeChange = calculatePlotMock.mock.calls.length
 
         await wrapper.setProps({
-            hypImpObjective: 'energy'
+            paretoObjective2: 'energy'
         })
 
         await flushPromises()
@@ -235,37 +259,59 @@ describe('Hyperparameter Importances', () => {
             .toBeGreaterThan(callsBeforeChange)
 
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
-            'hyperparameter_importances',
+            'pareto_front',
             expect.objectContaining({
-                objective: 'energy'
+                objective2: 'energy'
             })
         )
+    })
+
+    it('rerenders when onlyShowParetoFront changes', async () => {
+        const wrapper = mountComponent()
+
+        await flushPromises()
+
+        const callsBeforeChange = calculatePlotMock.mock.calls.length
+
+        await wrapper.setProps({
+            onlyShowParetoFront: true
+        })
+
+        await flushPromises()
+
+        expect(calculatePlotMock.mock.calls.length)
+            .toBeGreaterThan(callsBeforeChange)
     })
 
     it('passes an empty result to render if result is empty', async () => {
         const emptyResult = {
-            importances: {}
+            "objective_names": [],
+            "all_points": [], 
+            "pareto_points": []
         }
 
         calculatePlotMock.mockResolvedValue(emptyResult)
 
         const wrapper = mountComponent()
 
-         allRes.value.push({
+        allRes.value.push({
             configurations: {
                 frequency: 50,
                 threads: 4
             },
-            results: [100],
+            results: [100, 150],
             time: '10m 20s',
             'measured points': 1
         })
 
         await flushPromises()
 
-        expect(renderHypImpMock).toHaveBeenCalledWith(
+        expect(calculatePlotMock).toHaveBeenCalled()
+
+        expect(renderParetoFrontMock).toHaveBeenLastCalledWith(
             wrapper.find('div').element,
-            emptyResult
+            emptyResult,
+            false
         )
     })
 })

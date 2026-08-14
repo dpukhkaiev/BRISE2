@@ -2,10 +2,10 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import { OptHist } from '../../widgets/charts/opt-hist'
+import { ParaCoord } from '../../widgets/charts/para-coord'
 
-const { renderOptHistMock } = vi.hoisted(() => ({
-    renderOptHistMock: vi.fn()
+const { renderParaCoordMock } = vi.hoisted(() => ({
+    renderParaCoordMock: vi.fn()
 }))
 
 const allRes = ref<any[]>([])
@@ -40,11 +40,11 @@ vi.mock('../../entities/main', () => ({
     }))
 }))
 
-vi.mock('../../widgets/charts/opt-hist/render', () => ({
-    renderOptHist: renderOptHistMock
+vi.mock('../../widgets/charts/para-coord/render', () => ({
+    renderParaCoord: renderParaCoordMock
 }))
 
-describe('Optimization History', () => {
+describe('Parallel Coordinates', () => {
 
     beforeEach(() => {
         setActivePinia(createPinia())
@@ -73,9 +73,10 @@ describe('Optimization History', () => {
     })
 
    const mountComponent = () => {
-        return mount(OptHist, {
+        return mount(ParaCoord, {
             props: {
-                optHistObjective: 'runtime'
+                paraCoordObjective: 'runtime',
+                paraCoordParams: ['frequency, threads']
             },
             global: {
                 plugins: [createPinia()]
@@ -88,7 +89,7 @@ describe('Optimization History', () => {
 
         await flushPromises()
 
-        const callsBeforeChange = renderOptHistMock.mock.calls.length
+        const callsBeforeChange = renderParaCoordMock.mock.calls.length
 
         allRes.value.push({
             configurations: {
@@ -102,24 +103,41 @@ describe('Optimization History', () => {
 
         await flushPromises()
 
-        expect(renderOptHistMock.mock.calls.length)
+        expect(renderParaCoordMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
 
-    it('rerenders when optHistObjective changes', async () => {
+    it('rerenders when paraCoordParams changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
 
-        const callsBeforeChange = renderOptHistMock.mock.calls.length
+        const callsBeforeChange = renderParaCoordMock.mock.calls.length
 
         await wrapper.setProps({
-            optHistObjective: 'energy'
+            paraCoordParams: ['frequency']
         })
 
         await flushPromises()
 
-        expect(renderOptHistMock.mock.calls.length)
+        expect(renderParaCoordMock.mock.calls.length)
+            .toBeGreaterThan(callsBeforeChange)
+    })
+
+    it('rerenders when paraCoordObjective changes', async () => {
+        const wrapper = mountComponent()
+
+        await flushPromises()
+
+        const callsBeforeChange = renderParaCoordMock.mock.calls.length
+
+        await wrapper.setProps({
+            paraCoordObjective: 'energy'
+        })
+
+        await flushPromises()
+
+        expect(renderParaCoordMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
 })
