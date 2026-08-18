@@ -20,7 +20,8 @@ const props = defineProps<{
 async function render() {
     await nextTick()
 
-    if (!rank.value) return
+    if (!rank.value) 
+        return
     if (!experiment_description.value) 
         return
     renderRank(rank.value, allRes.value, props.rankParam1, props.rankParam2, props.rankObjective, experiment_description.value)

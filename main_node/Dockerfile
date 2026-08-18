@@ -1,4 +1,4 @@
-FROM brisedev/main-dev:opt
+FROM brisedev/main-dev:opt.2
 
 # Copying project
 COPY . /root

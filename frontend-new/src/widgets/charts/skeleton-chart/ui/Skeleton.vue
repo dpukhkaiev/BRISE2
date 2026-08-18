@@ -24,7 +24,6 @@ onMounted(() => {
 
 function initMainEvents() {
     watch(experiment_description, () => {
-        console.log("initMainEvents in skeleton")
         allRes.value = []
         selected.value['Optimization History'] = !!experiment_description.value?.PlotSelection?.Plot?.OptimizationHistory
         selected.value['Parallel Coordinates'] = !!experiment_description.value?.PlotSelection?.Plot?.ParallelCoordinates

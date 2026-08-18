@@ -23,7 +23,10 @@ let rendering = false
 async function render() {
     await nextTick()
 
-    if (!contour.value) return
+    if (!contour.value) 
+        return
+    if (!experiment_description.value) 
+        return
     const result = await MainClientApi.calculatePlot(
         "contour",
         {
@@ -35,7 +38,7 @@ async function render() {
         }
     )
 
-    renderContour(contour.value, result)
+    renderContour(contour.value, result, experiment_description.value)
 }
 
 watch(

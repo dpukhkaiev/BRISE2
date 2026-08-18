@@ -1,4 +1,62 @@
 import Plotly from "plotly.js-dist-min";
+import type { PointExp } from "../../../entities/main/model/plot.store";
+import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
+
+function getParameterValues(
+    parameter: string,
+    experiment_description: ExperimentDescription
+) {
+    const searchSpace =
+        experiment_description.Context?.SearchSpace?.[parameter];
+
+    if (!searchSpace) {
+        return {
+            values: []
+        };
+    }
+
+    // Ordinal parameter
+    if (
+        searchSpace.Type === "OrdinalHyperparameter" &&
+        Array.isArray(searchSpace.Categories)
+    ) {
+        const categories = searchSpace.Categories;
+
+        return {
+            values: categories.map(
+                (_: string, index: number) => index
+            ),
+            tickvals: categories.map(
+                (_: string, index: number) => index
+            ),
+            ticktext: categories.map((category: string) => {
+                const name = category.split(".").pop() ?? category;
+                return name.replace(/_/g, " ");
+            })
+        };
+    }
+
+    // Non-ordinal categorical parameter
+    if (Array.isArray(searchSpace.Categories)) {
+        const categories = searchSpace.Categories;
+
+        return {
+            values: categories.map(
+                (_: string, index: number) => index
+            ),
+            tickvals: categories.map(
+                (_: string, index: number) => index
+            ),
+            ticktext: categories.map((category: string) =>
+                String(category).replace(/_/g, " ")
+            )
+        };
+    }
+
+    return {
+        values: []
+    };
+}
 
 export function renderContour(
     element: HTMLElement,
@@ -6,13 +64,29 @@ export function renderContour(
         contour: {
             x: number[],
             y: number[],
-            z: number[][],
+            z: (number | null)[][],
             x_name: string,
             y_name: string,
             objective_name: string
         }
-    }
+    },
+    experiment_description: ExperimentDescription
+
 ) {
+    if (Object.keys(result.contour).length === 0) {
+        Plotly.purge(element)
+        return
+    }
+
+    const xValues = getParameterValues(
+        result.contour.x_name,
+        experiment_description
+    );
+
+    const yValues = getParameterValues(
+        result.contour.y_name,
+        experiment_description
+    );
 
     const trace: Plotly.Data = {
         type: "contour",
@@ -28,11 +102,7 @@ export function renderContour(
             title: {
                 text: result.contour.objective_name
             }
-        },
-        hovertemplate:
-            `${result.contour.x_name}: %{x}<br>` +
-            `${result.contour.y_name}: %{y}<br>` +
-            `${result.contour.objective_name}: %{z}<extra></extra>`
+        }
     };
 
     const layout: Partial<Plotly.Layout> = {
@@ -42,11 +112,15 @@ export function renderContour(
         autosize: true,
         hovermode: "closest",
         xaxis: {
+            tickvals: xValues.tickvals,
+            ticktext: xValues.ticktext,
             title: {
                 text: result.contour.x_name
             }
         },
         yaxis: {
+            tickvals: yValues.tickvals,
+            ticktext: yValues.ticktext,
             title: {
                 text: result.contour.y_name
             }
