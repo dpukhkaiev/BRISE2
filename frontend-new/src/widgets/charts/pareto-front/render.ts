@@ -10,7 +10,7 @@ export function renderParetoFront(
     onlyShowParetoFront: boolean
 ) {
 
-    if (result.objective_names.length === 0) {
+    if (result == undefined || result.objective_names.length === 0) {
         Plotly.purge(element)
         return
     }

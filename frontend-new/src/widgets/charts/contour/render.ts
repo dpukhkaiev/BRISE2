@@ -1,5 +1,4 @@
 import Plotly from "plotly.js-dist-min";
-import type { PointExp } from "../../../entities/main/model/plot.store";
 import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
 
 function getParameterValues(
@@ -36,7 +35,7 @@ function getParameterValues(
         };
     }
 
-    // Non-ordinal categorical parameter
+    // Categorical parameter
     if (Array.isArray(searchSpace.Categories)) {
         const categories = searchSpace.Categories;
 
@@ -73,7 +72,7 @@ export function renderContour(
     experiment_description: ExperimentDescription
 
 ) {
-    if (Object.keys(result.contour).length === 0) {
+    if (result.contour == undefined || Object.keys(result.contour).length === 0) {
         Plotly.purge(element)
         return
     }

@@ -18,8 +18,6 @@ const props = defineProps<{
     contourObjective: string
 }>()
 
-let rendering = false
-
 async function render() {
     await nextTick()
 
@@ -48,15 +46,8 @@ watch(
         () => props.contourParam2, 
         () => props.contourObjective
     ],
-    async () => {
-        if (rendering) return;
-
-        rendering = true;
-        try {
-            await render();
-        } finally {
-            rendering = false;
-        }
+    () => {
+        render()
     },
     { deep: true }
 );

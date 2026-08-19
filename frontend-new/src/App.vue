@@ -7,6 +7,7 @@ import logo from './assets/logo.svg'
 import { LaunchControl } from './widgets/control-bar'
 import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
+import type { ExperimentDescription } from './entities/experiment/model/experiment.model'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
 
@@ -18,6 +19,39 @@ import { Slice } from './widgets/charts/slice'
 import { Rank } from './widgets/charts/rank'
 import { Contour } from './widgets/charts/contour'
 import { Edf } from './widgets/charts/edf'
+
+function isContourParameter(
+    parameter: string,
+    experimentDescription: ExperimentDescription
+): boolean {
+    const searchSpace =
+        experimentDescription.Context?.SearchSpace?.[parameter];
+
+    if (!searchSpace) {
+        return false;
+    }
+
+    // Float / Integer
+    if (
+        searchSpace.Type === "FloatHyperparameter" ||
+        searchSpace.Type === "IntegerHyperparameter"
+    ) {
+        return true;
+    }
+
+    // Nominal / Ordinal
+    if (
+        searchSpace.Type === "NominalHyperparameter" ||
+        searchSpace.Type === "OrdinalHyperparameter"
+    ) {
+        return (
+            Array.isArray(searchSpace.Categories) &&
+            searchSpace.Categories.length >= 2
+        );
+    }
+
+    return false;
+}
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
@@ -56,6 +90,31 @@ const parameterNames = computed(() => {
         )
         .map(([name]) => name);
 });
+
+//compute parameters for Parallel Coordinates dropdown options
+const paraCoordParameterNames = computed(() => {
+    if (!experiment_description.value) {
+      return []
+    }
+    const searchSpace =
+        experiment_description.value?.Context?.SearchSpace ?? {};
+
+    let allParams = Object.entries(searchSpace)
+        .filter(([name, value]) =>
+            name !== "Structure" &&
+            typeof value === "object" &&
+            value !== null &&
+            "Type" in value
+        )
+        .map(([name]) => name);
+    let contourParams: string[] = []
+    for (var param of allParams) {
+      if (isContourParameter(param, experiment_description.value)) {
+        contourParams.push(param)
+      }
+    }
+    return contourParams
+})
 
 // manage selected dropdown values
 const optHistObjective = ref("")
@@ -119,11 +178,11 @@ const onlyShowParetoFront = ref(false)
 
 const contourParam1 = ref("")
 const selectedContourParam1 = computed(() => {
-    return contourParam1.value || parameterNames.value[0] || ""
+    return contourParam1.value || paraCoordParameterNames.value[0] || ""
 })
 const contourParam2 = ref("")
 const selectedContourParam2 = computed(() => {
-    return contourParam2.value || parameterNames.value[1] || ""
+    return contourParam2.value || paraCoordParameterNames.value[1] || ""
 })
 const contourObjective = ref("")
 const selectedContourObjective = computed(() => {
@@ -160,8 +219,15 @@ watch(
         rankParam2.value = parameters[1] ?? ""
         sliceParam.value = parameters[0] ?? ""
         hypImpParams.value = [...parameters]
-        contourParam1.value = parameters[0] ?? ""
-        contourParam2.value = parameters[1] ?? ""
+    },
+    { immediate: true }
+)
+
+watch(
+    paraCoordParameterNames,
+    (params) => {
+        contourParam1.value = params[0] ?? ""
+        contourParam2.value = params[1] ?? ""
     },
     { immediate: true }
 )
@@ -521,7 +587,7 @@ watch(
               >
                 <v-select
                     v-model="contourParam1"
-                    :items="parameterNames"
+                    :items="paraCoordParameterNames"
                     label="Parameter 1"
                     density="compact"
                     variant="outlined"
@@ -530,7 +596,7 @@ watch(
                 />
                 <v-select
                     v-model="contourParam2"
-                    :items="parameterNames"
+                    :items="paraCoordParameterNames"
                     label="Parameter 2"
                     density="compact"
                     variant="outlined"

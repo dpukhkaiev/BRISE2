@@ -18,8 +18,6 @@ const props = defineProps<{
     onlyShowParetoFront: boolean
 }>()
 
-let rendering = false
-
 async function render() {
     await nextTick()
 
@@ -44,15 +42,8 @@ watch(
         () => props.paretoObjective2,
         () => props.onlyShowParetoFront
     ],
-    async () => {
-        if (rendering) return;
-
-        rendering = true;
-        try {
-            await render();
-        } finally {
-            rendering = false;
-        }
+    () => {
+        render()
     },
     { deep: true }
 );

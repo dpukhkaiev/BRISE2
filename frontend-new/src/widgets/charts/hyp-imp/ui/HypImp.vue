@@ -17,8 +17,6 @@ const props = defineProps<{
     hypImpObjective: string
 }>()
 
-let rendering = false
-
 async function render() {
     await nextTick()
 
@@ -42,15 +40,8 @@ watch(
         () => props.hypImpParams, 
         () => props.hypImpObjective
     ],
-    async () => {
-        if (rendering) return;
-
-        rendering = true;
-        try {
-            await render();
-        } finally {
-            rendering = false;
-        }
+    () => {
+        render()
     },
     { deep: true }
 );

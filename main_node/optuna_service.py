@@ -1,7 +1,6 @@
 import optuna 
 import plotly
 import numpy as np
-from optuna.importance import PedAnovaImportanceEvaluator
 import scipy.sparse
 import scipy.sparse.linalg
 
@@ -15,31 +14,21 @@ CategoricalDistribution = (
 create_trial = optuna.trial.create_trial
     
 def build_distributions(search_space):
-
     distributions = {}
 
     for param_name, param_data in search_space.items():
-
         if param_name == "Structure":
             continue
-
         hp_type = param_data.get("Type")
-
-        # ----------------------------------------------------
+        
         # FLOAT
-        # ----------------------------------------------------
-
         if hp_type == "FloatHyperparameter":
-
             distributions[param_name] = FloatDistribution(
                 low=param_data["Lower"],
                 high=param_data["Upper"]
             )
 
-        # ----------------------------------------------------
-        # INTEGER
-        # ----------------------------------------------------
-
+        # INT
         elif hp_type == "IntegerHyperparameter":
 
             distributions[param_name] = IntDistribution(
@@ -47,15 +36,11 @@ def build_distributions(search_space):
                 high=param_data["Upper"]
             )
 
-        # ----------------------------------------------------
-        # ORDINAL / NOMINAL
-        # ----------------------------------------------------
-
+        # ORD / NOM
         elif hp_type in [
             "OrdinalHyperparameter",
             "NominalHyperparameter"
         ]:
-
             distributions[param_name] = (
                 CategoricalDistribution(
                     choices=param_data["Categories"]
@@ -65,16 +50,10 @@ def build_distributions(search_space):
     return distributions
 
 
-# ============================================================
-# BUILD OPTIMIZATION DIRECTIONS
-# ============================================================
-
 def build_directions(objectives):
-
     directions = []
 
     for _, objective in objectives.items():
-
         if objective["Minimization"] is True:
             directions.append("minimize")
         else:
@@ -83,21 +62,12 @@ def build_directions(objectives):
     return directions
 
 
-# ============================================================
-# EXTRACT OBJECTIVE VALUES
-# ============================================================
-
 def extract_objective_values(objectives_dict):
 
     return list(objectives_dict.values())
 
 
-# ============================================================
-# RECONSTRUCT OPTUNA STUDY
-# ============================================================
-
 def reconstruct_study(input_data):
-
     experiment_description = (
         input_data["experiment_description"]
     )
@@ -119,28 +89,18 @@ def reconstruct_study(input_data):
         search_space
     )
 
-    # --------------------------------------------------------
     # CREATE STUDY
-    # --------------------------------------------------------
-
     if len(directions) == 1:
-
         study = optuna.create_study(
             direction=directions[0]
         )
-
     else:
-
         study = optuna.create_study(
             directions=directions
         )
 
-    # --------------------------------------------------------
     # ADD TRIALS
-    # --------------------------------------------------------
-
     for t in input_data["trials"]:
-
         params = t["configurations"]
 
         objective_values = [
@@ -158,41 +118,32 @@ def reconstruct_study(input_data):
 
     return study
     
+    
+# created from Optuna implementation
+# https://optuna.readthedocs.io/en/v4.3.0/_modules/optuna/visualization/matplotlib/_contour.html
 def interpolate_zmap(
     zmap: dict[tuple[int, int], float],
     width: int,
     height: int,
 ) -> np.ndarray:
-    """
-    Optuna-style interpolation of missing values using
-    the discrete Poisson equation.
-    """
-
     n = width * height
-
     a_data = []
     a_row = []
     a_col = []
-
     b = np.zeros(n)
 
     for y in range(height):
         for x in range(width):
-
             index = y * width + x
-
-            # Observed value
+            # observed value
             if (x, y) in zmap:
                 a_data.append(1.0)
                 a_row.append(index)
                 a_col.append(index)
-
                 b[index] = zmap[(x, y)]
-
                 continue
 
-            # Missing value:
-            # average of neighbouring cells
+            # missing value (average of neighbouring cells)
             neighbours = []
 
             if x > 0:
@@ -219,7 +170,6 @@ def interpolate_zmap(
 
             for nx, ny in neighbours:
                 neighbour_index = ny * width + nx
-
                 a_data.append(-1.0)
                 a_row.append(index)
                 a_col.append(neighbour_index)
@@ -234,22 +184,13 @@ def interpolate_zmap(
     return z.reshape((height, width))
 
 
+# created from Optuna implementation
+# https://optuna.readthedocs.io/en/v4.3.0/_modules/optuna/visualization/matplotlib/_contour.html
 def get_axis_values(
     study,
     parameter: str,
     experiment_description,
 ):
-    """
-    Creates the contour axis for one parameter.
-
-    Returns:
-        axis_values:
-            Numerical values used by Plotly.
-
-        parameter_values:
-            Original parameter values corresponding to the axis.
-    """
-
     search_space = (
         experiment_description
         .get("Context", {})
@@ -264,16 +205,12 @@ def get_axis_values(
 
     parameter_type = search_space.get("Type")
 
-    # ---------------------------------------------------------
-    # Ordinal / categorical
-    # ---------------------------------------------------------
-
+    # ORD / CAT
     if (
         parameter_type == "OrdinalHyperparameter"
         or isinstance(search_space.get("Categories"), list)
     ):
         categories = search_space["Categories"]
-
         axis_values = np.arange(
             len(categories),
             dtype=float,
@@ -281,10 +218,7 @@ def get_axis_values(
 
         return axis_values, categories
 
-    # ---------------------------------------------------------
-    # Numerical
-    # ---------------------------------------------------------
-
+    # NUM
     trials = [
         trial
         for trial in study.trials
@@ -307,7 +241,6 @@ def get_axis_values(
     low = np.min(values)
     high = np.max(values)
 
-    # Use a 100-point continuous axis
     axis_values = np.linspace(
         low,
         high,
@@ -316,7 +249,8 @@ def get_axis_values(
 
     return axis_values, None
 
-# directly callable functions    
+
+# DIRECTLY CALLABLE FUNCTIONS
 def calculate_importances(payload):
     allRes = payload["trials"]
     if len(allRes) < 2:
@@ -340,7 +274,6 @@ def calculate_importances(payload):
 
     importances = optuna.importance.get_param_importances(
         study,
-        evaluator=PedAnovaImportanceEvaluator(),
         params=parameters if parameters else None,
         target=lambda trial: trial.values[objective_index]
     )
@@ -418,10 +351,7 @@ def calculate_contour(payload):
 
     objective_index = objective_names.index(objective)
 
-    # ---------------------------------------------------------
-    # Get axes
-    # ---------------------------------------------------------
-
+    # get axes
     xi, x_categories = get_axis_values(
         study,
         param1,
@@ -434,17 +364,11 @@ def calculate_contour(payload):
         experiment_description,
     )
 
-    # ---------------------------------------------------------
-    # Determine grid dimensions
-    # ---------------------------------------------------------
-
+    # grid dimensions
     width = len(xi)
     height = len(yi)
 
-    # ---------------------------------------------------------
-    # Convert trial values into axis coordinates
-    # ---------------------------------------------------------
-
+    # convert trial values into axis coordinates
     search_space = (
         experiment_description
         ["Context"]
@@ -477,14 +401,10 @@ def calculate_contour(payload):
             for index, category in enumerate(y_categories)
         }
 
-    # ---------------------------------------------------------
-    # Build sparse z map
-    # ---------------------------------------------------------
-
+    # build sparse z map
     zmap = {}
 
     for trial in study.trials:
-
         if trial.state != optuna.trial.TrialState.COMPLETE:
             continue
 
@@ -500,10 +420,6 @@ def calculate_contour(payload):
         x_value = trial.params[param1]
         y_value = trial.params[param2]
 
-        # -----------------------------
-        # X coordinate
-        # -----------------------------
-
         if x_is_categorical:
             x = x_category_indices[x_value]
 
@@ -513,10 +429,6 @@ def calculate_contour(payload):
                     np.abs(xi - float(x_value))
                 )
             )
-
-        # -----------------------------
-        # Y coordinate
-        # -----------------------------
 
         if y_is_categorical:
             y = y_category_indices[y_value]
@@ -528,10 +440,6 @@ def calculate_contour(payload):
                 )
             )
 
-        # -----------------------------
-        # Objective
-        # -----------------------------
-
         z = float(
             trial.values[objective_index]
         )
@@ -541,19 +449,11 @@ def calculate_contour(payload):
     if len(zmap) < 2:
         return {}
 
-    # ---------------------------------------------------------
-    # Interpolate
-    # ---------------------------------------------------------
-
     zi = interpolate_zmap(
         zmap,
         width,
         height,
     )
-
-    # ---------------------------------------------------------
-    # Return
-    # ---------------------------------------------------------
 
     contour = {
         "x": xi.tolist(),
@@ -564,12 +464,17 @@ def calculate_contour(payload):
         "objective_name": objective,
     }
 
-    # Optional category information
     if x_categories is not None:
         contour["x_categories"] = x_categories
 
     if y_categories is not None:
         contour["y_categories"] = y_categories
+
+    print("xi:", len(xi), np.isfinite(xi).all())
+    print("yi:", len(yi), np.isfinite(yi).all())
+    print("zi:", zi.shape, np.isfinite(zi).all())
+    print("nan:", np.isnan(zi).sum())
+    print("inf:", np.isinf(zi).sum())
 
     return {
         "contour": contour
