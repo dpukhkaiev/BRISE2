@@ -68,7 +68,7 @@ export function renderContour(
             y_name: string,
             objective_name: string
         }
-    },
+    } | Record<string, never>,
     experiment_description: ExperimentDescription
 
 ) {

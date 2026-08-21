@@ -2,12 +2,16 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
-import { HypImp } from '../../widgets/charts/hyp-imp'
+import { Contour } from '../../widgets/charts/contour'
 
 const result = {
-    importances: {
-        frequency: 0.8,
-        threads: 0.2
+    contour: {
+        x: [50, 60],
+        y: [4, 8],
+        z: expect.any(Array),
+        x_name: 'frequency',
+        y_name: 'threads',
+        objective_name: 'runtime'
     }
 }
 
@@ -15,8 +19,8 @@ const { calculatePlotMock } = vi.hoisted(() => ({
     calculatePlotMock: vi.fn()
 }))
 
-const { renderHypImpMock } = vi.hoisted(() => ({
-    renderHypImpMock: vi.fn()
+const { renderContourMock } = vi.hoisted(() => ({
+    renderContourMock: vi.fn()
 }))
 
 const allRes = ref<any[]>([])
@@ -39,7 +43,7 @@ const experiment_description = ref({
     },
     PlotSelection: {
         Plot: {
-            HyperparameterImportances: {}
+            ContourPlot: {}
         }
     }
 })
@@ -62,13 +66,13 @@ vi.mock('../../entities/main/api/main.client.store', () => ({
     }
 }))
 
-vi.mock('../../widgets/charts/hyp-imp/render', () => ({
-    renderHypImp: renderHypImpMock
+vi.mock('../../widgets/charts/contour/render', () => ({
+    renderContour: renderContourMock
 }))
 
 
 
-describe('Hyperparameter Importances', () => {
+describe('Contour Plot', () => {
 
     beforeEach(() => {
         setActivePinia(createPinia())
@@ -95,17 +99,18 @@ describe('Hyperparameter Importances', () => {
             },
             PlotSelection: {
                 Plot: {
-                    HyperparameterImportances: {}
+                    ContourPlot: {}
                 }
             }
         }
     })
 
     const mountComponent = () => {
-        return mount(HypImp, {
+        return mount(Contour, {
             props: {
-                hypImpParams: ['frequency', 'threads'],
-                hypImpObjective: 'runtime'
+                contourParam1: 'frequency',
+                contourParam2: 'threads',
+                contourObjective: 'runtime'
             },
             global: {
                 plugins: [createPinia()]
@@ -127,6 +132,15 @@ describe('Hyperparameter Importances', () => {
                 results: [123.4],
                 time: '10m 20s',
                 'measured points': 1
+            },
+            {
+                configurations: {
+                    frequency: 60,
+                    threads: 8
+                },
+                results: [125.4],
+                time: '10m 20s',
+                'measured points': 1
             }
         ]
 
@@ -135,12 +149,13 @@ describe('Hyperparameter Importances', () => {
         expect(calculatePlotMock).toHaveBeenCalled()
 
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
-            'hyperparameter_importances',
+            "contour",
             {
-                experiment_description: experiment_description.value,
-                trials: allRes.value,
-                parameters: ['frequency', 'threads'],
-                objective: 'runtime'
+                "experiment_description": experiment_description.value,
+                "trials": allRes.value,
+                "param1": 'frequency',
+                "param2": 'threads',
+                "objective": 'runtime'
             }
         )
     })
@@ -167,9 +182,10 @@ describe('Hyperparameter Importances', () => {
         
         await flushPromises()
 
-        expect(renderHypImpMock).toHaveBeenCalledWith(
+        expect(renderContourMock).toHaveBeenCalledWith(
             wrapper.find('div').element,
-            result
+            result,
+            experiment_description.value
         )
     })
 
@@ -194,7 +210,7 @@ describe('Hyperparameter Importances', () => {
             .toBeGreaterThan(callsBeforeChange)
     })
 
-    it('rerenders when hypImpParams changes', async () => {
+    it('rerenders when contourParam1 changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
@@ -202,7 +218,7 @@ describe('Hyperparameter Importances', () => {
         const callsBeforeChange = calculatePlotMock.mock.calls.length
 
         await wrapper.setProps({
-            hypImpParams: ['frequency']
+            contourParam1: 'threads'
         })
 
         await flushPromises()
@@ -211,14 +227,18 @@ describe('Hyperparameter Importances', () => {
             .toBeGreaterThan(callsBeforeChange)
 
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
-            'hyperparameter_importances',
-            expect.objectContaining({
-                parameters: ['frequency']
-            })
+            "contour",
+            {
+                "experiment_description": experiment_description.value,
+                "trials": allRes.value,
+                "param1": 'threads',
+                "param2": 'threads',
+                "objective": 'runtime'
+            }
         )
     })
 
-    it('rerenders when hypImpObjective changes', async () => {
+    it('rerenders when contourParam2 changes', async () => {
         const wrapper = mountComponent()
 
         await flushPromises()
@@ -226,7 +246,7 @@ describe('Hyperparameter Importances', () => {
         const callsBeforeChange = calculatePlotMock.mock.calls.length
 
         await wrapper.setProps({
-            hypImpObjective: 'energy'
+            contourParam2: 'frequency'
         })
 
         await flushPromises()
@@ -235,16 +255,48 @@ describe('Hyperparameter Importances', () => {
             .toBeGreaterThan(callsBeforeChange)
 
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
-            'hyperparameter_importances',
-            expect.objectContaining({
-                objective: 'energy'
-            })
+            "contour",
+            {
+                "experiment_description": experiment_description.value,
+                "trials": allRes.value,
+                "param1": 'frequency',
+                "param2": 'frequency',
+                "objective": 'runtime'
+            }
+        )
+    })
+
+    it('rerenders when contourObjective changes', async () => {
+        const wrapper = mountComponent()
+
+        await flushPromises()
+
+        const callsBeforeChange = calculatePlotMock.mock.calls.length
+
+        await wrapper.setProps({
+            contourObjective: 'energy'
+        })
+
+        await flushPromises()
+
+        expect(calculatePlotMock.mock.calls.length)
+            .toBeGreaterThan(callsBeforeChange)
+
+        expect(calculatePlotMock).toHaveBeenLastCalledWith(
+            "contour",
+            {
+                "experiment_description": experiment_description.value,
+                "trials": allRes.value,
+                "param1": 'frequency',
+                "param2": 'threads',
+                "objective": 'energy'
+            }
         )
     })
 
     it('passes an empty result to render if result is empty', async () => {
         const emptyResult = {
-            importances: {}
+            contour: {}
         }
 
         calculatePlotMock.mockResolvedValue(emptyResult)
@@ -263,9 +315,10 @@ describe('Hyperparameter Importances', () => {
 
         await flushPromises()
 
-        expect(renderHypImpMock).toHaveBeenCalledWith(
+        expect(renderContourMock).toHaveBeenCalledWith(
             wrapper.find('div').element,
-            emptyResult
+            emptyResult,
+            experiment_description.value
         )
     })
 })

@@ -14,12 +14,10 @@ describe('renderHypImp', () => {
         vi.clearAllMocks()
     })
 
-    it('purges the plot when importances are empty', () => {
+    it('purges the plot when backend result is empty', () => {
         const element = document.createElement('div')
 
-        renderHypImp(element, {
-            importances: {}
-        })
+        renderHypImp(element, {})
 
         expect(Plotly.purge).toHaveBeenCalledWith(element)
         expect(Plotly.react).not.toHaveBeenCalled()

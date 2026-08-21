@@ -1,6 +1,6 @@
 import Plotly from 'plotly.js-dist-min'
 
-export function renderHypImp(element: HTMLElement, result: { "importances": Record<string, number> }) {
+export function renderHypImp(element: HTMLElement, result: { "importances": Record<string, number> } | Record<string, never>) {
 
     if (result.importances == undefined || Object.keys(result.importances).length === 0) {
         Plotly.purge(element)
