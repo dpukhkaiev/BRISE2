@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 #!src/tests/*.spec.ts
 !src/tests/**/*.spec.ts
+!src/benchmarks/*.spec.ts
