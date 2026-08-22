@@ -1,0 +1,11 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/lliebscher/Dokumente/BRISE2/frontend-new[39m
+
+ [32m✓[39m [30m[43m chromium [49m[39m src/benchmarks/optHist.spec.ts[2m:13:5[22m[2m > [22mOptimization History Runtime Benchmark[2m > [22mmeasures runtime for different numbers of trials[33m 11767[2mms[22m[39m
+[2m16:19:46[22m [36m[1m[vite][22m[39m (client) [optimizer] bundling dependencies...
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 16:19:14
+[2m   Duration [22m 37.85s[2m (transform 0ms, setup 0ms, import 4.31s, tests 11.78s, environment 0ms)[22m
+

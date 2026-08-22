@@ -22,13 +22,11 @@ export const usePlotStore = defineStore('plots', () => {
     
     const visibleCharts = ref<string[]>([])
 
-    //const bestRes = ref<PointExp[]>([])
     const allRes = ref<PointExp[]>([])
     
     return {
         selected,
         visibleCharts,
-        //bestRes,
         allRes
     }
 })

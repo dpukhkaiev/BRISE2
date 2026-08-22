@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { playwright } from "@vitest/browser-playwright"
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -33,6 +34,7 @@ export default defineConfig({
       }
     }
   },
+  /*
   test: {
     environment: 'jsdom',
     globals: true,
@@ -41,5 +43,19 @@ export default defineConfig({
         inline: ['vuetify']
       }
     }
+  }*/
+  test: {
+      browser: {
+          enabled: true,
+          provider: playwright(),
+          instances: [
+              {
+                  browser: "chromium"
+              }
+          ]
+      },
+      onConsoleLog(log) {
+        console.log(log)
+      }
   }
 })
