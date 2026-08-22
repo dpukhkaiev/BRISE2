@@ -470,12 +470,6 @@ def calculate_contour(payload):
     if y_categories is not None:
         contour["y_categories"] = y_categories
 
-    print("xi:", len(xi), np.isfinite(xi).all())
-    print("yi:", len(yi), np.isfinite(yi).all())
-    print("zi:", zi.shape, np.isfinite(zi).all())
-    print("nan:", np.isnan(zi).sum())
-    print("inf:", np.isinf(zi).sum())
-
     return {
         "contour": contour
     }
