@@ -80,7 +80,7 @@ export function renderSlice(
         marker: {
             size: 8,
             color: allRes.map((_, i) => i + 1),
-            colorscale: "Blues",
+            colorscale: "Portland",
             showscale: true,
             colorbar: {
                 title: {

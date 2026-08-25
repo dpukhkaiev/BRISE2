@@ -133,7 +133,7 @@ export function renderParaCoord(
 
         line: {
             showscale: true,
-            colorscale: 'Jet',
+            colorscale: 'Portland',
             color: objectiveValues
         },
 

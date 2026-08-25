@@ -93,7 +93,7 @@ export function renderRank(
             color: allRes.map(
                 p => Number(p.results[rankObjective])
             ),
-            colorscale: "Viridis",
+            colorscale: "Portland",
             colorbar: {
                 title: {
                     text: rankObjective

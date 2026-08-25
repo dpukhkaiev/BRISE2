@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 
+import { firstValueFrom } from "rxjs"
+import { stompClient } from "../shared/api/stomp.client"
+
 import { mount } from "@vue/test-utils"
 import { createPinia, setActivePinia } from "pinia"
 
@@ -12,8 +15,11 @@ import { useMainEventStore } from "../entities/main"
 
 import { generateExperiment } from "./generateExperiment"
 
+import { server } from "vitest/browser"
 
-describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
+const { writeFile } = server.commands
+
+describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
     const trialCounts = [
         25,
@@ -42,7 +48,7 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
     const params = 8
     const objectives = 2
-    const trials = 50
+    const trials = 100
 
     const repetitions = 10
 
@@ -51,6 +57,7 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
     })
 
     it("measures plot creation runtime for different numbers of trials", async () => {
+        await firstValueFrom(stompClient.connected$)
         const results: {
             trials: number
             params: number
@@ -108,11 +115,21 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
                 plotStore.allRes = experiment.allRes
 
-                await vi.waitFor(() => {
-                    expect(
-                        reactSpy
-                    ).toHaveBeenCalled()
-                })
+                await vi.waitFor(
+                    () => {
+                        expect(
+                            wrapper.element.classList
+                        ).toContain("js-plotly-plot")
+                    },
+                    {
+                        timeout: 120_000,
+                        interval: 10
+                    }
+                )
+
+                await new Promise<void>(resolve =>
+                    requestAnimationFrame(() => resolve())
+                )
 
                 const lastCall =
                     reactSpy.mock.results[
@@ -145,10 +162,26 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
         reactSpy.mockRestore()
 
-        console.table(results)
-    }, 120_000)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/hypImp-plotCreation-trials-1000.csv",
+            csv
+        )
+    }, 600_000)
 
     it("measures plot creation runtime for different numbers of params", async () => {
+        await firstValueFrom(stompClient.connected$)
         const results: {
             trials: number
             params: number
@@ -206,11 +239,21 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
                 plotStore.allRes = experiment.allRes
 
-                await vi.waitFor(() => {
-                    expect(
-                        reactSpy
-                    ).toHaveBeenCalled()
-                })
+                await vi.waitFor(
+                    () => {
+                        expect(
+                            wrapper.element.classList
+                        ).toContain("js-plotly-plot")
+                    },
+                    {
+                        timeout: 120_000,
+                        interval: 10
+                    }
+                )
+
+                await new Promise<void>(resolve =>
+                    requestAnimationFrame(() => resolve())
+                )
 
                 const lastCall =
                     reactSpy.mock.results[
@@ -243,10 +286,26 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
         reactSpy.mockRestore()
 
-        console.table(results)
-    }, 120_000)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
 
-    it("measures plot creation runtime for different numbers of params", async () => {
+        await writeFile(
+            "./results/hypImp-plotCreation-params.csv",
+            csv
+        )
+    }, 600_000)
+
+    it("measures plot creation runtime for different numbers of objectives", async () => {
+        await firstValueFrom(stompClient.connected$)
         const results: {
             trials: number
             params: number
@@ -304,11 +363,21 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
                 plotStore.allRes = experiment.allRes
 
-                await vi.waitFor(() => {
-                    expect(
-                        reactSpy
-                    ).toHaveBeenCalled()
-                })
+                await vi.waitFor(
+                    () => {
+                        expect(
+                            wrapper.element.classList
+                        ).toContain("js-plotly-plot")
+                    },
+                    {
+                        timeout: 120_000,
+                        interval: 10
+                    }
+                )
+
+                await new Promise<void>(resolve =>
+                    requestAnimationFrame(() => resolve())
+                )
 
                 const lastCall =
                     reactSpy.mock.results[
@@ -341,6 +410,21 @@ describe("Hyperparameter Importances- Plot Creation Runtime Benchmark", () => {
 
         reactSpy.mockRestore()
 
-        console.table(results)
-    }, 120_000)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/hypImp-plotCreation-objectives.csv",
+            csv
+        )
+    }, 600_000)
 })

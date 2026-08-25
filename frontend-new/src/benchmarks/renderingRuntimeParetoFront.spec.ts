@@ -2,6 +2,10 @@ import { describe, it } from "vitest"
 import { generateExperiment } from "./generateExperiment"
 import { renderParetoFront } from "../widgets/charts/pareto-front/render.ts"
 
+import { server } from "vitest/browser"
+
+const { writeFile } = server.commands
+
 describe("Pareto Front - Rendering Runtime Benchmark", () => {
     const trialCounts = [
         25,
@@ -30,7 +34,7 @@ describe("Pareto Front - Rendering Runtime Benchmark", () => {
 
     const params = 8
     const objectives = 2
-    const trials = 50
+    const trials = 100
 
     const repetitions = 10
 
@@ -100,7 +104,22 @@ describe("Pareto Front - Rendering Runtime Benchmark", () => {
             }
         }
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/paretoFront-rendering-trials.csv",
+            csv
+        )
     }, 120_000)
 
     it("measures rendering runtime for different numbers of params", async () => {
@@ -169,7 +188,22 @@ describe("Pareto Front - Rendering Runtime Benchmark", () => {
             }
         }
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/paretoFront-rendering-params.csv",
+            csv
+        )
     }, 120_000)
 
     it("measures rendering runtime for different numbers of objectives", async () => {
@@ -238,6 +272,21 @@ describe("Pareto Front - Rendering Runtime Benchmark", () => {
             }
         }
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/paretoFront-rendering-objectives.csv",
+            csv
+        )
     }, 120_000)
 })

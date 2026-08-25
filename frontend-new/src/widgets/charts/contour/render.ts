@@ -92,10 +92,10 @@ export function renderContour(
         x: result.contour.x,
         y: result.contour.y,
         z: result.contour.z,
-        colorscale: "Viridis",
+        colorscale: "Portland",
         contours: {
             coloring: "heatmap",
-            showlabels: true
+            showlabels: false
         },
         colorbar: {
             title: {

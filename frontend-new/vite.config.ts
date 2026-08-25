@@ -52,10 +52,11 @@ export default defineConfig({
               {
                   browser: "chromium"
               }
-          ]
+          ],
+          api: {
+              allowWrite: true
+          }
       },
-      onConsoleLog(log) {
-        console.log(log)
-      }
+      reporters: ['verbose']
   }
 })

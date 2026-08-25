@@ -3,6 +3,10 @@ import { generateExperiment } from "./generateExperiment"
 import { renderContour } from "../widgets/charts/contour/render.ts"
 import type { ExperimentDescription } from "../entities/experiment/model/experiment.model.ts"
 
+import { server } from "vitest/browser"
+
+const { writeFile } = server.commands
+
 function generateContourResult(
     experimentDescription: ExperimentDescription,
     param1: string,
@@ -119,7 +123,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
 
     const params = 8
     const objectives = 2
-    const trials = 50
+    const trials = 100
 
     const repetitions = 10
 
@@ -172,7 +176,22 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
             }
         }
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/contour-rendering-trials.csv",
+            csv
+        )
     }, 120_000)
 
     it("measures rendering runtime for different numbers of params", async () => {
@@ -224,7 +243,22 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
             }
         }
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/contour-rendering-params.csv",
+            csv
+        )
     }, 120_000)
 
     it("measures rendering runtime for different numbers of objectives", async () => {
@@ -276,6 +310,21 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
             }
         }
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/contour-rendering-objectives.csv",
+            csv
+        )
     }, 120_000)
 })

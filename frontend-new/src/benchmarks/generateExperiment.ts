@@ -22,9 +22,9 @@ export interface BenchmarkTrial {
 export interface BenchmarkParameter {
     Name: string
     Type: ParameterType
-    Values?: Array<string | number>
-    LowerBound?: number
-    UpperBound?: number
+    Categories?: Array<string | number>
+    Lower?: number
+    Upper?: number
 }
 
 export interface BenchmarkExperimentDescription {
@@ -83,45 +83,45 @@ function generateParameterValue(
 ): string | number {
     switch (parameter.Type) {
         case "FloatHyperparameter": {
-            const lower = parameter.LowerBound ?? 0
-            const upper = parameter.UpperBound ?? 1
+            const lower = parameter.Lower ?? 0
+            const upper = parameter.Upper ?? 1
 
             return lower + random() * (upper - lower)
         }
 
         case "IntegerHyperparameter": {
-            const lower = parameter.LowerBound ?? 0
-            const upper = parameter.UpperBound ?? 1
+            const lower = parameter.Lower ?? 0
+            const upper = parameter.Upper ?? 1
 
-            return lower + Math.floor(random()) * (upper - lower)
+            return lower + Math.floor(random() * (upper - lower + 1))
         }
 
         case "OrdinalHyperparameter": {
-            if (!parameter.Values || parameter.Values.length === 0) {
+            if (!parameter.Categories || parameter.Categories.length === 0) {
                 throw new Error(
-                    `Ordinal parameter ${parameter.Name} has no values`
+                    `Ordinal parameter ${parameter.Name} has no categories`
                 )
             }
 
             const index = Math.floor(
-                random() * parameter.Values.length
+                random() * parameter.Categories.length
             )
 
-            return parameter.Values[index]
+            return parameter.Categories[index]
         }
 
         case "NominalHyperparameter": {
-            if (!parameter.Values || parameter.Values.length === 0) {
+            if (!parameter.Categories || parameter.Categories.length === 0) {
                 throw new Error(
-                    `Nominal parameter ${parameter.Name} has no values`
+                    `Nominal parameter ${parameter.Name} has no categories`
                 )
             }
 
             const index = Math.floor(
-                random() * parameter.Values.length
+                random() * parameter.Categories.length
             )
 
-            return parameter.Values[index]
+            return parameter.Categories[index]
         }
     }
 }
@@ -201,22 +201,22 @@ export function generateExperiment(
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "FloatHyperparameter",
-                LowerBound: 0,
-                UpperBound: 100
+                Lower: 0,
+                Upper: 100
             }
         } else if (type === 1) {
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "IntegerHyperparameter",
-                LowerBound: 0,
-                UpperBound: 100
+                Lower: 0,
+                Upper: 100
             }
         }
         else if (type === 2) {
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "OrdinalHyperparameter",
-                Values: [
+                Categories: [
                     1,
                     2,
                     4,
@@ -229,7 +229,7 @@ export function generateExperiment(
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "NominalHyperparameter",
-                Values: [
+                Categories: [
                     "value1",
                     "value2",
                     "value3",

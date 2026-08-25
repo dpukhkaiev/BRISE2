@@ -12,6 +12,9 @@ import { useMainEventStore } from "../entities/main"
 
 import { generateExperiment } from "./generateExperiment"
 
+import { server } from "vitest/browser"
+
+const { writeFile } = server.commands
 
 describe("Parallel Coordinates - Plot Creation Runtime Benchmark", () => {
 
@@ -42,7 +45,7 @@ describe("Parallel Coordinates - Plot Creation Runtime Benchmark", () => {
 
     const params = 8
     const objectives = 2
-    const trials = 50
+    const trials = 100
 
     const repetitions = 10
 
@@ -145,7 +148,22 @@ describe("Parallel Coordinates - Plot Creation Runtime Benchmark", () => {
 
         reactSpy.mockRestore()
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/paraCoord-plotCreation-trials.csv",
+            csv
+        )
     }, 120_000)
 
     it("measures plot creation runtime for different numbers of params", async () => {
@@ -243,10 +261,25 @@ describe("Parallel Coordinates - Plot Creation Runtime Benchmark", () => {
 
         reactSpy.mockRestore()
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/paraCoord-plotCreation-params.csv",
+            csv
+        )
     }, 120_000)
 
-    it("measures plot creation runtime for different numbers of params", async () => {
+    it("measures plot creation runtime for different numbers of objectives", async () => {
         const results: {
             trials: number
             params: number
@@ -341,6 +374,21 @@ describe("Parallel Coordinates - Plot Creation Runtime Benchmark", () => {
 
         reactSpy.mockRestore()
 
-        console.table(results)
+        const csv = [
+            "trials,parameters,objectives,runtime",
+            ...results.map(result =>
+                [
+                    result.trials,
+                    result.params,
+                    result.objectives,
+                    result.runtime
+                ].join(",")
+            )
+        ].join("\n")
+
+        await writeFile(
+            "./results/paraCoord-plotCreation-objectives.csv",
+            csv
+        )
     }, 120_000)
 })
