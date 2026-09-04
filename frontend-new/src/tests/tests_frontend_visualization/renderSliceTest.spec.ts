@@ -142,7 +142,7 @@ describe('renderParaCoord', () => {
                 marker: {
                     size: 8,
                     color: [1, 2, 3],
-                    colorscale: "Blues",
+                    colorscale: "Portland",
                     showscale: true,
                     colorbar: {
                         title: {

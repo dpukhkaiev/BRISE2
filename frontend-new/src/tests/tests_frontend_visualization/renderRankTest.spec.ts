@@ -131,7 +131,7 @@ describe('renderRank', () => {
                 marker: {
                     size: 10,
                     color: [30, 10, 20],
-                    colorscale: "Viridis",
+                    colorscale: "Portland",
                     colorbar: {
                         title: {
                             text: 'runtime'

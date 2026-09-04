@@ -52,6 +52,7 @@ services:
 
   waffle:
     build: ./waffle/
+    #platform: linux/arm64/v8
     command: python3 manage.py runserver 0.0.0.0:8000
     container_name: waffle
     tty: true

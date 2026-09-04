@@ -4,6 +4,7 @@ import { onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 // services
 import { useMainEventStore } from '../../../entities/main'
+import { usePlotStore } from '../../../entities/main/model/plot.store'
 import { MainClientApi } from '../../../entities/main'
 //data
 import { MainEvent } from '../../../entities/main'
@@ -19,6 +20,9 @@ const isFinish = ref(false)
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
 const { experiment_description, isConnected } = storeToRefs(store)
+
+const plotStore = usePlotStore()
+const { canChangeVisibleCharts } = storeToRefs(plotStore)
 
 const showDownload = ref(false)
 
@@ -36,6 +40,8 @@ function startMainControl(): any {
 
     }
     console.log('sending:', experiment_description.value)
+    canChangeVisibleCharts.value = true
+    console.log("toggle? ", canChangeVisibleCharts.value)
 }
 
 function stopMainControl(): any {
@@ -72,6 +78,9 @@ const uploadFile = async () => {
     }
 
     reader.readAsText(file)
+    // disable plot selection in frontend
+    canChangeVisibleCharts.value = false
+    console.log("toggle?: ", canChangeVisibleCharts.value)
 
 }
 

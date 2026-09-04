@@ -123,7 +123,7 @@ describe('renderParaCoord', () => {
 
                 line: {
                     showscale: true,
-                    colorscale: 'Jet',
+                    colorscale: 'Portland',
                     color: [30, 10, 20]
                 },
 

@@ -25,6 +25,9 @@ async function render() {
         return
     if (!experiment_description.value) 
         return
+    if (!props.contourParam1 || !props.contourParam2 || props.contourParam1 === "" || props.contourParam2 === "") {
+        return
+    }
     const result = await MainClientApi.calculatePlot(
         "contour",
         {

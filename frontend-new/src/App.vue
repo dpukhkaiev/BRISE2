@@ -55,7 +55,7 @@ function isContourParameter(
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
-const { selected, visibleCharts } = storeToRefs(plotStore)
+const { selected, visibleCharts, canChangeVisibleCharts } = storeToRefs(plotStore)
 const { experiment_description } = storeToRefs(store)
 
 
@@ -327,6 +327,7 @@ watch(
               density="compact"
               hide-details
               color="green-darken-2"
+              :disabled="!canChangeVisibleCharts"
             />
           </v-list-item>
         </v-list>

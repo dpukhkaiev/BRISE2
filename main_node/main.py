@@ -28,7 +28,7 @@ from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
 
 # import the Optuna Service
-import optuna_service
+from OptunaService import optuna_service
 
 logging.getLogger("pika").setLevel(logging.WARNING)
 

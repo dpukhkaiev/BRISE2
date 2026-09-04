@@ -213,10 +213,10 @@ describe('renderContour', () => {
                 type: 'contour',
                 x: [50, 60],
                 y: [4, 8],
-                colorscale: 'Viridis',
+                colorscale: 'Portland',
                 contours: {
                     coloring: 'heatmap',
-                    showlabels: true
+                    showlabels: false
                 },
                 colorbar: {
                     title: {
@@ -258,6 +258,7 @@ describe('renderContour', () => {
         const threadsCategories = 
             experiment_description.value.Context?.SearchSpace?.threads.Categories
 
+        
         expect(layout.xaxis).toEqual({
             tickvals: frequencyCategories?.map((_, index) => index),
             ticktext: frequencyCategories?.map(category => {
