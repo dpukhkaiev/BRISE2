@@ -48,3 +48,4 @@ class ConfigurationDistributionOrchestrator:
         )
         
         return distribution_class(distribution)
+    

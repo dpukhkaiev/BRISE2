@@ -230,8 +230,10 @@
         }
     },
     "DistributionMode": {
-        "AsynchronousDistribution": {
-                "Type": "AsynchronousDistribution"
-            }
+        "HybridDistribution": {
+            "BatchSize": 5,
+            "TimeoutInSeconds": 5.0,
+            "Type": "hybrid_distribution"
         }
+    }
 }

@@ -230,14 +230,8 @@
         }
     },
     "DistributionMode": {
-        "HybridDistribution": {
-                "Type": "HybridDistribution"
-            },
-        "batchSize": {
-                "Int": "5"
-        },
-        "timeoutInSeconds": {
-                "Int": "5"
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
         }
     }
 }

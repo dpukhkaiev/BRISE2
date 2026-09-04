@@ -215,10 +215,8 @@
     },
     "DistributionMode": {
         "BatchedDistribution": {
-                "Type": "BatchedDistribution"
-            },
-        "batchSize": {
-                "Int": "5"
+            "BatchSize": 5,
+            "Type": "batched_distribution"
         }
     }
 }

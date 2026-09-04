@@ -1,5 +1,5 @@
 from configuration_distribution.distribution_abs import AbstractDistribution
-from tools.rabbitmq_common_tools import RabbitMQConnection, publish
+from tools.rabbitmq_common_tools import publish
 
 class AsynchronousDistribution(AbstractDistribution):
 

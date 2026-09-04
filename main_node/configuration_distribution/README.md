@@ -18,7 +18,7 @@ The extension follows a provider pattern managed by an **Orchestrator**. It work
 
 ## Detailed Class & Function Breakdown
 
-### 1. Asynchronous Distribution (`AsynchronousDistribution.py`)
+### 1. Asynchronous Distribution (`asynchronous_distribution.py`)
 The default strategy. Configurations are sent via the RabbitMQ exchange immediately to the workers upon generation.
 
 * **`dispatch(...)`**: The entrypoint for the distribution logic.
@@ -27,7 +27,7 @@ Calls the inner logic.
 * **`handle_configuration_distribution(experiment_id, body)`**: Directly calls the `publish` utility to send the `get_new_configuration_exchange` event.
 * **`first_it(...)`**: No-op (not required for asynchronous starts).
 
-### 2. Batched Distribution (`BatchedDistribution.py`)
+### 2. Batched Distribution (`batched_distribution.py`)
 Synchronizes workers using a python barrier to ensure they process tasks in batches of a specific size.
 
 * **`__init__(config)`**: Extracts `batchSize` from the payload and initializes a `threading.Barrier`.
@@ -36,7 +36,7 @@ It publishes a special message to RabbitMQ with `worker_capacity` set to the bat
 * **`dispatch(experiment_id, body)`**: Spawns a **daemon thread** to run the logic. This is critical to prevent the main event-thread from blocking while waiting for the barrier.
 * **`handle_configuration_distribution(...)`**: Calls `self._barrier.wait()`. The code execution pauses here until the $N$-th worker (where $N$ is `batchSize`) arrives, at which point all configurations are published simultaneously.
 
-### 3. Hybrid Distribution (`HybridDistribution.py`)
+### 3. Hybrid Distribution (`hybrid_distribution.py`)
 A smart barrier approach that prevents the pipeline from stalling due to slow workers or deadlocks by using a timeoutable gate.
 
 #### The `EventGate` Helper Class

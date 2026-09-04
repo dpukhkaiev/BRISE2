@@ -4,7 +4,7 @@ import os
 import threading
 import uuid
 
-from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
+from configuration_distribution.configuration_distribution_orchestrator import ConfigurationDistributionOrchestrator
 from core_entities.configuration import Configuration
 from tools.mongo_dao import MongoDB
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish

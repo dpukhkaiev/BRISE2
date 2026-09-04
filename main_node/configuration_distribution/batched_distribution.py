@@ -12,7 +12,7 @@ class BatchedDistribution(AbstractDistribution):
         super().__init__(config)
         
         try:
-            self._batch_size = int(config["batchSize"]["Int"])
+            self._batch_size = int(config["BatchedDistribution"]["BatchSize"])
             self.logger.info(f"Batched Distribution initialized with batch size: {self._batch_size}")
 
         except KeyError:
@@ -24,7 +24,6 @@ class BatchedDistribution(AbstractDistribution):
 
         self._first_it_lock = threading.Lock()
         self._barrier_lock = threading.Lock()
-
 
     def handle_configuration_distribution(self, experiment_id, body):
 
@@ -71,7 +70,7 @@ class BatchedDistribution(AbstractDistribution):
 
         # * Forward the call to a separate thread.
         # * In case of blocking, the event thread stays unblocked
-        threading.Thread(target=self.handle_configuration_distribution,args=(experiment_id, body),daemon=True).start()
+        threading.Thread(target=self.handle_configuration_distribution, args=(experiment_id, body), daemon=True).start()
 
     def first_it(self, experiment_id):
 

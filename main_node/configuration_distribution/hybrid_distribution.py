@@ -135,7 +135,7 @@ class HybridDistribution(AbstractDistribution):
         super().__init__(config)
 
         try:
-            self._batch_size = int(config["batchSize"]["Int"])
+            self._batch_size = int(config["HybridDistribution"]["BatchSize"])
 
         except KeyError:
             self.logger.error("Description missing 'batchSize'!")
@@ -151,10 +151,10 @@ class HybridDistribution(AbstractDistribution):
         # enough worker evaluation times have been collected to adapt it
         # (see _calculate_next_timeout). Optional; defaults to 5 seconds.
         try:
-            self._initial_timeout = float(config["TimeoutInSeconds"]["Int"])
+            self._initial_timeout = float(config["HybridDistribution"]["TimeoutInSeconds"])
         except (KeyError, TypeError, ValueError):
-            self.logger.info("No valid 'TimeoutInSeconds' in description; defaulting to 5 seconds.")
-            self._initial_timeout = 5.0
+            self.logger.error("No valid 'TimeoutInSeconds' in description!")
+            raise ValueError()
 
         self._number_of_workers = 0
         self._evaluation_times = []
