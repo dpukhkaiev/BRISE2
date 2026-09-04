@@ -35,3 +35,26 @@ yarn-error.log*
 
 *.spec.ts
 front_end/text.txt
+
+# Internal debug tooling
+docker-compose.debug.yml
+brise_debug.sh
+DEBUGGING.md
+
+# AI assistant artefacts (none of this is shared)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.cursor/
+.cursorrules
+.cursorrules.local
+.aider*
+.continue/
+.windsurf/
+.windsurfrules
+.clinerules/
+.clinerules
+.github/copilot-instructions.md
+.copilot/
+AGENTS.md
+GEMINI.md

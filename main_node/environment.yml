@@ -19,3 +19,8 @@ dependencies:
   - pandas
   - pygmo
   - flake8
+  - allpairspy
+  - textx
+  - selenium
+  - webdriver-manager
+  - debugpy
