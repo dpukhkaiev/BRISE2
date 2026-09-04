@@ -1,0 +1,183 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 0,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y2": {
+                    "Name": "Y2",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y3": {
+                    "Name": "Y3",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y4": {
+                    "Name": "Y4",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                },
+                "Y5": {
+                    "Name": "Y5",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "X1": {
+                "Lower": 0.0,
+                "Upper": 10.0,
+                "Default": 0.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "X2": {
+                "Lower": 0.0,
+                "Upper": 10.0,
+                "Default": 0.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Flat": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "MersenneTwister": {
+                "Seed": 3,
+                "Type": "mersenne_twister"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "MultiObjectiveHandling": {
+                    "SurrogateType": {
+                        "DynamicCompositional": {}
+                    }
+                },
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "BayesianRidgeRegression": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "max_iter": 100,
+                                "tol": 0.01
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.BayesianRidge"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 70,
+                            "Algorithms": {
+                                "MOEAD": {
+                                    "MultiObjective": true
+                                },
+                                "MOEAD_GEN": {
+                                    "MultiObjective": true
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "random_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 3,
+        "Instance": {
+            "QuantityBased": {
+                "MaxTasksPerConfiguration": 3,
+                "Type": "quantity_based"
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "GuaranteedSC": {
+                "Type": "guaranteed",
+                "Name": "SC1"
+            },
+            "QuantityBasedSC": {
+                "Parameters": {
+                    "MaxConfigs": 10
+                },
+                "Type": "quantity_based",
+                "Name": "SC2"
+            },
+            "ValidationBasedSC": {
+                "Type": "validation_based",
+                "Name": "SC3"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "StopCondition1",
+            "InspectionParameters": {
+                "RepetitionPeriod": 5,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "DefaultConfigurationHandler": {
+        "RandomDCH": {
+            "Type": "random_default_config_handler"
+        }
+    }
+}

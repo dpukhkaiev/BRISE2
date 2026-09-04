@@ -1,4 +1,4 @@
-# BRISE 2.6.0
+# BRISE 2.6.1
 ##### Benchmark Reduction via Adaptive Instance Selection
 ![BRISE-CI](https://github.com/dpukhkaiev/BRISE2/workflows/BRISE-CI/badge.svg)
 ![CodeCoverage](./badge-data/coverage.svg)

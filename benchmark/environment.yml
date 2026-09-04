@@ -1,4 +1,4 @@
-name: brise-260
+name: brise-261
 channels:
   - defaults
   - conda-forge
@@ -10,6 +10,7 @@ dependencies:
   - statsmodels
   - scipy
   - pytest
+  - pytest-cov
   - pika
   - pymongo
   - numexpr

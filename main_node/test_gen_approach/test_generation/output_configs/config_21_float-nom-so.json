@@ -1,0 +1,213 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 0,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "F": {
+                "Lower": -100.5,
+                "Upper": 457.98,
+                "Default": -7.0,
+                "Type": "FloatHyperparameter",
+                "Level": 0
+            },
+            "N": {
+                "N1": {
+                    "Type": "Category"
+                },
+                "N2": {
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.N.N1",
+                    "Context.SearchSpace.N.N2"
+                ],
+                "Default": "Context.SearchSpace.N.N1",
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Hierarchical": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "Sobol": {
+                "Seed": 1,
+                "Type": "sobol"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 1.0,
+            "Model": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "BayesianRidgeRegression": {
+                            "MultiObjective": false,
+                            "Parameters": {
+                                "max_iter": 100,
+                                "tol": 0.01
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.linear_model.BayesianRidge"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "NominalTransformer": {
+                            "SklearnBinaryEncoder": {
+                                "Type": "sklearn_binary_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 70,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                },
+                                "GWO": {
+                                    "MultiObjective": false
+                                },
+                                "DE": {
+                                    "MultiObjective": false
+                                },
+                                "SEA": {
+                                    "MultiObjective": false
+                                },
+                                "SGA": {
+                                    "MultiObjective": false
+                                },
+                                "SADE": {
+                                    "MultiObjective": false
+                                },
+                                "DE1220": {
+                                    "MultiObjective": false
+                                },
+                                "CMAES": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "MockValidator": {
+                            "Type": "mock_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "BestMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "best_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 3,
+        "Instance": {
+            "AcceptableErrorBased": {
+                "MinTasksPerConfiguration": 2,
+                "MaxTasksPerConfiguration": 3,
+                "BaseAcceptableError": 1.0,
+                "ConfidenceLevel": 1.0,
+                "Type": "acceptable_error_based",
+                "ExperimentAware": {
+                    "MaxAcceptableError": 50.0,
+                    "RatioMax": 10.0,
+                    "MinTasksPerUnderperformingConfiguration": 1
+                }
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "BadConfigurationBasedSC": {
+                "Parameters": {
+                    "MaxBadConfigurations": 5
+                },
+                "Type": "bad_configuration_based",
+                "Name": "SC1"
+            },
+            "FewShotLearningBasedSC": {
+                "Type": "few_shot_learning_based",
+                "Name": "SC2"
+            },
+            "GuaranteedSC": {
+                "Type": "guaranteed",
+                "Name": "SC3"
+            },
+            "ValidationBasedSC": {
+                "Type": "validation_based",
+                "Name": "SC4"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "StopCondition1",
+            "InspectionParameters": {
+                "RepetitionPeriod": 5,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "TransferLearning": {
+        "TransferExpediencyDetermination": {
+            "SamplingLandmarkBased": {
+                "MinNumberOfSamples": 5,
+                "Type": "sampling_landmark_based",
+                "Comparator": {
+                    "NormDifference": {
+                        "Type": "norm_difference_comparator"
+                    }
+                },
+                "ExperimentsQuantity": {
+                    "FixedQuantity": {
+                        "NumberOfSimilarExperiments": 3
+                    }
+                }
+            }
+        },
+        "MultiTaskLearning": {
+            "Filters": {
+                "FewShotMultiTask": {
+                    "Type": "few_shot"
+                }
+            }
+        }
+    },
+    "DefaultConfigurationHandler": {
+        "RandomDCH": {
+            "Type": "random_default_config_handler"
+        }
+    }
+}

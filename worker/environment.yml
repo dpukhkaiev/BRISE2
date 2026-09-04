@@ -1,4 +1,4 @@
-name: brise-260
+name: brise-261
 channels:
   - defaults
   - conda-forge

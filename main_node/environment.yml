@@ -1,4 +1,4 @@
-name: brise-260
+name: brise-261
 
 channels:
   - conda-forge
@@ -23,4 +23,3 @@ dependencies:
   - textx
   - selenium
   - webdriver-manager
-  - debugpy

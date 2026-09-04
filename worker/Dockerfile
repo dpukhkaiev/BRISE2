@@ -1,4 +1,4 @@
-FROM brisedev/worker-dev:2.6.0
+FROM brisedev/worker-dev:2.6.1
 
 # Copying project
 COPY . /root
@@ -32,5 +32,5 @@ ENV BRISE_DATABASE_PASS=${BRISE_DATABASE_PASS}
 
 CMD conda init bash && \
     . ~/.bashrc && \
-    conda activate brise-260 && \
+    conda activate brise-261 && \
     dockerize -wait http://${BRISE_EVENT_SERVICE_HOST}:${BRISE_EVENT_SERVICE_GUI_PORT}  python3.12 -u w_intro.py
