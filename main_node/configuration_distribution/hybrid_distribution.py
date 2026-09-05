@@ -162,22 +162,21 @@ class HybridDistribution(AbstractDistribution):
                 self._gate = None
 
     def _calculate_next_timeout(self):
-        # self.logger.info(f"Evaluation Times: {self._evaluation_times}")
+        self.logger.info(f"Evaluation Times: {self._evaluation_times}")
 
         TIMEOUT_BUFFER_FACTOR = 0.5
         MIN_TIMEOUT = 1
         
-        workers = self._number_of_workers  # 3
-        
-        # * Focus on the last full proposal's worth of data
-        # * Assumption your EventGate releases a proposal of 5 results at a time:
-        PROPOSAL_SIZE = 5 
-        
-        if len(self._evaluation_times) < PROPOSAL_SIZE:
+        workers = self._number_of_workers
+
+        if workers is None or workers <= 0:
+            return self._initial_timeout
+
+        if len(self._evaluation_times) < self._batch_size:
             # not enough data to adapt yet -> use the configured initial timeout
             return self._initial_timeout
 
-        last_proposal_times = self._evaluation_times[-PROPOSAL_SIZE:]
+        last_proposal_times = self._evaluation_times[-self._batch_size:]
         
         # ? Divide the proposal times into rounds
         max_round_times = []
