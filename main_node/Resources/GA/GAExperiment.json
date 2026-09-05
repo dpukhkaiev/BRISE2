@@ -206,5 +206,11 @@
                 "TimeUnit": "seconds"
             }
         }
+    },
+    "DistributionMode": {
+        "BatchedDistribution": {
+            "BatchSize": 5,
+            "Type": "batched_distribution"
+        }
     }
 }

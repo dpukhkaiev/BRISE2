@@ -43,7 +43,7 @@ class WSClient:
         self.connection_thread = None
         self.init_connection()
 
-        self.distributionAlgorithm = ConfigurationDistributionOrchestrator().get_distribution(experiment_description)
+        self.distributionAlgorithm = ConfigurationDistributionOrchestrator().get_distribution(experiment_description["DistributionMode"])
 
     def init_connection(self):
         """

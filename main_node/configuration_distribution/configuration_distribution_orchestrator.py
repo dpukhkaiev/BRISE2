@@ -17,35 +17,16 @@ class ConfigurationDistributionOrchestrator:
         :return: an instantiated AbstractDistribution subclass.
         """
 
-        # NOTE: For now any missing/invalid DistributionMode silently falls back
-        # to Asynchronous Distribution (backward-compatible default). The desired
-        # behaviour for an *explicitly requested but malformed* mode (fail-fast vs.
-        # a configurable `FallbackDistributionMode`) is still open and depends on
-        # the pending feature-model integration. Left intentionally unchanged.
-        try:
-            distribution = distribution_description["DistributionMode"]
-            dist_name = [key for key in distribution
-                        if isinstance(distribution[key], dict)
-                        and "Type" in distribution[key]][0]
+        dist_name = [key for key in distribution_description
+                    if isinstance(distribution_description[key], dict)
+                    and "Type" in distribution_description[key]][0]
 
-        except:
-            self.logger.info("No valid 'distributionMode' key found in Configuration description.")
-            self.logger.info("Asynchronous Distribution is selected as default.")
-
-            # fall back to Asynchronous Distribution
-            distribution = {
-                "AsynchronousDistribution": {
-                    "Type": "AsynchronousDistribution"
-                }
-            }
-            dist_name = "AsynchronousDistribution"
-
-        distribution_type = distribution[dist_name]["Type"]
+        distribution_type = distribution_description[dist_name]["Type"]
 
         distribution_class = reflective_class_import(
             class_name=distribution_type,
             folder_path="configuration_distribution"
         )
         
-        return distribution_class(distribution)
+        return distribution_class(distribution_description)
     

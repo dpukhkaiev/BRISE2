@@ -32,12 +32,12 @@ class TestConfigurationDistributionOrchestrator:
         mock_reflective_import.return_value = mock_distribution_class
 
         # This is the config from EnergyExperiment_Adistr.json
-        distribution_config, _ = self.get_distribution_experiment("A")
-        expected_constructor_arg = distribution_config["DistributionMode"]
+        experiment_config, _ = self.get_distribution_experiment("A")
+        expected_constructor_arg = experiment_config["DistributionMode"]
         expected_distribution_type = expected_constructor_arg["AsynchronousDistribution"]["Type"]
 
         # --- Act ---
-        result = self.orchestrator.get_distribution(distribution_config)
+        result = self.orchestrator.get_distribution(experiment_config["DistributionMode"])
 
         # --- Assert ---
         mock_reflective_import.assert_called_once_with(
@@ -59,12 +59,12 @@ class TestConfigurationDistributionOrchestrator:
         mock_reflective_import.return_value = mock_distribution_class
 
         # This is the config from EnergyExperiment_Bdistr.json
-        distribution_config, _ = self.get_distribution_experiment("B")
-        expected_constructor_arg = distribution_config["DistributionMode"]
+        experiment_config, _ = self.get_distribution_experiment("B")
+        expected_constructor_arg = experiment_config["DistributionMode"]
         expected_distribution_type = expected_constructor_arg["BatchedDistribution"]["Type"]
 
         # --- Act ---
-        result = self.orchestrator.get_distribution(distribution_config)
+        result = self.orchestrator.get_distribution(experiment_config["DistributionMode"])
 
         # --- Assert ---
         mock_reflective_import.assert_called_once_with(
@@ -86,12 +86,12 @@ class TestConfigurationDistributionOrchestrator:
         mock_reflective_import.return_value = mock_distribution_class
 
         # This is the config from EnergyExperiment_Hdistr.json
-        distribution_config, _ = self.get_distribution_experiment("H")
-        expected_constructor_arg = distribution_config["DistributionMode"]
+        experiment_config, _ = self.get_distribution_experiment("H")
+        expected_constructor_arg = experiment_config["DistributionMode"]
         expected_distribution_type = expected_constructor_arg["HybridDistribution"]["Type"]
 
         # --- Act ---
-        result = self.orchestrator.get_distribution(distribution_config)
+        result = self.orchestrator.get_distribution(experiment_config["DistributionMode"])
 
         # --- Assert ---
         mock_reflective_import.assert_called_once_with(
@@ -100,52 +100,6 @@ class TestConfigurationDistributionOrchestrator:
         )
         mock_distribution_class.assert_called_once_with(expected_constructor_arg)
         assert result == mock_distribution_instance
-
-    @patch('configuration_distribution.configuration_distribution_orchestrator.reflective_class_import')
-    def test_get_distribution_failure_defaults_to_asynchronous(self, mock_reflective_import):
-        """
-        Tests the "failure path" where an invalid configuration is provided,
-        triggering the 'except' block and falling back to the default.
-        """
-        # --- Arrange ---
-        # 1. Set up the mocks
-        with patch.object(self.orchestrator, 'logger', new_callable=MagicMock) as mock_logger:
-            mock_distribution_instance = MagicMock(spec=AsynchronousDistribution)
-            mock_distribution_class = MagicMock(return_value=mock_distribution_instance)
-            mock_reflective_import.return_value = mock_distribution_class
-
-            # 2. Define an invalid input configuration
-            #    This will cause a KeyError in the try block.
-            invalid_config = {}
-
-            # 3. Define the expected default configuration that the
-            #    orchestrator creates internally.
-            expected_default_config = {
-                "AsynchronousDistribution": {
-                    "Type": "AsynchronousDistribution"
-                }
-            }
-
-            # --- Act ---
-            result = self.orchestrator.get_distribution(invalid_config)
-
-            # --- Assert ---
-            # 1. Check that the logger was called with the correct info messages
-            assert mock_logger.info.call_count == 2
-            mock_logger.info.assert_any_call("No valid 'distributionMode' key found in Configuration description.")
-            mock_logger.info.assert_any_call("Asynchronous Distribution is selected as default.")
-
-            # 2. Check that reflective_class_import was called with the default class name
-            mock_reflective_import.assert_called_once_with(
-                class_name="AsynchronousDistribution",
-                folder_path="configuration_distribution"
-            )
-
-            # 3. Check that the returned class was instantiated with the default config
-            mock_distribution_class.assert_called_once_with(expected_default_config)
-
-            # 4. Check that the final result is the default mock instance
-            assert result == mock_distribution_instance
 
 class TestAsynchronousDistribution:
 

@@ -174,5 +174,10 @@
                 }
             }
         }
+    },
+    "DistributionMode": {
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
+        }
     }
 }

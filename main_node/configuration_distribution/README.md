@@ -1,6 +1,8 @@
 # BRISE Configuration Distribution Extension
 
-A modular extension for the **BRISE SOFTWARE PRODUCTLINE** that manages how experiment configurations are dispatched to workers. The introduction of synchronization modi may be suitible for certain configuration runs, depending on the specific workload.
+A modular extension for the **BRISE SOFTWARE PRODUCT LINE** that manages how experiment configurations are
+dispatched to workers. The introduction of synchronization modi may be suitable for certain configuration runs,
+depending on the specific workload.
 
 ---
 
@@ -8,69 +10,91 @@ A modular extension for the **BRISE SOFTWARE PRODUCTLINE** that manages how expe
 
 The extension follows a provider pattern managed by an **Orchestrator**. It works as a **Factory** pattern.
 
-* **`AbstractDistribution`**: The base interface ensuring all strategies implement the required lifecycle methods. Wrapps around the **get_new_configuration_exchange** Event.
-* **`ConfigurationDistributionOrchestrator`**: Uses reflective class loading to instantiate the strategy defined in the experiment's JSON configuration at runtime.
-* **`WSClient`**: Plugs into the framework's main loop before new configuration selection to manage the synchronization.
+* **`AbstractDistribution`** ([distribution_abs.py](distribution_abs.py)): the base interface ensuring all
+  strategies implement the required lifecycle methods. Wraps around the **get_new_configuration_exchange** event.
+* **`ConfigurationDistributionOrchestrator`** ([configuration_distribution_orchestrator.py](configuration_distribution_orchestrator.py)):
+  uses reflective class loading to instantiate the strategy defined in the experiment's product configuration at
+  runtime.
+* **`WSClient`** ([../WorkerServiceClient/WSClient_events.py](../WorkerServiceClient/WSClient_events.py)): plugs
+  into the framework's main loop before new configuration selection to manage the synchronization.
 
-
+A batch is counted in completed measurements rather than in worker processes — the framework asks the distribution
+for a successor once per measured configuration — so `BatchSize` should not exceed the number of measurements that
+can be in flight at once.
 
 ---
 
 ## Detailed Class & Function Breakdown
 
-### 1. Asynchronous Distribution (`asynchronous_distribution.py`)
-The default strategy. Configurations are sent via the RabbitMQ exchange immediately to the workers upon generation.
+### 1. Asynchronous Distribution ([asynchronous_distribution.py](asynchronous_distribution.py))
+The strategy without synchronization. Configurations are sent via the RabbitMQ exchange immediately to the workers
+upon generation.
 
-* **`dispatch(...)`**: The entrypoint for the distribution logic.
-Handles the overall state of the synchronization objects.
-Calls the inner logic.
-* **`handle_configuration_distribution(experiment_id, body)`**: Directly calls the `publish` utility to send the `get_new_configuration_exchange` event.
-* **`first_it(...)`**: No-op (not required for asynchronous starts).
+* **`dispatch(...)`**: the entrypoint for the distribution logic. Calls the inner logic directly.
+* **`handle_configuration_distribution(...)`**: publishes the `get_new_configuration_exchange` event.
+* **`first_it(...)`**: no-op (not required for asynchronous starts).
 
-### 2. Batched Distribution (`batched_distribution.py`)
+### 2. Batched Distribution ([batched_distribution.py](batched_distribution.py))
 Synchronizes workers using a python barrier to ensure they process tasks in batches of a specific size.
 
-* **`__init__(config)`**: Extracts `batchSize` from the payload and initializes a `threading.Barrier`.
-* **`first_it(experiment_id)`**: Triggers the first set of configurations.
-It publishes a special message to RabbitMQ with `worker_capacity` set to the batch size, ensuring the framework generates enough initial configurations to fill the first batch.
-* **`dispatch(experiment_id, body)`**: Spawns a **daemon thread** to run the logic. This is critical to prevent the main event-thread from blocking while waiting for the barrier.
-* **`handle_configuration_distribution(...)`**: Calls `self._barrier.wait()`. The code execution pauses here until the $N$-th worker (where $N$ is `batchSize`) arrives, at which point all configurations are published simultaneously.
+* **`__init__(config)`**: extracts `BatchSize` from the product configuration.
+* **`first_it(...)`**: triggers the first set of configurations. It is called by `dispatch` on the very first
+  message and requests as many configurations as the batch size, ensuring the framework generates enough of them to
+  fill the first batch.
+* **`dispatch(...)`**: creates the barrier when needed and spawns a **daemon thread** to run the logic. This is
+  critical to prevent the main event-thread from blocking while waiting for the barrier.
+* **`handle_configuration_distribution(...)`**: waits at the barrier. The code execution pauses here until the
+  $N$-th arrival (where $N$ is `BatchSize`), at which point all configurations are published simultaneously. If a
+  wave can no longer complete — a worker died, or the pool of workers shrank — the barrier is broken: the waiting
+  threads are released without publishing and the next wave starts from a fresh barrier, so an incomplete wave
+  cannot stall the pipeline.
 
-### 3. Hybrid Distribution (`hybrid_distribution.py`)
-A smart barrier approach that prevents the pipeline from stalling due to slow workers or deadlocks by using a timeoutable gate.
+### 3. Hybrid Distribution ([hybrid_distribution.py](hybrid_distribution.py))
+A smart barrier approach that prevents the pipeline from stalling due to slow workers or deadlocks by using a
+timeoutable gate.
 
 #### The `EventGate` Helper Class
-* **`__init__(...)`**: Initializes a `threading.Event` and a `threading.Timer`.
-* **`_trigger_by_timeout()`**: A callback that opens the gate regardless of the arrival count if the specified time limit is reached.
-* **`wait_at_gate()`**: Increments the `arrival_count`. If the count equals `batch_size`, it cancels the timer and opens the gate manually.
+A gate is created per wave and opens either when the batch is complete or when the wave's time limit expires,
+whichever comes first, releasing every thread waiting at it. It also measures how long the wave took and how long
+its threads waited, and hands those statistics over when the finished wave is cleaned up.
 
 #### The Distribution Class
-* **`_get_or_create_gate()`**: Ensures thread-safe management of the gate. If a gate is currently open or non-existent, it initializes a new one for the next wave.
-* **`handle_configuration_distribution(...)`**: Workers call `gate.wait_at_gate()`. This allows the logic to release threads **either** when a full batch is ready **or** a maximum waiting time exspires.
-* **`_cleanup_gate(stats)`**: Resets the gate reference in the orchestrator so the next arriving workers get a fresh gate.
+* **`__init__(config)`**: extracts `BatchSize` and `TimeoutInSeconds` from the product configuration; both are
+  mandatory.
+* **`first_it(...)`**: as in the batched strategy.
+* **`dispatch(...)`**: spawns a **daemon thread** to run the logic, and records the evaluation times reported by
+  the workers.
+* **`handle_configuration_distribution(...)`**: workers wait at the gate. This allows the logic to release threads
+  **either** when a full batch is ready **or** when the maximum waiting time expires.
+* **Adaptive timeout**: `TimeoutInSeconds` applies to the first waves only. Once enough evaluation times have been
+  observed, every wave is given a timeout derived from how long the preceding configurations actually took, plus a
+  safety margin.
 
 ---
 
 ## Configuration
 
-To use a specific strategy, add the `DistributionMode` object to your experiment's JSON description. However, when no mode description is provided the orchestrator defaults to asynchronous behavior:
+`DistributionMode` is a **mandatory** feature of the
+[feature model](../Resources/tests/waffle_models/base.wfl): exactly one strategy has to be selected, and its
+parameters belong inside the selected strategy.
 
-| Strategy | Key | Parameter 1 | Parameter 2 |
-| :--- | :--- | :--- | :--- |
-| **Asynchronous** | `AsynchronousDistribution` | N/A | N/A |
-| **Batched** | `BatchedDistribution` | `batchSize` (Int) | N/A |
-| **Hybrid** | `HybridDistribution` | `batchSize` (Int) | `timeout` (Float) |
+| Strategy | Key | `Type` | Parameter 1 | Parameter 2 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Asynchronous** | `AsynchronousDistribution` | `asynchronous_distribution` | N/A | N/A |
+| **Batched** | `BatchedDistribution` | `batched_distribution` | `BatchSize` (Int) | N/A |
+| **Hybrid** | `HybridDistribution` | `hybrid_distribution` | `BatchSize` (Int) | `TimeoutInSeconds` (Float) |
 
 ### Example Config:
 ```json
 "DistributionMode": {
-        "HybridDistribution": {
-                "Type": "HybridDistribution"
-        },
-        "batchSize": {
-                "Int": "5"
-        },
-        "timeout": {
-                "Int": "5"
-        }
+    "HybridDistribution": {
+        "BatchSize": 5,
+        "TimeoutInSeconds": 5.0,
+        "Type": "hybrid_distribution"
     }
+}
+```
+
+One product configuration per strategy is shipped in
+[../Resources/tests/test_cases_product_configurations](../Resources/tests/test_cases_product_configurations) as
+`EnergyExperiment_Adistr.json`, `EnergyExperiment_Bdistr.json` and `EnergyExperiment_Hdistr.json`.
