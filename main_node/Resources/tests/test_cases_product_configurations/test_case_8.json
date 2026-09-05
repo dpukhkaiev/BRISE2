@@ -345,7 +345,7 @@
     "DistributionMode": {
         "HybridDistribution": {
             "BatchSize": 5,
-            "TimeoutInSeconds": 5.0,
+            "InitialTimeoutInSeconds": 5.0,
             "Type": "hybrid_distribution"
         }
     }

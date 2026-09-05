@@ -815,13 +815,13 @@ xor DistributionMode {
     Type -> predefined
     [Type = "batched_distribution"]
   }
-  // Like Batched, but a per-wave TimeoutInSeconds also releases the wave so
+  // Like Batched, but a per-wave InitialTimeoutInSeconds also releases the wave so
   // slow/dead Workers cannot deadlock the pipeline
   HybridDistribution {
     BatchSize -> integer
     [BatchSize >= 1]
-    TimeoutInSeconds -> float
-    [TimeoutInSeconds > 0]
+    InitialTimeoutInSeconds -> float
+    [InitialTimeoutInSeconds > 0]
     Type -> predefined
     [Type = "hybrid_distribution"]
   }

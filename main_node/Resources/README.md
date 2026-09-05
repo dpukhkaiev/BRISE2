@@ -158,7 +158,7 @@ In BRISE v2.6.0, we offer only one general variant of this feature: \texttt{Rand
 is a mandatory component, which determines when the selected configurations are dispatched to the workers. Exactly one of the following variants has to be selected:
 * Asynchronous Distribution sends each configuration to the workers immediately, without any synchronization. 
 * Batched Distribution releases a wave of configurations only once `BatchSize` measurements have synchronized at a barrier.
-* Hybrid Distribution behaves like the batched variant, but an additional per-wave timeout (`TimeoutInSeconds`) also releases the wave, so that slow or dead workers cannot deadlock the pipeline. The timeout is adapted to the observed evaluation times of the target system as the experiment progresses.
+* Hybrid Distribution behaves like the batched variant, but an additional per-wave timeout (`InitialTimeoutInSeconds`) also releases the wave, so that slow or dead workers cannot deadlock the pipeline. The timeout is adapted to the observed evaluation times of the target system as the experiment progresses.
 
 For a detailed description of this component consult the respective [documentation page](../../main_node/configuration_distribution/README.md)
 

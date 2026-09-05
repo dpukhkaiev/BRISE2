@@ -8,7 +8,7 @@ depending on the specific workload.
 
 ## System Architecture
 
-The extension follows a provider pattern managed by an **Orchestrator**. It works as a **Factory** pattern.
+The extension follows the strategy pattern.
 
 * **`AbstractDistribution`** ([distribution_abs.py](distribution_abs.py)): the base interface ensuring all
   strategies implement the required lifecycle methods. Wraps around the **get_new_configuration_exchange** event.
@@ -18,9 +18,8 @@ The extension follows a provider pattern managed by an **Orchestrator**. It work
 * **`WSClient`** ([../WorkerServiceClient/WSClient_events.py](../WorkerServiceClient/WSClient_events.py)): plugs
   into the framework's main loop before new configuration selection to manage the synchronization.
 
-A batch is counted in completed measurements rather than in worker processes — the framework asks the distribution
-for a successor once per measured configuration — so `BatchSize` should not exceed the number of measurements that
-can be in flight at once.
+A batch is counted in completed measurements rather than in worker processes: the framework asks the distribution
+for a successor once per measured configuration.
 
 ---
 
@@ -32,20 +31,19 @@ upon generation.
 
 * **`dispatch(...)`**: the entrypoint for the distribution logic. Calls the inner logic directly.
 * **`handle_configuration_distribution(...)`**: publishes the `get_new_configuration_exchange` event.
-* **`first_it(...)`**: no-op (not required for asynchronous starts).
+* **`first_it(...)`**: no operation (not required for asynchronous starts).
 
 ### 2. Batched Distribution ([batched_distribution.py](batched_distribution.py))
 Synchronizes workers using a python barrier to ensure they process tasks in batches of a specific size.
 
 * **`__init__(config)`**: extracts `BatchSize` from the product configuration.
 * **`first_it(...)`**: triggers the first set of configurations. It is called by `dispatch` on the very first
-  message and requests as many configurations as the batch size, ensuring the framework generates enough of them to
-  fill the first batch.
+  message and requests `BatchSize` configurations.
 * **`dispatch(...)`**: creates the barrier when needed and spawns a **daemon thread** to run the logic. This is
   critical to prevent the main event-thread from blocking while waiting for the barrier.
 * **`handle_configuration_distribution(...)`**: waits at the barrier. The code execution pauses here until the
-  $N$-th arrival (where $N$ is `BatchSize`), at which point all configurations are published simultaneously. If a
-  wave can no longer complete — a worker died, or the pool of workers shrank — the barrier is broken: the waiting
+  `BatchSize` arrival, at which point all configurations are published simultaneously. If a
+  wave can no longer complete: a worker died, or the pool of workers shrank; the barrier is broken: the waiting
   threads are released without publishing and the next wave starts from a fresh barrier, so an incomplete wave
   cannot stall the pipeline.
 
@@ -59,14 +57,14 @@ whichever comes first, releasing every thread waiting at it. It also measures ho
 its threads waited, and hands those statistics over when the finished wave is cleaned up.
 
 #### The Distribution Class
-* **`__init__(config)`**: extracts `BatchSize` and `TimeoutInSeconds` from the product configuration; both are
+* **`__init__(config)`**: extracts `BatchSize` and `InitialTimeoutInSeconds` from the product configuration; both are
   mandatory.
 * **`first_it(...)`**: as in the batched strategy.
 * **`dispatch(...)`**: spawns a **daemon thread** to run the logic, and records the evaluation times reported by
   the workers.
 * **`handle_configuration_distribution(...)`**: workers wait at the gate. This allows the logic to release threads
   **either** when a full batch is ready **or** when the maximum waiting time expires.
-* **Adaptive timeout**: `TimeoutInSeconds` applies to the first waves only. Once enough evaluation times have been
+* **Adaptive timeout**: `InitialTimeoutInSeconds` applies to the first waves only. Once enough evaluation times have been
   observed, every wave is given a timeout derived from how long the preceding configurations actually took, plus a
   safety margin.
 
@@ -82,14 +80,14 @@ parameters belong inside the selected strategy.
 | :--- | :--- | :--- | :--- | :--- |
 | **Asynchronous** | `AsynchronousDistribution` | `asynchronous_distribution` | N/A | N/A |
 | **Batched** | `BatchedDistribution` | `batched_distribution` | `BatchSize` (Int) | N/A |
-| **Hybrid** | `HybridDistribution` | `hybrid_distribution` | `BatchSize` (Int) | `TimeoutInSeconds` (Float) |
+| **Hybrid** | `HybridDistribution` | `hybrid_distribution` | `BatchSize` (Int) | `InitialTimeoutInSeconds` (Float) |
 
 ### Example Config:
 ```json
 "DistributionMode": {
     "HybridDistribution": {
         "BatchSize": 5,
-        "TimeoutInSeconds": 5.0,
+        "InitialTimeoutInSeconds": 5.0,
         "Type": "hybrid_distribution"
     }
 }
