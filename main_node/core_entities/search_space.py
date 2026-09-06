@@ -352,7 +352,7 @@ class IntegerHyperparameter(NumericHyperparameter):
         self.type = "Integer"
 
     def get_size(self) -> Union[int, np.inf]:
-        return self._upper - self._lower
+        return self._upper - self._lower + 1
 
     def transform(self, value) -> int:
         return round(self._lower + value*(self._upper - self._lower))
@@ -547,16 +547,9 @@ class SearchSpace:
         return max([hp.level for hp in flattened_parameters]) + 1  # levels start with 0
 
     def __get_size(self) -> Union[int, np.inf]:
-        size = 0
-        flattened_parameters = self.flatten(self.hierarchical_view)
-        for hp in flattened_parameters:
-            if hp.get_type() in ("Nominal", "Ordinal"):
-                size += len(hp.categories)
-            elif hp.get_type() == "Integer":
-                size += hp.get_upper() - hp.get_lower()
-            else:
-                return np.inf
-        return size
+        # the root Hyperparameter recursively accumulates all valid combinations of its children,
+        # including the infinite ones contributed by Float Hyperparameters
+        return self.hierarchical_view.get_size()
 
     def initialize_hierarchical_view(self, hyperparameter_description: dict) -> Hyperparameter:
         """

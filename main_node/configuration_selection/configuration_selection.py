@@ -104,10 +104,11 @@ class ConfigurationSelection:
                                      f"{transferred_configurations}")
                     # if few shot configuration transfer just take the best transferred config
                     if configuration_transfer_module.is_few_shot:
-                        predicted_configs.append(transferred_configurations[0])
-                        self.logger.info(f"Measuring the best configuration from the former experiment, "
-                                         f"if it has not been measured yet: "
-                                         f"{transferred_configurations[0]}")
+                        if len(transferred_configurations) > 0:
+                            predicted_configs.append(transferred_configurations[0])
+                            self.logger.info(f"Measuring the best configuration from the former experiment, "
+                                             f"if it has not been measured yet: "
+                                             f"{transferred_configurations[0]}")
                     # if few shot model transfer, extend the transferred model with transferred configurations,
                     # take a single config from the prediction
                     elif model_transfer_module is not None and model_transfer_module.is_few_shot:
@@ -136,7 +137,7 @@ class ConfigurationSelection:
                 temp_msg = f"The model predicted {c}."
                 self.logger.info(temp_msg)
                 configs_to_be_evaluated.append(c)
-            elif len(self.experiment.measured_configurations) == self.experiment.search_space.size:
+            elif len(self.experiment.measured_configurations) >= self.experiment.search_space.size:
                 msg = "Entire Search Space has been already evaluated. Shutting down."
                 self.logger.info(msg)
                 if os.environ.get('TEST_MODE') != 'UNIT_TEST':

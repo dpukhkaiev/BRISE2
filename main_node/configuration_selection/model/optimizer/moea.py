@@ -9,6 +9,9 @@ from core_entities.search_space import CategoricalHyperparameter
 from configuration_selection.model.optimizer.optimizer_abs import Optimizer
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 
+# these algorithms may leave the bounds of the problem unless explicitly forced to respect them
+FORCE_BOUNDS_ALGORITHMS = frozenset({"cmaes", "xnes"})
+
 
 class MOEA(Optimizer):
     def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Dict):
@@ -62,7 +65,10 @@ class MOEA(Optimizer):
         problem = self._PygmoProblem(optimizer=self, surrogate=surrogate)
         population = pg.population(problem, self.pop_size)
         for algo_name in self.algorithms:
-            algo = pg.algorithm(getattr(pg, algo_name)(gen=self.generations))
+            algo_parameters = {"gen": self.generations}
+            if algo_name in FORCE_BOUNDS_ALGORITHMS:
+                algo_parameters["force_bounds"] = True
+            algo = pg.algorithm(getattr(pg, algo_name)(**algo_parameters))
             population = algo.evolve(population)
 
         optimized_features = pd.DataFrame(population.get_x(), columns=self.params)
