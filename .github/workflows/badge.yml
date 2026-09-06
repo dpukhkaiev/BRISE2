@@ -30,17 +30,15 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: main_node
-          if-no-artifact: error
 
       # Extract coverage rom main_noide/coverage.xml and generate badge
       - name: Extract coverage %
         shell: bash -l {0}
         run: |
-          cd main_node
           # fail if file doesnt exist
-          test -f coverage.xml
+          test -f main_node/coverage.xml
 
-          LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' coverage.xml | head -n1 || echo 0)
+          LINE_RATE=$(grep -oP 'line-rate="\K[0-9]+(\.[0-9]+)?' main_node/coverage.xml | head -n1 || echo 0)
           PERCENT=$(awk "BEGIN{printf \"%d\", ($LINE_RATE*100)+0.5}")
           echo "Extracted coverage is: ${PERCENT}%"
           mkdir -p badge-data
