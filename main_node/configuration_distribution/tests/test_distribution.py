@@ -630,6 +630,25 @@ class TestHybridDistribution:
         # * Assertions
         assert distributionAlgorithm._gate is None
 
+    def test_zero_arrival_timeout_resets_gate_for_next_wave(self):
+        """
+        Tests that firing timeout before the arrival of the first worker, 
+        resets the gate for the rest of the experiment.
+        """
+        # * Setup
+        distributionAlgorithm = HybridDistribution(self.config)
+        gate = distributionAlgorithm._get_or_create_gate()
+
+        # Simulate the timer firing with zero registered arrivals.
+        gate.timer.cancel()
+        gate._trigger_by_timeout()
+
+        # * Assertions: the stale gate must have been cleaned up already.
+        assert distributionAlgorithm._gate is None
+
+        new_gate = distributionAlgorithm._get_or_create_gate()
+        assert new_gate is not gate
+
 
 class TestEventGate:
     """Unit tests for the timeout-based synchronization gate (EventGate)."""
@@ -692,6 +711,41 @@ class TestEventGate:
 
         # A worker arriving after the trigger passes the already-open gate and
         # must not produce a second cleanup nor block.
+        late = threading.Thread(target=gate.wait_at_gate)
+        late.start()
+        late.join(timeout=5)
+
+        assert not late.is_alive(), "late worker blocked on a released gate"
+        assert cleanup.call_count == 1
+
+    def test_zero_arrival_timeout_triggers_cleanup_immediately(self):
+        """
+        Tests that firing timeout before the arrival of the first worker,
+        immediatly calls the cleanup.
+        """
+        cleanup = MagicMock()
+        gate = EventGate(5, 30, cleanup)
+
+        # Simulate the timer firing with zero registered arrivals.
+        gate.timer.cancel()
+        gate._trigger_by_timeout()
+
+        assert gate.triggered
+        cleanup.assert_called_once()
+        stats = cleanup.call_args[0][0]
+        assert stats["result"] == "timeout"
+
+    def test_late_worker_after_zero_arrival_timeout_reports_cleanup(self):
+        """
+        Tests that the late worker must still pass as in the asynchronous mode, 
+        while cleanup was called.
+        """
+        cleanup = MagicMock()
+        gate = EventGate(5, 30, cleanup)
+
+        gate.timer.cancel()
+        gate._trigger_by_timeout()
+
         late = threading.Thread(target=gate.wait_at_gate)
         late.start()
         late.join(timeout=5)

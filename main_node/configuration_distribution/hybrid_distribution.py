@@ -51,6 +51,10 @@ class EventGate:
 
             self.gate.set()
 
+            # No worker reported before the timeout
+            if result == "timeout" and self.expected_reporters == 0:
+                self._aggregate_and_cleanup()
+
     def _trigger_by_timeout(self):
         """Called by the timer."""
         with self.trigger_lock:

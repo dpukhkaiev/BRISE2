@@ -41,7 +41,7 @@ docker-compose.debug.yml
 brise_debug.sh
 DEBUGGING.md
 
-# AI assistant artefacts (none of this is shared)
+# AI assistant artefacts
 .claude/
 CLAUDE.md
 CLAUDE.local.md
