@@ -199,11 +199,12 @@ class MainThread(threading.Thread):
             temp_msg = f"Evaluated Default Configuration: {default_configuration}"
             self.logger.info(temp_msg)
             self.sub.send('log', 'info', message=temp_msg)
+            evaluation_time = {"evaluation_time": default_configuration.get_evaluation_time()}
 
             # starting main work: building model and choosing configuration for measuring
             self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
                                                routing_key=self.experiment.unique_id,
-                                               body='')
+                                               body=f"{json.dumps(evaluation_time)}")
 
     def get_configurations_results(self, ch, method, properties, body):
         """
@@ -221,9 +222,10 @@ class MainThread(threading.Thread):
                 temp_msg = "-- New Configuration was evaluated. Building Target System model."
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
+                evaluation_time = {"evaluation_time": configuration.get_evaluation_time()}
                 self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
                                                    routing_key=self.experiment.unique_id,
-                                                   body='')
+                                                   body=f"{json.dumps(evaluation_time)}")
 
     def experiment_api(self, ch=None, method=None, properties=None, body=None):
         dictionary_dump = json.loads(body.decode())

@@ -112,7 +112,7 @@ class TestAsynchronousDistribution:
         self.body = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "repetition_time": 1.45
+            "evaluation_time": 1.45
             }
 
     @patch('configuration_distribution.asynchronous_distribution.publish')
@@ -188,7 +188,7 @@ class TestBatchedDistribution:
         self.body = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "repetition_time": 1.45
+            "evaluation_time": 1.45
         }
 
     @patch('logging.getLogger')
@@ -428,7 +428,7 @@ class TestHybridDistribution:
         self.body_dict = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "repetition_time": 2.0  # Time taken for the worker to process config
+            "evaluation_time": 2.0  # Time taken for the worker to process config
         }
         self.body = json.dumps(self.body_dict)
 

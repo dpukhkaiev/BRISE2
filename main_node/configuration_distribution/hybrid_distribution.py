@@ -231,7 +231,7 @@ class HybridDistribution(AbstractDistribution):
 
         if body:
             input_data = json.loads(body)
-            self._evaluation_times.append(input_data.get('repetition_time'))
+            self._evaluation_times.append(input_data.get('evaluation_time'))
             self._number_of_workers = input_data.get('number_of_workers')
             # self.logger.info(f"meta: {self._evaluation_times}, {self._number_of_workers}")
 
