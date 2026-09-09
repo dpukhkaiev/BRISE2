@@ -30,20 +30,9 @@ class BatchedDistribution(AbstractDistribution):
         self.logger.info(f"Waiting for all workers to be synchronized")
 
         # ? wait until every worker has came to wait()
-        barrier = self._barrier
-        if barrier:
-            self.logger.info(f'Workers currently waiting {str(barrier.n_waiting + 1)}')
-            try:
-                barrier.wait()
-            except threading.BrokenBarrierError:
-                # The wave was left incomplete (e.g. a worker died or the barrier
-                # was aborted/reset), so it can never release on its own. Discard
-                # the broken barrier so the next wave starts from a clean one and
-                # let this worker fall through instead of blocking forever.
-                self.logger.warning("Barrier broke before the batch completed; "
-                                    "discarding it and recovering for the next wave.")
-                self._discard_broken_barrier(barrier)
-                return
+        if self._barrier:
+            self.logger.info(f'Workers currently waiting {str(self._barrier.n_waiting + 1)}')
+            self._barrier.wait()
 
         self.logger.info(f"Worker synchronized")
 
@@ -51,20 +40,14 @@ class BatchedDistribution(AbstractDistribution):
                 routing_key=experiment_id,
                 body=body)
 
-    def _discard_broken_barrier(self, barrier):
-        """Drop a broken barrier, unless a fresh one has already replaced it."""
-        with self._barrier_lock:
-            if self._barrier is barrier:
-                self._barrier = None
-
     def dispatch(self, experiment_id, body):
 
         if self.first_it(experiment_id):
             return
 
-        # * Check for a missing or broken barrier and create a fresh one
+        # * Check for existing or broken barrier and create one
         with self._barrier_lock:
-            if self._barrier is None or self._barrier.broken:
+            if self._barrier is None:
                 self.logger.info(f"Creating new barrier with size {self._batch_size}")
                 self._barrier = threading.Barrier(self._batch_size)
 

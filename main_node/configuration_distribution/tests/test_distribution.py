@@ -375,47 +375,6 @@ class TestBatchedDistribution:
             body=self.body
         )
 
-    # ? --- Test broken-barrier recovery (incomplete wave) ---
-    @patch('configuration_distribution.batched_distribution.publish')
-    def test_handle_recovers_from_broken_barrier(self, mock_publish):
-        """
-        If a wave is left incomplete (e.g. a worker dies, or worker_capacity is 0
-        so the batch never fills and the barrier gets aborted), waiting workers
-        must not hang: the broken barrier is discarded and the worker returns.
-        """
-        distribution_algorithm = BatchedDistribution(self.config)
-        distribution_algorithm.logger = MagicMock()
-
-        broken_barrier = threading.Barrier(distribution_algorithm._batch_size)
-        broken_barrier.abort()  # simulate the incomplete / dead-worker wave
-        distribution_algorithm._barrier = broken_barrier
-
-        distribution_algorithm.handle_configuration_distribution(self.experiment_id, self.body)
-
-        # * The broken barrier is dropped so the next wave starts clean...
-        assert distribution_algorithm._barrier is None
-        # * ...and this worker does not proceed to publish for the failed wave.
-        mock_publish.assert_not_called()
-        distribution_algorithm.logger.warning.assert_called_once()
-
-    @patch('threading.Thread')
-    def test_dispatch_replaces_broken_barrier(self, MockThread):
-        """A subsequent dispatch replaces a broken barrier with a fresh one."""
-        distribution_algorithm = BatchedDistribution(self.config)
-        distribution_algorithm.logger = MagicMock()
-        distribution_algorithm.first_it = MagicMock(return_value=False)
-
-        broken_barrier = threading.Barrier(distribution_algorithm._batch_size)
-        broken_barrier.abort()
-        distribution_algorithm._barrier = broken_barrier
-
-        distribution_algorithm.dispatch(self.experiment_id, self.body)
-
-        assert distribution_algorithm._barrier is not None
-        assert distribution_algorithm._barrier is not broken_barrier
-        assert distribution_algorithm._barrier.broken is False
-
-
 class TestHybridDistribution:
 
     @pytest.fixture(autouse=True)

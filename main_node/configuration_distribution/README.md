@@ -42,10 +42,7 @@ Synchronizes workers using a python barrier to ensure they process tasks in batc
 * **`dispatch(...)`**: creates the barrier when needed and spawns a **daemon thread** to run the logic. This is
   critical to prevent the main event-thread from blocking while waiting for the barrier.
 * **`handle_configuration_distribution(...)`**: waits at the barrier. The code execution pauses here until the
-  `BatchSize` arrival, at which point all configurations are published simultaneously. If a
-  wave can no longer complete: a worker died, or the pool of workers shrank; the barrier is broken: the waiting
-  threads are released without publishing and the next wave starts from a fresh barrier, so an incomplete wave
-  cannot stall the pipeline.
+  `BatchSize` arrival, at which point all configurations are published simultaneously.
 
 ### 3. Hybrid Distribution ([hybrid_distribution.py](hybrid_distribution.py))
 A smart barrier approach that prevents the pipeline from stalling due to slow workers or deadlocks by using a
