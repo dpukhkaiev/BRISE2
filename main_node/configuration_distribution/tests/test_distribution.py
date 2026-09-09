@@ -387,7 +387,7 @@ class TestHybridDistribution:
         self.body_dict = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "evaluation_time": 2.0  # Time taken for the worker to process config
+            "evaluation_time": 2000  # Time taken for the worker to process config, in milliseconds
         }
         self.body = json.dumps(self.body_dict)
 
@@ -493,7 +493,7 @@ class TestHybridDistribution:
         mock_gate_instance = MockEventGate.return_value
 
         # * Call dispatch
-        # ? This will update evaluation_times with the new body's time (2.0)
+        # ? This will update evaluation_times with the new body's time (2000ms)
         distributionAlgorithm.dispatch(self.experiment_id, self.body)
 
         # ? --- Assertions for dispatch logic ---
@@ -607,6 +607,60 @@ class TestHybridDistribution:
 
         new_gate = distributionAlgorithm._get_or_create_gate()
         assert new_gate is not gate
+
+    def test_dispatch_converts_evaluation_time_from_milliseconds_to_seconds(self):
+        """
+        Workers report evaluation_time in milliseconds; dispatch must convert it
+        to seconds before it feeds the (seconds-based) adaptive timeout logic.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": 4500})
+        distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert distributionAlgorithm._evaluation_times == [4.5]
+
+    def test_dispatch_discards_none_evaluation_time(self):
+        """
+        A None evaluation_time (e.g. a Configuration whose results have not yet
+        been aggregated) must not be appended, and must not raise.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": None})
+        distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert distributionAlgorithm._evaluation_times == []
+
+    def test_dispatch_discards_nan_evaluation_time(self):
+        """
+        A NaN evaluation_time (e.g. every task for a Configuration was marked
+        Bad/Outlier/Out-of-bounds) must not be appended, and must not raise or
+        poison the adaptive timeout with NaN.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": float("nan")})
+        distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert distributionAlgorithm._evaluation_times == []
+
+    def test_calculate_next_timeout_stays_in_seconds(self):
+        """
+        Regression guard for the ms/s unit bug: once enough (already-converted,
+        second-denominated) samples are present, the adaptive timeout must stay
+        on the order of the observed evaluation times.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm._number_of_workers = 5
+        distributionAlgorithm._evaluation_times = [2.0] * distributionAlgorithm._batch_size
+
+        timeout = distributionAlgorithm._calculate_next_timeout()
+
+        assert timeout == pytest.approx(3.0)  # 2.0s * (1 + TIMEOUT_BUFFER_FACTOR)
 
 
 class TestEventGate:

@@ -3,6 +3,7 @@ from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
 import threading
 import logging
+import math
 from collections import deque
 import json
 import time
@@ -231,7 +232,15 @@ class HybridDistribution(AbstractDistribution):
 
         if body:
             input_data = json.loads(body)
-            self._evaluation_times.append(input_data.get('evaluation_time'))
+            # Workers report evaluation_time in milliseconds; the timeout logic
+            # of this component works in seconds.
+            evaluation_time_ms = input_data.get('evaluation_time')
+            if evaluation_time_ms is not None and not math.isnan(evaluation_time_ms):
+                self._evaluation_times.append(evaluation_time_ms / 1000)
+            else:
+                self.logger.warning(
+                    "Discarding invalid evaluation_time %r for timeout adaptation.", evaluation_time_ms
+                )
             self._number_of_workers = input_data.get('number_of_workers')
             # self.logger.info(f"meta: {self._evaluation_times}, {self._number_of_workers}")
 

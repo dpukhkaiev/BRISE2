@@ -110,8 +110,13 @@ class WSClient:
         The function that returns the number of needed configurations for making balanced loading
         :return:
         """
-        data = json.loads(body.decode())
-        evaluation_time = data.get("evaluation_time")
+        evaluation_time = None
+        try:
+            if body:
+                data = json.loads(body.decode())
+                evaluation_time = data.get("evaluation_time")
+        except (json.JSONDecodeError, AttributeError, UnicodeDecodeError) as e:
+            self.logger.warning("Could not parse 'evaluation_time' from body: %s", e)
 
         with self.number_of_workers_lock:
             current_number_of_worker = self.get_number_of_workers()
