@@ -1,0 +1,208 @@
+{
+    "Benchmark": {
+        "Resources": {
+            "Folder": "./results/results_generic_pc/serialized/full_benchmark_adapted/"
+        },
+        "Report": {
+            "outputDirectory": "./results/reports/"
+        },
+        "Experiment": {
+            "name": "Generic PC: Sparse PC and HH-PC",
+            "description": "Analysis of full_benchmark experiment results. Each TSP instance is a separate report tab.",
+            "objectivesToMeasure": [
+                "kroA100.tsp",
+                "pla7397.tsp",
+                "pr439.tsp",
+                "rat783.tsp"
+            ]
+        },
+        "KnownOptima": {
+            "ObjectiveOptimum_0": {
+                "objective": "kroA100.tsp",
+                "optimum": 21282.0
+            },
+            "ObjectiveOptimum_1": {
+                "objective": "pr439.tsp",
+                "optimum": 107217.0
+            },
+            "ObjectiveOptimum_2": {
+                "objective": "rat783.tsp",
+                "optimum": 8806.0
+            },
+            "ObjectiveOptimum_3": {
+                "objective": "pla7397.tsp",
+                "optimum": 23260728.0
+            }
+        },
+        "ComparativeAnalysis": {
+            "showSummaryTable": true,
+            "ComparativeTable": {
+                "experiment": true,
+                "baseline": true,
+                "relativeImprovement": true,
+                "speedupFactor": true,
+                "convergedAtIteration": true,
+                "experimentBest": true,
+                "baselineBest": true,
+                "finalRegret": true
+            },
+            "RegretAnalysis": {
+                "RegretType": {
+                    "Iteration": {
+                        "Type": "iteration"
+                    },
+                    "Time": {
+                        "Type": "time"
+                    }
+                }
+            },
+            "RelativeImprovement": {
+                "ImprovementType": {
+                    "ObjectiveValue": {
+                        "Type": "objective_value"
+                    },
+                    "TimeToTarget": {
+                        "Type": "time_to_target"
+                    },
+                    "IterationToTarget": {
+                        "Type": "iteration_to_target"
+                    }
+                }
+            },
+            "PerformanceProfile": {
+                "tauMax": 5.0,
+                "tauSteps": 50,
+                "objectivesToProfile": [
+                    "kroA100.tsp",
+                    "pla7397.tsp",
+                    "pr439.tsp",
+                    "rat783.tsp"
+                ]
+            }
+        },
+        "Plot_0": {
+            "PlotType": {
+                "ConvergencePlot": {
+                    "Type": "convergence_plot",
+                    "enableGrouping": true,
+                    "title": "Tour Length Convergence by HH-PC Variant",
+                    "filterConditions": {
+                        "path": "hhpc_variant",
+                        "value": "",
+                        "contains": true,
+                        "pattern": "S-TPE|S-BRR|FRAMAB-H-TPE|FRAMAB-H-BRR|BRR-H-TPE|BRR-H-BRR"
+                    },
+                    "CustomGrouping": {
+                        "ValueGroupSpec": {
+                            "path": "hhpc_variant",
+                            "ValueGroupEntry_0": {
+                                "value": "S-TPE",
+                                "displayName": "S-TPE"
+                            },
+                            "ValueGroupEntry_1": {
+                                "value": "S-BRR",
+                                "displayName": "S-BRR"
+                            },
+                            "ValueGroupEntry_2": {
+                                "value": "FRAMAB-H-TPE",
+                                "displayName": "FRAMAB-H-TPE"
+                            },
+                            "ValueGroupEntry_3": {
+                                "value": "FRAMAB-H-BRR",
+                                "displayName": "FRAMAB-H-BRR"
+                            },
+                            "ValueGroupEntry_4": {
+                                "value": "BRR-H-TPE",
+                                "displayName": "BRR-H-TPE"
+                            },
+                            "ValueGroupEntry_5": {
+                                "value": "BRR-H-BRR",
+                                "displayName": "BRR-H-BRR"
+                            }
+                        }
+                    },
+                    "MetricAxis": {
+                        "metricDescription": "iterations completed",
+                        "label": "Iteration",
+                        "scale": "linear"
+                    },
+                    "ObjectiveAxis": {
+                        "objectivesToPlot": [
+                            "objective"
+                        ],
+                        "normalize": false,
+                        "NormalizationStrategy": {
+                            "MinOverAll": {
+                                "Type": "min_over_all_experiments"
+                            }
+                        },
+                        "label": "Final Objective (tour length)",
+                        "scale": "linear"
+                    }
+                }
+            }
+        },
+        "Plot_1": {
+            "PlotType": {
+                "BoxPlot": {
+                    "Type": "box_plot",
+                    "enableGrouping": true,
+                    "title": "Final Tour Length by HH-PC Variant",
+                    "filterConditions": {
+                        "path": "hhpc_variant",
+                        "value": "\"\"",
+                        "contains": true,
+                        "pattern": "S-TPE|S-BRR|FRAMAB-H-TPE|FRAMAB-H-BRR|BRR-H-TPE|BRR-H-BRR"
+                    },
+                    "CustomGrouping": {
+                        "ValueGroupSpec": {
+                            "path": "hhpc_variant",
+                            "ValueGroupEntry_0": {
+                                "value": "S-TPE",
+                                "displayName": "S-TPE"
+                            },
+                            "ValueGroupEntry_1": {
+                                "value": "S-BRR",
+                                "displayName": "S-BRR"
+                            },
+                            "ValueGroupEntry_2": {
+                                "value": "FRAMAB-H-TPE",
+                                "displayName": "FRAMAB-H-TPE"
+                            },
+                            "ValueGroupEntry_3": {
+                                "value": "FRAMAB-H-BRR",
+                                "displayName": "FRAMAB-H-BRR"
+                            },
+                            "ValueGroupEntry_4": {
+                                "value": "BRR-H-TPE",
+                                "displayName": "BRR-H-TPE"
+                            },
+                            "ValueGroupEntry_5": {
+                                "value": "BRR-H-BRR",
+                                "displayName": "BRR-H-BRR"
+                            }
+                        }
+                    },
+                    "MetricAxis": {
+                        "metricDescription": "iterations completed",
+                        "label": "Group",
+                        "scale": "linear"
+                    },
+                    "ObjectiveAxis": {
+                        "objectivesToPlot": [
+                            "objective"
+                        ],
+                        "normalize": false,
+                        "NormalizationStrategy": {
+                            "MinOverAll": {
+                                "Type": "min_over_all_experiments"
+                            }
+                        },
+                        "label": "Final Objective (tour length)",
+                        "scale": "linear"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -92,10 +92,87 @@ class Configuration:
     def __setstate__(self, space: Dict[str, Any]) -> None:
         self.__dict__ = space
         self.logger = logging.getLogger(__name__)
-        self.status = OrderedDict(space['status'])
-        self.type = Configuration.Type(space['type'])
-        self._parameters = OrderedDict(space["_parameters"])
-        self._results = OrderedDict(space["_results"])
+
+        # --- status ---
+        # New format: dict  |  Old format: int (1 = enabled) or plain bool, may be missing
+        if 'status' in space and isinstance(space['status'], dict):
+            self.status = OrderedDict(space['status'])
+        else:
+            is_enabled = bool(space.get('is_enabled', True))
+            self.status = {'enabled': is_enabled, 'evaluated': False, 'measured': False}
+
+        # --- type ---
+        if 'type' in space:
+            self.type = Configuration.Type(space['type'])
+
+        # --- _parameters ---
+        # New format: dict / OrderedDict
+        # Old format: flat positional list  ['value1', 'value2', 42, 0.5, ...]
+        raw_params = space.get('_parameters', space.get('parameters'))
+        if raw_params is None:
+            self._parameters = OrderedDict()
+        elif isinstance(raw_params, dict):
+            self._parameters = OrderedDict(raw_params)
+        elif isinstance(raw_params, (list, tuple)):
+            # Old pkl: parameters stored as a positional value list; names are not
+            # recoverable here, so we assign synthetic keys param_0, param_1, …
+            self._parameters = OrderedDict(
+                (f"param_{i}", v) for i, v in enumerate(raw_params)
+            )
+        else:
+            self._parameters = OrderedDict()
+
+        # --- _results ---
+        # New format: dict stored under '_results'
+        # Old format: no '_results' key; results are aggregated from '_tasks'
+        raw_results = space.get('_results', space.get('results'))
+        if raw_results is not None and isinstance(raw_results, dict):
+            self._results = OrderedDict(raw_results)
+        else:
+            self._results = self._reconstruct_results_from_tasks(space)
+
+    @staticmethod
+    def _reconstruct_results_from_tasks(space: Dict[str, Any]) -> OrderedDict:
+        """
+        Reconstruct a ``_results`` dict from the old ``_tasks`` structure.
+
+        Old pkl layout::
+
+            _tasks = {
+                task_id: {
+                    'result': {'objective': 3456.7, 'improvement': 0.12, ...},
+                    'ResultValidityCheckMark': 'OK',
+                    ...
+                },
+                ...
+            }
+
+        We average all numeric result values across OK tasks.
+        Falls back to ``_average_result`` (a plain list) when _tasks is absent.
+        """
+        tasks: dict = space.get('_tasks', {})
+        if tasks:
+            aggregated: Dict[str, List[float]] = {}
+            for task in tasks.values():
+                mark = task.get('ResultValidityCheckMark', 'OK')
+                if mark in ('Bad value', 'Outlier', 'Out of bounds'):
+                    continue
+                result = task.get('result', {})
+                if isinstance(result, dict):
+                    for k, v in result.items():
+                        if isinstance(v, (int, float)):
+                            aggregated.setdefault(k, []).append(float(v))
+            if aggregated:
+                return OrderedDict(
+                    (k, sum(vs) / len(vs)) for k, vs in aggregated.items()
+                )
+
+        # Fallback: old _average_result list → single 'objective' key
+        avg = space.get('_average_result', [])
+        if avg:
+            return OrderedDict(objective=float(avg[0]))
+
+        return OrderedDict()
 
     @property
     def parameters(self) -> MutableMapping:

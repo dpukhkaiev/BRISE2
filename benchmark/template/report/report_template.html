@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <title>{experiment_name}</title>
+    <link rel='stylesheet' href='assets/report.css'>
+    <script src='https://cdn.plot.ly/plotly-2.35.0.min.js'></script>
+</head>
+<body>
+    <h1>{experiment_name}</h1>
+    <p class='subtitle'>{experiment_description}</p>
+    <p class='subtitle'>Generated {generated_time} | Objectives: {objectives}</p>
+    {tabs_section}
+
+    <!-- Export Dialog -->
+    <div id="export-dialog" class="export-dialog">
+        <div class="export-dialog-content">
+            <div class="export-dialog-header">
+                <h2>Export Plot as SVG</h2>
+                <button class="export-close" onclick="closeExportDialog()" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="export-section">
+                <h3>Dimensions (pixels)</h3>
+                <div class="export-field">
+                    <label for="preset-select">Preset</label>
+                    <select id="preset-select" class="preset-dropdown" onchange="applyPreset()">
+                        <option value="current">Current Size (1200 × 600 px)</option>
+                    </select>
+                </div>
+
+                <div class="export-row">
+                    <div class="export-field">
+                        <label for="export-width">Width (px)</label>
+                        <input type="number" id="export-width" value="1200" step="1" min="1" oninput="updateDimensions()">
+                    </div>
+                    <div class="export-field">
+                        <label for="export-height">Height (px)</label>
+                        <input type="number" id="export-height" value="600" step="1" min="1" oninput="updateDimensions()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="export-section">
+                <h3>Legend Position</h3>
+                <div class="legend-grid">
+                    <div class="legend-pos" onclick="selectLegendPosition('top-left', this)">Top-Left</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('top-center', this)">Top-Center</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('top-right', this)">Top-Right</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('middle-left', this)">Middle-Left</div>
+                    <div class="legend-pos" style="background:#f0f0f0;cursor:default;border-style:dashed;">Plot Area</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('middle-right', this)">Middle-Right</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('bottom-left', this)">Bottom-Left</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('bottom-center', this)">Bottom-Center</div>
+                    <div class="legend-pos" onclick="selectLegendPosition('bottom-right', this)">Bottom-Right</div>
+                    <div class="legend-pos legend-pos-outside" onclick="selectLegendPosition('outside-bottom', this)">Outside-Bottom</div>
+                    <div class="legend-pos legend-pos-outside" onclick="selectLegendPosition('outside-right', this)">Outside-Right (Default)</div>
+                </div>
+                <p style="font-size:0.85em;color:#666;margin:8px 0 0;">Leave unselected to use current legend position</p>
+            </div>
+
+            <div class="export-section">
+                <h3>Legend Layout</h3>
+                <button type="button" id="legend-columns-toggle" class="legend-toggle" onclick="toggleLegendColumns(this)">Split into 2 columns</button>
+                <p style="font-size:0.85em;color:#666;margin:8px 0 0;">Lays the legend entries out in two columns at the chosen position</p>
+            </div>
+
+            <div class="export-actions">
+                <button class="export-cancel" onclick="closeExportDialog()">Cancel</button>
+                <button class="export-submit" onclick="performExport()">Export SVG</button>
+            </div>
+        </div>
+    </div>
+    <script src='assets/report.js'></script>
+</body>
+</html>
+

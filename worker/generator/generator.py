@@ -14,11 +14,11 @@ def generate_worker_function(experiment_description_path):
         """
     logger = logging.getLogger(__name__)
     try:
-        file_loader = FileSystemLoader(os.path.dirname(__file__) + '/templates')
+        file_loader = FileSystemLoader(os.path.dirname(__file__) + '/report')
         env = Environment(loader=file_loader)
         template = env.get_template('worker_f_template')
     except IOError as error:
-        logger.error(f"Error with reading {os.path.dirname(__file__)}/templates/worker_f_template file: {error}",
+        logger.error(f"Error with reading {os.path.dirname(__file__)}/report/worker_f_template file: {error}",
                      exc_info=True)
         raise error
     try:

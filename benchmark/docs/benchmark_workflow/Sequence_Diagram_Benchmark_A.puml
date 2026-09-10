@@ -1,0 +1,66 @@
+@startuml Benchmark_Sequence_Diagram_A
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam BoxPadding 10
+skinparam ParticipantPadding 20
+
+actor User #lightgreen
+participant "Orchestrator" as Orchestrator #lightyellow
+participant "Benchmark\nRunner" as BenchmarkRunner #lightblue
+participant "Main Node" as MainNode #lavender
+participant "RabbitMQ" as RabbitMQ #wheat
+participant "Worker" as Worker #lightcyan
+
+title BRISE Benchmark - A: Initialization and Execution
+
+== 1. Initialization ==
+User -> Orchestrator: **Start Benchmark**\n//./init.sh up benchmark//
+activate Orchestrator
+Orchestrator -> BenchmarkRunner: run_benchmark()
+activate BenchmarkRunner
+
+== 2. Execute Experiments ==
+loop For each experiment
+    BenchmarkRunner ->> MainNode: **Start Experiment** (sync)\n//perform_experiment()//
+    activate MainNode
+    MainNode -->> BenchmarkRunner: ✓ Acknowledged
+
+    loop Optimization iterations
+        MainNode -> MainNode: **Select configurations**
+        MainNode ->> RabbitMQ: **Publish tasks**
+        activate RabbitMQ
+        RabbitMQ ->> Worker: **Dispatch task**
+        activate Worker
+        Worker -> Worker: **Run experiments**
+        Worker ->> RabbitMQ: **Publish results**
+        deactivate Worker
+        RabbitMQ ->> MainNode: **Deliver results**
+        deactivate RabbitMQ
+        MainNode -> MainNode: **Update model**
+    end
+
+    MainNode ->> RabbitMQ: **Publish completion event**
+    activate RabbitMQ
+    RabbitMQ -->> BenchmarkRunner: **Experiment complete** (async)
+    deactivate RabbitMQ
+
+    BenchmarkRunner ->> MainNode: **Download results** (sync)
+    MainNode -->> BenchmarkRunner: ✓ Results file
+    deactivate MainNode
+    BenchmarkRunner -> BenchmarkRunner: **Store results**\n//./results/serialized///
+end
+
+BenchmarkRunner ->> MainNode: **Stop** (sync)\n//stop_main()//
+activate MainNode
+MainNode -> RabbitMQ: **Disconnect & cleanup**
+activate RabbitMQ
+RabbitMQ --> MainNode: ✓ Disconnected
+deactivate RabbitMQ
+MainNode -->> BenchmarkRunner: ✓ Stopped
+deactivate MainNode
+deactivate BenchmarkRunner
+deactivate Orchestrator
+
+@enduml
+

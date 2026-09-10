@@ -35,3 +35,9 @@ yarn-error.log*
 
 *.spec.ts
 front_end/text.txt
+
+# Generated experiment files (dumps) are excluded since they can be large and are not human-readable
+benchmark/results/*
+
+# User-generated benchmark configuration from Waffle
+benchmark/configuration.json

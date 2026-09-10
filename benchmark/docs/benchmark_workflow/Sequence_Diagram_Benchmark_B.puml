@@ -1,0 +1,44 @@
+@startuml Benchmark_Sequence_Diagram_B
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam BoxPadding 8
+skinparam ParticipantPadding 10
+
+actor User #lightgreen
+participant "Orchestrator" as Orchestrator #lightyellow
+participant "Config\nDetector" as ConfigDetector #thistle
+participant "Analyzer" as Analyzer #pink
+participant "Comparative\nOrchestrator" as ComparativeOrchestrator #lightsteelblue
+participant "Report/Export\nService" as ReportService #lightgray
+
+title BRISE Benchmark - B: Analysis (Slide View)
+
+== Analysis Handoff ==
+Orchestrator -> ConfigDetector: **Detect + load benchmark config**
+ConfigDetector -->> Orchestrator: config + comparative flag
+Orchestrator -> Analyzer: **Run analysis**
+activate Analyzer
+
+Analyzer -> Analyzer: **Load dumps and exclude selected baselines**
+Analyzer -> Analyzer: **Partition by objective / problem instance**
+Analyzer -> Analyzer: **Build plots and summary tables**
+note right of Analyzer
+  Uses grouping, normalization,
+  and known-optimum overlays.
+end note
+
+opt Comparative metrics enabled
+  Analyzer -> ComparativeOrchestrator: **Compute NI / regret / profile data**
+  ComparativeOrchestrator -->> Analyzer: comparative results
+end
+
+Analyzer -> ReportService: **Build report + export CSV/ZIP**
+ReportService -->> Analyzer: HTML report + download artifacts
+Analyzer -> User: **Open report**
+deactivate Analyzer
+
+@enduml
+
+
+

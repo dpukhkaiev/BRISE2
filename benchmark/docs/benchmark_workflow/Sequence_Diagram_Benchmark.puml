@@ -1,0 +1,131 @@
+@startuml Benchmark_Sequence_Diagram
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam BoxPadding 10
+skinparam ParticipantPadding 20
+
+actor User #lightgreen
+participant "Orchestrator" as Orchestrator #lightyellow
+participant "Benchmark\nRunner" as BenchmarkRunner #lightblue
+participant "Main Node" as MainNode #lavender
+participant "RabbitMQ" as RabbitMQ #wheat
+participant "Worker" as Worker #lightcyan
+participant "Analyzer" as Analyzer #pink
+
+title BRISE Benchmark - High-Level Flow
+
+== 1. Initialization ==
+User -> Orchestrator: **Start Benchmark**\n//./init.sh up benchmark//
+activate Orchestrator
+Orchestrator -> BenchmarkRunner: run_benchmark()
+activate BenchmarkRunner
+
+== 2. Execute Experiments ==
+loop For each experiment
+
+    BenchmarkRunner ->> MainNode: **Start Experiment** (sync)\n//perform_experiment()//
+    activate MainNode
+    MainNode -->> BenchmarkRunner: ✓ Acknowledged\n//{'status': 'running'}//
+    note right of MainNode: Synchronous:\nRequest-Response
+
+    loop Optimization iterations
+        MainNode -> MainNode: **Select configurations**\n//ConfigurationSelection//
+        MainNode ->> RabbitMQ: **Publish tasks**\n//task_queue//
+        activate RabbitMQ
+        RabbitMQ ->> Worker: **Dispatch task**
+        activate Worker
+        note right of Worker: Asynchronous:\nEvent-driven
+        Worker -> Worker: **Run experiments**\n//worker_method()//
+        Worker ->> RabbitMQ: **Publish results**\n//task_result_exchange//
+        deactivate Worker
+        RabbitMQ ->> MainNode: **Deliver results**
+        deactivate RabbitMQ
+        MainNode -> MainNode: **Update model**\n//add_configuration()//
+    end
+
+    MainNode ->> RabbitMQ: **Publish completion event**\n//final_event()//
+    activate RabbitMQ
+    RabbitMQ -->> BenchmarkRunner: **Experiment complete** (async)
+    deactivate RabbitMQ
+    note left: Async notification\nwhen done
+
+    BenchmarkRunner ->> MainNode: **Download results** (sync)\n//download_latest_dump()//
+    MainNode -->> BenchmarkRunner: ✓ Results file\n//experiment.pkl//
+    deactivate MainNode
+    BenchmarkRunner -> BenchmarkRunner: **Store results**\n//./results/serialized///
+
+end
+
+BenchmarkRunner ->> MainNode: **Stop** (sync)\n//stop_main()//
+activate MainNode
+MainNode -> RabbitMQ: **Disconnect & cleanup**
+activate RabbitMQ
+RabbitMQ --> MainNode: ✓ Disconnected
+deactivate RabbitMQ
+MainNode -->> BenchmarkRunner: ✓ Stopped
+deactivate MainNode
+deactivate BenchmarkRunner
+
+== 3. Analysis ==
+BenchmarkRunner -->> Orchestrator: ✓ All experiments complete
+participant "Config\nDetector" as ConfigDetector #thistle
+participant "Interactive\nBaseline Analyzer" as InteractiveBaselineAnalyzer #orchid
+participant "Baseline\nSelection UI" as BaselineSelectionUI #lightcyan
+participant "Comparative\nOrchestrator" as ComparativeOrchestrator #lightsteelblue
+participant "Report/Export\nService" as ReportService #lightgray
+
+Orchestrator -> ConfigDetector: **Detect benchmark config**\n//detect_config_file()//
+ConfigDetector -->> Orchestrator: config path
+Orchestrator -> ConfigDetector: **Load + inspect config**\n//load_config(), has_comparative_analysis()//
+ConfigDetector -->> Orchestrator: config dict + comparative mode flag
+
+alt Interactive baselines enabled AND comparative analysis active
+    Orchestrator -> InteractiveBaselineAnalyzer: **analyze_with_baseline_selection()**
+    activate InteractiveBaselineAnalyzer
+
+    alt Previous baseline selection exists
+        InteractiveBaselineAnalyzer -> InteractiveBaselineAnalyzer: **Reuse baseline_selection.json**
+    else No saved selection
+        InteractiveBaselineAnalyzer -> Analyzer: **Load experiments for UI choices**
+        Analyzer -->> InteractiveBaselineAnalyzer: selectable experiments
+        InteractiveBaselineAnalyzer -> BaselineSelectionUI: **Start local server + render selection page**
+        BaselineSelectionUI -> User: **Open browser**\n//http://localhost:8765//
+        User -> BaselineSelectionUI: **Select baseline experiments**
+        BaselineSelectionUI -->> InteractiveBaselineAnalyzer: selected baseline names
+        InteractiveBaselineAnalyzer -> InteractiveBaselineAnalyzer: **Persist baseline_selection.json**
+    end
+
+    InteractiveBaselineAnalyzer -> ComparativeOrchestrator: **Register user baselines**
+    InteractiveBaselineAnalyzer -> Analyzer: **Run analyzer with selected baselines**
+    deactivate InteractiveBaselineAnalyzer
+else Standard analysis path
+    Orchestrator -> Analyzer: **Analyze results**\n//BenchmarkAnalyzer.analyze()//
+end
+
+activate Analyzer
+
+loop For each objective partition
+    Analyzer -> Analyzer: **Generate plots + summary table**
+    note right of Analyzer
+      Improvement/custom/box plots
+      Grouping + normalization
+      Known-optimum overlay (optional)
+    end note
+end
+
+alt Comparative analysis configured
+    Analyzer -> ComparativeOrchestrator: **Compute comparative metrics**
+    ComparativeOrchestrator -->> Analyzer: comparative results per objective
+    Analyzer -> Analyzer: **Generate comparative plots + performance profile**
+end
+
+Analyzer -> ReportService: **Export CSV/ZIP + render HTML report**
+ReportService -->> Analyzer: benchmark_report.html + download artifacts
+Analyzer -> User: **Open HTML report**
+deactivate Analyzer
+deactivate Orchestrator
+
+User -> User: **Review results**
+
+@enduml

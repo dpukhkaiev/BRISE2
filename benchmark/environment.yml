@@ -21,3 +21,4 @@ dependencies:
   - psutil
   - sortedcontainers
   - cython
+  - ConfigSpace

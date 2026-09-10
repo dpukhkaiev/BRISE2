@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import threading
+from datetime import datetime
 
 import pika
 import pika.exceptions
@@ -89,6 +90,10 @@ class WorkerMainThread(threading.Thread):
                 for key in task["result_structure"]:
                     if key not in result_from_worker:
                         result_from_worker[key] = None
+
+                # Add task completion timestamp
+                result_from_worker['task_completion_time'] = datetime.now().isoformat()
+
                 res = {
                     'id_measurement': task["id_measurement"],
                     'task_result': {

@@ -43,7 +43,8 @@ class Experiment:
         # A unique ID, different for every experiment (even with the same description)
         self.unique_id = str(uuid.uuid4())
 
-        self.name: str = f"exp_{self.description['Context']['TaskConfiguration']['TaskName']}_{self.ed_id}"
+        # Build a readable, yet unique experiment name used for files and legends
+        self.name: str = self._build_descriptive_name()
 
         self.current_best_configurations: List[Configuration] = []
         self.bad_configurations_number = 0
@@ -278,6 +279,9 @@ class Experiment:
         :param configuration: Configuration object.
         :return: None
         """
+        # Add iteration timestamp
+        configuration.iteration_timestamp = datetime.datetime.now()
+        
         self.measured_configurations.append(configuration)
         if configuration.is_better(self.get_objectives_minimization(),
                                    self.current_best_configurations[0]):
@@ -332,7 +336,18 @@ class Experiment:
         if folder_path[-1] != "/" and folder_path[-1] != "\\":
             folder_path = folder_path + "/"
         os.makedirs(folder_path, exist_ok=True)
-        dump_path = folder_path + self.name + ".pkl"
+
+        # Check if file exists and append _2, _3, etc. if needed
+        base_name = self.name
+        dump_path = folder_path + base_name + ".pkl"
+        counter = 2
+        while os.path.exists(dump_path):
+            dump_path = folder_path + base_name + f"_{counter}.pkl"
+            counter += 1
+
+        # Update the name to include the suffix if one was added
+        if counter > 2:
+            self.name = base_name + f"_{counter - 1}"
 
         with open(dump_path, 'wb') as output:
             pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
@@ -502,3 +517,91 @@ class Experiment:
         record["is_model_valid"] = self.get_model_state()
         record["Number_of_measured_tasks"] = 0
         return record
+
+    def _build_descriptive_name(self) -> str:
+        """Compose a short name following the pattern:
+        exp_<task>_<model>_<sampler>_<configStrategy>_<stopCondition>_<benchmarkId>
+
+        The BenchmarkIdentifier is appended at the end to differentiate test cases
+        while keeping the standard structure for table parsing.
+        """
+        def safe_get(dct, path, default=None):
+            cur = dct
+            for k in path:
+                if isinstance(cur, dict) and k in cur:
+                    cur = cur[k]
+                else:
+                    return default
+            return cur
+
+        task = safe_get(self._description, ["Context", "TaskConfiguration", "TaskName"], "task")
+
+        # Try to infer model/sampler/configuration-strategy/stop-condition short tags
+        sampler = None
+        try:
+            ss = safe_get(self._description, ["ConfigurationSelection", "SamplingStrategy"]) or {}
+            if isinstance(ss, dict) and ss:
+                sampler = list(ss.keys())[0]
+        except Exception:
+            sampler = None
+        sampler_tag = sampler or "Sampler"
+
+        # Model: search for any Model* key under Predictor (Model, Model_0, Model_1, etc.)
+        model_tag = None
+        predictor = safe_get(self._description, ["ConfigurationSelection", "Predictor"])
+        if isinstance(predictor, dict):
+            # Find all keys that look like Model, Model_0, Model_1, etc.
+            model_keys = [k for k in predictor.keys() if k == "Model" or k.startswith("Model_")]
+
+            # Try to get Surrogate Instance from the first Model key found
+            for model_key_candidate in sorted(model_keys):
+                surrogate = safe_get(self._description,
+                    ["ConfigurationSelection", "Predictor", model_key_candidate, "Surrogate", "Instance"])
+                if isinstance(surrogate, dict) and surrogate:
+                    model_tag = list(surrogate.keys())[0]
+                    break
+
+            # Fallback: try Model.Instance if no Surrogate was found
+            if not model_tag:
+                for model_key_candidate in sorted(model_keys):
+                    model_inst = safe_get(self._description,
+                        ["ConfigurationSelection", "Predictor", model_key_candidate, "Instance"])
+                    if isinstance(model_inst, dict) and model_inst:
+                        model_tag = list(model_inst.keys())[0]
+                        break
+
+        model_tag = (model_tag or "Model")
+        # Shorten a few well-known names
+        short_map = {
+            "TreeParzenEstimator": "TPE",
+            "GaussianProcessRegressor": "GPR",
+            "MOEA": "MOEA",
+            "RandomForestClassifier": "RF"
+        }
+        model_tag = short_map.get(model_tag, model_tag)
+
+        # Configuration Strategy (repeater)
+        rep_inst = safe_get(self._description, ["RepetitionManager", "Instance"]) or {}
+        config_strategy_tag = None
+        if isinstance(rep_inst, dict) and rep_inst:
+            config_strategy_tag = list(rep_inst.keys())[0]
+        config_strategy_tag = config_strategy_tag or "ConfigStrategy"
+
+        # Stop Condition
+        sc_inst = safe_get(self._description, ["StopCondition", "Instance"]) or {}
+        sc_tag = None
+        if isinstance(sc_inst, dict) and sc_inst:
+            sc_tag = list(sc_inst.keys())[0]
+        sc_tag = sc_tag or "SC"
+
+        # Remove 'sc' suffix if present
+        if sc_tag.lower().endswith('sc'):
+            sc_tag = sc_tag[:-2]
+
+        benchmark_id = safe_get(self._description, ["Context", "BenchmarkIdentifier"], None)
+
+        # Build base name with standard structure, convert to lowercase and append benchmark identifier
+        name = f"exp_{task}_{model_tag}_{sampler_tag}_{config_strategy_tag}_{sc_tag}_{benchmark_id}".lower()
+
+        return name
+

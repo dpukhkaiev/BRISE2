@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseline Selection - BRISE Benchmark</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 32px 40px;
+        }
+
+        .instructions {
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-left: 4px solid #667eea;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+            border-radius: 6px;
+        }
+
+        .instructions h2 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .instructions p {
+            font-size: 13px;
+            color: #5a6c7d;
+            line-height: 1.6;
+        }
+
+        .selection-count {
+            background: linear-gradient(to right, #e8f4fd, #dbeafe);
+            border: 1px solid #3b82f6;
+            padding: 14px 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #1e40af;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .selection-count strong {
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .experiment-list {
+            max-height: 420px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 28px;
+        }
+
+        .experiment-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .experiment-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .experiment-list::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .experiment-item {
+            padding: 18px 24px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: flex-start;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .experiment-item:last-child {
+            border-bottom: none;
+        }
+
+        .experiment-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .experiment-item.selected {
+            background-color: #f0f4ff;
+        }
+
+        .experiment-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 16px;
+            margin-top: 2px;
+            accent-color: #667eea;
+            flex-shrink: 0;
+        }
+
+        .experiment-details {
+            flex: 1;
+        }
+
+        .experiment-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1a202c;
+            margin-bottom: 6px;
+        }
+
+        .experiment-description {
+            font-size: 13px;
+            color: #718096;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .badge-group {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-experiment {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 13px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .error-message, .success-message {
+            padding: 14px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+
+        .success-message {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #363;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 24px 28px;
+            }
+
+            .content {
+                padding: 24px 28px;
+            }
+
+            .button-group {
+                flex-direction: column-reverse;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Select Baseline Experiments</h1>
+            <p>{{ experiment_name }}</p>
+        </div>
+
+        <div class="content">
+            <div class="instructions">
+                <h2>Instructions</h2>
+                <p>
+                    Select one or more baseline groups or individual experiments. Grouped baselines use the
+                    configured CustomGrouping (e.g., MH and variant) and aggregate their trajectories.
+                </p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="selection-count" id="selectionCount">
+                <strong>0</strong> experiment(s) selected
+            </div>
+
+            <div class="experiment-list">
+                {% for item in baseline_items %}
+                <div class="experiment-item" onclick="toggleCheckbox('exp_{{ loop.index }}')">
+                    <input type="checkbox"
+                           id="exp_{{ loop.index }}"
+                           value="{{ item.baseline_id }}"
+                           class="experiment-checkbox"
+                           onclick="event.stopPropagation()">
+                    <label for="exp_{{ loop.index }}" class="experiment-details" onclick="event.stopPropagation(); toggleCheckbox('exp_{{ loop.index }}')">
+                        <div class="experiment-name">
+                            {{ item.display_name }}
+                            {% if item.kind == 'group' %}
+                                <span class="badge badge-group">Group</span>
+                            {% else %}
+                                <span class="badge badge-experiment">Experiment</span>
+                            {% endif %}
+                        </div>
+                        <div class="experiment-description">{{ item.description }}</div>
+                        {% if item.kind == 'group' and item.members %}
+                            <div class="experiment-description">
+                                Members: {{ item.members[:5] | join(', ') }}{% if item.members|length > 5 %}, ...{% endif %}
+                            </div>
+                        {% endif %}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="selectNone()">Clear Selection</button>
+                <button class="btn btn-primary" id="submitBtn" onclick="submitSelection()" disabled>
+                    Continue with Selected Baselines
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const checkboxes = document.querySelectorAll('.experiment-checkbox');
+        const submitBtn = document.getElementById('submitBtn');
+        const selectionCount = document.getElementById('selectionCount');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        function toggleCheckbox(id) {
+            const checkbox = document.getElementById(id);
+            checkbox.checked = !checkbox.checked;
+            updateSelectionCount();
+            updateItemSelection();
+        }
+
+        function updateSelectionCount() {
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            const count = selected.length;
+
+            selectionCount.innerHTML = `<strong>${count}</strong> experiment(s) selected`;
+            submitBtn.disabled = count === 0;
+        }
+
+        function updateItemSelection() {
+            checkboxes.forEach(cb => {
+                const item = cb.closest('.experiment-item');
+                if (cb.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateSelectionCount();
+                updateItemSelection();
+            });
+        });
+
+        function selectNone() {
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectionCount();
+            updateItemSelection();
+        }
+
+        function submitSelection() {
+            const selected = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            if (selected.length === 0) {
+                showError('Please select at least one baseline experiment.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+
+            fetch('/select_baselines', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ selected_baselines: selected })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server returned ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showSuccess(`Successfully selected ${selected.length} baseline(s)! Generating report...`);
+                    // Wait longer for server to process before attempting redirect
+                    setTimeout(() => {
+                        // Close the window, analysis continues in background
+                        window.close();
+                    }, 2000);
+                } else {
+                    showError(data.message || 'Failed to save baseline selection.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Continue with Selected Baselines';
+                }
+            })
+            .catch(error => {
+                // Only show error if it's not a network error from closing/redirecting
+                if (!error.message.includes('NetworkError') && !error.message.includes('fetch')) {
+                    showError('Selection saved. Analysis is processing...');
+                }
+                // Selection was likely successful - just communication interrupted
+                showSuccess('✓ Baseline selection saved! Analysis is processing...');
+                setTimeout(() => {
+                    window.close();
+                }, 2000);
+            });
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

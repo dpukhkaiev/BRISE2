@@ -1,0 +1,332 @@
+// ----------------------Benchmark Features-----------------------
+
+Benchmark {
+  Resources {
+    Folder -> string
+  }
+
+  Report {
+    outputDirectory -> string
+  }
+
+  Experiment {
+    name -> string
+    description -> string
+    objectivesToMeasure -> array
+  }
+
+  KnownOptima ? {
+    ObjectiveOptimum * {
+      objective -> string
+      optimum -> float
+      [objective in Benchmark.Experiment.objectivesToMeasure]
+    }
+  }
+
+  Table ? {
+    task -> boolean
+    model -> boolean
+    sampler -> boolean
+    configurationStrategy -> boolean
+    stopCondition -> boolean
+    experiment -> boolean
+    objective -> boolean
+    iterations -> boolean
+    initialValue -> boolean
+    finalBestValue -> boolean
+    improvementPercentage -> boolean
+    improvementAbsolute -> boolean
+    runtime -> boolean
+  }
+
+  Plot * {
+    xor PlotType {
+      ConvergencePlot {
+        Type -> predefined
+        [Type = 'convergence_plot']
+
+        enableGrouping -> boolean
+        title -> string
+
+        filterConditions * {
+          path     -> string
+          value    -> string
+          contains -> boolean
+          pattern  -> string
+        }
+
+        CustomGrouping ? {
+          // Each ValueGroupSpec groups experiments whose metadata at `path` matches
+          // one of the declared entries. Add one spec per metadata dimension.
+          ValueGroupSpec * {
+            path -> string
+            // Each entry maps one concrete metadata value to a legend display name.
+            ValueGroupEntry * {
+              value -> string
+              displayName -> string
+            }
+          }
+        }
+
+        MetricAxis {
+          metricDescription -> string
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+        }
+        ObjectiveAxis {
+          objectivesToPlot -> array
+          // Each element should be an objective name from Experiment.objectivesToMeasure
+          // [all objectivesToPlot in Benchmark.Experiment.objectivesToMeasure]
+          normalize -> boolean
+          xor NormalizationStrategy {
+            MinOverAll {
+              Type -> predefined
+              [Type = 'min_over_all_experiments']
+            }
+            MaxOverAll {
+              Type -> predefined
+              [Type = 'max_over_all_experiments']
+            }
+          }
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+        }
+      }
+
+      CustomPlot {
+        Type -> predefined
+        [Type = 'parallel_coordinates_plot']
+
+        enableGrouping -> boolean
+        title -> string
+
+        filterConditions * {
+          path -> string
+          value -> string
+          contains -> boolean
+          pattern -> string
+        }
+        CustomGrouping ? {
+          // Each ValueGroupSpec groups experiments whose metadata at `path` matches
+          // one of the declared entries. Add one spec per metadata dimension.
+          ValueGroupSpec * {
+            path -> string
+            // Each entry maps one concrete metadata value to a legend display name.
+            ValueGroupEntry * {
+              value -> string
+              displayName -> string
+            }
+          }
+        }
+
+        MetricAxis {
+          metricDescription -> string
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+        }
+        ObjectiveAxis {
+          objectivesToPlot -> array
+          normalize -> boolean
+          xor NormalizationStrategy {
+            MinOverAll {
+              Type -> predefined
+              [Type = 'min_over_all_experiments']
+            }
+            MaxOverAll {
+              Type -> predefined
+              [Type = 'max_over_all_experiments']
+            }
+          }
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+        }
+      }
+
+      BoxPlot {
+        Type -> predefined
+        [Type = 'box_plot']
+
+        enableGrouping -> boolean
+        title -> string
+
+        filterConditions * {
+          path -> string
+          value -> string
+          contains -> boolean
+          pattern -> string
+        }
+        CustomGrouping ? {
+          // Each ValueGroupSpec groups experiments whose metadata at `path` matches
+          // one of the declared entries. Add one spec per metadata dimension.
+          ValueGroupSpec * {
+            path -> string
+            // Each entry maps one concrete metadata value to a legend display name.
+            ValueGroupEntry * {
+              value -> string
+              displayName -> string
+            }
+          }
+        }
+
+        MetricAxis {
+          metricDescription -> string
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+        }
+        ObjectiveAxis {
+          objectivesToPlot -> array
+          normalize -> boolean
+          xor NormalizationStrategy {
+            MinOverAll {
+              Type -> predefined
+              [Type = 'min_over_all_experiments']
+            }
+            MaxOverAll {
+              Type -> predefined
+              [Type = 'max_over_all_experiments']
+            }
+          }
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+        }
+      }
+
+      ScatterPlot {
+        Type -> predefined
+        [Type = 'scatter_plot']
+
+        enableGrouping -> boolean
+        title -> string
+        // "metadata" (default): group by experiment-level metadata attribute
+        // "hyperparameter": group by per-iteration hyperparameter value (e.g. LLH selection in HH experiments)
+        groupBy -> string
+        [groupBy in {"metadata", "hyperparameter"}]
+        // false: pure scatter (one marker trace per group, no aggregated mean
+        // line) — reproduces the old single-rep LLH figures. true (default):
+        // faint per-rep dots + bold mean line.
+        showMeanLine -> boolean
+
+        filterConditions * {
+          path -> string
+          value -> string
+          contains -> boolean
+          pattern -> string
+        }
+        CustomGrouping ? {
+          // Each ValueGroupSpec groups experiments whose metadata at `path` matches
+          // one of the declared entries. Add one spec per metadata dimension.
+          ValueGroupSpec * {
+            path -> string
+            // Each entry maps one concrete metadata value to a legend display name.
+            ValueGroupEntry * {
+              value -> string
+              displayName -> string
+            }
+          }
+        }
+
+        MetricAxis {
+          metricDescription -> string
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+          // Per-instance fixed x-axis limits; only present values override auto-range.
+          // Keyed by the same instance names as Benchmark.Experiment.objectivesToMeasure.
+          KnownAxisBounds ? {
+            InstanceBounds * {
+              instance -> string
+              [instance in Benchmark.Experiment.objectivesToMeasure]
+              xMin -> float
+              xMax -> float
+            }
+          }
+        }
+        ObjectiveAxis {
+          objectivesToPlot -> array
+          normalize -> boolean
+          xor NormalizationStrategy {
+            MinOverAll {
+              Type -> predefined
+              [Type = 'min_over_all_experiments']
+            }
+            MaxOverAll {
+              Type -> predefined
+              [Type = 'max_over_all_experiments']
+            }
+          }
+          label -> string
+          scale -> string
+          [scale in {"linear", "log10"}]
+          // Per-instance fixed y-axis limits; only present values override auto-range.
+          // Keyed by the same instance names as Benchmark.Experiment.objectivesToMeasure.
+          KnownAxisBounds ? {
+            InstanceBounds * {
+              instance -> string
+              [instance in Benchmark.Experiment.objectivesToMeasure]
+              yMin -> float
+              yMax -> float
+            }
+          }
+        }
+      }
+    }
+  }
+
+  ComparativeAnalysis ? {
+    showSummaryTable -> boolean
+
+    ComparativeTable ? {
+      experiment -> boolean
+      baseline -> boolean
+      relativeImprovement -> boolean
+      speedupFactor -> boolean
+      convergedAtIteration -> boolean
+      experimentBest -> boolean
+      baselineBest -> boolean
+      finalRegret -> boolean
+    }
+
+    RegretAnalysis ? {
+      or RegretType {
+        Iteration {
+          Type -> predefined
+          [Type = "iteration"]
+        }
+        Time {
+          Type -> predefined
+          [Type = "time"]
+        }
+      }
+      [self requires Benchmark.KnownOptima]
+    }
+
+    RelativeImprovement ? {
+      or ImprovementType {
+        ObjectiveValue {
+          Type -> predefined
+          [Type = "objective_value"]
+        }
+        TimeToTarget {
+          Type -> predefined
+          [Type = "time_to_target"]
+        }
+        IterationToTarget {
+          Type -> predefined
+          [Type = "iteration_to_target"]
+        }
+      }
+    }
+
+    PerformanceProfile ? {
+      tauMax -> float
+      tauSteps -> integer
+      objectivesToProfile -> array
+    }
+  }
+}

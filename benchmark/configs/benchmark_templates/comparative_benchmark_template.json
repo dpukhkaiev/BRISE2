@@ -1,0 +1,121 @@
+{
+  "Benchmark": {
+    "Report": {
+      "outputDirectory": "./results/reports/"
+    },
+    "Experiment": {
+      "name": "Comparative Benchmark",
+      "description": "Example comparative benchmark with baseline algorithms and comparative metrics",
+      "objectivesToMeasure": [
+                "Y1",
+                "Y2",
+                "Y3",
+                "Y4",
+                "Y5"
+            ]
+    },
+    "Table": {
+      "task": true,
+      "model": true,
+      "sampler": true,
+      "configurationStrategy": true,
+      "stopCondition": true,
+      "experiment": true,
+      "objective": true,
+      "iterations": true,
+      "initialValue": true,
+      "finalBestValue": true,
+      "improvementPercentage": true,
+      "improvementAbsolute": true,
+      "runtime": true
+    },
+    "Plot_0": {
+      "PlotType": {
+        "ConvergencePlot": {
+          "Type": "convergence_plot",
+          "enableGrouping": false,
+          "MetricAxis": {
+            "metricDescription": "iterations completed",
+            "label": "Iteration",
+            "scale": "linear"
+          },
+          "ObjectiveAxis": {
+            "objectivesToPlot": [
+                            "Y1",
+                            "Y2",
+                            "Y3",
+                            "Y4",
+                            "Y5"
+                        ],
+            "normalize": true,
+            "NormalizationStrategy": {
+              "MinOverAll": {
+                "Type": "min_over_all_experiments"
+              }
+            },
+            "label": "Normalized Objective",
+            "scale": "linear"
+          }
+        }
+      }
+    },
+    "Plot_1": {
+            "PlotType": {
+                "BoxPlot": {
+                    "Type": "box_plot",
+                    "enableGrouping": false,
+                    "ObjectiveAxis": {
+                        "objectivesToPlot": [
+                            "Y1",
+                            "Y2",
+                            "Y3",
+                            "Y4",
+                            "Y5"
+                        ],
+                        "normalize": true,
+                        "NormalizationStrategy": {
+                            "MinOverAll": {
+                                "Type": "min_over_all_experiments"
+                            }
+                        },
+                        "label": "Normalized Objective",
+                        "scale": "linear"
+                    }
+                }
+            }
+        },
+    "ComparativeAnalysis": {
+      "ComparativeTable": {
+        "experiment": true,
+        "baseline": true,
+        "relativeImprovement": true,
+        "convergedAtIteration": true,
+        "experimentBest": true,
+        "baselineBest": true,
+        "finalRegret": true
+      },
+      "RegretAnalysis": {
+        "knownOptimum": 0.0,
+        "optimumPerObjective": {
+          "Y1": 0.0
+        },
+        "RegretType": {
+          "Iteration": {"Type": "iteration"},
+          "Time": {"Type": "time"}
+        }
+      },
+      "RelativeImprovement": {
+        "ImprovementType": {
+          "ObjectiveValue": {"Type": "objective_value"},
+          "TimeToTarget": {"Type": "time_to_target"},
+          "IterationToTarget": {"Type": "iteration_to_target"}
+        }
+      },
+      "PerformanceProfile": {
+        "tauMax": 5.0,
+        "tauSteps": 50,
+        "objectivesToProfile": ["Y1", "Y2", "Y3", "Y4", "Y5"]
+      }
+    }
+  }
+}
