@@ -10,8 +10,16 @@ from configuration_distribution.batched_distribution import BatchedDistribution
 from configuration_distribution.hybrid_distribution import HybridDistribution, EventGate
 from configuration_distribution.asynchronous_distribution import AsynchronousDistribution
 
-# disable logging
-logging.disable(logging.CRITICAL)
+@pytest.fixture(autouse=True)
+def _silence_logging():
+    """
+    Disable logging for this module only. A module-scope logging.disable() call
+    would stay in effect for the whole pytest session and silently empty
+    caplog.records for other test modules.
+    """
+    logging.disable(logging.CRITICAL)
+    yield
+    logging.disable(logging.NOTSET)
 
 class TestConfigurationDistributionOrchestrator:
 
@@ -222,13 +230,13 @@ class TestBatchedDistribution:
         mock_logger_instance = mock_get_logger.return_value
 
         # * Assert that the function call RAISES the expected exception
-        with pytest.raises(ValueError, match="Batched Distribution requires 'batchSize' in description."):
+        with pytest.raises(ValueError, match="Batched Distribution requires 'BatchSize' in description."):
             BatchedDistribution(bad_config)
 
         # * Assert the side effects (logging) AFTER the exception has been raised.
         mock_logger_instance.error.assert_called_once()
         mock_logger_instance.error.assert_called_with(
-            "Description missing 'batchSize'!"
+            "Description missing 'BatchSize'!"
         )
 
     @patch('configuration_distribution.batched_distribution.publish')
@@ -413,13 +421,13 @@ class TestHybridDistribution:
         mock_logger_instance = mock_get_logger.return_value
 
         # * Assert that the function call RAISES the expected exception
-        with pytest.raises(ValueError, match="Hybrid Distribution requires 'batchSize' in description."):
+        with pytest.raises(ValueError, match="Hybrid Distribution requires 'BatchSize' in description."):
             HybridDistribution(bad_config)
 
         # * Assert the side effects (logging) AFTER the exception
         mock_logger_instance.error.assert_called_once()
         mock_logger_instance.error.assert_called_with(
-            "Description missing 'batchSize'!"
+            "Description missing 'BatchSize'!"
         )
 
     @patch('configuration_distribution.hybrid_distribution.publish')
@@ -610,6 +618,10 @@ class TestHybridDistribution:
 
         new_gate = distributionAlgorithm._get_or_create_gate()
         assert new_gate is not gate
+
+        # Timer threads are non-daemon: leaving this one running delays the
+        # whole pytest process for the length of the timeout.
+        new_gate.timer.cancel()
 
     def test_dispatch_converts_evaluation_time_from_milliseconds_to_seconds(self):
         """

@@ -10,14 +10,14 @@ class BatchedDistribution(AbstractDistribution):
     def __init__(self, config: dict):
 
         super().__init__(config)
-        
+
         try:
             self._batch_size = int(config["BatchedDistribution"]["BatchSize"])
             self.logger.info(f"Batched Distribution initialized with batch size: {self._batch_size}")
 
         except KeyError:
-            self.logger.error("Description missing 'batchSize'!")
-            raise ValueError("Batched Distribution requires 'batchSize' in description.")
+            self.logger.error("Description missing 'BatchSize'!")
+            raise ValueError("Batched Distribution requires 'BatchSize' in description.")
 
         self._first_it = True
         self._barrier = None
@@ -60,7 +60,7 @@ class BatchedDistribution(AbstractDistribution):
         # ! setting of the first wave of configurations is important
         with self._first_it_lock:
             if self._first_it:
-                
+
                 self.logger.info(f"Proposing the first {self._batch_size} configurations")
                 dictionary_dump = {"worker_capacity": self._batch_size}
                 body = json.dumps(dictionary_dump)
@@ -68,7 +68,7 @@ class BatchedDistribution(AbstractDistribution):
                 publish(exchange='get_new_configuration_exchange',
                         routing_key=experiment_id,
                         body=body)
-                
+
                 self._first_it = False
                 return True
         return False

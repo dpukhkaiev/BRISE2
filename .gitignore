@@ -1,6 +1,7 @@
 worker-node/pycache
 pycache
 env
+.env
 *.log
 *.pyc
 .idea/

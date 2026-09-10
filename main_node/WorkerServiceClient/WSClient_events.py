@@ -41,9 +41,11 @@ class WSClient:
         self.number_of_workers_lock = threading.Lock()
         self._number_of_workers = None
         self.connection_thread = None
-        self.init_connection()
-
+        # Must be ready before init_connection() starts consuming: a message
+        # already queued on get_worker_capacity_exchange is dispatched to it
+        # as soon as the consumer thread starts.
         self.distributionAlgorithm = ConfigurationDistributionOrchestrator().get_distribution(experiment_description["DistributionMode"])
+        self.init_connection()
 
     def init_connection(self):
         """

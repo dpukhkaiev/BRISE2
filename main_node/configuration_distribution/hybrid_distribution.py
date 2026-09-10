@@ -47,8 +47,9 @@ class EventGate:
             self.triggered = True
 
             self.trigger_result = result
-            self.expected_reporters = self.arrival_count
-            self.arrival_count = 0
+            with self.count_lock:
+                self.expected_reporters = self.arrival_count
+                self.arrival_count = 0
 
             self.gate.set()
 
@@ -105,11 +106,12 @@ class EventGate:
         # 1. Count arrival
         with self.count_lock:
             self.arrival_count += 1
-        
-        self.logger.info(f'Workers currently waiting {str(self.arrival_count)}')
+            current_count = self.arrival_count
+
+        self.logger.info(f'Workers currently waiting {str(current_count)}')
 
         # 2. Check if its the last one
-        if self.arrival_count == self._batch_size:
+        if current_count == self._batch_size:
             self._trigger_by_completion()
         
         # 3. Wait until the gate is opened
@@ -143,8 +145,8 @@ class HybridDistribution(AbstractDistribution):
             self._batch_size = int(config["HybridDistribution"]["BatchSize"])
 
         except KeyError:
-            self.logger.error("Description missing 'batchSize'!")
-            raise ValueError("Hybrid Distribution requires 'batchSize' in description.")
+            self.logger.error("Description missing 'BatchSize'!")
+            raise ValueError("Hybrid Distribution requires 'BatchSize' in description.")
 
         self._gate = None
         self.gate_lock = threading.Lock()
@@ -253,7 +255,7 @@ class HybridDistribution(AbstractDistribution):
         # ! setting of the first wave of configurations is important
         with self._first_it_lock:
             if self._first_it:
-                
+
                 self.logger.info(f"Proposing the first {self._batch_size} configurations")
                 dictionary_dump = {"worker_capacity": self._batch_size}
                 body = json.dumps(dictionary_dump)
@@ -261,7 +263,7 @@ class HybridDistribution(AbstractDistribution):
                 publish(exchange='get_new_configuration_exchange',
                         routing_key=experiment_id,
                         body=body)
-                
+
                 self._first_it = False
 
                 return True
