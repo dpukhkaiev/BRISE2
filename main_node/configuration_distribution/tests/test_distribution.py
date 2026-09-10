@@ -619,8 +619,6 @@ class TestHybridDistribution:
         new_gate = distributionAlgorithm._get_or_create_gate()
         assert new_gate is not gate
 
-        # Timer threads are non-daemon: leaving this one running delays the
-        # whole pytest process for the length of the timeout.
         new_gate.timer.cancel()
 
     def test_dispatch_converts_evaluation_time_from_milliseconds_to_seconds(self):
