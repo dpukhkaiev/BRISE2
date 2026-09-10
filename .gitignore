@@ -41,6 +41,7 @@ front_end/text.txt
 docker-compose.debug.yml
 brise_debug.sh
 DEBUGGING.md
+Dockerfile_external
 
 # AI assistant artefacts
 .claude/
