@@ -42,23 +42,32 @@ class Configuration:
         self._parameters_in_indexes:   shape - list, e.g. ``[1, 8]``
         self._tasks:                    shape - dict, e.g.
                                                ``{
-                                                    id_task_1: {
-                                                       "result": result1,
-                                                       "worker": worker_name1
+                                                    "task id 1": {
+                                                       "task id": "task id 1",
+                                                       "worker": worker_name1,
+                                                       "evaluation_time": 123.45,
+                                                       "result": {"energy": 700.56, "time": 0.52},
+                                                       "ResultValidityCheckMark": "OK"
                                                     },
-                                                    id_task_2: {
-                                                      "result": result2,
-                                                      "worker": worker_name2
+                                                    "task id 2": {
+                                                       "task id": "task id 2",
+                                                       "worker": worker_name2,
+                                                       "evaluation_time": 98.76,
+                                                       "result": {"energy": 806.43, "time": 0.5},
+                                                       "ResultValidityCheckMark": "OK"
                                                     },
                                                     ...
                                                  }``
 
-                                         id_task:      shape - int or string
-                                         result:       shape - list, e.g. ``[700.56]``
-                                         worker_name:  shape - string
+                                         task id:                  shape - int or string, also used as the dict's key
+                                         worker_name:               shape - string
+                                         evaluation_time:           shape - float, milliseconds the task took to run on the worker
+                                         result:                    shape - dict, keyed by objective name, e.g. ``{"energy": 700.56}``
+                                         ResultValidityCheckMark:   shape - string, e.g. ``"OK"``, ``"Bad value"``, ``"Outlier"``, ``"Out of bounds"``
 
-        self._average_result:            shape - list, e.g. ``[806.43]``
         self._predicted_result:          shape - list, e.g. ``[0.0098776]``
+        self._standard_deviation:        shape - list, e.g. ``[4.601357589523625]``, one value per objective
+        self._evaluation_time:            shape - float or None, milliseconds, averaged over valid tasks
         self.type:                      shape - Configuration.Type, e.g   ``DEFAULT``
         """
         self.logger = logging.getLogger(__name__)
@@ -73,6 +82,7 @@ class Configuration:
         self.type = config_type
         # Meta information
         self._standard_deviation = []
+        self._evaluation_time = None
         self.number_of_failed_tasks = 0
         self._task_number = 0
         self.parameter_control_info = {}  # additional information used in parameter control experiments, e.g., initial solution for a warm startup of an optimizer within the worker node
@@ -150,19 +160,24 @@ class Configuration:
     def get_tasks(self) -> Mapping:
         return self._tasks.copy()
 
-    def get_required_results_with_marks_from_all_tasks(self) -> Tuple[List[OrderedDict], List[str]]:
+    def get_required_results_with_marks_from_all_tasks(self) -> Tuple[List[OrderedDict], List[float], List[str]]:
         from_all_tasks = []
+        evaluation_times = []
         marks = []
         for task in self._tasks.values():
             from_one_task = OrderedDict()
             for domain in self.__class__.TaskConfiguration["Objectives"]:
                 from_one_task[domain] = (task['result'][domain])
             from_all_tasks.append(from_one_task)
+            evaluation_times.append(task.get('evaluation_time'))
             marks.append(task['ResultValidityCheckMark'])
-        return from_all_tasks, marks
+        return from_all_tasks, evaluation_times, marks
 
     def get_standard_deviation(self):
         return self._standard_deviation.copy()
+
+    def get_evaluation_time(self):
+        return self._evaluation_time
 
     def to_json(self) -> str:
         dictionary_dump = {"configuration_id": self.unique_id,
@@ -172,6 +187,7 @@ class Configuration:
                            "predicted_result": self.predicted_result,
                            "prediction_info": self.prediction_info,
                            "standard_deviation": self._standard_deviation,
+                           "evaluation_time": self._evaluation_time,
                            "type": self.type,
                            "status": self.status,
                            "number_of_failed_tasks": self.number_of_failed_tasks,
@@ -191,6 +207,7 @@ class Configuration:
         conf.predicted_result = dictionary_dump["predicted_result"]
         conf.prediction_info = dictionary_dump["prediction_info"]
         conf._standard_deviation = dictionary_dump["standard_deviation"]
+        conf._evaluation_time = dictionary_dump["evaluation_time"]
         conf.type = Configuration.Type(dictionary_dump["type"])
         conf.status = dictionary_dump["status"]
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
@@ -261,10 +278,11 @@ class Configuration:
     def _assemble_tasks_results(self) -> None:
         """
         Updates the results of the Configuration measurement by aggregating the results from all available Tasks.
-        The Average Results of the Configuration and the BaseMTL Deviation between Tasks are calculated.
+        The average results of the Configuration and the BaseMTL Deviation between Tasks are calculated.
+        The average Task evaluation time is calculated the same way.
         """
         # list of a result list from all tasks
-        results_tuples, marks = self.get_required_results_with_marks_from_all_tasks()
+        results_tuples, evaluation_times, marks = self.get_required_results_with_marks_from_all_tasks()
         task_index_size = len(results_tuples) - 1
         # delete marked bad/outliers values before average is calculated
         for task_index in range(task_index_size, -1, -1):
@@ -272,10 +290,13 @@ class Configuration:
                     marks[task_index] == 'Outlier' or \
                     marks[task_index] == 'Out of bounds':
                 del (results_tuples[task_index])
+                del (evaluation_times[task_index])
         # calculating the average over all result items
         ok_tasks_results = pd.DataFrame(results_tuples, columns=self.TaskConfiguration["Objectives"])
         self.results = OrderedDict(ok_tasks_results.mean())
         self._standard_deviation = ok_tasks_results.std().to_list()
+        # calculating the average evaluation time over all valid tasks, ignoring tasks without a recorded time
+        self._evaluation_time = pd.Series(evaluation_times, dtype='float64').mean()
         self._task_number = len(results_tuples)
 
     def __repr__(self) -> str:

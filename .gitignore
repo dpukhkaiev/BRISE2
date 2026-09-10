@@ -1,6 +1,7 @@
 worker-node/pycache
 pycache
 env
+.env
 *.log
 *.pyc
 .idea/
@@ -35,3 +36,27 @@ yarn-error.log*
 
 *.spec.ts
 front_end/text.txt
+
+# Internal debug tooling
+docker-compose.debug.yml
+brise_debug.sh
+DEBUGGING.md
+Dockerfile_external
+
+# AI assistant artefacts
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.cursor/
+.cursorrules
+.cursorrules.local
+.aider*
+.continue/
+.windsurf/
+.windsurfrules
+.clinerules/
+.clinerules
+.github/copilot-instructions.md
+.copilot/
+AGENTS.md
+GEMINI.md

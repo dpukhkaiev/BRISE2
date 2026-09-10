@@ -229,51 +229,9 @@
             }
         }
     },
-    "TransferLearning": {
-        "TransferExpediencyDetermination": {
-            "SamplingLandmarkBased": {
-                "MinNumberOfSamples": 10,
-                "Type": "sampling_landmark_based",
-                "Comparator": {
-                    "NormDifference": {
-                        "Type": "norm_difference_comparator"
-                    }
-                },
-                "ExperimentsQuantity": {
-                    "FixedQuantity": {
-                        "NumberOfSimilarExperiments": 1
-                    }
-                }
-            }
-        },
-        "ModelRecommendation": {
-            "DynamicModelsRecommendation": {
-                "RecommendationGranularity": {
-                    "Infinite": {
-                        "Value": Infinity
-                    }
-                },
-                "PerformanceMetric": {
-                    "AverageRelativeImprovement": {}
-                },
-                "Type": "dynamic_model_recommendation",
-                "ThresholdType": "Hard",
-                "TimeToBuildModelThreshold": 0.5,
-                "TimeUnit": "seconds"
-            }
-        },
-        "MultiTaskLearning": {
-            "Filters": {
-                "OnlyBestConfigurations": {
-                    "Type": "only_best"
-                }
-            }
-        }
-    },
     "DistributionMode": {
-        "BatchedDistribution": {
-            "BatchSize": 5,
-            "Type": "batched_distribution"
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
         }
     }
 }

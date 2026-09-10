@@ -388,6 +388,16 @@ def get_experiment():
 
 
 @pytest.fixture(scope='function')
+def get_distribution_experiment():
+    def _get_distribution_experiment(distribution_type: str):
+        experiment_description, search_space = load_experiment_setup(
+            "./Resources/tests/test_cases_product_configurations/EnergyExperiment_{}distr.json".format(distribution_type)
+        )
+        return experiment_description, search_space
+    yield _get_distribution_experiment
+
+
+@pytest.fixture(scope='function')
 def get_workers():
     dictionary_dump = {"worker_capacity": 1}
     body = json.dumps(dictionary_dump)

@@ -125,7 +125,7 @@
                     "Context.SearchSpace.threads.sixteen",
                     "Context.SearchSpace.threads.thirty_two"
                 ],
-                "Default": "Context.SearchSpace.threads.thirty_two",
+                "Default": "Context.SearchSpace.threads.one",
                 "Type": "OrdinalHyperparameter",
                 "Level": 0
             },
@@ -189,84 +189,27 @@
     "RepetitionManager": {
         "MaxFailedTasksPerConfiguration": 1,
         "Instance": {
-            "AcceptableErrorBased": {
-                "MinTasksPerConfiguration": 2,
+            "QuantityBased": {
                 "MaxTasksPerConfiguration": 10,
-                "BaseAcceptableError": 5.0,
-                "ConfidenceLevel": 0.95,
-                "Type": "acceptable_error_based",
-                "ExperimentAware": {
-                    "MaxAcceptableError": 50.0,
-                    "RatioMax": 10.0,
-                    "MinTasksPerUnderperformingConfiguration": 1
-                }
+                "Type": "quantity_based"
             }
         }
     },
     "StopCondition": {
         "Instance": {
-            "GuaranteedSC": {
-                "Type": "guaranteed",
-                "Name": "G"
-            },
             "QuantityBasedSC": {
                 "Parameters": {
-                    "MaxConfigs": 15
+                    "MaxConfigs": 22
                 },
                 "Type": "quantity_based",
                 "Name": "Q"
-            },
-            "ValidationBasedSC": {
-                "Type": "validation_based",
-                "Name": "V"
             }
         },
         "StopConditionTriggerLogic": {
-            "Expression": "G and Q and V",
+            "Expression": "Q",
             "InspectionParameters": {
-                "RepetitionPeriod": 1,
+                "RepetitionPeriod": 10,
                 "TimeUnit": "seconds"
-            }
-        }
-    },
-    "TransferLearning": {
-        "TransferExpediencyDetermination": {
-            "SamplingLandmarkBased": {
-                "MinNumberOfSamples": 10,
-                "Type": "sampling_landmark_based",
-                "Comparator": {
-                    "NormDifference": {
-                        "Type": "norm_difference_comparator"
-                    }
-                },
-                "ExperimentsQuantity": {
-                    "FixedQuantity": {
-                        "NumberOfSimilarExperiments": 1
-                    }
-                }
-            }
-        },
-        "ModelRecommendation": {
-            "DynamicModelsRecommendation": {
-                "RecommendationGranularity": {
-                    "Infinite": {
-                        "Value": Infinity
-                    }
-                },
-                "PerformanceMetric": {
-                    "AverageRelativeImprovement": {}
-                },
-                "Type": "dynamic_model_recommendation",
-                "ThresholdType": "Hard",
-                "TimeToBuildModelThreshold": 0.5,
-                "TimeUnit": "seconds"
-            }
-        },
-        "MultiTaskLearning": {
-            "Filters": {
-                "OnlyBestConfigurations": {
-                    "Type": "only_best"
-                }
             }
         }
     },

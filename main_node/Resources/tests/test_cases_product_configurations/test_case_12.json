@@ -254,5 +254,10 @@
                 "Type": "few_shot"
             }
         }
+    },
+    "DistributionMode": {
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
+        }
     }
 }

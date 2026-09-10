@@ -154,6 +154,14 @@ For a detailed description of this component consult the respective [documentati
 is an optional component, which can be used, when the experiment designer 1) does not possess an intuition on which configuration to be used as the default; or 2) possesses a custom approach in determining the starting configuration. 
 In BRISE v2.6.0, we offer only one general variant of this feature: \texttt{Random Default Configuration Handler}, which picks the starting configuration using the Mersenne Twister algorithm. 
 
+#### Configuration Distribution
+is a mandatory component, which determines when the selected configurations are dispatched to the workers. Exactly one of the following variants has to be selected:
+* Asynchronous Distribution sends each configuration to the workers immediately, without any synchronization. 
+* Batched Distribution releases a wave of configurations only once `BatchSize` measurements have synchronized at a barrier.
+* Hybrid Distribution behaves like the batched variant, but an additional per-wave timeout (`InitialTimeoutInSeconds`) also releases the wave, so that slow or dead workers cannot deadlock the pipeline. The timeout is adapted to the observed evaluation times of the target system as the experiment progresses.
+
+For a detailed description of this component consult the respective [documentation page](../../main_node/configuration_distribution/README.md)
+
 ## Product configuration
 
 Product configuration process is performed with [Waffle component](../../waffle/README.md).
