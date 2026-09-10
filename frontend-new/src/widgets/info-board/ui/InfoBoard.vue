@@ -1,0 +1,237 @@
+<script setup lang="ts">
+import { onMounted, ref, watch, shallowRef, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
+// Constant
+import { MainEvent } from '../../../entities/main'
+
+//service
+import { useMainEventStore } from '../../../entities/main'
+
+import { Subscription } from 'rxjs'
+
+import { useInfoBoard } from '../model/use-info-board'
+import { normalizeConfigKeys } from '../../../shared/lib'
+// initialize store
+const store = useMainEventStore()
+// destructure reactive value from main.event.store
+const { experiment_description } = storeToRefs(store)
+
+
+const {
+  news,
+  snackbar,
+  snackbarMsg,
+  solutionState,
+  sol,
+  dc,
+  default_configuration,
+  pushNews,
+  triggerSnackbar,
+  refresh,
+  formatPercent
+} = useInfoBoard()
+
+
+
+const duration = 3000
+
+const subscriptions = new Subscription()
+
+let stopWatch: () => void = () => { }
+
+function initMainEvents(): void {
+  // Main events
+  subscriptions.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let obj = JSON.parse(message.body)
+
+      default_configuration.value = obj[0]
+      let temp = { 'time': Date.now(), 'message': 'Default configuration results received' }
+      triggerSnackbar(temp.message)
+      //SpushNews(temp.message)
+      // snackbar.open(temp['message'], '×', {
+      //   duration: 3000
+      // });
+    }
+
+  })
+  );
+
+  subscriptions.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let obj = JSON.parse(message.body)
+      const s = obj[0]
+      const cleanConfigObj = normalizeConfigKeys(s?.configurations ?? {})
+      const config = JSON.stringify(cleanConfigObj, null, 2)
+
+      if (!default_configuration.value) {
+        console.warn('default_configuration not set yet')
+        dc.value = []
+        // why should I reset sol too?
+        sol.value = []
+      } else {
+        dc.value = Object.values(default_configuration.value.results)
+        sol.value = Object.values(s?.results ?? {})
+      }
+
+      solutionState.value = {
+        solution: s,
+        configWithNones: config,
+        result: JSON.stringify(s?.results)
+      }
+      // NewsPoint type everywhere?
+      let temp = {
+        'time': Date.now(),
+        'message': '★★★ The optimum result is found. The best point is reached ★★★'
+      }
+      triggerSnackbar(temp.message)
+      pushNews(temp.message)
+
+    }
+  })
+  );
+
+  // For information messages
+  subscriptions.add(store.onEvent(MainEvent.LOG)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'info' || message.headers['message_subtype'] === 'error') {
+      let obj = JSON.parse(message.body)
+      let temp = { 'time': Date.now(), 'message': obj }
+      triggerSnackbar(temp.message)
+      pushNews(temp.message)
+    }
+  })
+  );
+
+  // oldValue, newValue?
+  stopWatch = watch(experiment_description, () => {
+    console.log('experiment_description:', JSON.stringify(experiment_description.value, null, 2))
+    refresh()
+    /* if (searchspace.value && searchspace.value['size']) {
+         searchspace.value['size'] = parseFloat(searchspace.value['size'])
+     }*/
+    let temp = {
+      'time': Date.now(),
+      'message': 'The main configurations of the experiment are obtained. Let\'s go! '
+    }
+    triggerSnackbar(temp.message)
+    pushNews(temp.message)
+  },
+    // reactive object from store, need deep to trace properties of the object
+    { deep: true })
+
+  subscriptions.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let configs = JSON.parse(message.body)
+      configs.forEach((configuration: any) => {
+        if (configuration?.configurations) {
+          const cleanConfig = normalizeConfigKeys(configuration.configurations)
+          const cleanResults = configuration.results ?? {}
+          let temp = {
+            'time': Date.now(),
+            'message': 'New results for ' + JSON.stringify(cleanConfig) + ' → ' + JSON.stringify(cleanResults)
+          }
+          triggerSnackbar(temp.message)
+          pushNews(temp.message)
+        } else {
+          console.log("Empty configuration")
+        }
+      })
+    }
+  })
+  );
+
+  subscriptions.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe((message: any) => {
+    if (message.headers['message_subtype'] === 'configuration') {
+      let obj = JSON.parse(message.body)
+      let temp = {
+        'time': Date.now(),
+        'message': 'Prediction obtained. ' + obj.length + ' predictions'
+      }
+      triggerSnackbar(temp.message)
+      pushNews(temp.message)
+    }
+  })
+  );
+}
+
+onMounted(() => {
+  initMainEvents()
+})
+
+onUnmounted(() => {
+  subscriptions.unsubscribe()
+  stopWatch()
+})
+
+
+
+</script>
+
+<template>
+  <v-expansion-panels elevation="2" multiple>
+    <!-- Panel 1 -->
+    <v-expansion-panel :disabled="news.length === 0">
+      <v-expansion-panel-title class="info">
+        Info messages
+
+        <v-icon icon="mdi-text-box" class="mx-2" />
+        <p class="ml-4">
+          Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
+        </p>
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <!-- Logs list -->
+
+        <v-list v-if="news.length != 0" lines="two">
+          <v-list-item v-for="info in news" :key="info.time" prepend-icon="mdi-check">
+            <v-list-item-title>{{ info.message }}</v-list-item-title>
+            <v-list-item-subtitle>
+              {{ new Date(info.time).toLocaleDateString() }}
+            </v-list-item-subtitle>
+            <v-divider />
+          </v-list-item>
+        </v-list>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+
+    <!-- Panel 2 -->
+    <v-expansion-panel :disabled="!solutionState.solution">
+      <v-expansion-panel-title>
+        Solution
+
+        <v-icon icon="mdi-star" />
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        A solution that is found by BRISE ({{ solutionState.solution ? 'Done' : 'Please stand by..' }})
+      </v-expansion-panel-text>
+      <v-expansion-panel-text>
+        <v-list v-if="solutionState.solution" class="solution">
+          <v-list-item prepend-icon="mdi-flag">
+            <span class="desc">Configuration: </span> <span>{{ solutionState.configWithNones }}</span>
+          </v-list-item>
+
+          <v-list-item prepend-icon="mdi-grade">
+            <span class="desc">Result: </span> <span>{{ solutionState.result }}</span>
+          </v-list-item>
+
+          <v-list-item prepend-icon="mdi-network">
+            <span v-if="dc.length && sol.length" class="desc">Quality gain: </span>
+            <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
+              %</span>
+          </v-list-item>
+
+          <v-list-item prepend-icon="mdi-blur">
+            <span class="desc">Performed measurements: </span>
+            <span>{{ solutionState.solution['performed_measurements'] }}</span>
+          </v-list-item>
+
+        </v-list>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  </v-expansion-panels>
+
+  <!-- Snackbar global -->
+  <v-snackbar v-model="snackbar" :timeout="duration">
+    {{ snackbarMsg }}
+  </v-snackbar>
+</template>

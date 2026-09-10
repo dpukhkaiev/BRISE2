@@ -1,0 +1,1 @@
+export { default as HeatmapReg } from './ui/HeatmapReg.vue'
