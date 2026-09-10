@@ -1,0 +1,1 @@
+export { default as ImpRes } from './ui/ImpRes.vue'
