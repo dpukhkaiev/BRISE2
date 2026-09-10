@@ -1,6 +1,7 @@
 import logging
 import json
 import threading
+from collections import deque
 import pytest
 from unittest.mock import patch, MagicMock, call
 
@@ -402,7 +403,7 @@ class TestHybridDistribution:
         assert distributionAlgorithm._gate is None
         assert distributionAlgorithm._initial_timeout == 5
         assert distributionAlgorithm._number_of_workers == 0
-        assert distributionAlgorithm._evaluation_times == []
+        assert list(distributionAlgorithm._evaluation_times) == []
 
     @patch('logging.getLogger')
     def test_init_key_error(self, mock_get_logger):
@@ -483,7 +484,9 @@ class TestHybridDistribution:
         # ? Manually set internal state from previous runs for accurate timeout calc
         # ? This simulates enough data for a full proposal (5 configurations)
         # ? Proposal size is 5, Number of workers is 3 (from self.body_dict)
-        distributionAlgorithm._evaluation_times = [3.0, 3.0, 3.0, 3.0, 3.0]
+        distributionAlgorithm._evaluation_times = deque(
+            [3.0, 3.0, 3.0, 3.0, 3.0], maxlen=distributionAlgorithm._batch_size
+        )
         distributionAlgorithm._number_of_workers = self.body_dict["number_of_workers"]
 
         # * Prepare the mock thread instance
@@ -502,8 +505,8 @@ class TestHybridDistribution:
         distributionAlgorithm.first_it.assert_called_once_with(self.experiment_id)
 
         # * Check internal state update from body
-        # ? The new time (2.0) should be appended.
-        assert distributionAlgorithm._evaluation_times == [3.0, 3.0, 3.0, 3.0, 3.0, 2.0]
+        # ? The new time (2.0s) should be appended, evicting the oldest sample.
+        assert list(distributionAlgorithm._evaluation_times) == [3.0, 3.0, 3.0, 3.0, 2.0]
         assert distributionAlgorithm._number_of_workers == 3
 
         MockThread.assert_called_once_with(
@@ -619,7 +622,7 @@ class TestHybridDistribution:
         body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": 4500})
         distributionAlgorithm.dispatch(self.experiment_id, body)
 
-        assert distributionAlgorithm._evaluation_times == [4.5]
+        assert list(distributionAlgorithm._evaluation_times) == [4.5]
 
     def test_dispatch_discards_none_evaluation_time(self):
         """
@@ -632,7 +635,7 @@ class TestHybridDistribution:
         body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": None})
         distributionAlgorithm.dispatch(self.experiment_id, body)
 
-        assert distributionAlgorithm._evaluation_times == []
+        assert list(distributionAlgorithm._evaluation_times) == []
 
     def test_dispatch_discards_nan_evaluation_time(self):
         """
@@ -646,7 +649,7 @@ class TestHybridDistribution:
         body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": float("nan")})
         distributionAlgorithm.dispatch(self.experiment_id, body)
 
-        assert distributionAlgorithm._evaluation_times == []
+        assert list(distributionAlgorithm._evaluation_times) == []
 
     def test_calculate_next_timeout_stays_in_seconds(self):
         """
@@ -656,11 +659,30 @@ class TestHybridDistribution:
         """
         distributionAlgorithm = HybridDistribution(self.config)
         distributionAlgorithm._number_of_workers = 5
-        distributionAlgorithm._evaluation_times = [2.0] * distributionAlgorithm._batch_size
+        distributionAlgorithm._evaluation_times = deque(
+            [2.0] * distributionAlgorithm._batch_size, maxlen=distributionAlgorithm._batch_size
+        )
 
         timeout = distributionAlgorithm._calculate_next_timeout()
 
         assert timeout == pytest.approx(3.0)  # 2.0s * (1 + TIMEOUT_BUFFER_FACTOR)
+
+    def test_evaluation_times_bounded_by_batch_size(self):
+        """
+        Test that only the most recent batch_size
+        evaluation times are retained, with the oldest evicted first.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        # Dispatch far more samples than batch_size (5).
+        for i in range(20):
+            body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": i * 1000})
+            distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert len(distributionAlgorithm._evaluation_times) == distributionAlgorithm._batch_size
+        # ? Only the last 5 (converted) samples survive: 15.0, 16.0, 17.0, 18.0, 19.0
+        assert list(distributionAlgorithm._evaluation_times) == [15.0, 16.0, 17.0, 18.0, 19.0]
 
 
 class TestEventGate:

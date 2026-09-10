@@ -1,5 +1,5 @@
 from configuration_distribution.distribution_abs import AbstractDistribution
-from tools.rabbitmq_common_tools import RabbitMQConnection, publish
+from tools.rabbitmq_common_tools import publish
 
 import threading
 import logging
@@ -159,7 +159,8 @@ class HybridDistribution(AbstractDistribution):
             raise ValueError()
 
         self._number_of_workers = 0
-        self._evaluation_times = []
+        # Only the last BatchSize samples are used.
+        self._evaluation_times = deque(maxlen=self._batch_size)
 
     def _cleanup_gate(self, stats: dict):
             """Internal: Callback to destroy the gate."""
@@ -167,8 +168,6 @@ class HybridDistribution(AbstractDistribution):
                 self._gate = None
 
     def _calculate_next_timeout(self):
-        self.logger.info(f"Evaluation Times: {self._evaluation_times}")
-
         TIMEOUT_BUFFER_FACTOR = 0.5
         MIN_TIMEOUT = 1
         
@@ -181,13 +180,13 @@ class HybridDistribution(AbstractDistribution):
             # not enough data to adapt yet -> use the configured initial timeout
             return self._initial_timeout
 
-        last_proposal_times = self._evaluation_times[-self._batch_size:]
+        evaluation_times = list(self._evaluation_times)
         
         # ? Divide the proposal times into rounds
         max_round_times = []
         
-        for i in range(0, len(last_proposal_times), workers):
-            round_times = last_proposal_times[i:i + workers]
+        for i in range(0, len(evaluation_times), workers):
+            round_times = evaluation_times[i:i + workers]
             if round_times:
                 max_round_times.append(max(round_times))
                 

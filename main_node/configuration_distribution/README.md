@@ -63,7 +63,8 @@ its threads waited, and hands those statistics over when the finished wave is cl
   **either** when a full batch is ready **or** when the maximum waiting time expires.
 * **Adaptive timeout**: `InitialTimeoutInSeconds` applies to the first waves only. Once enough evaluation times have been
   observed, every wave is given a timeout derived from how long the preceding configurations actually took, plus a
-  safety margin.
+  safety margin. Workers report evaluation time in milliseconds; it is converted to seconds before being used as a
+  timeout.
 
 ---
 
