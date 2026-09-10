@@ -408,20 +408,25 @@ class BRISEBenchmarkRunner:
 
         1. Runs a baseline using AsynchronousDistribution.
         2. Sweeps through various batch sizes for BatchedDistribution.
+        3. Sweeps through various batch sizes for HybridDistribution.
         """
         self.logger.info('In Benchmark function ...')
 
+        self._experiment_timeout = 5 * 60
+
         self.logger.info("Load Configuration: ...")
         self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment_Bdistr.json")
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/EnergyExperiment_Bdistr.json")
 
         # --- Define Skeletons ---
+        # ! DistributionMode is an xor group: the parameters of a strategy belong
+        # ! inside the selected strategy, so that 'update' swaps the whole group.
 
         # Skeleton 1: Asynchronous (Baseline)
         async_skeleton = {
             "DistributionMode": {
                 "AsynchronousDistribution": {
-                    "Type": "AsynchronousDistribution"
+                    "Type": "asynchronous_distribution"
                 }
             }
         }
@@ -430,10 +435,8 @@ class BRISEBenchmarkRunner:
         batched_skeleton = {
             "DistributionMode": {
                 "BatchedDistribution": {
-                    "Type": "BatchedDistribution"
-                },
-                "batchSize": {
-                    "Int": "1"
+                    "BatchSize": 1,
+                    "Type": "batched_distribution"
                 }
             }
         }
@@ -442,49 +445,42 @@ class BRISEBenchmarkRunner:
         hybrid_skeleton = {
             "DistributionMode": {
                 "HybridDistribution": {
-                    "Type": "HybridDistribution"
-                },
-                "batchSize": {
-                    "Int": "1"
-                },
-                "timeout": {
-                        "Int": "350"
+                    "BatchSize": 1,
+                    "InitialTimeoutInSeconds": 5.0,
+                    "Type": "hybrid_distribution"
                 }
             }
         }
 
         # Get the base experiment description
-        # deepcopy to avoid polluting the 'self.base_experiment_description'
-        from copy import deepcopy
         experiment_description = self.base_experiment_description
 
         # --- 1. Run Baseline (Async) ---
-        # self.logger.info("Executing benchmark: AsynchronousDistribution")
-        # experiment_description.update(deepcopy(async_skeleton))
-        # self.execute_experiment(experiment_description)
+        self.logger.info("Executing benchmark: AsynchronousDistribution")
+        experiment_description.update(deepcopy(async_skeleton))
+        self.execute_experiment(experiment_description)
 
+        # --- 2. Run Batched Sweep ---
+        batched_sizes_to_test = [9]
+        hybrid_sizes_to_test = [6, 7, 8, 9]
 
-        # # --- 2. Run Batched Sweep ---
-        # batch_sizes_to_test = [9]
-        batch_sizes_to_test2 = [6,7,8,9]
+        for size in batched_sizes_to_test:
+            self.logger.info(f"Executing benchmark: BatchedDistribution with size {size}")
 
-        # for size in batch_sizes_to_test:
-        #     self.logger.info(f"Executing benchmark: BatchedDistribution with size {size}")
+            # Reset the config to the batched skeleton
+            experiment_description.update(deepcopy(batched_skeleton))
+            experiment_description['DistributionMode']['BatchedDistribution']['BatchSize'] = size
 
-        #     # Reset the config to the batched skeleton
-        #     experiment_description.update(deepcopy(batched_skeleton))
-        #     experiment_description['DistributionMode']['batchSize']['Int'] = str(size)
-
-        #     # Execute the run
-        #     self.execute_experiment(experiment_description)
+            # Execute the run
+            self.execute_experiment(experiment_description)
 
         # --- 3. Run Hybrid Sweep ---
-        for size in batch_sizes_to_test2:
+        for size in hybrid_sizes_to_test:
             self.logger.info(f"Executing benchmark: HybridDistribution with size {size}")
 
             # Reset the config to the hybrid skeleton
             experiment_description.update(deepcopy(hybrid_skeleton))
-            experiment_description['DistributionMode']['batchSize']['Int'] = str(size)
+            experiment_description['DistributionMode']['HybridDistribution']['BatchSize'] = size
 
             # Execute the run
             self.execute_experiment(experiment_description)
