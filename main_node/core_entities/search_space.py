@@ -485,7 +485,7 @@ class SearchSpace:
         self.hp_names = sum([[hp.name for hp in r]for r in self.regions], [])
 
     def reset_level(self):
-        self.current_level.append(self.search_space_description)
+        self.current_level = [self.search_space_description]
         self.next_level()
 
     def next_level(self):
