@@ -10,7 +10,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from functools import wraps
-from threading import Thread
+from threading import Lock, Thread
 from typing import Union
 
 import numpy as np
@@ -400,7 +400,7 @@ class BRISEBenchmarkRunner:
             self.execute_experiment(experiment_description)
 
         return self.counter
-
+    
     @_benchmarkable
     def benchmark_distribution_modes(self):
         """
@@ -757,6 +757,11 @@ class MainAPIClient:
         self.customer_thread.start()
         self.response = None
         self.corr_id = None
+        # pika's BlockingConnection is not thread-safe: the main thread (via
+        # perform_experiment) and the ConsumerThread (via final_event ->
+        # download_latest_dump) both call() into this same connection, so every
+        # round-trip must be serialized.
+        self._rpc_lock = Lock()
 
     def on_response(self, ch: pika.spec.Channel, method: pika.spec.methods, properties: pika.spec.BasicProperties,
                     body: bytes):
@@ -780,22 +785,23 @@ class MainAPIClient:
             - download_dump: to download dump file
         :param param: body for a specific action. See details in specific action in main_node/api-supreme.py
         """
-        self.response = None
-        self.corr_id = str(uuid.uuid4())
+        with self._rpc_lock:
+            self.response = None
+            self.corr_id = str(uuid.uuid4())
 
-        self.channel.basic_publish(
-            exchange='',
-            routing_key=f'main_{action}_queue',
-            properties=pika.BasicProperties(
-                reply_to="main_responses",
-                correlation_id=self.corr_id,
-                headers={'body_type': 'pickle'}
-            ),
-            body=param)
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=f'main_{action}_queue',
+                properties=pika.BasicProperties(
+                    reply_to="main_responses",
+                    correlation_id=self.corr_id,
+                    headers={'body_type': 'pickle'}
+                ),
+                body=param)
 
-        while self.response is None:
-            self.connection.process_data_events()
-        return self.response
+            while self.response is None:
+                self.connection.process_data_events()
+            return self.response
 
     def update_status(self):
         status_report = self.call("status")
