@@ -41,7 +41,6 @@ function startMainControl(): any {
     }
     console.log('sending:', experiment_description.value)
     canChangeVisibleCharts.value = true
-    console.log("toggle? ", canChangeVisibleCharts.value)
 }
 
 function stopMainControl(): any {
@@ -80,8 +79,6 @@ const uploadFile = async () => {
     reader.readAsText(file)
     // disable plot selection in frontend
     canChangeVisibleCharts.value = false
-    console.log("toggle?: ", canChangeVisibleCharts.value)
-
 }
 
 onMounted(() => {

@@ -25,6 +25,8 @@ async function render() {
         return
     if (!experiment_description.value) 
         return
+    // Availability of Contour Plot currently not defined correctly by feature model. Therefore checking here if 2 valid HPs are available.
+    // This check can be deleted once the constraint is implemented correctly in the feature model.
     if (!props.contourParam1 || !props.contourParam2 || props.contourParam1 === "" || props.contourParam2 === "") {
         return
     }

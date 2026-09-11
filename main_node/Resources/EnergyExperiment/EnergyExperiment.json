@@ -228,5 +228,16 @@
                 "TimeUnit": "seconds"
             }
         }
+    },
+    "PlotSelection": {
+    	"Plot": {
+	    "OptimizationHistory": {},
+	    "ContourPlot": {},
+	    "ParallelCoordinates": {},
+	    "RankPlot": {},
+	    "SlicePlot": {},
+    	    "EDFPlot": {},
+    	    "HyperparameterImportances": {}
+    	}
     }
 }

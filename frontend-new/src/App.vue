@@ -447,6 +447,7 @@ watch(
                       density="compact"
                       hide-details
                       color="green-darken-2"
+                      :disabled="paraCoordParams.length === 1 && paraCoordParams.includes(param)"
                     />
                   </v-list-item>
                 </v-list>
