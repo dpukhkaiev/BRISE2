@@ -35,8 +35,8 @@ class AcceptableErrorBasedType(Repeater):
                              (self.max_tasks_per_configuration, self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MinTasksPerConfiguration"]))
         self.min_tasks_per_configuration = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MinTasksPerConfiguration"]
 
-        self.base_acceptable_errors = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["BaseAcceptableError"]
-        self.confidence_levels = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ConfidenceLevel"]
+        self.base_acceptable_error = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["BaseAcceptableError"]
+        self.confidence_level = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ConfidenceLevel"]
 
         self.is_experiment_aware = False
 
@@ -44,9 +44,9 @@ class AcceptableErrorBasedType(Repeater):
             self.is_experiment_aware = True
 
         if self.is_experiment_aware:
-            self.ratios_max = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ExperimentAware"]["RatioMax"]
-            self.max_acceptable_errors = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ExperimentAware"]["MaxAcceptableError"]
-            if not self.base_acceptable_errors <= self.max_acceptable_errors:
+            self.ratio_max = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ExperimentAware"]["RatioMax"]
+            self.max_acceptable_error = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["ExperimentAware"]["MaxAcceptableError"]
+            if not self.base_acceptable_error <= self.max_acceptable_error:
                 raise ValueError("Invalid Repeater configuration: some base errors values are greater that maximal errors.")
 
         if os.environ.get('TEST_MODE') == 'UNIT_TEST':
@@ -79,7 +79,7 @@ class AcceptableErrorBasedType(Repeater):
             if self.is_experiment_aware:
                 ratios = [cur_config_dim / cur_solution_dim
                           for cur_config_dim, cur_solution_dim in zip(c_c_results_l, c_s_results_l)]
-                ratios_max = [self.ratios_max] * len(ratios)
+                ratios_max = [self.ratio_max] * len(ratios)
                 if all([ratio >= ratio_max for ratio, ratio_max in zip(ratios, ratios_max)]):
                     return 0
             return self.min_tasks_per_configuration - len(tasks_data)
@@ -95,13 +95,13 @@ class AcceptableErrorBasedType(Repeater):
             degrees_of_freedom = len(tasks_data) - len(c_c_results_l)/len(self.objectives)
 
             # Calculate the critical t-student value from the t distribution
-            student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in [self.confidence_levels] * len(self.objectives)]
+            student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in [self.confidence_level] * len(self.objectives)]
 
             # Calculating confidence interval for each dimension, that contains a confidence intervals for
             # singular measurements and confidence intervals for multiple measurements.
             # First - singular measurements errors:
             conf_intervals_sm = []
-            for c_l, avg in zip([self.confidence_levels] * len(self.objectives), c_c_results_l):
+            for c_l, avg in zip([self.confidence_level] * len(self.objectives), c_c_results_l):
                 conf_intervals_sm.append(c_l)
 
             # Calculation of confidence interval for multiple measurements:
@@ -143,15 +143,15 @@ class AcceptableErrorBasedType(Repeater):
                             ratio = c_s_results_l[i] / c_c_results_l[i]
 
                     adopted_threshold = \
-                        self.base_acceptable_errors \
-                        + (self.max_acceptable_errors - self.base_acceptable_errors) \
-                        / (1 + exp(- (10 / self.ratios_max) * (ratio - self.ratios_max / 2)))
+                        self.base_acceptable_error \
+                        + (self.max_acceptable_error - self.base_acceptable_error) \
+                        / (1 + exp(- (10 / self.ratio_max) * (ratio - self.ratio_max / 2)))
 
                     thresholds.append(adopted_threshold)
 
             else:
                 # Or we don't adapt thresholds
-                for acceptable_error in self.base_acceptable_errors:
+                for acceptable_error in [self.base_acceptable_error] * len(self.objectives):
                     thresholds.append(acceptable_error)
 
             # Simple implementation of possible multi-dim Repeater decision-making:
