@@ -1,0 +1,253 @@
+{
+    "Context": {
+        "TaskConfiguration": {
+            "TaskName": "test",
+            "MaxTimeToRunTask": 10,
+            "TimeUnit": "seconds",
+            "Scenario": {},
+            "Objectives": {
+                "Y1": {
+                    "Name": "Y1",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": 100
+                }
+            }
+        },
+        "SearchSpace": {
+            "N0": {
+                "N01": {
+                    "F1": {
+                        "Lower": 0.0,
+                        "Upper": 123.0,
+                        "Default": 15.3,
+                        "Type": "FloatHyperparameter",
+                        "Level": 1
+                    },
+                    "I1": {
+                        "Lower": 10,
+                        "Upper": 100,
+                        "Default": 100,
+                        "Type": "IntegerHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "N02": {
+                    "N1": {
+                        "N11": {
+                            "F2": {
+                                "Lower": 0.0,
+                                "Upper": 10.0,
+                                "Default": 5.0,
+                                "Type": "FloatHyperparameter",
+                                "Level": 2
+                            },
+                            "N2": {
+                                "N21": {
+                                    "F3": {
+                                        "Lower": 0.0,
+                                        "Upper": 10.0,
+                                        "Default": 3.0,
+                                        "Type": "FloatHyperparameter",
+                                        "Level": 3
+                                    },
+                                    "Type": "Category"
+                                },
+                                "N22": {
+                                    "Type": "Category"
+                                },
+                                "Categories": [
+                                    "Context.SearchSpace.N0.N02.N1.N11.N2.N21",
+                                    "Context.SearchSpace.N0.N02.N1.N11.N2.N22"
+                                ],
+                                "Default": "Context.SearchSpace.N0.N02.N1.N11.N2.N21",
+                                "Type": "NominalHyperparameter",
+                                "Level": 2
+                            },
+                            "Type": "Category"
+                        },
+                        "N12": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.N0.N02.N1.N11",
+                            "Context.SearchSpace.N0.N02.N1.N12"
+                        ],
+                        "Default": "Context.SearchSpace.N0.N02.N1.N11",
+                        "Type": "NominalHyperparameter",
+                        "Level": 1
+                    },
+                    "O1": {
+                        "O11": {
+                            "I2": {
+                                "Lower": 0,
+                                "Upper": 10,
+                                "Default": 5,
+                                "Type": "IntegerHyperparameter",
+                                "Level": 2
+                            },
+                            "Type": "Category"
+                        },
+                        "O12": {
+                            "Type": "Category"
+                        },
+                        "Categories": [
+                            "Context.SearchSpace.N0.N02.O1.O11",
+                            "Context.SearchSpace.N0.N02.O1.O12"
+                        ],
+                        "Default": "Context.SearchSpace.N0.N02.O1.O11",
+                        "Type": "OrdinalHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "Categories": [
+                    "Context.SearchSpace.N0.N01",
+                    "Context.SearchSpace.N0.N02"
+                ],
+                "Default": "Context.SearchSpace.N0.N02",
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {
+                "Hierarchical": {}
+            }
+        }
+    },
+    "ConfigurationSelection": {
+        "SamplingStrategy": {
+            "MersenneTwister": {
+                "Seed": 1,
+                "Type": "mersenne_twister"
+            }
+        },
+        "Predictor": {
+            "WindowSize": 0.9,
+            "Model": {
+                "Surrogate": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "SupportVectorRegression": {
+                            "MultiObjective": false,
+                            "GammaType": "auto",
+                            "GammaFloat": 1.0,
+                            "Parameters": {
+                                "kernel": "rbf",
+                                "C": 1.0,
+                                "gamma": "auto",
+                                "epsilon": 0.1
+                            },
+                            "Type": "sklearn_model_wrapper",
+                            "Class": "sklearn.svm.SVR"
+                        }
+                    }
+                },
+                "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
+                    "Instance": {
+                        "MOEA": {
+                            "Generations": 10,
+                            "PopulationSize": 100,
+                            "Algorithms": {
+                                "GACO": {
+                                    "MultiObjective": false
+                                }
+                            },
+                            "Type": "moea"
+                        }
+                    }
+                },
+                "Validator": {
+                    "ExternalValidator": {
+                        "QualityValidator": {
+                            "Split": {
+                                "HoldOut": {
+                                    "TrainingSet": 0.7
+                                }
+                            },
+                            "QualityThreshold": -100,
+                            "Type": "quality_validator"
+                        }
+                    }
+                },
+                "CandidateSelector": {
+                    "RandomMultiPointProposal": {
+                        "NumberOfPoints": 1,
+                        "Type": "random_multi_point"
+                    }
+                }
+            }
+        }
+    },
+    "RepetitionManager": {
+        "MaxFailedTasksPerConfiguration": 1,
+        "Instance": {
+            "AcceptableErrorBased": {
+                "MinTasksPerConfiguration": 2,
+                "MaxTasksPerConfiguration": 7,
+                "BaseAcceptableError": 3.0,
+                "ConfidenceLevel": 0.95,
+                "Type": "acceptable_error_based",
+                "ExperimentAware": {
+                    "MaxAcceptableError": 50.0,
+                    "RatioMax": 3.0,
+                    "MinTasksPerUnderperformingConfiguration": 1
+                }
+            }
+        }
+    },
+    "StopCondition": {
+        "Instance": {
+            "TimeBasedSC": {
+                "Parameters": {
+                    "MaxRunTime": 60,
+                    "TimeUnit": "seconds"
+                },
+                "Type": "time_based",
+                "Name": "t"
+            }
+        },
+        "StopConditionTriggerLogic": {
+            "Expression": "t",
+            "InspectionParameters": {
+                "RepetitionPeriod": 1,
+                "TimeUnit": "seconds"
+            }
+        }
+    },
+    "DistributionMode": {
+        "HybridDistribution": {
+            "BatchSize": 5,
+            "InitialTimeoutInSeconds": 5.0,
+            "Type": "hybrid_distribution"
+        }
+    }
+}

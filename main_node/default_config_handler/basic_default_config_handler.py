@@ -25,8 +25,8 @@ class BasicDefaultConfigurationHandler(DefaultConfigurationHandler):
                         configuration = partial_configuration
                     else:
                         configuration = configuration.join(partial_configuration)
-                self.experiment.search_space.next_level()
-                activated_regions = self.experiment.search_space.activate_regions(configuration)
+            self.experiment.search_space.next_level()
+            activated_regions = self.experiment.search_space.activate_regions(configuration)
 
         self.experiment.search_space.reset_level()
 
