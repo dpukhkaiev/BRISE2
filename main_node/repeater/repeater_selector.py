@@ -144,11 +144,13 @@ class RepeaterOrchestration:
                     if configuration.is_valid_task(task):
                         configuration.add_task(task)
                         self.database.write_one_record("Task", configuration.get_task_record(task))
+                    else:
+                        configuration.increase_failed_tasks_number()
 
                 API().send('new', 'task', configurations=[parameters], results=[task])
 
         # Evaluating configuration
-        if configuration.number_of_failed_tasks <= self.repeater_parameters['MaxFailedTasksPerConfiguration']:
+        if configuration.number_of_failed_tasks < self.repeater_parameters['MaxFailedTasksPerConfiguration']:
             needed_tasks_count = self.evaluation_by_type(configuration)
         else:
             needed_tasks_count = 0

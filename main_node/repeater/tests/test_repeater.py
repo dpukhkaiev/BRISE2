@@ -10,7 +10,7 @@ from tools.restore_db import RestoreDB
 rdb = RestoreDB()
 rdb.restore()
 
-def test_0(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_new_default_configuration_needs_maximal_number_of_tasks(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Default Configuration
     configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
@@ -21,7 +21,7 @@ def test_0(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count > 0
 
 
-def test_1(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_default_configuration_measured_after_maximal_number_of_tasks(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Default Configuration
     configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
@@ -32,7 +32,7 @@ def test_1(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count == 0
 
 
-def test_2(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_new_predicted_configuration_needs_tasks(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # New Predicted Configuration
     configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
@@ -43,7 +43,7 @@ def test_2(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count > 0
 
 
-def test_3(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_no_new_tasks_are_needed_for_accurate_configuration(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with low relative error in results.
     configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
@@ -54,7 +54,7 @@ def test_3(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count == 0
 
 
-def test_4(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_new_tasks_are_needed_for_noisy_configuration(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with high relative error in results.
     configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
@@ -65,7 +65,7 @@ def test_4(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count > 0
 
 
-def test_5(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+def test_maximal_number_of_tasks_reached(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
     # Measured Predicted configuration with number of measured tasks = threshold.
     configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
@@ -76,9 +76,30 @@ def test_5(get_energy_configurations, get_energy_tasks, get_energy_experiment_an
     assert needed_tasks_count == 0
 
 
+def test_configuration_disabled_after_exceeding_max_failed_tasks(monkeypatch, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+    # Configuration that already exhausted MaxFailedTasksPerConfiguration (== 1 for EnergyExperiment) and has
+    # no valid tasks.
+    published = []
+    monkeypatch.setattr(
+        "repeater.repeater_selector.publish",
+        lambda exchange, routing_key, body: published.append((exchange, routing_key, body))
+    )
+
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     0, Configuration.Type.PREDICTED,
+                                                     {'enabled': True, 'evaluated': False, 'measured': False},
+                                                     number_of_failed_tasks=1)
+
+    assert configuration.status == {'enabled': False, 'evaluated': False, 'measured': True}
+    assert needed_tasks_count == 0
+    assert published == [("experiment_api_exchange", configuration.experiment_id, "increment_bad_configuration_number")]
+
+
 def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict,
                  search_space: SearchSpace, measured_tasks: int,
-                 config_type: Configuration.Type, config_status: dict):
+                 config_type: Configuration.Type, config_status: dict,
+                 number_of_failed_tasks: int = 0):
     """
     Test function for Repeater module.
     Main steps:
@@ -94,6 +115,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     :param measured_tasks: number of already measured tasks in the current configuration.
     :param config_type: current configuration type.
     :param config_status: current configuration status.
+    :param number_of_failed_tasks: number of already failed tasks for the current configuration.
 
     :return: list of configuration status and number of tasks to measure.
     """
@@ -101,6 +123,7 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
     configuration = Configuration(configurations_sample[1]["Params"], config_type, experiment.unique_id)
     configuration.status = config_status
+    configuration.number_of_failed_tasks = number_of_failed_tasks
     for i in range(0, measured_tasks):
         configuration.add_task(tasks_sample[i])
     orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
