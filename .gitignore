@@ -34,6 +34,11 @@ yarn-error.log*
 **/.DS_Store
 .DS_Store
 
+# Shell history/rc files
+.bashrc
+.bash_history
+.python_history
+
 *.spec.ts
 front_end/text.txt
 
