@@ -65,7 +65,7 @@ class Configuration:
                                          result:                    shape - dict, keyed by objective name, e.g. ``{"energy": 700.56}``
                                          ResultValidityCheckMark:   shape - string, e.g. ``"OK"``, ``"Bad value"``, ``"Outlier"``, ``"Out of bounds"``
 
-        self._predicted_result:          shape - list, e.g. ``[0.0098776]``
+        self.predicted_result:          shape - list, e.g. ``[0.0098776]``, one value per objective
         self._standard_deviation:        shape - list, e.g. ``[4.601357589523625]``, one value per objective
         self._evaluation_time:            shape - float or None, milliseconds, averaged over valid tasks
         self.type:                      shape - Configuration.Type, e.g   ``DEFAULT``

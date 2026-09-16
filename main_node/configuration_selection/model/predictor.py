@@ -1,7 +1,7 @@
 import logging
 import pickle
 import os
-from typing import List, Mapping, Set, Tuple
+from typing import Dict, List, Mapping, Set, Tuple
 
 import pandas as pd
 
@@ -11,6 +11,8 @@ from core_entities.search_space import Hyperparameter
 from core_entities.search_space import SearchSpace
 from tools.mongo_dao import MongoDB
 from configuration_selection.model.model import Model
+
+REGION_COLUMN_SUFFIX = "__region"
 
 
 class Predictor:
@@ -88,6 +90,7 @@ class Predictor:
             self.search_space.next_level()
             next_activated_regions: Set[Tuple[Hyperparameter]] = set()
             for region in activated_regions:
+                region_index = str(self.search_space.regions.index(region))
                 if not sample:
                     considered_hp_names_in_region = [hp.name for hp in region]
                     considered_hp_names += considered_hp_names_in_region
@@ -127,10 +130,8 @@ class Predictor:
                             # since sampling has been used, there are no objective function values and merge is safe
                             predicted = pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
                     else:
-                        if predicted.empty:
-                            predicted = partial_configuration
-                        else:
-                            predicted = pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
+                        predicted = self._update_prediction(predicted, partial_configuration, region_index,
+                                                                   considered_hp_names_in_region)
                 else:
                     configuration_type = Configuration.Type.FROM_SELECTOR
                     partial_configuration = self.mapping_region_sampling_strategy[region].sample()
@@ -143,7 +144,6 @@ class Predictor:
                 else:
                     next_activated_regions.update(self.search_space.activate_regions(predicted))
 
-                region_index = str(self.search_space.regions.index(region))
                 prediction_info[region_index] = {
                     "Model": self.mapping_region_model[region].created_surrogates_descriptions_and_objectives_and_optimizer_descriptions,
                     "time_to_build": self.mapping_region_model[region].time_to_build
@@ -152,12 +152,11 @@ class Predictor:
                     model_dump.append(pickle.dumps(self.mapping_region_model[region]))
 
             activated_regions = next_activated_regions
-
         predicted_configurations = []
         for i, f in predicted.iterrows():
             if not sample:
                 parameters = f.drop(predicted.columns.difference(considered_hp_names)).to_dict()
-                predicted_values = f.drop(considered_hp_names).to_dict()
+                predicted_values = self._average_predictions_per_objective(f.drop(considered_hp_names))
             else:
                 parameters = f.to_dict()
                 predicted_values = {}
@@ -174,6 +173,34 @@ class Predictor:
 
         self.store_model_dumps_to_db()
         return predicted_configurations
+
+    def _update_prediction(self, predicted: pd.DataFrame, partial_configuration: pd.DataFrame,
+                                  region_index: str, considered_hp_names_in_region: List[str]) -> pd.DataFrame:
+        """
+        Update prediction with a partial configuration. Objective columns are renamed region-wise for merging.  
+        """
+        if predicted.empty:
+            return partial_configuration
+        objective_columns = partial_configuration.columns.difference(considered_hp_names_in_region)
+        partial_configuration = partial_configuration.rename(
+            columns={c: f"{c}{REGION_COLUMN_SUFFIX}{region_index}" for c in objective_columns})
+        return pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
+
+    def _average_predictions_per_objective(self, predicted_values: pd.Series) -> Dict[str, float]:
+        """
+        Every region's model predicts all objectives, they are merged into a single value per objective. 
+        """
+        values_per_objective: Dict[str, List[float]] = {}
+        for column_name in predicted_values.index:
+            objective_name = column_name.split(REGION_COLUMN_SUFFIX)[0]
+            if objective_name not in values_per_objective:
+                values_per_objective[objective_name] = []
+            values_per_objective[objective_name].append(predicted_values[column_name])
+
+        averaged_values = {}
+        for objective_name, values in values_per_objective.items():
+            averaged_values[objective_name] = sum(values) / len(values)
+        return averaged_values
 
     def store_model_dumps_to_db(self):
         # initialize connection to the database

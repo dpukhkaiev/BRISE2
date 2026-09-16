@@ -706,7 +706,29 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
         experiment.dump("Results")
 
-    def test_15(self, get_energy_experiment_and_search_space, get_workers, get_energy_configurations):
+    def test_15(self, get_experiment, get_workers, get_configurations_test_case_15):
+        """
+        ['3 nom 3 float 2 int 1 ord', 'hierarchical (4 levels)', 'so', 'mo.none', 'lr-svr-gbr-brr',
+        'surr.vt.none', 'surr.ct', 'optimizer.random-moea', 'opt.vt.none', 'opt.ct', 'validator.mock', 'cs.best',
+        'ted.none', 'mr.none', 'mtl.none', 'sc.time', 'rm.quantity', 'dch.none', 'ss.sobol']
+        """
+        experiment_description, search_space = get_experiment(15)
+        experiment = Experiment(experiment_description, search_space)
+        cs = ConfigurationSelection(experiment)
+        configs = []
+        for i in range(10):
+            predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            predicted[0].results = {"Y1": get_configurations_test_case_15[i]['Result']["Y1"]}
+            predicted[0].status['measured'] = True
+            predicted[0].status['evaluated'] = True
+            configs = configs + predicted
+            assert len(configs) == i + 1
+            assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
+            experiment.measured_configurations.append(predicted[0])
+
+        assert any([c.type is Configuration.Type.PREDICTED for c in configs])
+
+    def test_energy_experiment(self, get_energy_experiment_and_search_space, get_workers, get_energy_configurations):
         """
         Energy experiment, test energy validator
         """
@@ -727,7 +749,7 @@ class TestConfigurationSelection:
         assert any([c.type is Configuration.Type.PREDICTED for c in configs])
 
     def test_duplicate_leaf_hyperparameter_name_reused_along_one_branch_is_disambiguated(
-            self, get_experiment, get_workers, get_configurations_all_types):
+            self, get_experiment, get_workers, get_configurations_test_case_16):
         """
         Tests duplication of parameter names. Where the same leaf hyperparameter name ('X') resides at two different levels
         of the same branch (N0.N01.X, itself Nominal, has a child also named 'X').
@@ -743,7 +765,7 @@ class TestConfigurationSelection:
         )
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            predicted[0].results = get_configurations_all_types[i]['Result']
+            predicted[0].results = get_configurations_test_case_16[i]['Result']
             predicted[0].status['measured'] = True
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
