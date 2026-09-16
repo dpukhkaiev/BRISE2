@@ -17,11 +17,17 @@ class JMetalWrapper(ILLHWrapper):
         self._initial_solutions_file_name = "warm_startup_solutions.txt"
 
     def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
-        elitist = hyperparameters.get('elitist').split(".")[-1]
-        self._call_arguments.append(f"mutation_probability={hyperparameters.get('mutation_probability')}")
+        # The chosen LLH's value is the absolute-path prefix its own children (mu, lambda_, elitist,
+        # mutation_probability) are named under.
+        llh_path = hyperparameters["Context.SearchSpace.LLH"]
+        elitist = hyperparameters[f"{llh_path}.elitist"].split(".")[-1]
+        mutation_probability = hyperparameters[f"{llh_path}.mutation_probability"]
+        mu = hyperparameters[f"{llh_path}.mu"]
+        lambda_ = hyperparameters[f"{llh_path}.lambda_"]
+        self._call_arguments.append(f"mutation_probability={mutation_probability}")
         self._call_arguments.append(f"elitist={elitist}")
-        self._call_arguments.append(f"mu={hyperparameters.get('mu')}")
-        self._call_arguments.append(f"lambda={hyperparameters.get('lambda_')}")
+        self._call_arguments.append(f"mu={mu}")
+        self._call_arguments.append(f"lambda={lambda_}")
         self._call_arguments.append(f"problem={scenario['Problem']}")
 
         # Because of the framework implementation specifics, those TSP scenario files are 'embedded' into the jar file:

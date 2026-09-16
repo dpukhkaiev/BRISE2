@@ -115,12 +115,6 @@ class Configuration:
     def parameters(self, parameters: MutableMapping):
         if not isinstance(parameters, Mapping):
             raise TypeError(f"Parameters should be of instance {type(self._parameters)}.")
-
-        if parameters.get("low level heuristic", "") == "jMetalPy.EvolutionStrategy":
-            if 'lambda_' in parameters and parameters['lambda_'] < parameters['mu']:
-                self.logger.warning(f"Values for 'lambda_'({parameters['lambda_']}( and 'mu'({parameters['mu']}) "
-                                    f"parameters was swapped due to specifics of MH!")
-                parameters['lambda_'], parameters['mu'] = parameters['mu'], parameters['lambda_']
         self._parameters = parameters
 
     @property

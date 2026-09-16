@@ -96,12 +96,23 @@ class ConfigurationSelection:
                     transferred_configurations = (
                         self.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"].
                         transfer_configurations(similar_experiments))
+                    # change status of measured configuration if they were also transferred to TRANSFERRED
+                    measured_but_transferred = list(filter(
+                        lambda mc : mc.parameters in [tc.parameters for tc in transferred_configurations],
+                        self.experiment.measured_configurations))
+                    for mc in measured_but_transferred: 
+                        mc.type = Configuration.Type.TRANSFERRED
+                    # filter new configurations
                     transferred_configurations = list(filter(
                         lambda tc: tc.parameters not in [mc.parameters for mc in
                                                          self.experiment.measured_configurations],
                         transferred_configurations))
-                    self.logger.info(f"Identified a set of promising configurations from a similar experiment, "
-                                     f"{transferred_configurations}")
+                    if len(transferred_configurations) > 0:
+                        self.logger.info(f"Identified a set of promising configurations from a similar experiment, "
+                                        f"{transferred_configurations}")
+                    else: # regular prediction
+                        self.logger.info("No promising configurations were identified! Regular prediction...")
+                        predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
                     # if few shot configuration transfer just take the best transferred config
                     if configuration_transfer_module.is_few_shot:
                         if len(transferred_configurations) > 0:
@@ -211,3 +222,4 @@ class ConfigurationSelection:
                                        on_message_callback=self.configuration_selection.send_new_configurations_to_measure)
             self.channel.basic_consume(queue=self.termination_queue_name, auto_ack=True,
                                        on_message_callback=self.stop)
+            

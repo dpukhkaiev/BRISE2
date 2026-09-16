@@ -186,7 +186,7 @@ class TestConfigurationSelection:
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
             assert len(configs) == i + 1
-            assert predicted[0].type is Configuration.Type.FROM_SELECTOR
+            assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.TRANSFERRED]
             experiment.add_configuration(predicted[0])
 
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -200,7 +200,7 @@ class TestConfigurationSelection:
         predicted[0].status['evaluated'] = True
         configs = configs + predicted
         assert len(configs) == 10
-        assert predicted[0].type is Configuration.Type.TRANSFERRED
+        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) == 1
         experiment.add_configuration(predicted[0])
 
         experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -402,7 +402,7 @@ class TestConfigurationSelection:
         predicted[0].status['evaluated'] = True
         configs = configs + predicted
         assert len(configs) == 10
-        assert predicted[0].type is Configuration.Type.TRANSFERRED
+        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) == 1
         experiment.add_configuration(predicted[0])
         # assert isinstance(list(cs.predictor.mapping_region_model[
         #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
@@ -722,6 +722,34 @@ class TestConfigurationSelection:
             configs = configs + predicted
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
+            experiment.measured_configurations.append(predicted[0])
+
+        assert any([c.type is Configuration.Type.PREDICTED for c in configs])
+
+    def test_duplicate_leaf_hyperparameter_name_reused_along_one_branch_is_disambiguated(
+            self, get_experiment, get_workers, get_configurations_all_types):
+        """
+        Tests duplication of parameter names. Where the same leaf hyperparameter name ('X') resides at two different levels
+        of the same branch (N0.N01.X, itself Nominal, has a child also named 'X').
+        """
+        experiment_description, search_space = get_experiment(16)
+        experiment = Experiment(experiment_description, search_space)
+        cs = ConfigurationSelection(experiment)
+        configs = []
+        possible_key_sets = (
+            {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N02.F1"},
+            {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N01.X"},
+            {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N01.X", "Context.SearchSpace.N0.N01.X.XA.X"},
+        )
+        for i in range(20):
+            predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            predicted[0].results = get_configurations_all_types[i]['Result']
+            predicted[0].status['measured'] = True
+            predicted[0].status['evaluated'] = True
+            configs = configs + predicted
+            assert len(configs) == i + 1
+            assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
+            assert set(predicted[0].parameters.keys()) in possible_key_sets
             experiment.measured_configurations.append(predicted[0])
 
         assert any([c.type is Configuration.Type.PREDICTED for c in configs])

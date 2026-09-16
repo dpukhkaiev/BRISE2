@@ -9,6 +9,8 @@ import pandas as pd
 
 _CATEGORY = Union[str, int, float, bool]
 
+SEARCH_SPACE_PREFIX = "Context.SearchSpace"
+
 
 class Hyperparameter(ABC):
     """
@@ -588,7 +590,10 @@ class SearchSpace:
                     name: str,
                     parent: Hyperparameter = None,
                     activation_category: _CATEGORY = None) -> Hyperparameter:
-        h_name: str = name
+        if activation_category == "root":
+            h_name: str = f"{SEARCH_SPACE_PREFIX}.{name}"
+        else:
+            h_name: str = f"{activation_category}.{name}"
         h_type: str = hyperparameter_description["Type"]
         level: int = hyperparameter_description["Level"]
 

@@ -51,4 +51,12 @@ class TestDefaultConfigHandler():
         assert isinstance(default_config_handler, BasicDefaultConfigurationHandler)
 
         default_configuration = default_config_handler.get_default_configuration()
-        assert set(default_configuration.parameters.keys()) == {"N0", "N1", "O1", "F2", "N2", "I2", "F3"}
+        assert set(default_configuration.parameters.keys()) == {
+            "Context.SearchSpace.N0",
+            "Context.SearchSpace.N0.N02.N1",
+            "Context.SearchSpace.N0.N02.N1.N11.F2",
+            "Context.SearchSpace.N0.N02.N1.N11.N2",
+            "Context.SearchSpace.N0.N02.N1.N11.N2.N21.F3",
+            "Context.SearchSpace.N0.N02.O1",
+            "Context.SearchSpace.N0.N02.O1.O11.I2",
+        }

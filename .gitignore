@@ -19,6 +19,12 @@ jsconfig.json
 #tests cache
 .pytest_cache
 
+# Python test coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Typings file.
 typings/
 

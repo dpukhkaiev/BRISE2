@@ -39,25 +39,51 @@ class JMetalPyWrapper(ILLHWrapper):
 
     def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
 
-        # Constructing meta-heuristics initialization arguments (components + simple hyperparameters)
-        init_args = dict(copy(hyperparameters))
-
         self._is_parameter_control_enabled = scenario["isParameterControlEnabled"]
 
-        if "crossover_type" in init_args:
+        # The chosen LLH's value is the absolute-path prefix its own children (mu, lambda_, mutation_type, ...)
+        # are named under.
+        llh_path = hyperparameters["Context.SearchSpace.LLH"]
+        llh_name = llh_path.split(".")[-1]
+
+        # Constructing meta-heuristics initialization arguments (components + simple hyperparameters).
+        # jMetalPy's constructor kwargs are fixed names, so build init_args explicitly from BRISE's
+        # absolute parameter paths rather than passing the hyperparameters dict through.
+        init_args = {}
+
+        for kwarg in ("mu", "lambda_", "population_size", "offspring_population_size"):
+            path = f"{llh_path}.{kwarg}"
+            if path in hyperparameters:
+                init_args[kwarg] = hyperparameters[path]
+
+        # offspring_population_size should be even
+        if "offspring_population_size" in init_args:
+            init_args["offspring_population_size"] += init_args["offspring_population_size"] % 2
+
+        # elitist should be bool
+        elitist_path = f"{llh_path}.elitist"
+        if elitist_path in hyperparameters:
+            init_args["elitist"] = hyperparameters[elitist_path].split(".")[-1] == "True"
+
+        crossover_type_path = f"{llh_path}.crossover_type"
+        if crossover_type_path in hyperparameters:
             import jmetal.operator.crossover as crossover
-            crossover_class = JMetalPyWrapper._get_class_from_module(name=init_args.pop("crossover_type").split(".")[-1],
+            crossover_value = hyperparameters[crossover_type_path]
+            crossover_class = JMetalPyWrapper._get_class_from_module(name=crossover_value.split(".")[-1],
                                                                      module=crossover)
-            init_args["crossover"] = crossover_class(init_args.pop("crossover_probability"))
+            init_args["crossover"] = crossover_class(hyperparameters[f"{crossover_value}.crossover_probability"])
 
-        if "mutation_type" in init_args:
+        mutation_type_path = f"{llh_path}.mutation_type"
+        if mutation_type_path in hyperparameters:
             import jmetal.operator.mutation as mutation
-            mutation_class = JMetalPyWrapper._get_class_from_module(name=init_args.pop("mutation_type").split(".")[-1],
+            mutation_value = hyperparameters[mutation_type_path]
+            mutation_class = JMetalPyWrapper._get_class_from_module(name=mutation_value.split(".")[-1],
                                                                     module=mutation)
-            init_args["mutation"] = mutation_class(init_args.pop("mutation_probability"))
+            init_args["mutation"] = mutation_class(hyperparameters[f"{mutation_value}.mutation_probability"])
 
-        if "selection_type" in init_args:
-            selection_type = init_args.pop('selection_type').split(".")[-1]
+        selection_type_path = f"{llh_path}.selection_type"
+        if selection_type_path in hyperparameters:
+            selection_type = hyperparameters[selection_type_path].split(".")[-1]
             if selection_type == 'ReuletteWheelSelection':
                 from jmetal.util.comparator import MultiComparator
                 from jmetal.util.density_estimator import CrowdingDistance
@@ -69,20 +95,6 @@ class JMetalPyWrapper(ILLHWrapper):
                 selection_class = JMetalPyWrapper._get_class_from_module(name=selection_type,
                                                                          module=selection)
                 init_args["selection"] = selection_class()
-
-        # Add all non-component Metaheuristic parameters
-        if "offspring_population_size" in init_args:
-            offsp_population = init_args.pop("offspring_population_size")
-            # offspring_population_size should be even
-            offsp_population += offsp_population % 2
-            init_args['offspring_population_size'] = offsp_population
-
-        # elitist should be bool
-        if "elitist" in init_args:
-            init_args['elitist'] = True if init_args.pop('elitist').split(".")[-1] == "True" else False
-
-        if "population_size" in init_args:
-            init_args["population_size"] = init_args.pop("population_size")
 
         termination_class = JMetalPyWrapper._get_class_from_module(name=scenario["Budget"]["Type"],
                                                                    module=termination)
@@ -96,7 +108,6 @@ class JMetalPyWrapper(ILLHWrapper):
         # Attach initial solutions.
         self.load_initial_solutions(parameter_control_info, problem)
 
-        llh_name = init_args.pop("LLH").split(".")[-1]
         if llh_name == "jMetalPySimulatedAnnealing":
             init_args["solution_generator"] = self._solution_generator
         else:
@@ -209,7 +220,7 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
         termination_criterion_cls = self._get_class_from_module(name=scenario["Budget"]["Type"], module=termination)
         termination_criterion = termination_criterion_cls(scenario["Budget"]["Amount"])
 
-        mh_name = hyperparameters["LLH"].split(".")[-1]
+        mh_name = hyperparameters["Context.SearchSpace.LLH"].split(".")[-1]
         if mh_name == "GeneticAlgorithm":
             from jmetal.algorithm.singleobjective.genetic_algorithm import (
                 GeneticAlgorithm
@@ -266,7 +277,7 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
         termination_criterion_cls = self._get_class_from_module(name=scenario["Budget"]["Type"], module=termination)
         termination_criterion = termination_criterion_cls(scenario["Budget"]["Amount"])
 
-        mh_name = hyperparameters["LLH"].split(".")[-1]
+        mh_name = hyperparameters["Context.SearchSpace.LLH"].split(".")[-1]
         if mh_name == "GeneticAlgorithm":
             from jmetal.algorithm.singleobjective.genetic_algorithm import (
                 GeneticAlgorithm
