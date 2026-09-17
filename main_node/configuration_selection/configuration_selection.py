@@ -110,13 +110,15 @@ class ConfigurationSelection:
                     if len(transferred_configurations) > 0:
                         self.logger.info(f"Identified a set of promising configurations from a similar experiment, "
                                         f"{transferred_configurations}")
-                    else: # regular prediction
+                    # a fallback is only needed when no other branch would produce a configuration
+                    elif model_transfer_module is None and configuration_transfer_module.is_few_shot:
                         self.logger.info("No promising configurations were identified! Regular prediction...")
                         predicted_configs.extend(self._regular_prediction(needed_configs, number_of_predicted_configs))
                     # if few shot configuration transfer just take the best transferred config
                     if configuration_transfer_module.is_few_shot:
                         if len(transferred_configurations) > 0:
                             predicted_configs.append(transferred_configurations[0])
+                            needed_configs -= 1
                             self.logger.info(f"Measuring the best configuration from the former experiment, "
                                              f"if it has not been measured yet: "
                                              f"{transferred_configurations[0]}")
@@ -126,6 +128,7 @@ class ConfigurationSelection:
                         extended_configuration_list = self.experiment.measured_configurations + transferred_configurations
                         temp_predicted = self.predictor.predict(extended_configuration_list)[0]
                         predicted_configs.append(temp_predicted)
+                        needed_configs -= 1
                         self.logger.info("Measuring a configuration using the transferred model")
                     # regular transfer of configurations
                     else:

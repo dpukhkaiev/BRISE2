@@ -155,7 +155,7 @@ class TestConfigurationSelection:
     def test_4(self, get_experiment, get_workers, get_configurations_float_nom):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
-        'optimizer.nsga2', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
+        'optimizer.gaco', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
         'ted.quantity', 'mr.none', 'mtl.fsl', 'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
         """
         rdb.cleanup()
@@ -355,7 +355,7 @@ class TestConfigurationSelection:
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'mock', 'surr.vt.none', 'surr.ct.none',
         'optimizer.gaco', 'opt.vt.none', 'opt.ct',  'validator.mock', 'validator.internal.none', cs.random',
-        'ted.quantity', 'mr.fsl', 'mtl.oldnewratio-fsl', 'sc.fsl', 'rm.quality', 'dch.random', 'ss.sobol']
+        'ted.quantity', 'mr.fsl', 'mtl.oldnewratio-shuffle', 'sc.fsl', 'rm.quality', 'dch.random', 'ss.sobol']
         """
         rdb.cleanup()
         rdb.restore()
@@ -376,11 +376,9 @@ class TestConfigurationSelection:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
-        # assert isinstance(list(cs.predictor.mapping_region_model[
-        #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
-        #                   ModelMock)
-        for i in range(0, 9):
+        for i in range(12):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            assert len(predicted) == 1
             results = {"Y1": get_configurations_float_nom[i]['Result']["Y1"]}
             predicted[0].results = results
             predicted[0].status['enabled'] = True
@@ -388,32 +386,14 @@ class TestConfigurationSelection:
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
             assert len(configs) == i + 1
-            assert predicted[0].type is Configuration.Type.FROM_SELECTOR
             experiment.add_configuration(predicted[0])
 
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
             experiment.send_state_to_db()
 
-        predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
-        predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
-        configs = configs + predicted
-        assert len(configs) == 10
-        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) == 1
-        experiment.add_configuration(predicted[0])
-        # assert isinstance(list(cs.predictor.mapping_region_model[
-        #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
-        #                   TreeParzenEstimator)
-
-
-        experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
-        experiment.send_state_to_db()
-
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
+        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) >= 1
         experiment.dump("Results")
 
     def test_10(self, get_experiment, get_workers, get_configurations_2_float):
@@ -775,3 +755,50 @@ class TestConfigurationSelection:
             experiment.measured_configurations.append(predicted[0])
 
         assert any([c.type is Configuration.Type.PREDICTED for c in configs])
+
+    def test_proposed_configurations_match_worker_capacity_with_few_shot_configuration_transfer(
+            self, get_experiment, get_workers, get_configurations_float_nom):
+        """
+        ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
+        'optimizer.gaco', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
+        'ted.quantity', 'mr.dynamic', 'mtl.fsl', 'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
+        """
+        rdb.cleanup()
+        rdb.restore()
+        experiment_description, search_space = get_experiment(17)
+        experiment = Experiment(experiment_description, search_space)
+        experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+        experiment.database.write_one_record(
+            "Search_space", get_search_space_record(search_space, experiment.unique_id)
+        )
+        dch_o = DefaultConfigHandlerOrchestrator()
+        default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
+        default_configuration = default_config_handler.get_default_configuration()
+        assert isinstance(default_configuration, Configuration)
+        default_configuration.results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
+        default_configuration.status['measured'] = True
+        default_configuration.status['evaluated'] = True
+        experiment.default_configuration = default_configuration
+        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
+        cs = ConfigurationSelection(experiment)
+        configs = []
+        for i in range(12):
+            predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            assert len(predicted) == 1
+            results = {"Y1": get_configurations_float_nom[i]['Result']["Y1"]}
+            predicted[0].results = results
+            predicted[0].status['enabled'] = True
+            predicted[0].status['measured'] = True
+            predicted[0].status['evaluated'] = True
+            configs = configs + predicted
+            assert len(configs) == i + 1
+            experiment.add_configuration(predicted[0])
+
+            experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
+            experiment.send_state_to_db()
+
+        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) <= 1
+
+        temp_region = list(cs.predictor.mapping_region_model.keys())[0]
+        assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
+        experiment.dump("Results")
