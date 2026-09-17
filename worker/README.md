@@ -10,6 +10,11 @@ Software requirements:
 
 - [Service](../worker_service/README.md)
 
+Each task's parameters arrive at your worker method as `task['parameters']`, keyed by the parameter's
+absolute search-space path, e.g., `task['parameters']['Context.SearchSpace.frequency']`
+in [`energy_consumption`](./worker.py). See the [Search Space section](../main_node/Resources/README.md#search-space)
+for the naming rule.
+
 #### Get started with a generator tool
 
 By default, worker contains `generator.py` module in the `generator` package. This module contains a function `generate_worker_function` that generates a code **skeleton** of the method that later will be spread between workers. It is a method that **worker** will call to perform a **Task** in your **Experiment**.

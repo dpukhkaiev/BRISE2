@@ -33,6 +33,8 @@ Moreover, it comprises the `Structure` sub-feature, responsible for modeling dep
 _Flat search space_ creates a single vector for all parameters within the search space, which is then fed into the optimizer.
 _Hierarchical search space_ considers dependencies between parameters, creating multiple regions of the search space, each treated by a dedicated optimizer.
 
+Each parameter is exposed to your [worker method](../../worker/worker.py) via `task['parameters']` under its full name (e.g. `Context.SearchSpace.frequency`), while a parameter nested under an activated branch is prefixed by its parent's name (e.g. `Context.SearchSpace.criterion.gini.max_depth`).
+
 ### Feature model
 BRISE comprises 5 top-level features, responsible for different parts of the optimization process.
 
