@@ -77,7 +77,7 @@ def test_maximal_number_of_tasks_reached(get_energy_configurations, get_energy_t
 
 
 def test_configuration_disabled_after_exceeding_max_failed_tasks(monkeypatch, get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
-    # Configuration that already exhausted MaxFailedTasksPerConfiguration (== 1 for EnergyExperiment) and has
+    # Configuration that exceeds MaxFailedTasksPerConfiguration (== 1 for EnergyExperiment) and has
     # no valid tasks.
     published = []
     monkeypatch.setattr(
@@ -89,11 +89,23 @@ def test_configuration_disabled_after_exceeding_max_failed_tasks(monkeypatch, ge
                                                      get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
                                                      0, Configuration.Type.PREDICTED,
                                                      {'enabled': True, 'evaluated': False, 'measured': False},
-                                                     number_of_failed_tasks=1)
+                                                     number_of_failed_tasks=2)
 
     assert configuration.status == {'enabled': False, 'evaluated': False, 'measured': True}
     assert needed_tasks_count == 0
     assert published == [("experiment_api_exchange", configuration.experiment_id, "increment_bad_configuration_number")]
+
+
+def test_configuration_not_disabled_at_max_failed_tasks(get_energy_configurations, get_energy_tasks, get_energy_experiment_and_search_space):
+    # A number of failed tasks equal to MaxFailedTasksPerConfiguration  is tolerated
+    configuration, needed_tasks_count = measure_task(get_energy_configurations, get_energy_tasks,
+                                                     get_energy_experiment_and_search_space[0], get_energy_experiment_and_search_space[1],
+                                                     0, Configuration.Type.PREDICTED,
+                                                     {'enabled': True, 'evaluated': False, 'measured': False},
+                                                     number_of_failed_tasks=1)
+
+    assert configuration.status['enabled'] is True
+    assert needed_tasks_count > 0
 
 
 def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict,

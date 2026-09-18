@@ -67,6 +67,8 @@ TransferExpediencyDetermination {
 The functionality of the first step is covered by the [transfer_expediency_determination](transfer_expediency_determination) module.
 The only available strategy is a sampling-landmark-based approach, which uses one of two 
 available comparators to define the most similar experiments among all source experiments.
+If every configuration a similar source experiment could offer has already been measured in the target
+experiment, that source is excluded from subsequent similarity searches so a new one can be found.
 
 Currently available comparators are:
 - [Norm-Difference comparator](transfer_expediency_determination/norm_difference_comparator.py)

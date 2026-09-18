@@ -251,9 +251,22 @@ class TestTransferLearning:
                 experiment, config, is_transfer_learning=True
             )
 
-        assert (
-            sum(c.type == Configuration.Type.TRANSFERRED for c in experiment.measured_configurations) == 1
-        ), f"MTL + FSL: expected exactly one TRANSFERRED configuration across the run for: {test_id}"
+        transferred = sum(
+            c.type == Configuration.Type.TRANSFERRED for c in experiment.measured_configurations
+        )
+        model_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Model_transfer"]
+        if model_transfer is None:
+            # with no Model transfer to fall back on, an exhausted source is banned instead of
+            # producing a TRANSFERRED configuration (see ConfigurationSelection.send_new_configurations_to_measure)
+            banned = cs.transfer_learning_orchestrator.ted_module.banned_experiments
+            assert transferred == 1 or len(banned) > 0, (
+                f"MTL + FSL with no Model transfer: expected either one TRANSFERRED configuration "
+                f"or a banned exhausted source for: {test_id}"
+            )
+        else:
+            assert transferred == 1, (
+                f"MTL + FSL: expected exactly one TRANSFERRED configuration across the run for: {test_id}"
+            )
 
 
 class TestTransferLearningUnit:

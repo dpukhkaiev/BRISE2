@@ -93,20 +93,25 @@ class ConfigurationSelection:
                 configuration_transfer_module = self.transfer_learning_orchestrator.transfer_submodules[
                     "Configuration_transfer"]
                 if configuration_transfer_module is not None:
-                    transferred_configurations = (
+                    offered_configurations = (
                         self.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"].
                         transfer_configurations(similar_experiments))
-                    # change status of measured configuration if they were also transferred to TRANSFERRED
-                    measured_but_transferred = list(filter(
-                        lambda mc : mc.parameters in [tc.parameters for tc in transferred_configurations],
-                        self.experiment.measured_configurations))
-                    for mc in measured_but_transferred: 
-                        mc.type = Configuration.Type.TRANSFERRED
-                    # filter new configurations
-                    transferred_configurations = list(filter(
-                        lambda tc: tc.parameters not in [mc.parameters for mc in
-                                                         self.experiment.measured_configurations],
-                        transferred_configurations))
+                    # filter out configurations the target experiment has already measured
+                    measured_parameters = [mc.parameters for mc in self.experiment.measured_configurations]
+                    transferred_configurations = [
+                        tc for tc in offered_configurations if tc.parameters not in measured_parameters]
+                    # the module had something to offer, but all of it is already measured
+                    source_exhausted = len(offered_configurations) > 0 and len(transferred_configurations) == 0
+                    if source_exhausted and model_transfer_module is None:
+                        if configuration_transfer_module.is_few_shot:
+                            # few-shot has fired; it will never offer anything again, whatever TED returns
+                            experiments_to_ban = [e["Exp_unique_ID"] for e in similar_experiments]
+                        else:
+                            # ban only the sources that can no longer contribute anything unmeasured
+                            experiments_to_ban = [e["Exp_unique_ID"] for e in similar_experiments
+                                                  if all(s["parameters"] in measured_parameters
+                                                         for s in e.get("Samples", []))]
+                        self.transfer_learning_orchestrator.ted_module.ban_experiments(experiments_to_ban)
                     if len(transferred_configurations) > 0:
                         self.logger.info(f"Identified a set of promising configurations from a similar experiment, "
                                         f"{transferred_configurations}")

@@ -200,7 +200,11 @@ class TestConfigurationSelection:
         predicted[0].status['evaluated'] = True
         configs = configs + predicted
         assert len(configs) == 10
-        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) == 1
+        configuration_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"]
+        banned = cs.transfer_learning_orchestrator.ted_module.banned_experiments
+        transferred = sum(c.type is Configuration.Type.TRANSFERRED for c in configs)
+        assert configuration_transfer.has_fired
+        assert transferred == 1 or len(banned) > 0
         experiment.add_configuration(predicted[0])
 
         experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -393,7 +397,8 @@ class TestConfigurationSelection:
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
-        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) >= 1
+        model_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Model_transfer"]
+        assert model_transfer.was_model_transferred
         experiment.dump("Results")
 
     def test_10(self, get_experiment, get_workers, get_configurations_2_float):
@@ -798,6 +803,8 @@ class TestConfigurationSelection:
             experiment.send_state_to_db()
 
         assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) <= 1
+        configuration_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"]
+        assert configuration_transfer.has_fired
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
