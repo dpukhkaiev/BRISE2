@@ -78,7 +78,7 @@ class Predictor:
 
         # calculating configurations to be used by the prediction
         number_of_configs_to_consider = int(round(self.window_size * len(measured_configurations)))
-        considered_configs = measured_configurations[-number_of_configs_to_consider:]
+        base_considered_configs = measured_configurations[-number_of_configs_to_consider:]
 
         activated_regions = self.search_space.get_regions_on_current_level()
         assert len(activated_regions) == 1
@@ -94,23 +94,15 @@ class Predictor:
                 if not sample:
                     considered_hp_names_in_region = [hp.name for hp in region]
                     considered_hp_names += considered_hp_names_in_region
-                    considered_activation_category = [hp.activation_category for hp in region][0]
-                    considered_parent_hp_name = [hp.parent.name for hp in region][0]
 
-                    # filter according to the considered activation category for the current region
-                    if considered_parent_hp_name != "root":
-                        considered_configs = list(filter(lambda cfg:
-                               cfg.parameters[considered_parent_hp_name] == considered_activation_category,
-                               considered_configs))
-                    # filter according to the region
-                    if len(considered_configs) > 0 and considered_parent_hp_name != "root":
-                        logging.info("Considered Configs: " + " ".join([c.__str__() for c in considered_configs]))
+                    region_considered_configs = self._considered_configs_for_region(
+                        base_considered_configs, region, considered_hp_names_in_region)
+                    if len(region_considered_configs) > 0:
+                        logging.info("Considered Configs: " +
+                                     " ".join([c.__str__() for c in region_considered_configs]))
                         logging.info("REGION: " + str(region.__str__()))
-                    considered_configs = list(filter(
-                        lambda cfg: any(map(lambda x: x in considered_hp_names_in_region, list(cfg.parameters.keys()))),
-                        considered_configs  # Input data for filter
-                    ))
-                    partial_configuration = self.mapping_region_model[region].predict(list(region), considered_configs)
+                    partial_configuration = self.mapping_region_model[region].predict(
+                        list(region), region_considered_configs)
 
                     if partial_configuration.empty:
                         configuration_type = Configuration.Type.FROM_SELECTOR
@@ -128,7 +120,7 @@ class Predictor:
                                 else:
                                     multiplied_partial_configuration.loc[i] = partial_configuration.values[0]
                             # since sampling has been used, there are no objective function values and merge is safe
-                            predicted = pd.merge(predicted, partial_configuration, left_index=True, right_index=True)
+                            predicted = pd.merge(predicted, multiplied_partial_configuration, left_index=True, right_index=True)
                     else:
                         predicted = self._update_prediction(predicted, partial_configuration, region_index,
                                                                    considered_hp_names_in_region)
@@ -173,6 +165,29 @@ class Predictor:
 
         self.store_model_dumps_to_db()
         return predicted_configurations
+
+    def _considered_configs_for_region(self, base_considered_configs: List[Configuration],
+                                        region: Tuple[Hyperparameter],
+                                        considered_hp_names_in_region: List[str]) -> List[Configuration]:
+        """
+        Scope the base window of considered configurations down to the ones relevant to one region,
+        always starting from the untouched base window so sibling/deeper regions never inherit another
+        region's filtering.
+        """
+        considered_activation_category = region[0].activation_category
+        considered_parent_hp_name = region[0].parent.name
+
+        region_considered_configs = base_considered_configs
+        if considered_parent_hp_name != "root":
+            # a config on a different branch simply does not have this parent hyperparameter measured;
+            # it does not belong to this region rather than being an error
+            region_considered_configs = list(filter(
+                lambda cfg: cfg.parameters.get(considered_parent_hp_name) == considered_activation_category,
+                region_considered_configs))
+        region_considered_configs = list(filter(
+            lambda cfg: any(x in considered_hp_names_in_region for x in cfg.parameters.keys()),
+            region_considered_configs))
+        return region_considered_configs
 
     def _update_prediction(self, predicted: pd.DataFrame, partial_configuration: pd.DataFrame,
                                   region_index: str, considered_hp_names_in_region: List[str]) -> pd.DataFrame:

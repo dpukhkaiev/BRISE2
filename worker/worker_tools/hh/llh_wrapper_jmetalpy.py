@@ -73,7 +73,7 @@ class JMetalPyWrapper(ILLHWrapper):
         # elitist should be bool
         elitist_path = f"{llh_path}.elitist"
         if elitist_path in hyperparameters:
-            init_args["elitist"] = hyperparameters[elitist_path].split(".")[-1] == "True"
+            init_args["elitist"] = hyperparameters[elitist_path].split(".")[-1] == "true"
 
         crossover_type_path = f"{llh_path}.crossover_type"
         if crossover_type_path in hyperparameters:

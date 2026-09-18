@@ -1,6 +1,19 @@
+from types import SimpleNamespace
+
 import pandas as pd
 
 from configuration_selection.model.predictor import Predictor
+from core_entities.configuration import Configuration
+
+
+def _make_config(parameters):
+    return Configuration(parameters, Configuration.Type.TEST, "experiment_id")
+
+
+def _make_region(parent_name, activation_category, hp_names):
+    parent = SimpleNamespace(name=parent_name)
+    return tuple(SimpleNamespace(parent=parent, activation_category=activation_category, name=hp_name)
+                 for hp_name in hp_names)
 
 
 class TestUpdatePrediction:
@@ -29,6 +42,63 @@ class TestUpdatePrediction:
         merged = Predictor._update_prediction(None, pd.DataFrame(), partial_configuration, "0", ["hp0"])
 
         pd.testing.assert_frame_equal(merged, partial_configuration)
+
+
+class TestConsideredConfigsForRegion:
+
+    def test_sibling_regions_are_scoped_independently(self):
+        """
+        Two sibling regions (same parent, different activation categories) must each be scoped from the
+        full base window, not from whatever the other sibling's filtering left behind.
+        """
+        base_considered_configs = [
+            _make_config({"algorithm": "A", "A.param": 1}),
+            _make_config({"algorithm": "B", "B.param": 2}),
+        ]
+        region_a = _make_region("algorithm", "A", ["A.param"])
+        region_b = _make_region("algorithm", "B", ["B.param"])
+
+        configs_for_a = Predictor._considered_configs_for_region(None, base_considered_configs, region_a, ["A.param"])
+        configs_for_b = Predictor._considered_configs_for_region(None, base_considered_configs, region_b, ["B.param"])
+
+        assert [c.parameters["algorithm"] for c in configs_for_a] == ["A"]
+        assert [c.parameters["algorithm"] for c in configs_for_b] == ["B"]
+
+    def test_root_level_region_skips_activation_category_filter(self):
+        base_considered_configs = [_make_config({"algorithm": "A"})]
+        root_region = _make_region("root", "root", ["algorithm"])
+
+        configs = Predictor._considered_configs_for_region(None, base_considered_configs, root_region, ["algorithm"])
+
+        assert configs == base_considered_configs
+
+    def test_configs_from_an_unrelated_branch_lacking_the_parent_key_are_excluded_not_erroring(self):
+        """
+        A deeper region's parent hyperparameter (e.g. under branch N01) is absent from configs
+        measured along a different branch: those configs must be filtered out.
+        """
+        base_considered_configs = [
+            _make_config({"branch": "N01", "N01.O1": "N01.O1.X", "N01.O1.X.param": 1}),
+            _make_config({"branch": "N02", "N02.param": 2}),
+        ]
+        deeper_region = _make_region("N01.O1", "N01.O1.X", ["N01.O1.X.param"])
+
+        configs = Predictor._considered_configs_for_region(None, base_considered_configs, deeper_region,
+                                                            ["N01.O1.X.param"])
+
+        assert [c.parameters["branch"] for c in configs] == ["N01"]
+
+    def test_base_considered_configs_is_not_mutated(self):
+        base_considered_configs = [
+            _make_config({"algorithm": "A", "A.param": 1}),
+            _make_config({"algorithm": "B", "B.param": 2}),
+        ]
+        original = list(base_considered_configs)
+        region_a = _make_region("algorithm", "A", ["A.param"])
+
+        Predictor._considered_configs_for_region(None, base_considered_configs, region_a, ["A.param"])
+
+        assert base_considered_configs == original
 
 
 class TestAveragePredictionsPerObjective:
