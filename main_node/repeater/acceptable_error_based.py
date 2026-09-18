@@ -105,11 +105,11 @@ class AcceptableErrorBasedType(Repeater):
             degrees_of_freedom = len(tasks_data) - len(c_c_results_l)/len(self.objectives)
 
             # Calculate the critical t-student value from the t distribution
-            student_coefficients = [t.ppf(c_l, df=degrees_of_freedom) for c_l in [self.confidence_level] * len(self.objectives)]
+            student_coefficient = t.ppf(self.confidence_level, df=degrees_of_freedom)
 
             # Calculation of confidence interval for multiple measurements, i.e. the absolute error:
             absolute_errors = []
-            for student_coefficient, dim_skd in zip(student_coefficients, all_dim_std):
+            for dim_skd in all_dim_std:
                 absolute_errors.append(student_coefficient * dim_skd / sqrt(len(tasks_data)))
 
             # Calculating relative error for each dimension
@@ -149,8 +149,7 @@ class AcceptableErrorBasedType(Repeater):
 
             else:
                 # Or we don't adapt thresholds
-                for acceptable_error in [self.base_acceptable_error] * len(self.objectives):
-                    thresholds.append(acceptable_error)
+                thresholds = [self.base_acceptable_error] * len(self.objectives)
 
             # Simple implementation of possible multi-dim Repeater decision-making:
             # If any of resulting dimensions are not accurate - just terminate.

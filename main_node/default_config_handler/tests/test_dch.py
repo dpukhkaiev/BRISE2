@@ -60,3 +60,9 @@ class TestDefaultConfigHandler():
             "Context.SearchSpace.N0.N02.O1",
             "Context.SearchSpace.N0.N02.O1.O11.I2",
         }
+
+        # the N0.N01 branch (region holding F1, I1) is never activated by this default configuration,
+        # so prediction_info must cover only the 5 traversed regions, not all 6 
+        assert len(experiment.search_space.regions) == 6
+        assert len(default_configuration.prediction_info) == 5
+        assert all(v == {"Model": [], "time_to_build": 0} for v in default_configuration.prediction_info.values())
