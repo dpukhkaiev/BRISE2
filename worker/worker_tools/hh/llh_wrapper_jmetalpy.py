@@ -56,6 +56,16 @@ class JMetalPyWrapper(ILLHWrapper):
             if path in hyperparameters:
                 init_args[kwarg] = hyperparameters[path]
 
+        # jMetalPy.EvolutionStrategy requires lambda_ >= mu (offspring pool must be able to
+        # fill the next population); swap if the sampled values violate that.
+        if llh_name == "jMetalPyEvolutionStrategy" and "lambda_" in init_args and "mu" in init_args:
+            if init_args["lambda_"] < init_args["mu"]:
+                self.logger.warning(
+                    f"Values for 'lambda_'({init_args['lambda_']}) and 'mu'({init_args['mu']}) "
+                    f"were swapped: jMetalPy.EvolutionStrategy requires lambda_ >= mu."
+                )
+                init_args["lambda_"], init_args["mu"] = init_args["mu"], init_args["lambda_"]
+
         # offspring_population_size should be even
         if "offspring_population_size" in init_args:
             init_args["offspring_population_size"] += init_args["offspring_population_size"] % 2

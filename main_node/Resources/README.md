@@ -25,6 +25,7 @@ An extended `Scenario` feature can be found in the case study of [multi-objectiv
   *  `Objective function` data such as:  a name, a data type and a type of optimization activity~(minimization or maximization). 
 Moreover, each objective function should possess expected boundaries, which specify the typical return values of the evaluation. 
 In case the evaluation returns a value outside of this region, it is considered broken.  
+An objective function name must not contain the substring `__region`, which is reserved internally for hierarchical search space bookkeeping. 
 
 #### Search Space
 This feature unites all available parameters, their types and boundaries. 
