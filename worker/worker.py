@@ -297,7 +297,7 @@ def hh(task: dict):
     else:
         raise TypeError(f"Unknown framework: {framework}")
 
-    llh_runner = LLHRunner(task, LLH_Wrapper(problem_type=task["Scenario"]["problem_type"]))
+    llh_runner = LLHRunner(task, LLH_Wrapper(problem_type=task["Scenario"]["ProblemType"]))
     llh_runner.build()
     llh_runner.execute()
     return llh_runner.report

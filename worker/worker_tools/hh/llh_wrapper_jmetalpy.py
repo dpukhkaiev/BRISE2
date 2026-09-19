@@ -231,7 +231,7 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
         termination_criterion = termination_criterion_cls(scenario["Budget"]["Amount"])
 
         mh_name = hyperparameters["Context.SearchSpace.LLH"].split(".")[-1]
-        if mh_name == "GeneticAlgorithm":
+        if mh_name == "jMetalPyGeneticAlgorithm":
             from jmetal.algorithm.singleobjective.genetic_algorithm import (
                 GeneticAlgorithm
             )
@@ -248,7 +248,7 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
                 population_generator=self._solution_generator
             )
 
-        elif mh_name == "SimulatedAnnealing":
+        elif mh_name == "jMetalPySimulatedAnnealing":
             from jmetal.algorithm.singleobjective.simulated_annealing import (
                 SimulatedAnnealing
             )
@@ -259,7 +259,7 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
                 solution_generator=self._solution_generator
             )
 
-        elif mh_name == "EvolutionStrategy":
+        elif mh_name == "jMetalPyEvolutionStrategy":
             from jmetal.algorithm.singleobjective.evolution_strategy import (
                 EvolutionStrategy
             )
@@ -273,7 +273,7 @@ class JMetalPyWrapperTuned(JMetalPyWrapper):
                 population_generator=self._solution_generator
             )
         else:
-            self.logger.error(f"Wrong meta-heuristic name: {mh_name}")
+            raise KeyError(f"Unknown algorithm {mh_name}.")
 
 
 class JMetalPyWrapperDefault(JMetalPyWrapper):
@@ -288,7 +288,7 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
         termination_criterion = termination_criterion_cls(scenario["Budget"]["Amount"])
 
         mh_name = hyperparameters["Context.SearchSpace.LLH"].split(".")[-1]
-        if mh_name == "GeneticAlgorithm":
+        if mh_name == "jMetalPyGeneticAlgorithm":
             from jmetal.algorithm.singleobjective.genetic_algorithm import (
                 GeneticAlgorithm
             )
@@ -305,7 +305,7 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
                 population_generator=self._solution_generator
             )
 
-        elif mh_name == "SimulatedAnnealing":
+        elif mh_name == "jMetalPySimulatedAnnealing":
             from jmetal.algorithm.singleobjective.simulated_annealing import (
                 SimulatedAnnealing
             )
@@ -316,7 +316,7 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
                 solution_generator=self._solution_generator
             )
 
-        elif mh_name == "EvolutionStrategy":
+        elif mh_name == "jMetalPyEvolutionStrategy":
             from jmetal.algorithm.singleobjective.evolution_strategy import (
                 EvolutionStrategy
             )
@@ -330,4 +330,4 @@ class JMetalPyWrapperDefault(JMetalPyWrapper):
                 population_generator=self._solution_generator
             )
         else:
-            self.logger.error(f"Wrong meta-heuristic name: {mh_name}")
+            raise KeyError(f"Unknown algorithm {mh_name}.")

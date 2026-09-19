@@ -45,7 +45,7 @@ class JMetalWrapper(ILLHWrapper):
         # pr439.tsp
         # rat783.tsp
         # If one needs to add a new scenario, the jar file should be modified. TSP instances should be put into
-        # tsp directory
+        # tspInstances directory
         if scenario["Problem"] == "TSP":
             scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
             self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
@@ -124,11 +124,14 @@ class JMetalWrapperTuned(JMetalWrapper):
         self._call_arguments.append("elitist=True")
         self._call_arguments.append("mu=5")
         self._call_arguments.append("lambda=605")
+        self._call_arguments.append(f"problem={scenario['Problem']}")
 
         scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
-        self._call_arguments.append(f"tsp_scenario=/tsp/{scenario_file_name}")
+        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
 
         self._attach_termination(scenario["Budget"])
+        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isParameterControlEnabled']}")
+
         self._attach_initial_solutions(parameter_control_info)
 
 
@@ -138,9 +141,12 @@ class JMetalWrapperDefault(JMetalWrapper):
         self._call_arguments.append("elitist=False")
         self._call_arguments.append("mu=500")
         self._call_arguments.append("lambda=500")
+        self._call_arguments.append(f"problem={scenario['Problem']}")
 
         scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
-        self._call_arguments.append(f"tsp_scenario=/tsp/{scenario_file_name}")
+        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
 
         self._attach_termination(scenario["Budget"])
+        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isParameterControlEnabled']}")
+
         self._attach_initial_solutions(parameter_control_info)
