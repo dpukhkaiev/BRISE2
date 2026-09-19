@@ -1,6 +1,4 @@
-# BRISE Frontend (frontend-new)
-
-A Vue 3 rewrite of the legacy BRISE Angular frontend — a live dashboard for monitoring [BRISE2](https://github.com/dpukhkaiev/BRISE2) 
+# BRISE Frontend
 
 ## Tech Stack
 

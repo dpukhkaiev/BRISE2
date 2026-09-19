@@ -48,7 +48,7 @@ services:
     restart: on-failure
 
   front-end:
-    build: ./frontend-new/
+    build: ./frontend/
 
     container_name: front-end
     tty: true
