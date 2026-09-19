@@ -228,8 +228,7 @@ class MainThread(threading.Thread):
                                                    body=f"{json.dumps(evaluation_time)}")
 
     def experiment_api(self, ch=None, method=None, properties=None, body=None):
-        dictionary_dump = json.loads(body.decode())
-        getattr(self.experiment, dictionary_dump)()
+        getattr(self.experiment, body.decode())()
 
     def logging_api(self, ch=None, method=None, properties=None, body=None):
         dictionary_dump = json.loads(body.decode())

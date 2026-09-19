@@ -140,14 +140,19 @@
                 }
             }
         },
+        "ModelRecommendation": {
+            "FewShotRecommendation": {
+                "Type": "few_shot"
+            }
+        },
         "MultiTaskLearning": {
             "Filters": {
                 "OldNewRatio": {
                     "Type": "old_new_ratio",
                     "OldNewConfigsRatio": 1
                 },
-                "FewShotMultiTask": {
-                    "Type": "few_shot"
+                "ShuffleConfigurations": {
+                    "Type": "shuffle"
                 }
             }
         }

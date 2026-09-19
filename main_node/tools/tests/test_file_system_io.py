@@ -8,10 +8,10 @@ class TestFileSystemIO:
         # Test #0. Load content of a valid json file
         # Expected result: json file is loaded and can be treated as a python dictionary (get value from key)
         from tools.file_system_io import load_json_file
-        input_file = "./Resources/SettingsBRISE.json"
-        expected_result = "./Results/"
+        input_file = "./Resources/tests/test_cases_product_configurations/test_case_0.json"
+        expected_result = "test"
         actual_result = load_json_file(input_file)
-        assert actual_result["General"]["results_storage"] == expected_result
+        assert actual_result["Context"]["TaskConfiguration"]["TaskName"] == expected_result
 
     def test_1_load_invalid_json(self):
         # Test #1. Try to load content of non-json file

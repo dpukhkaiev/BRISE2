@@ -17,11 +17,17 @@ class JMetalWrapper(ILLHWrapper):
         self._initial_solutions_file_name = "warm_startup_solutions.txt"
 
     def construct(self, hyperparameters: Mapping, scenario: Mapping, parameter_control_info: Mapping) -> None:
-        elitist = hyperparameters.get('elitist').split(".")[-1]
-        self._call_arguments.append(f"mutation_probability={hyperparameters.get('mutation_probability')}")
+        # The chosen LLH's value is the absolute-path prefix its own children (mu, lambda_, elitist,
+        # mutation_probability) are named under.
+        llh_path = hyperparameters["Context.SearchSpace.LLH"]
+        elitist = hyperparameters[f"{llh_path}.elitist"].split(".")[-1]
+        mutation_probability = hyperparameters[f"{llh_path}.mutation_probability"]
+        mu = hyperparameters[f"{llh_path}.mu"]
+        lambda_ = hyperparameters[f"{llh_path}.lambda_"]
+        self._call_arguments.append(f"mutation_probability={mutation_probability}")
         self._call_arguments.append(f"elitist={elitist}")
-        self._call_arguments.append(f"mu={hyperparameters.get('mu')}")
-        self._call_arguments.append(f"lambda={hyperparameters.get('lambda_')}")
+        self._call_arguments.append(f"mu={mu}")
+        self._call_arguments.append(f"lambda={lambda_}")
         self._call_arguments.append(f"problem={scenario['Problem']}")
 
         # Because of the framework implementation specifics, those TSP scenario files are 'embedded' into the jar file:
@@ -39,7 +45,7 @@ class JMetalWrapper(ILLHWrapper):
         # pr439.tsp
         # rat783.tsp
         # If one needs to add a new scenario, the jar file should be modified. TSP instances should be put into
-        # tsp directory
+        # tspInstances directory
         if scenario["Problem"] == "TSP":
             scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
             self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
@@ -118,11 +124,14 @@ class JMetalWrapperTuned(JMetalWrapper):
         self._call_arguments.append("elitist=True")
         self._call_arguments.append("mu=5")
         self._call_arguments.append("lambda=605")
+        self._call_arguments.append(f"problem={scenario['Problem']}")
 
         scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
-        self._call_arguments.append(f"tsp_scenario=/tsp/{scenario_file_name}")
+        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
 
         self._attach_termination(scenario["Budget"])
+        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isParameterControlEnabled']}")
+
         self._attach_initial_solutions(parameter_control_info)
 
 
@@ -132,9 +141,12 @@ class JMetalWrapperDefault(JMetalWrapper):
         self._call_arguments.append("elitist=False")
         self._call_arguments.append("mu=500")
         self._call_arguments.append("lambda=500")
+        self._call_arguments.append(f"problem={scenario['Problem']}")
 
         scenario_file_name = scenario["InitializationParameters"]["instance"].split("/")[-1]
-        self._call_arguments.append(f"tsp_scenario=/tsp/{scenario_file_name}")
+        self._call_arguments.append(f"tsp_scenario=/tspInstances/{scenario_file_name}")
 
         self._attach_termination(scenario["Budget"])
+        self._call_arguments.append(f"isWarmStartupEnabled={scenario['isParameterControlEnabled']}")
+
         self._attach_initial_solutions(parameter_control_info)

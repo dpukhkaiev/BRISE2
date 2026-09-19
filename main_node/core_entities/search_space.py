@@ -9,6 +9,8 @@ import pandas as pd
 
 _CATEGORY = Union[str, int, float, bool]
 
+SEARCH_SPACE_PREFIX = "Context.SearchSpace"
+
 
 class Hyperparameter(ABC):
     """
@@ -476,7 +478,7 @@ class SearchSpace:
         self.regions = []
         while len(self.current_level) > 0:
             regions = self.get_regions_on_current_level()
-            for r in regions:
+            for r in sorted(regions, key=self._region_order_key):
                 self.regions.append(r)
             self.next_level()
 
@@ -485,7 +487,7 @@ class SearchSpace:
         self.hp_names = sum([[hp.name for hp in r]for r in self.regions], [])
 
     def reset_level(self):
-        self.current_level.append(self.search_space_description)
+        self.current_level = [self.search_space_description]
         self.next_level()
 
     def next_level(self):
@@ -494,6 +496,13 @@ class SearchSpace:
             children.extend(h.get_children())
         self.current_level = children
         return self.current_level
+
+    @staticmethod
+    def _region_order_key(region: Tuple[Hyperparameter]) -> str:
+        """
+        Fixed ordering based on the absolute path of its activation category.
+        """
+        return str(region[0].activation_category)
 
     def get_regions_on_current_level(self) -> Set[Tuple[Hyperparameter]]:
         regions: Set[Tuple[Hyperparameter]] = set()
@@ -588,7 +597,10 @@ class SearchSpace:
                     name: str,
                     parent: Hyperparameter = None,
                     activation_category: _CATEGORY = None) -> Hyperparameter:
-        h_name: str = name
+        if activation_category == "root":
+            h_name: str = f"{SEARCH_SPACE_PREFIX}.{name}"
+        else:
+            h_name: str = f"{activation_category}.{name}"
         h_type: str = hyperparameter_description["Type"]
         level: int = hyperparameter_description["Level"]
 

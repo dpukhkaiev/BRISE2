@@ -9,7 +9,7 @@ class RandomDefaultConfigurationHandler(DefaultConfigurationHandler):
         super().__init__(default_configuration_handler_description, experiment)
         self.predictor = Predictor(experiment.unique_id, experiment.description, experiment.search_space)
 
-    def get_default_configuration(self) -> Configuration:
+    def _build_default_configuration(self) -> Configuration:
         configuration = self.predictor.predict([], True)[0]
         configuration.type = Configuration.Type.DEFAULT
 

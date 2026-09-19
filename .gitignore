@@ -19,6 +19,12 @@ jsconfig.json
 #tests cache
 .pytest_cache
 
+# Python test coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Typings file.
 typings/
 
@@ -33,6 +39,11 @@ yarn-error.log*
 # Mac OSX Finder files.
 **/.DS_Store
 .DS_Store
+
+# Shell history/rc files
+.bashrc
+.bash_history
+.python_history
 
 *.spec.ts
 front_end/text.txt

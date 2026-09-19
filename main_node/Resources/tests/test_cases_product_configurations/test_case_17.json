@@ -56,9 +56,9 @@
                 "Surrogate": {
                     "ConfigurationTransformers": {
                         "NominalTransformer": {
-                            "SklearnBinaryEncoder": {
-                                "Type": "sklearn_binary_transformer",
-                                "Class": "sklearn.OrdinalEncoder"
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
                             }
                         }
                     },
@@ -67,7 +67,7 @@
                             "MultiObjective": false,
                             "Parameters": {
                                 "max_iter": 300,
-                                "tol": 0.001
+                                "tol": 0.01
                             },
                             "Type": "sklearn_model_wrapper",
                             "Class": "sklearn.linear_model.BayesianRidge"
@@ -150,6 +150,11 @@
             }
         }
     },
+    "DistributionMode": {
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
+        }
+    },
     "TransferLearning": {
         "TransferExpediencyDetermination": {
             "SamplingLandmarkBased": {
@@ -167,17 +172,30 @@
                 }
             }
         },
+        "ModelRecommendation": {
+            "DynamicModelsRecommendation": {
+                "RecommendationGranularity": {
+                    "Infinite": {
+                        "Value": Infinity
+                    }
+                },
+                "PerformanceMetric": {
+                    "AverageRelativeImprovement": {
+                        "Type": "average_relative_improvement"
+                    }
+                },
+                "Type": "dynamic_model_recommendation",
+                "ThresholdType": "Hard",
+                "TimeToBuildModelThreshold": 0.5,
+                "TimeUnit": "seconds"
+            }
+        },
         "MultiTaskLearning": {
             "Filters": {
                 "FewShotMultiTask": {
                     "Type": "few_shot"
                 }
             }
-        }
-    },
-    "DistributionMode": {
-        "AsynchronousDistribution": {
-            "Type": "asynchronous_distribution"
         }
     }
 }
