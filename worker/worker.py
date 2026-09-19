@@ -39,10 +39,10 @@ def energy_consumption(task: dict):
     }
 
     try:
-        logging.info(task['parameters']['frequency'])
+        logging.info(task['parameters']['Context.SearchSpace.frequency'])
         data = Splitter("scenarios/energy_consumption/" + task['Scenario']['ws_file'])
-        data.search(frequency_parameter_mapping[task['parameters']['frequency']],
-                    threads_parameter_mapping[task['parameters']['threads']])
+        data.search(frequency_parameter_mapping[task['parameters']['Context.SearchSpace.frequency']],
+                    threads_parameter_mapping[task['parameters']['Context.SearchSpace.threads']])
         result = choice(data.new_data)
         return {
             'energy': float(result["EN"]),
@@ -64,8 +64,8 @@ def genetic(task: dict):
 
     logger = logging.getLogger(__name__)
     try:
-        generations = str(task['parameters']['generations'])
-        population_size = str(task['parameters']['population_size'])
+        generations = str(task['parameters']['Context.SearchSpace.generations'])
+        population_size = str(task['parameters']['Context.SearchSpace.population_size'])
         num_top_level_components = str(task['Scenario']['numTopLevelComponents'])
         avg_num_impl_sub_components = str(task['Scenario']['avgNumImplSubComponents'])
         impl_sub_component_std_derivation = str(task['Scenario']['implSubComponentStdDerivation'])
@@ -80,17 +80,17 @@ def genetic(task: dict):
         timeout_value = str(task['Scenario']['timeoutValue'])
         timeout_unit = str(task['Scenario']['timeoutUnit'])
 
-        lambda_ = str(task['parameters']['lambda_'])
-        crossover_rate = str(task['parameters']['crossover_rate'])
-        mu = str(task['parameters']['mu'])
+        lambda_ = str(task['parameters']['Context.SearchSpace.lambda_'])
+        crossover_rate = str(task['parameters']['Context.SearchSpace.crossover_rate'])
+        mu = str(task['parameters']['Context.SearchSpace.mu'])
         ###
-        selector_type = str(task['parameters']['selector_type']).split(".")[-1]
-        mutation_rate = str(task['parameters']['mutation_rate'])
-        resources_mutation_probability = str(task['parameters']['resources_mutation_probability'])
-        evaluator_validity_weight = str(task['parameters']['evaluator_validity_weight'])
-        evaluator_software_validity_weight = str(task['parameters']['evaluator_software_validity_weight'])
-        random_software_assignment_attempts = str(task['parameters']['random_software_assignment_attempts'])
-        populate_software_solution_attempts = str(task['parameters']['populate_software_solution_attempts'])
+        selector_type = str(task['parameters']['Context.SearchSpace.selector_type']).split(".")[-1]
+        mutation_rate = str(task['parameters']['Context.SearchSpace.mutation_rate'])
+        resources_mutation_probability = str(task['parameters']['Context.SearchSpace.resources_mutation_probability'])
+        evaluator_validity_weight = str(task['parameters']['Context.SearchSpace.evaluator_validity_weight'])
+        evaluator_software_validity_weight = str(task['parameters']['Context.SearchSpace.evaluator_software_validity_weight'])
+        random_software_assignment_attempts = str(task['parameters']['Context.SearchSpace.random_software_assignment_attempts'])
+        populate_software_solution_attempts = str(task['parameters']['Context.SearchSpace.populate_software_solution_attempts'])
         ws_file = "result_v{}_q{}_d{}_r{}.csv". \
             format(num_implementations, num_requests, component_depth, excess_compute_resource_ratio)
 
@@ -145,14 +145,17 @@ def simulatedAnnealing(task: dict):
     map_unimprovedMillisecondsSpentLimit = {"Context.SearchSpace.unimprovedMillisecondsSpentLimit.tenthousand": 10000}
     try:
         # params
-        subComponentUnassignedFactor = str(task['parameters']['subComponentUnassignedFactor'])
-        softwareComponentUnassignedFactor = str(task['parameters']['softwareComponentUnassignedFactor'])
-        hardScoreStartingTemperaturePercentage = str(task['parameters']['hardScoreStartingTemperaturePercentage'])
-        softScoreStartingTemperaturePercentage = str(task['parameters']['softScoreStartingTemperaturePercentage'])
-        acceptedCountLimit = str(task['parameters']['acceptedCountLimit'])
-        millisecondsSpentLimit = map_millisecondsSpentLimit[str(task['parameters']['millisecondsSpentLimit'])]
+        subComponentUnassignedFactor = str(task['parameters']['Context.SearchSpace.subComponentUnassignedFactor'])
+        softwareComponentUnassignedFactor = str(task['parameters']['Context.SearchSpace.softwareComponentUnassignedFactor'])
+        hardScoreStartingTemperaturePercentage = str(
+            task['parameters']['Context.SearchSpace.hardScoreStartingTemperaturePercentage'])
+        softScoreStartingTemperaturePercentage = str(
+            task['parameters']['Context.SearchSpace.softScoreStartingTemperaturePercentage'])
+        acceptedCountLimit = str(task['parameters']['Context.SearchSpace.acceptedCountLimit'])
+        millisecondsSpentLimit = map_millisecondsSpentLimit[
+            str(task['parameters']['Context.SearchSpace.millisecondsSpentLimit'])]
         unimprovedMillisecondsSpentLimit = map_unimprovedMillisecondsSpentLimit[
-            str(task['parameters']['unimprovedMillisecondsSpentLimit'])]
+            str(task['parameters']['Context.SearchSpace.unimprovedMillisecondsSpentLimit'])]
 
         # scenario
 
@@ -217,14 +220,14 @@ def synthetic_problems(task: dict):
     import random as rd
     func = task["Scenario"]["function_name"]
     if func == "ackley":
-        x = task["parameters"]['x']
-        y = task["parameters"]['y']
+        x = task["parameters"]['Context.SearchSpace.x']
+        y = task["parameters"]['Context.SearchSpace.y']
         part_1 = -0.2 * math.sqrt(0.5 * (math.pow(x, 2) + math.pow(y, 2)))
         part_2 = 0.5 * (math.cos(2 * math.pi * x) + math.cos(2 * math.pi * y))
         result = -20 * math.exp(part_1) - math.exp(part_2) + math.exp(1) + 20
     elif func == "himmelblau":
-        x = task["parameters"]['x']
-        y = task["parameters"]['y']
+        x = task["parameters"]['Context.SearchSpace.x']
+        y = task["parameters"]['Context.SearchSpace.y']
         result = math.pow(math.pow(x, 2) + y + 11, 2) + math.pow(x + math.pow(y, 2) - 7, 2)
     else:
         raise TypeError(f"Unknown function name specified in scenario: {task['Scenario']}")
@@ -236,7 +239,7 @@ def synthetic_problems(task: dict):
 def tsp_hh(task: dict):
     from worker_tools.hh.llh_runner import LLHRunner
     logging.warning(task)
-    framework = "jMetalPy" if "jMetalPy" in task["parameters"]["LLH"] else "jMetal"
+    framework = "jMetalPy" if "jMetalPy" in task["parameters"]["Context.SearchSpace.LLH"] else "jMetal"
 
     if framework == "jMetalPy":
         # Trick to force the meta-heuristic use only a default, or tuned parameters.
@@ -273,7 +276,7 @@ def tsp_hh(task: dict):
 def hh(task: dict):
     from worker_tools.hh.llh_runner import LLHRunner
 
-    framework = "jMetalPy" if "jMetalPy" in task["parameters"]["LLH"] else "jMetal"
+    framework = "jMetalPy" if "jMetalPy" in task["parameters"]["Context.SearchSpace.LLH"] else "jMetal"
 
     if framework == "jMetalPy":
         if task["Scenario"]["Hyperparameters"] == 'default':
@@ -294,7 +297,7 @@ def hh(task: dict):
     else:
         raise TypeError(f"Unknown framework: {framework}")
 
-    llh_runner = LLHRunner(task, LLH_Wrapper(problem_type=task["Scenario"]["problem_type"]))
+    llh_runner = LLHRunner(task, LLH_Wrapper(problem_type=task["Scenario"]["ProblemType"]))
     llh_runner.build()
     llh_runner.execute()
     return llh_runner.report
@@ -321,15 +324,17 @@ def openml_RF_sklearn(task: dict):
         "Context.SearchSpace.criterion.gini.max_features.log2": "log2",
         "Context.SearchSpace.criterion.entropy.max_features.log2": "log2"
     }
+    # the chosen criterion's value is the absolute-path prefix its own children (max_depth, max_features, ...) are named under
+    criterion = task["parameters"]["Context.SearchSpace.criterion"]
     # Build sklearn RF pipeline
     clf = make_pipeline(StandardScaler(),
-                        RandomForestClassifier(criterion=criterion_parameter_mapping[task["parameters"]["criterion"]],
-                                               max_depth=task["parameters"]["max_depth"],
+                        RandomForestClassifier(criterion=criterion_parameter_mapping[criterion],
+                                               max_depth=task["parameters"][f"{criterion}.max_depth"],
                                                max_features=max_features_parameter_mapping[
-                                                   task["parameters"]["max_features"]],
-                                               min_samples_leaf=task["parameters"]["min_samples_leaf"],
-                                               min_samples_split=task["parameters"]["min_samples_split"],
-                                               n_estimators=task["parameters"]["n_estimators"]))
+                                                   task["parameters"][f"{criterion}.max_features"]],
+                                               min_samples_leaf=task["parameters"][f"{criterion}.min_samples_leaf"],
+                                               min_samples_split=task["parameters"][f"{criterion}.min_samples_split"],
+                                               n_estimators=task["parameters"][f"{criterion}.n_estimators"]))
 
     # evaluate classifier with cross_validation
     scores = cross_validate(clf, X, y,

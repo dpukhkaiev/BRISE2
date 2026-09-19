@@ -12,7 +12,7 @@ class BasicDefaultConfigurationHandler(DefaultConfigurationHandler):
     def __init__(self, default_configuration_handler_description: dict, experiment: Experiment):
         super().__init__(default_configuration_handler_description, experiment)
 
-    def get_default_configuration(self) -> Configuration:
+    def _build_default_configuration(self) -> Configuration:
         activated_regions = self.experiment.search_space.get_regions_on_current_level()
         assert len(activated_regions) == 1
         configuration = pd.DataFrame()
@@ -25,8 +25,8 @@ class BasicDefaultConfigurationHandler(DefaultConfigurationHandler):
                         configuration = partial_configuration
                     else:
                         configuration = configuration.join(partial_configuration)
-                self.experiment.search_space.next_level()
-                activated_regions = self.experiment.search_space.activate_regions(configuration)
+            self.experiment.search_space.next_level()
+            activated_regions = self.experiment.search_space.activate_regions(configuration)
 
         self.experiment.search_space.reset_level()
 

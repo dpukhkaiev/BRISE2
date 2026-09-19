@@ -8,7 +8,6 @@ class TransferLearningOrchestrator:
     def __init__(self, experiment_description: dict, experiment_id: str):
         self.experiment_description = experiment_description
         self.experiment_id = experiment_id
-        self.similar_experiments = []
         ted_orchestrator = TEDOrchestrator()
         self.ted_module = (
             ted_orchestrator.get_ted_module(self.experiment_description["TransferLearning"]["TransferExpediencyDetermination"],
