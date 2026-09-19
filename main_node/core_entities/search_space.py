@@ -478,7 +478,7 @@ class SearchSpace:
         self.regions = []
         while len(self.current_level) > 0:
             regions = self.get_regions_on_current_level()
-            for r in regions:
+            for r in sorted(regions, key=self._region_order_key):
                 self.regions.append(r)
             self.next_level()
 
@@ -496,6 +496,13 @@ class SearchSpace:
             children.extend(h.get_children())
         self.current_level = children
         return self.current_level
+
+    @staticmethod
+    def _region_order_key(region: Tuple[Hyperparameter]) -> str:
+        """
+        Fixed ordering based on the absolute path of its activation category.
+        """
+        return str(region[0].activation_category)
 
     def get_regions_on_current_level(self) -> Set[Tuple[Hyperparameter]]:
         regions: Set[Tuple[Hyperparameter]] = set()

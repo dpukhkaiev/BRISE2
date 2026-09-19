@@ -138,22 +138,32 @@ class DynamicModelRecommendation(ModelRecommendation):
             if resulting_best_combination is None:
                 return None
             else:
-                mapping_region_model = {}
                 search_space: SearchSpace = pickle.loads(self.database.get_last_record_by_experiment_id
                                                          ("Search_space", self.experiment_id)["SearchspaceObject"])
+                return self._build_mapping_region_model(resulting_best_combination, search_space)
 
-                models_types = []
-                for i in self.experiment_description["ConfigurationSelection"]["Predictor"].items():
-                    if "Model" in i[0]:
-                        models_types.append(i)
-                for r_index_str, model_description in resulting_best_combination.items():
-                    r_index = int(r_index_str)
-                    mapping_region_model[search_space.regions[r_index]] = Model(models_types[r_index],
-                                                                                search_space.regions[r_index],
-                                                                                self.experiment_description["Context"]
-                                                                                ["TaskConfiguration"]["Objectives"])
-                    mapping_region_model[search_space.regions[r_index]].update_surrogates_and_optimizers(model_description["Model"])
-                return mapping_region_model
+    def _build_mapping_region_model(self, model_combination: Dict,
+                                    search_space: SearchSpace) -> Dict[Tuple[Hyperparameter], Model]:
+        """
+        Rebuilds the recommended models for the current experiment.
+        :param model_combination: dict. Description of the recommended models' combination, keyed by region index
+        :param search_space: search space of the current experiment
+        :return: a mapping of region to model to be used by predictor
+        """
+        models_types = []
+        for description in self.experiment_description["ConfigurationSelection"]["Predictor"].items():
+            if "Model" in description[0]:
+                models_types.append(description)
+
+        mapping_region_model = {}
+        for region_index, model_description in model_combination.items():
+            region = search_space.regions[int(region_index)]
+            # a single model description is shared by all regions on the same level
+            model = Model(models_types[region[0].level], region,
+                          self.experiment_description["Context"]["TaskConfiguration"]["Objectives"])
+            model.update_surrogates_and_optimizers(model_description["Model"])
+            mapping_region_model[region] = model
+        return mapping_region_model
 
     @staticmethod
     def __get_average_time_to_build_models(model_combination: dict, prediction_infos: list,
