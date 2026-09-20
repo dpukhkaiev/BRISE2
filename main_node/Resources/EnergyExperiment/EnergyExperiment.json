@@ -229,7 +229,14 @@
             }
         }
     },
-    "PlotSelection": {
+    "DistributionMode": {
+        "HybridDistribution": {
+            "BatchSize": 5,
+            "InitialTimeoutInSeconds": 5.0,
+            "Type": "hybrid_distribution"
+        }
+    },
+        "PlotSelection": {
     	"Plot": {
 	    "OptimizationHistory": {},
 	    "ContourPlot": {},

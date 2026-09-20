@@ -144,6 +144,8 @@ class RepeaterOrchestration:
                     if configuration.is_valid_task(task):
                         configuration.add_task(task)
                         self.database.write_one_record("Task", configuration.get_task_record(task))
+                    else:
+                        configuration.increase_failed_tasks_number()
 
                 API().send('new', 'task', configurations=[parameters], results=[task])
 
@@ -152,13 +154,13 @@ class RepeaterOrchestration:
             needed_tasks_count = self.evaluation_by_type(configuration)
         else:
             needed_tasks_count = 0
-            configuration.status['enabled'] = False
             configuration.status['measured'] = True
             if len(configuration.get_tasks()) == 0:
                 publish(exchange="experiment_api_exchange",
                         routing_key=self.experiment_id,
                         body="increment_bad_configuration_number")
                 configuration.disable_configuration()
+            configuration.status['enabled'] = False
         current_measurement = {
             str(configuration.parameters): {
                 'parameters': configuration.parameters,

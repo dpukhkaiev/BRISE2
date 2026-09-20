@@ -9,6 +9,8 @@ import pandas as pd
 
 _CATEGORY = Union[str, int, float, bool]
 
+SEARCH_SPACE_PREFIX = "Context.SearchSpace"
+
 
 class Hyperparameter(ABC):
     """
@@ -352,7 +354,7 @@ class IntegerHyperparameter(NumericHyperparameter):
         self.type = "Integer"
 
     def get_size(self) -> Union[int, np.inf]:
-        return self._upper - self._lower
+        return self._upper - self._lower + 1
 
     def transform(self, value) -> int:
         return round(self._lower + value*(self._upper - self._lower))
@@ -476,7 +478,7 @@ class SearchSpace:
         self.regions = []
         while len(self.current_level) > 0:
             regions = self.get_regions_on_current_level()
-            for r in regions:
+            for r in sorted(regions, key=self._region_order_key):
                 self.regions.append(r)
             self.next_level()
 
@@ -485,7 +487,7 @@ class SearchSpace:
         self.hp_names = sum([[hp.name for hp in r]for r in self.regions], [])
 
     def reset_level(self):
-        self.current_level.append(self.search_space_description)
+        self.current_level = [self.search_space_description]
         self.next_level()
 
     def next_level(self):
@@ -494,6 +496,13 @@ class SearchSpace:
             children.extend(h.get_children())
         self.current_level = children
         return self.current_level
+
+    @staticmethod
+    def _region_order_key(region: Tuple[Hyperparameter]) -> str:
+        """
+        Fixed ordering based on the absolute path of its activation category.
+        """
+        return str(region[0].activation_category)
 
     def get_regions_on_current_level(self) -> Set[Tuple[Hyperparameter]]:
         regions: Set[Tuple[Hyperparameter]] = set()
@@ -547,16 +556,9 @@ class SearchSpace:
         return max([hp.level for hp in flattened_parameters]) + 1  # levels start with 0
 
     def __get_size(self) -> Union[int, np.inf]:
-        size = 0
-        flattened_parameters = self.flatten(self.hierarchical_view)
-        for hp in flattened_parameters:
-            if hp.get_type() in ("Nominal", "Ordinal"):
-                size += len(hp.categories)
-            elif hp.get_type() == "Integer":
-                size += hp.get_upper() - hp.get_lower()
-            else:
-                return np.inf
-        return size
+        # the root Hyperparameter recursively accumulates all valid combinations of its children,
+        # including the infinite ones contributed by Float Hyperparameters
+        return self.hierarchical_view.get_size()
 
     def initialize_hierarchical_view(self, hyperparameter_description: dict) -> Hyperparameter:
         """
@@ -595,7 +597,10 @@ class SearchSpace:
                     name: str,
                     parent: Hyperparameter = None,
                     activation_category: _CATEGORY = None) -> Hyperparameter:
-        h_name: str = name
+        if activation_category == "root":
+            h_name: str = f"{SEARCH_SPACE_PREFIX}.{name}"
+        else:
+            h_name: str = f"{activation_category}.{name}"
         h_type: str = hyperparameter_description["Type"]
         level: int = hyperparameter_description["Level"]
 

@@ -189,5 +189,10 @@
         "RandomDCH": {
             "Type": "random_default_config_handler"
         }
+    },
+    "DistributionMode": {
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
+        }
     }
 }

@@ -10,7 +10,7 @@ import shutil
 import uuid
 from copy import deepcopy
 from functools import wraps
-from threading import Thread
+from threading import Lock, Thread
 from typing import Union
 
 import numpy as np
@@ -400,6 +400,92 @@ class BRISEBenchmarkRunner:
             self.execute_experiment(experiment_description)
 
         return self.counter
+    
+    @_benchmarkable
+    def benchmark_distribution_modes(self):
+        """
+        Benchmarks the influence of DistributionMode.
+
+        1. Runs a baseline using AsynchronousDistribution.
+        2. Sweeps through various batch sizes for BatchedDistribution.
+        3. Sweeps through various batch sizes for HybridDistribution.
+        """
+        self.logger.info('In Benchmark function ...')
+
+        self._experiment_timeout = 5 * 60
+
+        self.logger.info("Load Configuration: ...")
+        self._base_experiment_description, self._base_search_space = \
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/EnergyExperiment_Bdistr.json")
+
+        # --- Define Skeletons ---
+        # ! DistributionMode is an xor group: the parameters of a strategy belong
+        # ! inside the selected strategy, so that 'update' swaps the whole group.
+
+        # Skeleton 1: Asynchronous (Baseline)
+        async_skeleton = {
+            "DistributionMode": {
+                "AsynchronousDistribution": {
+                    "Type": "asynchronous_distribution"
+                }
+            }
+        }
+
+        # Skeleton 2: Batched (Template sweeping)
+        batched_skeleton = {
+            "DistributionMode": {
+                "BatchedDistribution": {
+                    "BatchSize": 1,
+                    "Type": "batched_distribution"
+                }
+            }
+        }
+
+        # Skeleton 3: Hybrid (Template sweeping)
+        hybrid_skeleton = {
+            "DistributionMode": {
+                "HybridDistribution": {
+                    "BatchSize": 1,
+                    "InitialTimeoutInSeconds": 5.0,
+                    "Type": "hybrid_distribution"
+                }
+            }
+        }
+
+        # Get the base experiment description
+        experiment_description = self.base_experiment_description
+
+        # --- 1. Run Baseline (Async) ---
+        self.logger.info("Executing benchmark: AsynchronousDistribution")
+        experiment_description.update(deepcopy(async_skeleton))
+        self.execute_experiment(experiment_description)
+
+        # --- 2. Run Batched Sweep ---
+        batched_sizes_to_test = [9]
+        hybrid_sizes_to_test = [6, 7, 8, 9]
+
+        for size in batched_sizes_to_test:
+            self.logger.info(f"Executing benchmark: BatchedDistribution with size {size}")
+
+            # Reset the config to the batched skeleton
+            experiment_description.update(deepcopy(batched_skeleton))
+            experiment_description['DistributionMode']['BatchedDistribution']['BatchSize'] = size
+
+            # Execute the run
+            self.execute_experiment(experiment_description)
+
+        # --- 3. Run Hybrid Sweep ---
+        for size in hybrid_sizes_to_test:
+            self.logger.info(f"Executing benchmark: HybridDistribution with size {size}")
+
+            # Reset the config to the hybrid skeleton
+            experiment_description.update(deepcopy(hybrid_skeleton))
+            experiment_description['DistributionMode']['HybridDistribution']['BatchSize'] = size
+
+            # Execute the run
+            self.execute_experiment(experiment_description)
+
+        return self.counter
 
     @_benchmarkable
     def fill_db(self):
@@ -671,6 +757,11 @@ class MainAPIClient:
         self.customer_thread.start()
         self.response = None
         self.corr_id = None
+        # pika's BlockingConnection is not thread-safe: the main thread (via
+        # perform_experiment) and the ConsumerThread (via final_event ->
+        # download_latest_dump) both call() into this same connection, so every
+        # round-trip must be serialized.
+        self._rpc_lock = Lock()
 
     def on_response(self, ch: pika.spec.Channel, method: pika.spec.methods, properties: pika.spec.BasicProperties,
                     body: bytes):
@@ -694,22 +785,23 @@ class MainAPIClient:
             - download_dump: to download dump file
         :param param: body for a specific action. See details in specific action in main_node/api-supreme.py
         """
-        self.response = None
-        self.corr_id = str(uuid.uuid4())
+        with self._rpc_lock:
+            self.response = None
+            self.corr_id = str(uuid.uuid4())
 
-        self.channel.basic_publish(
-            exchange='',
-            routing_key=f'main_{action}_queue',
-            properties=pika.BasicProperties(
-                reply_to="main_responses",
-                correlation_id=self.corr_id,
-                headers={'body_type': 'pickle'}
-            ),
-            body=param)
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=f'main_{action}_queue',
+                properties=pika.BasicProperties(
+                    reply_to="main_responses",
+                    correlation_id=self.corr_id,
+                    headers={'body_type': 'pickle'}
+                ),
+                body=param)
 
-        while self.response is None:
-            self.connection.process_data_events()
-        return self.response
+            while self.response is None:
+                self.connection.process_data_events()
+            return self.response
 
     def update_status(self):
         status_report = self.call("status")

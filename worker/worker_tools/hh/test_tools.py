@@ -10,13 +10,13 @@ def test_tsp_hh(task: dict) -> dict:
     The principle is following: depending on the heuristic name, specified in task and iteration counter (simulates
     the RL process), stub returns improvement in a solution quality.
 
-    For instance, currently it is specified that if the task is to run jMetalPy.SimulatedAnnealing, the improvement
-    would be in random range from 0.9 to 1.2 (some abstract points), but if jMetalPy.EvolutionStrategy is specified,
+    For instance, currently it is specified that if the task is to run jMetalPySimulatedAnnealing, the improvement
+    would be in random range from 0.9 to 1.2 (some abstract points), but if jMetalPyEvolutionStrategy is specified,
     the improvement will be higher (1.3 ... 2.3). Thus, LLH selection strategy after a couple of tasks should
-    find out, that jMetalPy.EvolutionStrategy is better config than SimulatedAnnealing and use it more frequently.
+    find out, that jMetalPyEvolutionStrategy is better config than SimulatedAnnealing and use it more frequently.
 
     Simultaneously, since SimulatedAnnealing and GeneticAlgorithm are of the same quality, ideally, they should be
-    selected with the same frequency, while jMetal.EvolutionStrategy just a little bit more frequently (or negligibly).
+    selected with the same frequency, while jMetalEvolutionStrategy just a little bit more frequently (or negligibly).
     :param task:
     :return:
     """
@@ -28,16 +28,16 @@ def test_tsp_hh(task: dict) -> dict:
         base_result = 3000000
         return base_result - sum((b * 100000/math.exp(x / 10) for x in range(i)))
 
-    mh_name = task["parameters"]["low level heuristic"]
+    mh_name = task["parameters"]["Context.SearchSpace.LLH"].split(".")[-1]
     iteration = task['parameter_control_info']['iteration'] if 'iteration' in task['parameter_control_info'].keys() else 0
     # by changing the boost, the favor should move from one MH to another.
-    if mh_name == 'jMetalPy.SimulatedAnnealing':
+    if mh_name == 'jMetalPySimulatedAnnealing':
         boost = rd.uniform(0.9, 1.2)
-    elif mh_name == "jMetalPy.GeneticAlgorithm":
+    elif mh_name == "jMetalPyGeneticAlgorithm":
         boost = rd.uniform(0.9, 1.2)
-    elif mh_name == "jMetalPy.EvolutionStrategy":
+    elif mh_name == "jMetalPyEvolutionStrategy":
         boost = rd.uniform(1.3, 2.3)
-    elif mh_name == "jMetal.EvolutionStrategy":
+    elif mh_name == "jMetalEvolutionStrategy":
         boost = rd.uniform(0.9, 1.3)
     else:
         raise TypeError("Wrong MH")

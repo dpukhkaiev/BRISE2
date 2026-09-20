@@ -140,14 +140,19 @@
                 }
             }
         },
+        "ModelRecommendation": {
+            "FewShotRecommendation": {
+                "Type": "few_shot"
+            }
+        },
         "MultiTaskLearning": {
             "Filters": {
                 "OldNewRatio": {
                     "Type": "old_new_ratio",
                     "OldNewConfigsRatio": 1
                 },
-                "FewShotMultiTask": {
-                    "Type": "few_shot"
+                "ShuffleConfigurations": {
+                    "Type": "shuffle"
                 }
             }
         }
@@ -155,6 +160,13 @@
     "DefaultConfigurationHandler": {
         "RandomDCH": {
             "Type": "random_default_config_handler"
+        }
+    },
+    "DistributionMode": {
+        "HybridDistribution": {
+            "BatchSize": 5,
+            "InitialTimeoutInSeconds": 5.0,
+            "Type": "hybrid_distribution"
         }
     }
 }

@@ -1,6 +1,7 @@
 worker-node/pycache
 pycache
 env
+.env
 *.log
 *.pyc
 .idea/
@@ -18,6 +19,12 @@ jsconfig.json
 #tests cache
 .pytest_cache
 
+# Python test coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Typings file.
 typings/
 
@@ -33,5 +40,34 @@ yarn-error.log*
 **/.DS_Store
 .DS_Store
 
+# Shell history/rc files
+.bashrc
+.bash_history
+.python_history
+
 *.spec.ts
 front_end/text.txt
+
+# Internal debug tooling
+docker-compose.debug.yml
+brise_debug.sh
+DEBUGGING.md
+Dockerfile_external
+
+# AI assistant artefacts
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.cursor/
+.cursorrules
+.cursorrules.local
+.aider*
+.continue/
+.windsurf/
+.windsurfrules
+.clinerules/
+.clinerules
+.github/copilot-instructions.md
+.copilot/
+AGENTS.md
+GEMINI.md

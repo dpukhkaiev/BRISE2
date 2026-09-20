@@ -109,12 +109,4 @@ def add_configuration_to_experiment(
 
 
 def send_new_configurations(cs: ConfigurationSelection, get_workers_fixture):
-    try:
-        predicted, measured = cs.send_new_configurations_to_measure(
-            "", "", "", get_workers_fixture
-        )
-        return predicted, measured
-    except Exception as e:
-        print(f"Failed to send new configurations: {e}")
-        print_stack()
-        return None, None
+    return cs.send_new_configurations_to_measure("", "", "", get_workers_fixture)
