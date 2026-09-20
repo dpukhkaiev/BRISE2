@@ -4,19 +4,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import Heatmap from '@/widgets/charts/heatmap/ui/Heatmap.vue'
 
-vi.mock('plotly.js-dist-min', () => {
-    const mockPlotly = {
-        react: vi.fn().mockResolvedValue(undefined),
-        purge: vi.fn(),
-    }
-    return {
-        __esModule: true,
-        default: mockPlotly,
-        ...mockPlotly
-    }
-})
-
-import PlotlyMock from 'plotly.js-dist-min'
+const PlotlyMock = vi.hoisted(() => ({
+    react: vi.fn().mockResolvedValue(undefined),
+    purge: vi.fn(),
+}))
 
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({

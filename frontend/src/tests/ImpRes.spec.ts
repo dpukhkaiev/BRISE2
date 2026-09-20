@@ -4,20 +4,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref, defineComponent, h, Suspense } from 'vue'
 import ImpRes from '../widgets/charts/imp-res/ui/ImpRes.vue'
 
-vi.mock('plotly.js-dist-min', () => {
-    const mockPlotly = {
-        react: vi.fn().mockResolvedValue(undefined),
-        purge: vi.fn(),
-        extendTraces: vi.fn(),
-        restyle: vi.fn(),
-    }
-    return {
-        __esModule: true,
-        default: mockPlotly,
-        ...mockPlotly
-    }
-})
-
+const PlotlyMock = vi.hoisted(() => ({
+    react: vi.fn().mockResolvedValue(undefined),
+    purge: vi.fn(),
+    extendTraces: vi.fn(),
+    restyle: vi.fn(),
+}))
 
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
@@ -64,8 +56,6 @@ const mountComponent = () => {
         }
     })
 }
-import PlotlyMock from 'plotly.js-dist-min'
-
 
 describe('ImpRes.vue', () => {
     beforeEach(() => {

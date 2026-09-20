@@ -30,7 +30,11 @@ const scenarioLabel = computed(() =>
 </script>
 <template>
   <div class="button-row">
-    <v-card flat border rounded="lg">
+    <v-card
+      flat
+      border
+      rounded="lg"
+    >
       <v-card-item class="mb-2">
         <div class="info-row">
           <span class="label">Experiment</span>
@@ -44,16 +48,38 @@ const scenarioLabel = computed(() =>
         </div>
       </v-card-item>
       <v-card-actions>
-        <v-btn :disabled="isRunning || !isConnected" :ripple="false" color="#A8D5A2" style="color: #2D6A27;"
-          variant="elevated" prepend-icon="mdi-play" @click="startMainControl">
+        <v-btn
+          :disabled="isRunning || !isConnected"
+          :ripple="false"
+          color="#A8D5A2"
+          style="color: #2D6A27;"
+          variant="elevated"
+          prepend-icon="mdi-play"
+          @click="startMainControl"
+        >
           Start
         </v-btn>
-        <v-btn :ripple="false" :disabled="!isRunning" color="#F4B8B8" style="color: #8B2E2E;" variant="elevated"
-          prepend-icon="mdi-stop" @click="stopMainControl">
+        <v-btn
+          :ripple="false"
+          :disabled="!isRunning"
+          color="#F4B8B8"
+          style="color: #8B2E2E;"
+          variant="elevated"
+          prepend-icon="mdi-stop"
+          @click="stopMainControl"
+        >
           Stop
         </v-btn>
-        <v-btn v-if="isFinish" :ripple="false" class="text-none text-body-small" append-icon="mdi-content-save"
-          color="#B8C9F4" style="color: #2E3F8B;" variant="outlined" @click="openDownloadOption">
+        <v-btn
+          v-if="isFinish"
+          :ripple="false"
+          class="text-none text-body-small"
+          append-icon="mdi-content-save"
+          color="#B8C9F4"
+          style="color: #2E3F8B;"
+          variant="outlined"
+          @click="openDownloadOption"
+        >
           Save Experiment
         </v-btn>
         <v-file-input v-model="selectedFile" />
@@ -72,10 +98,18 @@ const scenarioLabel = computed(() =>
                 </v-list>-->
       </v-card-actions>
 
-      <v-progress-linear v-if="isRunning" indeterminate color="#FF9800" height="4"
-        style="position:absolute; bottom: 0; left: 0; right: 0;" />
+      <v-progress-linear
+        v-if="isRunning"
+        indeterminate
+        color="#FF9800"
+        height="4"
+        style="position:absolute; bottom: 0; left: 0; right: 0;"
+      />
     </v-card>
-    <v-dialog v-model="showDownload" max-width="350">
+    <v-dialog
+      v-model="showDownload"
+      max-width="350"
+    >
       <DownloadPopup @close="showDownload = false" />
     </v-dialog>
   </div>

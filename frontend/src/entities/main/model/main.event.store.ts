@@ -34,7 +34,33 @@ export const useMainEventStore = defineStore('mainEvent', () => {
    async function loadPlotly() {
       if (!plotlyInstance.value) {
          try {
-            plotlyInstance.value = await import('plotly.js-dist-min')
+            // plotly.js assumes a Node-like `global`
+            // object in some of its internals: shim it before importing.
+            if (typeof (globalThis as any).global === 'undefined') {
+               (globalThis as any).global = globalThis
+            }
+
+            const [core, heatmap, scattergl, parcoords, contour, bar] = await Promise.all([
+               import('plotly.js/lib/core'),
+               import('plotly.js/lib/heatmap'),
+               import('plotly.js/lib/scattergl'),
+               import('plotly.js/lib/parcoords'),
+               import('plotly.js/lib/contour'),
+               import('plotly.js/lib/bar'),
+            ])
+            const Plotly = core.default
+
+            // 'scatter' is intentionally not registered here: plotly.js/lib/core
+            // registers it internally by default.
+            Plotly.register([
+               heatmap.default,
+               scattergl.default,
+               parcoords.default,
+               contour.default,
+               bar.default,
+            ])
+
+            plotlyInstance.value = Plotly
             console.log('Plotly successfully initialized')
          } catch (error) {
             console.error('no success', error)

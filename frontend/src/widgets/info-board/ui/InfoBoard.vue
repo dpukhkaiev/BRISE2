@@ -168,13 +168,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <v-expansion-panels elevation="2" multiple>
+  <v-expansion-panels
+    elevation="2"
+    multiple
+  >
     <!-- Panel 1 -->
     <v-expansion-panel :disabled="news.length === 0">
       <v-expansion-panel-title class="info">
         Info messages
 
-        <v-icon icon="mdi-text-box" class="mx-2" />
+        <v-icon
+          icon="mdi-text-box"
+          class="mx-2"
+        />
         <p class="ml-4">
           Basic information from the workflow of experiments ({{ news ? news.length : "0" }})
         </p>
@@ -182,8 +188,15 @@ onUnmounted(() => {
       <v-expansion-panel-text>
         <!-- Logs list -->
 
-        <v-list v-if="news.length != 0" lines="two">
-          <v-list-item v-for="info in news" :key="info.time" prepend-icon="mdi-check">
+        <v-list
+          v-if="news.length != 0"
+          lines="two"
+        >
+          <v-list-item
+            v-for="info in news"
+            :key="info.time"
+            prepend-icon="mdi-check"
+          >
             <v-list-item-title>{{ info.message }}</v-list-item-title>
             <v-list-item-subtitle>
               {{ new Date(info.time).toLocaleDateString() }}
@@ -205,7 +218,10 @@ onUnmounted(() => {
         A solution that is found by BRISE ({{ solutionState.solution ? 'Done' : 'Please stand by..' }})
       </v-expansion-panel-text>
       <v-expansion-panel-text>
-        <v-list v-if="solutionState.solution" class="solution">
+        <v-list
+          v-if="solutionState.solution"
+          class="solution"
+        >
           <v-list-item prepend-icon="mdi-flag">
             <span class="desc">Configuration: </span> <span>{{ solutionState.configWithNones }}</span>
           </v-list-item>
@@ -215,7 +231,10 @@ onUnmounted(() => {
           </v-list-item>
 
           <v-list-item prepend-icon="mdi-network">
-            <span v-if="dc.length && sol.length" class="desc">Quality gain: </span>
+            <span
+              v-if="dc.length && sol.length"
+              class="desc"
+            >Quality gain: </span>
             <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
               %</span>
           </v-list-item>
@@ -224,14 +243,16 @@ onUnmounted(() => {
             <span class="desc">Performed measurements: </span>
             <span>{{ solutionState.solution['performed_measurements'] }}</span>
           </v-list-item>
-
         </v-list>
       </v-expansion-panel-text>
     </v-expansion-panel>
   </v-expansion-panels>
 
   <!-- Snackbar global -->
-  <v-snackbar v-model="snackbar" :timeout="duration">
+  <v-snackbar
+    v-model="snackbar"
+    :timeout="duration"
+  >
     {{ snackbarMsg }}
   </v-snackbar>
 </template>

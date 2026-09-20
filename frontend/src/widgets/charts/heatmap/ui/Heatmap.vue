@@ -3,8 +3,6 @@ import { ref, onMounted, watch, computed, nextTick } from 'vue'
 //import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 
-// Plotly
-//import Plotly from 'plotly.js-dist-min'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 
 import { MainEvent } from '../../../../entities/main'
@@ -238,12 +236,17 @@ onMounted(() => {
 
 </script>
 <template>
-    <div v-if="isModelType === 'regression'">
-        <div ref="map" />
-    </div>
-    <select v-model="theme.color" @change="render">
-        <option v-for="col in colors" :key="col" :value="col">
-
-        </option>
-    </select>
+  <div v-if="isModelType === 'regression'">
+    <div ref="map" />
+  </div>
+  <select
+    v-model="theme.color"
+    @change="render"
+  >
+    <option
+      v-for="col in colors"
+      :key="col"
+      :value="col"
+    />
+  </select>
 </template>

@@ -50,12 +50,6 @@ vi.mock('pinia', async (importOriginal) => {
     }
 })
 
-vi.mock('plotly.js-dist-min', () => ({
-    __esModule: true,
-    default: hoistedPlotly,
-    ...hoistedPlotly
-}))
-
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => mockStoreState),
     MainEvent: { NEW: 'NEW', FINAL: 'FINAL', DEFAULT: 'DEFAULT' }

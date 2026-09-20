@@ -42,7 +42,7 @@ const isModelType = computed(() => {
     if (!experiment_description.value) return 'unknown'
     const exp = experiment_description.value as any
     const model = exp.ConfigurationSelection?.Predictor?.Model
-    return !!model?.Surrogate?.Instance?.LinearRegression ? 'regression' : 'unknown'
+    return model?.Surrogate?.Instance?.LinearRegression ? 'regression' : 'unknown'
 })
 
 
@@ -240,12 +240,22 @@ function initMainEvents() {
 </script>
 
 <template>
-    <div v-if="isModelType === 'regression'">
-        <div ref="map" class="heatmap-container" />
-    </div>
-    <select v-model="theme.color" @change="render">
-        <option v-for="col in colors" :key="col" :value="col"></option>
-    </select>
+  <div v-if="isModelType === 'regression'">
+    <div
+      ref="map"
+      class="heatmap-container"
+    />
+  </div>
+  <select
+    v-model="theme.color"
+    @change="render"
+  >
+    <option
+      v-for="col in colors"
+      :key="col"
+      :value="col"
+    />
+  </select>
 </template>
 
 <style scoped>

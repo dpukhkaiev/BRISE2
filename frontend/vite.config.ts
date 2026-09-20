@@ -19,6 +19,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  define: {
+    // plotly.js assumes a Node-like `global` object
+    // in some of its internals (e.g. the cartesian axis module): shim it to
+    // globalThis for the browser.
+    global: 'globalThis'
+  },
   optimizeDeps: {
     include: ['@stomp/stompjs', '@stomp/rx-stomp']
   },

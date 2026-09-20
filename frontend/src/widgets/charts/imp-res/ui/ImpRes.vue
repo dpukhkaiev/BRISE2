@@ -2,9 +2,6 @@
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 
-// Plotly
-//import Plotly from 'plotly.js-dist-min'
-
 import { MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model';
 
@@ -31,20 +28,9 @@ let solution: Solution
 
 const isVisible = ref(false)
 
-let plotlyInstance: typeof import('plotly.js-dist-min') | null = null
-
 const { allRes, bestRes, reset, pushInitial, pushTracked } = useResultTracker()
 
 const impr = ref<HTMLElement | null>(null)
-
-// lazy loading plotly
-async function getPlotly() {
-    if (!plotlyInstance) {
-        plotlyInstance = await import('plotly.js-dist-min')
-    }
-    return plotlyInstance
-}
-
 
 onMounted(() => {
     initMainEvents()
@@ -153,7 +139,7 @@ function initMainEvents() {
         const element = impr.value
         isVisible.value = false
         isChartInitialized.value = false
-        const Plotly = plotlyInstance
+        const Plotly = store.plotlyInstance
         // will clear the div, and remove any Plotly plots that have been placed in it
         if (element && Plotly) {
             Plotly.purge(element)
@@ -259,5 +245,8 @@ function initMainEvents() {
 </script>
 
 <template>
-    <div v-show="isVisible" ref="impr" />
+  <div
+    v-show="isVisible"
+    ref="impr"
+  />
 </template>
