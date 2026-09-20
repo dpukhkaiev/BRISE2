@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 
 const rxStompRPC = new RxStompRPC(stompClient)
 export function startMain(description: any): void {
-    const myServiceEndPoint = 'main_start_queue';
+    const myServiceEndPoint = '/queue/main_start_queue';
     const request = JSON.stringify({ "Method": "GET", "Description": description })
     const headers = { 'body_type': 'json' }
     // stompClient.publish({destination: myServiceEndPoint, body: request, headers})  
@@ -19,20 +19,20 @@ export function startMain(description: any): void {
 }
 
 export function getMainStatus(): void {
-    const myServiceEndPoint = 'main_status_queue'
+    const myServiceEndPoint = '/queue/main_status_queue'
     firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: '' })
     ).catch(err => console.error('getMainStatus error: ', err))
 }
 
 export function stopMain(): void {
-    const myServiceEndPoint = 'main_stop_queue'
+    const myServiceEndPoint = '/queue/main_stop_queue'
     //stompClient.publish({destination: myServiceEndPoint, body:''}) 
     firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: '' })
     ).catch(err => console.error('stopMain error: ', err))
 } 
 
 export async function downloadDump(format = 'pkl'): Promise<any> {
-    const myServiceEndPoint = 'main_download_dump_queue'
+    const myServiceEndPoint = '/queue/main_download_dump_queue'
     const request = `{"format": "${format}"}`
     const response = await firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: request }))
     const object = JSON.parse(response.body)

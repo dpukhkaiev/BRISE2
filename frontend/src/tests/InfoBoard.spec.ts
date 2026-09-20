@@ -11,7 +11,7 @@ import { ref } from 'vue'
 const vuetify = createVuetify({ components, directives })
 
 // record for storing event callbacks to trigger them in test later
-// eslint-disable-next-line no-unused-vars -- `message` is a function-type parameter name, not a real unused variable
+// eslint-disable-next-line no-unused-vars 
 let eventCallbacks: Record<string, (message: any) => void> = {}
 const mockUnsubscribe = vi.fn()
 
