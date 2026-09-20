@@ -35,7 +35,7 @@ export function zip(keys: Array<any>, values: Array<any>) {
     if (isNumeric) {
         dim.values = cleanedValues.map((v: any) => Number(v))
     } else {
-        let categories: string[] = []
+        let categories: string[]
 
         if (valuesRange && Array.isArray(valuesRange) && valuesRange.length > 0) {
             categories = valuesRange.map((v: any) => cleanIdentifier(v))

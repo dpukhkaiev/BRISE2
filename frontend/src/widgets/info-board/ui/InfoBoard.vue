@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, shallowRef, onUnmounted } from 'vue'
+import { onMounted, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 // Constant
 import { MainEvent } from '../../../entities/main'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '@mdi/font/css/materialdesignicons.css'
-import { onMounted, computed } from 'vue'
+import { computed } from 'vue'
 
 
 // download feature

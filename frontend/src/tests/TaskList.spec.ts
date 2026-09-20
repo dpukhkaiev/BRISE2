@@ -15,6 +15,7 @@ globalThis.ResizeObserver = class ResizeObserver {
 
 const vuetify = createVuetify({ components, directives })
 
+// eslint-disable-next-line no-unused-vars
 let eventCallbacks: Record<string, (message: any) => void>
 let mockUnsubscribe: any
 let mockExperimentDescription: any

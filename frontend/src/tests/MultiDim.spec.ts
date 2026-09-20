@@ -75,7 +75,7 @@ describe('MultiDim', () => {
     }
 
     it('should render the DOM element and pass correctly mapped axes to Plotly on a NEW event', async () => {
-        const wrapper = mountWithState()
+        mountWithState()
         await flushPromises()
         await nextTick()
 

@@ -56,7 +56,7 @@ describe('Heatmap.vue', () => {
     })
 
     it('should process the NEW event and update measurement points', async () => {
-        const wrapper = mountComponent()
+        mountComponent()
         await flushPromises()
 
         if (eventCallbacks['NEW']) {
@@ -70,7 +70,7 @@ describe('Heatmap.vue', () => {
 
 
     it('should process the FINAL event and render the solution star trace', async () => {
-        const wrapper = mountComponent()
+        mountComponent()
         await flushPromises()
 
         const mockMessage = {

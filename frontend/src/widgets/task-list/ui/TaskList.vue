@@ -149,7 +149,7 @@ defineExpose({
         :items="filteredResult"
       >
         <!-- Configuration Column -->
-        <template #item.run="{ item }">
+        <template #[`item.run`]="{ item }">
           <span
             v-for="(value, key) in normalizeConfigKeys(item.config)"
             :key="key"
@@ -157,7 +157,7 @@ defineExpose({
             {{ (key) }} = {{ (value) }} ;
           </span>
         </template>
-        <template #item.roundedResults="{ item }">
+        <template #[`item.roundedResults`]="{ item }">
           <span
             v-for="(value, key) in normalizeConfigKeys(item.roundedResults)"
             :key="key"

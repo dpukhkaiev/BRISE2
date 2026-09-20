@@ -29,7 +29,7 @@ const theme = ref({
     smooth: Smooth[0] as string | boolean
 })
 const colors = Color
-const types = PlotType
+// const types = PlotType
 
 function resetRes() {
     result.value.clear()

@@ -1,11 +1,3 @@
-// Socket.io events
-export const Event = {
-    CONNECT: 'connect',
-    DISCONNECT: 'disconnect'
-} as const;
-
-export type Event = typeof Event[keyof typeof Event]
-
 export const MainEvent = {
     CONNECT: 'connect',
     DISCONNECT: 'disconnect',
@@ -16,6 +8,7 @@ export const MainEvent = {
     FINAL: 'final',
     LOG: 'log'
 } as const;
+// eslint-disable-next-line no-redeclare
 export type MainEvent = typeof MainEvent[keyof typeof MainEvent];
 
 export const SubEvent = {

@@ -3,19 +3,20 @@ import { ref, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { MainEvent } from '../../../../entities/main'
-import type { Solution } from '../../../../entities/task/model/task-data.model';
+// import type { Solution } from '../../../../entities/task/model/task-data.model'
 
 //service
 import { useMainEventStore } from '../../../../entities/main'
 
 import { useResultTracker } from '../model/result-calc'
 
-interface PointExp {
-    configurations: Array<any>;
-    results: Array<any>;
-    time: any;
-    'measured points': number;
-}
+// interface PointExp {
+//     configurations: Array<any>;
+//     results: Array<any>;
+//     time: any;
+//     'measured points': number;
+// }
+
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
@@ -24,7 +25,7 @@ const { experiment_description } = storeToRefs(store)
 
 const isChartInitialized = ref(false)
 
-let solution: Solution
+// let solution: Solution
 
 const isVisible = ref(false)
 
@@ -154,7 +155,7 @@ function initMainEvents() {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
-                solution = configuration
+                // solution = configuration
                 pushInitial(configuration)
             })
             // render when chart is initialized
@@ -171,7 +172,7 @@ function initMainEvents() {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {
-                solution = configuration;
+                // solution = configuration;
                 pushInitial(configuration)
             });
             isVisible.value = true
@@ -197,37 +198,7 @@ function initMainEvents() {
 
 
             configs.forEach((configuration: any) => {
-                const min = new Date().getMinutes();
-                const sec = new Date().getSeconds();
-                // number der measuret points before pushing into an array
-                const currentPointIndex = allRes.value.length + 1;
-
-                allRes.value.push({
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': currentPointIndex
-                }) // add new point (resut)
-
-                const temp: PointExp = {
-                    'configurations': Object.values(configuration.configurations),
-                    'results': Object.values(configuration.results),
-                    'time': min + 'm ' + sec + 's',
-                    'measured points': currentPointIndex
-                }
-
-                // compare to the last best point
-                const lastBest = bestRes.value.at(-1)
-                if (lastBest) {
-                    const isBetter = isMinimization ? temp.results[0] < lastBest.results[0] : temp.results[0] > lastBest.results[0]
-                    if (!isBetter) {
-                        temp.results = lastBest.results
-                        temp.configurations = lastBest.configurations
-                    }
-                }
-
-                bestRes.value.push(temp) // add the best availbale point(result) 
-
+                pushTracked(configuration, isMinimization)
             })
             isVisible.value = true
             nextTick(() => {

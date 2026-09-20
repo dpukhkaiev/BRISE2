@@ -14,7 +14,7 @@ export function useLaunchControl() {
     // create a store 
   const store = useMainEventStore()
   // destructure reactive value from main.event.store
-  const { experiment_description, searchspace, isConnected } = storeToRefs(store)
+  const { experiment_description, isConnected } = storeToRefs(store)
 
 const subscriptions = new Subscription()
 subscriptions.add(

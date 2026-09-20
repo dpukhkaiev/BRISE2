@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { downloadPopUp } from '../features/download-popup/api/download.api' 
 import { downloadDump } from '../entities/main/api/main.client.store'
 import { saveAs } from 'file-saver'
-import type { Mock } from 'vitest'
 
 vi.mock('../entities/main/api/main.client.store', () => ({
   downloadDump: vi.fn(),

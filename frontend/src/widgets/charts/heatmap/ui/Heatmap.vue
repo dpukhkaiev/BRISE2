@@ -14,6 +14,8 @@ import { cleanIdentifier } from '../../../../shared/lib'
 
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 
+defineOptions({ name: 'HeatmapChart' })
+
 interface Configuration {
     configurations: Array<any>;
     results: any;
@@ -79,11 +81,10 @@ const resultLookup = computed(() => {
     result.value.forEach((v, k) => map.set(k, v?.[0]))
     return map
 })
-const zMatrix = computed(() => DataTransformer.buildZMatrix(
-    x.value.map(String),
-    y.value.map(String),
-    resultLookup.value))
-
+// const zMatrix = computed(() => DataTransformer.buildZMatrix(
+//     x.value.map(String),
+//     y.value.map(String),
+//     resultLookup.value))
 
 async function render(): Promise<void> {
     const Plotly = store.plotlyInstance

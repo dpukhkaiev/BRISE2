@@ -97,8 +97,6 @@ it('NEW event incoming points update the chart', async () => {
         const wrapper = mountComponent()
         await flushPromises()
 
-        const impResComponent = wrapper.findComponent(ImpRes)
-
         if (eventCallbacks['DEFAULT']) {
             eventCallbacks['DEFAULT']({
                 headers: { message_subtype: 'configuration' },

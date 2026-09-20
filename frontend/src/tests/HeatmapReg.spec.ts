@@ -54,7 +54,6 @@ const mountComponent = () => mount(HeatmapReg, {
     global: { plugins: [createPinia()] }
 })
 
-
 describe('HeatmapReg.vue', () => {
     beforeEach(() => {
         Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 500 })
@@ -66,13 +65,13 @@ describe('HeatmapReg.vue', () => {
 
     it('does not render when container has zero height', async () => {
         Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 0 })
-        const wrapper = mountComponent()
+        mountComponent()
         await flushPromises()
         expect(PlotlyMock.react).not.toHaveBeenCalled()
     })
 
     it('renders only the optimum marker when predictions are empty but solution exists', async () => {
-        const wrapper = mountComponent()
+        mountComponent()
         await flushPromises()
 
         eventCallbacks['FINAL']({
@@ -87,8 +86,7 @@ describe('HeatmapReg.vue', () => {
     })
 
     it('matches optimum point only when axis values exist in x/y arrays', async () => {
-        
-        const wrapper = mountComponent()
+        mountComponent()
         await flushPromises()
 
         eventCallbacks['FINAL']({
@@ -103,7 +101,7 @@ describe('HeatmapReg.vue', () => {
     })
 
     it('populates the heatmap surface when PREDICTIONS events arrive', async () => {
-        const wrapper = mountComponent()
+        mountComponent()
         await flushPromises()
 
         eventCallbacks['PREDICTIONS']({

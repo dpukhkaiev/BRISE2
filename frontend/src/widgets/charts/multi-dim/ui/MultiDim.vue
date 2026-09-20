@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 
 // constant
 import { MainEvent, useMainEventStore } from '../../../../entities/main'
-import type { Solution } from '../../../../entities/task/model/task-data.model';
+// import type { Solution } from '../../../../entities/task/model/task-data.model'
 
 import { cleanIdentifier } from '../../../../shared/lib'
 
@@ -24,15 +24,15 @@ let keyParam = ref('')
 
 // collect all points
 const allPoints = ref<Map<string, any>[]>([])
-let defaultPoint: any
-let solution: Solution | null = null
+// let defaultPoint: any
+// let solution: Solution | null = null
 
 let renderTimer: ReturnType<typeof setTimeout> | null = null
 
 function resetRes() {
     allPoints.value = []
-    solution = null
-    defaultPoint = null
+    // solution = null
+    // defaultPoint = null
 }
 
 
@@ -92,7 +92,7 @@ function initMainEvents() {
             for (const configuration of configs) {
                 if (configuration) {
                     if (!parameter_names.value) return
-                    defaultPoint = configuration
+                    // defaultPoint = configuration
                     let alphas = new Array();
                     parameter_names.value.forEach((key: any) => {
                         const rawVal = configuration.configurations[key]
@@ -164,15 +164,12 @@ function initMainEvents() {
     store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!parameter_names.value) return
-            let configs = JSON.parse(message.body)
-            configs.forEach((configuration: any) => {
-                if (configuration) {
-                    solution = configuration
-
-                }
-
-
-            });
+            // let configs = JSON.parse(message.body)
+            // configs.forEach((configuration: any) => {
+            //     if (configuration) {
+            //         solution = configuration
+            //     }
+            // });
         }
     })
 }
