@@ -42,7 +42,7 @@ describe('MainClientApi - Full Test Suite', () => {
   it('should trigger the status queue with an empty body', async () => {
     let calledWithBody = null;
     
-    eventCallbacks['main_status_queue'] = (body: string) => {
+    eventCallbacks['/queue/main_status_queue'] = (body: string) => {
       calledWithBody = body;
       return { body: '{"status": "running"}' }; 
     };
@@ -56,7 +56,7 @@ describe('MainClientApi - Full Test Suite', () => {
     let queueWasHit = false;
     let calledWithBody = null;
 
-    eventCallbacks['main_stop_queue'] = (body: string) => {
+    eventCallbacks['/queue/main_stop_queue'] = (body: string) => {
       queueWasHit = true;
       calledWithBody = body;
       return { body: '{}' };
@@ -71,7 +71,7 @@ describe('MainClientApi - Full Test Suite', () => {
   it('should send description payload to start queue', () => {
     let capturedPayload = '';
     
-    eventCallbacks['main_start_queue'] = (body: string) => {
+    eventCallbacks['/queue/main_start_queue'] = (body: string) => {
       capturedPayload = JSON.parse(body);
       return { body: '{}' };
     };
@@ -86,7 +86,7 @@ describe('MainClientApi - Full Test Suite', () => {
 
   //  downloadDump
   it('should return decoded data from download queue', async () => {
-    eventCallbacks['main_download_dump_queue'] = () => {
+    eventCallbacks['/queue/main_download_dump_queue'] = () => {
       return {
         body: JSON.stringify({ status: 'ok', body: btoa('dump_data') })
       };

@@ -4,6 +4,7 @@ import { useMainEventStore, MainClientApi } from '../../../entities/main'
 //data
 import { MainEvent } from '../../../entities/main'
 import { Subscription } from 'rxjs'
+import { parseJsonWithInfinity } from '../../../shared/lib'
   const isRunning = ref(false)
   // Flag for finish experiment
   const isFinish = ref(false)
@@ -60,8 +61,7 @@ subscriptions.add(
 
     reader.onload = () => {
       try {
-        const clean = (reader.result as string).replace(/:\s*Infinity/g, ': 1e308')
-        const parsed = JSON.parse(clean)
+        const parsed = parseJsonWithInfinity(reader.result as string)
         store.experiment_description = parsed
         store.searchspace = parsed?.["Context"]?.["SearchSpace"]
         selectedFile.value = null // reset input

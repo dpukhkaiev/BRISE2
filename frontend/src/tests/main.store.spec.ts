@@ -103,7 +103,7 @@ describe('useMainEventStore', () => {
         expect(store.globalConfig).toEqual({ config: 'value' })
     })
 
-    it('should replace Infinity values in message body with null', () => {
+    it('should preserve Infinity values in message body', () => {
         const mockMessage = {
             headers: { message_subtype: 'description' },
             body: `{
@@ -117,6 +117,23 @@ describe('useMainEventStore', () => {
         const store = useMainEventStore()
         store.initEvent()
 
-        expect(store.experiment_description).toEqual({ value: null })
+        expect(store.experiment_description).toEqual({ value: Infinity })
+    })
+
+    it('should preserve -Infinity values in message body', () => {
+        const mockMessage = {
+            headers: { message_subtype: 'description' },
+            body: `{
+                "experiment_description": {"value": -Infinity},
+                "searchspace_description": {},
+                "global_configuration": {}
+            }`
+        }
+        mockWatch.mockReturnValue(of(mockMessage))
+
+        const store = useMainEventStore()
+        store.initEvent()
+
+        expect(store.experiment_description).toEqual({ value: -Infinity })
     })
 })
