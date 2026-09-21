@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "build:analyze": "vue-tsc -b && ANALYZE=true vite build",
     "type-check": "vue-tsc -b --noEmit",
     "preview": "vite preview",
     "lint": "eslint .",

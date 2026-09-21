@@ -17,10 +17,10 @@ export default defineConfig({
       process: false
     }
   }),
-  visualizer({
+  ...(process.env.ANALYZE ? [visualizer({
     open: true,
     filename: 'dist/stats.html'
-  })
+  })] : [])
   ],
 
   resolve: {
