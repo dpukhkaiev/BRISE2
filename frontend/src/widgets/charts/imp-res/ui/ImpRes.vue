@@ -96,11 +96,11 @@ async function render() {
         : [allResultSet, bestPointSet, startEndPoint];
 
     const layout = {
-        title: { text: 'The best results' } as const,
+        title: { text: 'Improvement Plot' } as const,
         showlegend: true,
         autosize: true,
         xaxis: {
-            title: { text: 'Sequence number' } as const,
+            title: { text: 'Configuration number' } as const,
             showline: true,
             showgrid: false,
             zeroline: false,

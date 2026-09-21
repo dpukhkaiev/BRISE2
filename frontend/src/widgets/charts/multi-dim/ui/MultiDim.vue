@@ -199,7 +199,7 @@ async function render(): Promise<void> {
     var layout = {
         margin: { l: 200, r: 50, b: 50, t: 50 },
         title: {
-            text: cleanIdentifier(currentDiagram.value),
+            text: 'Parallel Coordinates Plot',
             font: { size: 18 }
         }
     }
