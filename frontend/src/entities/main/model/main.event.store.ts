@@ -34,12 +34,6 @@ export const useMainEventStore = defineStore('mainEvent', () => {
    async function loadPlotly() {
       if (!plotlyInstance.value) {
          try {
-            // plotly.js assumes a Node-like `global`
-            // object in some of its internals: shim it before importing.
-            if (typeof (globalThis as any).global === 'undefined') {
-               (globalThis as any).global = globalThis
-            }
-
             const [core, heatmap, scattergl, parcoords, contour, bar] = await Promise.all([
                import('plotly.js/lib/core'),
                import('plotly.js/lib/heatmap'),

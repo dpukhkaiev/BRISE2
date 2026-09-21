@@ -14,6 +14,15 @@ function formatTime(): string {
     return `${min}m ${sec}s`
 }
 
+export function findMatchingPoint(configuration: any, points: PointExp[]): PointExp | undefined {
+    const configValues = JSON.stringify(Object.values(configuration.configurations))
+    const resultValues = JSON.stringify(Object.values(configuration.results))
+    return points.find(point =>
+        JSON.stringify(point.configurations) === configValues &&
+        JSON.stringify(point.results) === resultValues
+    )
+}
+
 export function useResultTracker() {
     const allRes = ref<PointExp[]>([])
     const bestRes = ref<PointExp[]>([])

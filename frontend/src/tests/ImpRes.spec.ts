@@ -152,7 +152,45 @@ it('NEW event incoming points update the chart', async () => {
         const lastCallArgs = vi.mocked(PlotlyMock.react).mock.calls.at(-1)
         const passedData = lastCallArgs?.[1] as any
 
-      
+
         expect(passedData?.[0]?.y.at(-1)).toBe(5.0)
+
+        const solutionTrace = passedData?.find((trace: any) => trace.name === 'Solution')
+        expect(solutionTrace).toBeDefined()
+        expect(solutionTrace.y).toEqual([5.0])
+        expect(solutionTrace.marker).toMatchObject({ color: 'Gold', symbol: 'star' })
+    })
+
+    it('does not duplicate the point when FINAL repeats an already-measured configuration', async () => {
+        const wrapper = mountComponent()
+
+        if (eventCallbacks['DEFAULT']) {
+            eventCallbacks['DEFAULT']({
+                headers: { message_subtype: 'configuration' },
+                body: JSON.stringify([{ configurations: { p: 'A' }, results: [10.0] }])
+            })
+        }
+        await flushPromises()
+
+        // FINAL reports back the same configuration/result as DEFAULT
+        if (eventCallbacks['FINAL']) {
+            eventCallbacks['FINAL']({
+                headers: { message_subtype: 'configuration' },
+                body: JSON.stringify([{ configurations: { p: 'A' }, results: [10.0] }])
+            })
+        }
+
+        await flushPromises()
+        await wrapper.vm.$nextTick()
+
+        const lastCallArgs = vi.mocked(PlotlyMock.react).mock.calls.at(-1)
+        const passedData = lastCallArgs?.[1] as any
+
+        expect(passedData?.[0]?.y).toEqual([10.0])
+
+        const solutionTrace = passedData?.find((trace: any) => trace.name === 'Solution')
+        expect(solutionTrace).toBeDefined()
+        expect(solutionTrace.x).toEqual([1])
+        expect(solutionTrace.y).toEqual([10.0])
     })
 })

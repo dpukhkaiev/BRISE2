@@ -3,19 +3,12 @@ import { ref, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { MainEvent } from '../../../../entities/main'
-// import type { Solution } from '../../../../entities/task/model/task-data.model'
+import type { Solution } from '../../../../entities/task/model/task-data.model'
 
 //service
 import { useMainEventStore } from '../../../../entities/main'
 
-import { useResultTracker } from '../model/result-calc'
-
-// interface PointExp {
-//     configurations: Array<any>;
-//     results: Array<any>;
-//     time: any;
-//     'measured points': number;
-// }
+import { useResultTracker, findMatchingPoint } from '../model/result-calc'
 
 // initialize store
 const store = useMainEventStore()
@@ -25,7 +18,7 @@ const { experiment_description } = storeToRefs(store)
 
 const isChartInitialized = ref(false)
 
-// let solution: Solution
+const solution = ref<Solution | null>(null)
 
 const isVisible = ref(false)
 
@@ -86,7 +79,21 @@ async function render() {
         marker: { color: 'rgba(255,64,129,1)', size: 10 }
     };
 
-    const data = [allResultSet, bestPointSet, startEndPoint];
+    const finalPoint = solution.value ? findMatchingPoint(solution.value, allRes.value) : null
+    const solutionMarker = finalPoint ? {
+        x: [finalPoint['measured points']],
+        y: [finalPoint.results[0]],
+        type: 'scattergl' as const,
+        mode: 'markers' as const,
+        hoverinfo: 'text' as const,
+        text: 'Final solution',
+        name: 'Solution',
+        marker: { color: 'Gold', size: 16, symbol: 'star' as const, line: { color: 'black', width: 1 } }
+    } : null
+
+    const data = solutionMarker
+        ? [allResultSet, bestPointSet, startEndPoint, solutionMarker]
+        : [allResultSet, bestPointSet, startEndPoint];
 
     const layout = {
         title: { text: 'The best results' } as const,
@@ -136,7 +143,8 @@ async function render() {
 function initMainEvents() {
     watch(experiment_description, () => {
         reset()
-        // pointer to dom element 
+        solution.value = null
+        // pointer to dom element
         const element = impr.value
         isVisible.value = false
         isChartInitialized.value = false
@@ -155,7 +163,6 @@ function initMainEvents() {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
-                // solution = configuration
                 pushInitial(configuration)
             })
             // render when chart is initialized
@@ -172,8 +179,10 @@ function initMainEvents() {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {
-                // solution = configuration;
-                pushInitial(configuration)
+                solution.value = configuration
+                if (!findMatchingPoint(configuration, allRes.value)) {
+                    pushInitial(configuration)
+                }
             });
             isVisible.value = true
             nextTick(() => {

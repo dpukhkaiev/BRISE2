@@ -3,11 +3,20 @@ import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(),
   vuetify({ autoImport: true }),
+  // plotly.js submodules assume Node-like globals (Buffer, global)
+  nodePolyfills({
+    globals: {
+      Buffer: true,
+      global: true,
+      process: false
+    }
+  }),
   visualizer({
     open: true,
     filename: 'dist/stats.html'
@@ -18,12 +27,6 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  },
-  define: {
-    // plotly.js assumes a Node-like `global` object
-    // in some of its internals (e.g. the cartesian axis module): shim it to
-    // globalThis for the browser.
-    global: 'globalThis'
   },
   optimizeDeps: {
     include: ['@stomp/stompjs', '@stomp/rx-stomp']
