@@ -21,6 +21,7 @@ const {
     replaceNones,
     searchTasks,
     cachedAvg,
+    recordBackendResult,
     clearCache
 } = useTaskMetrics()
 
@@ -76,6 +77,16 @@ const headers = [
 ]
 
 
+function handleConfigurationMessage(message: any): void {
+    if (message.headers['message_subtype'] !== 'configuration') return
+    const solutions: Array<{ configurations: Record<string, any>, results: Record<string, any> }> = JSON.parse(message.body)
+    solutions.forEach(solution => {
+        if (solution?.configurations && solution?.results) {
+            recordBackendResult(solution.configurations, solution.results)
+        }
+    })
+}
+
 function initMainEvents(): void {
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message) => {
         if (message.headers['message_subtype'] === 'task') {
@@ -86,7 +97,11 @@ function initMainEvents(): void {
             //  !result.value.includes(fresh, -1) && result.value.push(fresh);
             pendingTasks.push(fresh) // only collect, not render yet
         }
+        handleConfigurationMessage(message)
     }));
+
+    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe(handleConfigurationMessage));
+    subs.add(store.onEvent(MainEvent.FINAL)?.subscribe(handleConfigurationMessage));
 
     stopWatch = watch(experiment_description, () => {
 

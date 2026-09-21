@@ -8,6 +8,9 @@ export function useTaskMetrics() {
     const filterValue = ref('')
     // cache average result calculations
     const avgResultCache = new Map<string, any[]>()
+    // backend outlier-filtered average; once present, 
+    // it takes precedence over the live client-side average
+    const backendResultCache = new Map<string, any[]>()
 
     function replaceNones(config: any[]) {
         return config.map(param => {
@@ -75,9 +78,15 @@ export function useTaskMetrics() {
         return avg_res
     }
 
+    function recordBackendResult(configuration: Record<string, any>, results: Record<string, any>) {
+        const key = JSON.stringify(normalizeConfigKeys(configuration))
+        backendResultCache.set(key, Object.values(results).map(Number))
+    }
+
     function cachedAvg(config: Record<string, any>): any[] {
         const normalizedConfig = normalizeConfigKeys(config)
         const key = JSON.stringify(normalizedConfig)
+        if (backendResultCache.has(key)) return backendResultCache.get(key)!
         if (avgResultCache.has(key)) return avgResultCache.get(key)!
         const avg = getAverageResult(normalizedConfig)
         avgResultCache.set(key, avg)
@@ -86,6 +95,7 @@ export function useTaskMetrics() {
 
     function clearCache() {
         avgResultCache.clear()
+        backendResultCache.clear()
     }
 
     return {
@@ -95,6 +105,7 @@ export function useTaskMetrics() {
         replaceNones,
         searchTasks,
         cachedAvg,
+        recordBackendResult,
         clearCache
     }
 }

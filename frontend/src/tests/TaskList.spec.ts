@@ -33,7 +33,9 @@ vi.mock('../entities/main', () => ({
         })),
     })),
     MainEvent: {
-        NEW: 'NEW'
+        NEW: 'NEW',
+        DEFAULT: 'DEFAULT',
+        FINAL: 'FINAL'
     },
 }))
 
@@ -53,6 +55,13 @@ function makeTaskPayload(id: string, configValue = 'foo') {
             receive: 1,
             result: { x: 1 }
         }
+    }])
+}
+
+function makeConfigurationPayload(configValue: string, resultValue: number) {
+    return JSON.stringify([{
+        configurations: { ws_file: configValue },
+        results: { x: resultValue }
     }])
 }
 
@@ -81,7 +90,8 @@ describe('TaskList.vue', () => {
     it('Unmount should end all subscription', () => {
         const wrapper = mountComponent()
         wrapper.unmount()
-        expect(mockUnsubscribe).toHaveBeenCalledTimes(1)
+        // one subscription for 'task'/'configuration' events on NEW, plus one each for DEFAULT and FINAL
+        expect(mockUnsubscribe).toHaveBeenCalledTimes(3)
     })
 
     it('new tasks should be added to result after the interval', async () => {
@@ -169,5 +179,42 @@ describe('TaskList.vue', () => {
 
        // check the filtered result
         expect(wrapper.vm.filteredResult.length).toBe(1)
+    })
+
+    it('average result should be computed live from tasks before a configuration event arrives', async () => {
+        vi.useFakeTimers()
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'task' },
+            body: makeTaskPayload('1', 'foo')
+        })
+        vi.advanceTimersByTime(500)
+        await flushPromises()
+
+        expect(wrapper.vm.cachedAvg({ ws_file: 'foo' })).toEqual([1])
+    })
+
+    it('average result should switch to the backend value once a configuration event is received', async () => {
+        vi.useFakeTimers()
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'task' },
+            body: makeTaskPayload('1', 'foo')
+        })
+        vi.advanceTimersByTime(500)
+        await flushPromises()
+        expect(wrapper.vm.cachedAvg({ ws_file: 'foo' })).toEqual([1])
+
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'configuration' },
+            body: makeConfigurationPayload('foo', 42)
+        })
+        await flushPromises()
+
+        expect(wrapper.vm.cachedAvg({ ws_file: 'foo' })).toEqual([42])
     })
 })
