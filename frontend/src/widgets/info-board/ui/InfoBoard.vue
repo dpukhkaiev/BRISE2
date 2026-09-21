@@ -140,8 +140,10 @@ function initMainEvents(): void {
   })
   );
 
+  // NOTE: main-node does not currently emit a "predictions" message at all, so this handler is presently dead code 
+  // pending a rework.
   subscriptions.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe((message: any) => {
-    if (message.headers['message_subtype'] === 'configuration') {
+    if (message.headers['message_subtype'] === 'configurations') {
       let obj = JSON.parse(message.body)
       let temp = {
         'time': Date.now(),
