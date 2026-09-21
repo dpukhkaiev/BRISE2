@@ -45,6 +45,9 @@ let results = ref('')
 // rendering axises
 const x = ref<Array<any>>([])
 const y = ref<Array<any>>([])
+const xParamKey = ref('')
+const yParamKey = ref('')
+const keyParam = ref('')
 
 
 // default theme
@@ -78,7 +81,7 @@ const isModelType = computed(() => {
 // 
 const resultLookup = computed(() => {
     const map = new Map<string, number>()
-    result.value.forEach((v, k) => map.set(k, v?.[0]))
+    result.value.forEach((v, k) => map.set(k, v?.[keyParam.value]))
     return map
 })
 // const zMatrix = computed(() => DataTransformer.buildZMatrix(
@@ -115,8 +118,8 @@ async function render(): Promise<void> {
                 hoverinfo: 'none' as const,
                 showlegend: false as const,
                 marker: { color: 'Gold', size: 16, symbol: 'star' },
-                x: solution && [solution.configurations[1]],
-                y: solution && [solution.configurations[0]]
+                x: solution && [cleanIdentifier((solution.configurations as any)[xParamKey.value])],
+                y: solution && [cleanIdentifier((solution.configurations as any)[yParamKey.value])]
             }
         ];
 
@@ -126,7 +129,7 @@ async function render(): Promise<void> {
             autosize: true,
             showlegend: false,
             xaxis: {
-                title: Object.keys(searchspace.value.boundaries[0].Boundaries)[1],
+                title: xParamKey.value,
                 type: 'category' as const,
                 autorange: true,
                 range: [-0.5, x.value.length - 0.5],
@@ -135,7 +138,7 @@ async function render(): Promise<void> {
                 categoryarray: x.value
             },
             yaxis: {
-                title: Object.keys(searchspace.value.boundaries[0].Boundaries)[0],
+                title: yParamKey.value,
                 type: 'category' as const,
                 autorange: true,
                 range: [-0.5, y.value.length - 0.5],
@@ -156,8 +159,18 @@ function initMainEvents() {
         }
         resetRes()
         const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
-        x.value = (boundaryObj?.threads ?? []).map(cleanIdentifier)
-        y.value = (boundaryObj?.frequency ?? []).map(cleanIdentifier)
+        const keys = Object.keys(boundaryObj ?? {}).filter(k => k !== 'root')
+        if (keys.length >= 2) {
+            yParamKey.value = keys[0]
+            xParamKey.value = keys[1]
+            y.value = (boundaryObj[keys[0]] ?? []).map(cleanIdentifier)
+            x.value = (boundaryObj[keys[1]] ?? []).map(cleanIdentifier)
+        }
+
+        const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives
+        if (priorities) {
+            keyParam.value = Object.keys(priorities)[0]
+        }
     }, {
         deep: true,
         immediate: true
@@ -170,10 +183,10 @@ function initMainEvents() {
         for (const configuration of configs) {
             if (configuration) {
                 const conf = configuration['configurations'];
-                const freq = cleanIdentifier(conf.frequency);
-                const threads = cleanIdentifier(conf.threads);
-                result.value.set(String([freq, threads]), configuration['results']);
-                measPoints.value.push([freq, threads]);
+                const yVal = cleanIdentifier(conf[yParamKey.value]);
+                const xVal = cleanIdentifier(conf[xParamKey.value]);
+                result.value.set(String([yVal, xVal]), configuration['results']);
+                measPoints.value.push([yVal, xVal]);
             }
             count++;
             if (count % 50 === 0 && 'scheduler' in window && typeof scheduler.yield === 'function') {
@@ -197,8 +210,10 @@ function initMainEvents() {
                     configWithNones.value = configWithNones.value.replace(',,', ',None,');
                     results.value = JSON.stringify(solution.results)
                     const conf = configuration['configurations'];
-                    result.value.set(String([cleanIdentifier(conf.frequency), cleanIdentifier(conf.threads)]), configuration['results']);
-                    measPoints.value.push([cleanIdentifier(conf.frequency), cleanIdentifier(conf.threads)]);
+                    const yVal = cleanIdentifier(conf[yParamKey.value]);
+                    const xVal = cleanIdentifier(conf[xParamKey.value]);
+                    result.value.set(String([yVal, xVal]), configuration['results']);
+                    measPoints.value.push([yVal, xVal]);
                     sol.value = Object.values(solution.results)
                     dc.value = Object.values(defaultConfiguration.results)
 
@@ -217,8 +232,11 @@ function initMainEvents() {
             configs.forEach((configuration: any) => {
                 if (configuration) {
                     defaultConfiguration = configuration; // In case if only one point default
-                    result.value.set(String(configuration['configurations']), configuration['results']);
-                    measPoints.value.push(configuration['configurations']);
+                    const conf = configuration['configurations'];
+                    const yVal = cleanIdentifier(conf[yParamKey.value]);
+                    const xVal = cleanIdentifier(conf[xParamKey.value]);
+                    result.value.set(String([yVal, xVal]), configuration['results']);
+                    measPoints.value.push([yVal, xVal]);
                 } else {
                     console.log('Empty default');
                 }

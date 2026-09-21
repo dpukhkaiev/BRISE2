@@ -8,7 +8,10 @@ import { TaskList } from './widgets/task-list'
 import { MultiDim } from './widgets/charts/multi-dim'
 import { ImpRes } from './widgets/charts/imp-res'
 import { Heatmap } from './widgets/charts/heatmap'
-import { HeatmapReg } from './widgets/charts/heatmap-reg'
+// HeatmapReg is disabled: main-node never publishes a "predictions" message (see front_API.py's
+// SUPPORTED_MESSAGES / APIMessageBuilder - "PREDICTIONS" is registered but nothing ever sends it),
+// so the surrogate surface can never populate. Re-enable once main-node publishes predictions.
+// import { HeatmapReg } from './widgets/charts/heatmap-reg'
 
 
 
@@ -16,7 +19,7 @@ const tab = ref('info')
 const chartMenu = ref(false)
 
 
-const visibleCharts = ref(['multidim', 'impres', 'heatmap', 'heatmap-reg'])
+const visibleCharts = ref(['multidim', 'impres', 'heatmap'])
 const drawer = ref(false)
 const searchSpace = ref(false)
 
@@ -144,12 +147,12 @@ function openSearchSpace() {
           min-width="180"
         >
           <v-list-subheader>Visible charts</v-list-subheader>
+          <!-- 'heatmap-reg' intentionally omitted, see HeatmapReg import comment above -->
           <v-list-item
             v-for="chart in [
               { id: 'multidim', label: 'Multi-dim' },
               { id: 'impres', label: 'Imp-res' },
-              { id: 'heatmap', label: 'Heatmap' },
-              { id: 'heatmap-reg', label: 'Regression Heatmap' }
+              { id: 'heatmap', label: 'Heatmap' }
             ]"
             :key="chart.id"
           >
@@ -259,14 +262,7 @@ function openSearchSpace() {
               >
                 <MultiDim />
               </v-col>
-              <v-col
-                v-show="visibleCharts.includes('heatmap-reg')"
-                cols="12"
-                md="10"
-                class="pr-2"
-              >
-                <HeatmapReg />
-              </v-col>
+              <!-- HeatmapReg is not rendered, see HeatmapReg import comment above -->
             </v-row>
           </v-tabs-window-item>
         </v-tabs-window>

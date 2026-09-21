@@ -21,6 +21,7 @@ const xTitle = ref<string>('X Axis')
 const yTitle = ref<string>('Y Axis')
 const xParamKey = ref<string>('')
 const yParamKey = ref<string>('')
+const keyParam = ref<string>('')
 const map = ref<HTMLElement | null>(null)
 
 const theme = ref({
@@ -183,7 +184,7 @@ function initMainEvents() {
                 const cleanX = cleanIdentifier(rawXVal)
                 const cleanY = cleanIdentifier(rawYVal)
 
-                prediction.value.set(`${cleanY},${cleanX}`, item['results'])
+                prediction.value.set(`${cleanY},${cleanX}`, item['results']?.[keyParam.value])
             }
         }
 
@@ -216,6 +217,11 @@ function initMainEvents() {
 
             y.value = rawY.map((item: any) => cleanIdentifier(item))
             x.value = rawX.map((item: any) => cleanIdentifier(item))
+        }
+
+        const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives
+        if (priorities) {
+            keyParam.value = Object.keys(priorities)[0]
         }
     }, { deep: true, immediate: true })
 
