@@ -1,13 +1,14 @@
 import { stompClient } from '../../../shared/api/stomp.client'
 import { RxStompRPC } from '@stomp/rx-stomp'
 import { firstValueFrom } from 'rxjs';
+import { stringifyWithInfinity } from '../../../shared/lib'
 
 // return a promise
 
 const rxStompRPC = new RxStompRPC(stompClient)
 export function startMain(description: any): void {
     const myServiceEndPoint = '/queue/main_start_queue';
-    const request = JSON.stringify({ "Method": "GET", "Description": description })
+    const request = stringifyWithInfinity({ "Method": "GET", "Description": description })
     const headers = { 'body_type': 'json' }
     // stompClient.publish({destination: myServiceEndPoint, body: request, headers})  
     // firstValueFrom instead of toPromise (deprecated) 

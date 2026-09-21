@@ -39,7 +39,7 @@ subscriptions.add(
 
   function startMainControl(): void {
     if (!isRunning.value) {
-      MainClientApi.startMain(JSON.parse(JSON.stringify(experiment_description.value)));
+      MainClientApi.startMain(experiment_description.value);
       isRunning.value = true
       isFinish.value = false
     }

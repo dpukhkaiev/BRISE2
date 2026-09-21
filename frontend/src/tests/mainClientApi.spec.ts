@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of } from 'rxjs';
+import { parseJsonWithInfinity } from '../shared/lib';
 
 //  registry using vi.hoisted so Vitest has time to prepare it before the mocks run
 const { eventCallbacks } = vi.hoisted(() => {
@@ -81,6 +82,28 @@ describe('MainClientApi - Full Test Suite', () => {
     expect(capturedPayload).toEqual({
       Method: 'GET',
       Description: 'Run Test Suite'
+    });
+  });
+
+  // startMain with unbounded objective boundaries
+  it('should preserve Infinity/-Infinity values in the description sent to the start queue', () => {
+    let capturedBody = '';
+
+    eventCallbacks['/queue/main_start_queue'] = (body: string) => {
+      capturedBody = body;
+      return { body: '{}' };
+    };
+
+    startMain({ MinExpectedValue: -Infinity, MaxExpectedValue: Infinity });
+
+    // the raw wire payload must carry literal Infinity/-Infinity tokens, not null
+    expect(capturedBody).toContain('"MinExpectedValue":-Infinity');
+    expect(capturedBody).toContain('"MaxExpectedValue":Infinity');
+
+    const capturedPayload = parseJsonWithInfinity(capturedBody);
+    expect(capturedPayload).toEqual({
+      Method: 'GET',
+      Description: { MinExpectedValue: -Infinity, MaxExpectedValue: Infinity }
     });
   });
 
