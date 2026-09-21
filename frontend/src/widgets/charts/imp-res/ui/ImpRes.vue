@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
 
 import { MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
@@ -26,8 +27,14 @@ const { allRes, bestRes, reset, pushInitial, pushTracked } = useResultTracker()
 
 const impr = ref<HTMLElement | null>(null)
 
+const subs = new Subscription()
+
 onMounted(() => {
     initMainEvents()
+})
+
+onUnmounted(() => {
+    subs.unsubscribe()
 })
 
 async function render() {
@@ -159,7 +166,7 @@ function initMainEvents() {
     })
 
     // add start point
-    store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
@@ -172,10 +179,10 @@ function initMainEvents() {
             })
             // render() // render chart when all points got
         }
-    })
+    }))
 
     // add last point
-    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {
@@ -189,10 +196,10 @@ function initMainEvents() {
                 render()
             })
         }
-    })
+    }))
 
     // add new point
-    store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
 
@@ -215,7 +222,7 @@ function initMainEvents() {
             })
         }
 
-    })
+    }))
 }
 
 

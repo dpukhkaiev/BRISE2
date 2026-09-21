@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed, nextTick, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
@@ -79,6 +80,8 @@ const optimumPoint = computed(() => {
 
 let retryCount = 0
 const MAX_RETRIES = 60
+
+const subs = new Subscription()
 
 async function render(): Promise<void> {
     const Plotly = store.plotlyInstance
@@ -168,12 +171,13 @@ onMounted(() => {
 )
 
 onUnmounted(() => {
+    subs.unsubscribe()
     resizeObserver?.disconnect()
     resizeObserver = null
 })
 
 function initMainEvents() {
-    store.onEvent(MainEvent.PREDICTIONS)?.subscribe(async (message: any) => {
+    subs.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe(async (message: any) => {
         console.log('[Heatmap Debug] PREDICTIONS event received', message)
         const preds = JSON.parse(message.body)
         for (const item of preds) {
@@ -190,7 +194,7 @@ function initMainEvents() {
 
         nextTick(() => render())
 
-    })
+    }))
 
 
     watch([experiment_description, searchspace], () => {
@@ -228,7 +232,7 @@ function initMainEvents() {
     watch([result, prediction, measPoints, solution], () => nextTick(() => render()), { deep: true })
 
 
-    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body)
             const res = configs?.[0]
@@ -241,7 +245,7 @@ function initMainEvents() {
                 nextTick(() => render())
             }
         }
-    })
+    }))
 }
 </script>
 

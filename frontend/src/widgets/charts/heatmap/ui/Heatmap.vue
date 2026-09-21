@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 //import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
 
 import { Color, PlotType, Smooth } from '../../model/chart.types'
 
@@ -62,6 +63,8 @@ const colors = Color
 
 
 const map = ref<HTMLElement | null>(null)
+
+const subs = new Subscription()
 
 function resetRes() {
     result.value?.clear()
@@ -177,7 +180,7 @@ function initMainEvents() {
     })
 
     // new configuration results
-    store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
+    subs.add(store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         const configs = JSON.parse(message.body)
         let count = 0;
         for (const configuration of configs) {
@@ -193,13 +196,13 @@ function initMainEvents() {
                 await scheduler.yield();
             }
         }
-        // collect all configs first, then render 
+        // collect all configs first, then render
         nextTick(() => render())
-    })
+    }))
 
     // The final configuration, suggested by BRISE.
 
-    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {
@@ -223,10 +226,10 @@ function initMainEvents() {
             });
             render();
         }
-    });
+    }));
 
     // Default message
-    store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {
@@ -244,12 +247,16 @@ function initMainEvents() {
             console.log('Default:', message.body);
             render();
         }
-    });
+    }));
 
 }
 
 onMounted(() => {
     initMainEvents()
+})
+
+onUnmounted(() => {
+    subs.unsubscribe()
 })
 
 

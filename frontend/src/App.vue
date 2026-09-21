@@ -247,7 +247,7 @@ function openSearchSpace() {
                 <ImpRes />
               </v-col>
               <v-col
-                v-if="visibleCharts.includes('heatmap')"
+                v-show="visibleCharts.includes('heatmap')"
                 cols="12"
                 md="8"
                 class="pr-2"

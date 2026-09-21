@@ -157,7 +157,7 @@ export const useGraphStore = defineStore('graph', () => {
     // maps node types to their XML tag names (used in data.super for export)
     function createNode(nodeConfig: { type: string, label: string }) {
         saveCheckpoint()
-        const id = Date.now().toString()
+        const id = crypto.randomUUID()
         const categories = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? [] : undefined
         const defaultCategoryId = nodeConfig.type === 'nominal' || nodeConfig.type === 'ordinal' ? null : undefined
         const autoName = createUniqueName(nodeConfig.label)
@@ -255,7 +255,7 @@ export const useGraphStore = defineStore('graph', () => {
     function addChildToNode(parentId: string, childId: string) {
           saveCheckpoint()
         const parentNode = nodes.value.find((n: any) => n.id === parentId)
-        if (parentId) {
+        if (parentNode) {
             if (!parentNode.data.childrenIds) parentNode.data.childrenIds = []
             if (!parentNode.data.childrenIds.includes(childId)) {
                 parentNode.data.childrenIds.push(childId)
@@ -308,8 +308,8 @@ export const useGraphStore = defineStore('graph', () => {
         return null
      }
 
-        const id = Date.now().toString()
-      
+        const id = crypto.randomUUID()
+
         // position for custom categories on canvas
         let posX = sourceNode.position.x + 150
         let posY = sourceNode.position.y + 50

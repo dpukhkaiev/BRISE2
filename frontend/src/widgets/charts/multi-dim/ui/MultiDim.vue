@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
 
 // constant
 import { MainEvent, useMainEventStore } from '../../../../entities/main'
@@ -28,6 +29,8 @@ const allPoints = ref<Map<string, any>[]>([])
 // let solution: Solution | null = null
 
 let renderTimer: ReturnType<typeof setTimeout> | null = null
+
+const subs = new Subscription()
 
 function resetRes() {
     allPoints.value = []
@@ -81,7 +84,7 @@ function initMainEvents() {
         })
 
     // Default message
-    store.onEvent(MainEvent.DEFAULT)?.subscribe(async (message: any) => {
+    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe(async (message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !experiment) {
                 console.warn('not ready yet - rootParam or experiment not there ')
@@ -119,10 +122,10 @@ function initMainEvents() {
                 renderTimer = null
             }, 500)
         }
-    });
+    }));
 
     // New points
-    store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
+    subs.add(store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !rootParam.value.length || !experiment) {
                 return
@@ -158,10 +161,10 @@ function initMainEvents() {
                 renderTimer = null
             }, 500)
         }
-    });
+    }));
 
     // Final message
-    store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+    subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
             if (!parameter_names.value) return
             // let configs = JSON.parse(message.body)
@@ -171,7 +174,7 @@ function initMainEvents() {
             //     }
             // });
         }
-    })
+    }))
 }
 async function render(): Promise<void> {
     if (!currentDiagram.value) return
@@ -214,6 +217,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+    subs.unsubscribe()
     if (renderTimer) clearTimeout(renderTimer)
     const element = document.getElementById(currentDiagram.value!)
     const Plotly = store.plotlyInstance
