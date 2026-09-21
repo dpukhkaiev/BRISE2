@@ -1,5 +1,9 @@
-export function cleanIdentifier(s: unknown): string {
-  return String(s ?? '').split('.').pop() ?? String(s)
+export function cleanIdentifier(s: string | number | null | undefined): string {
+  const str = String(s ?? '')
+  if (str !== '' && !Number.isNaN(Number(str))) {
+    return str
+  }
+  return str.split('.').pop() ?? str
 }
 
 // remove Context.SearchSpace prefix from object keys
