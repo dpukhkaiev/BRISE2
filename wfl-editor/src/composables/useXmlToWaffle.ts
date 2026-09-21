@@ -27,7 +27,7 @@ function parseXmlElement(el: Element): Children {
     const upper = upperText ? Number(upperText) : undefined
     const def = defText ? String(defText) : undefined
     const defN = defText ? Number(defText) : undefined
-    const level = defText ? Number(levelText) : undefined 
+    const level = levelText ? Number(levelText) : undefined
 
     switch (type) {
         case 'float':
