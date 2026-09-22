@@ -12,16 +12,8 @@ import CategoryNode from '../nodes/CategoryNode.vue'
 import CodeOutput from './CodeOutput.vue'
 //store
 import { useGraphStore } from '../store.ts'
-import { useLayout } from '../composables/useLayout.ts'
 // desctructure nodes, edges here (no need of ref([]))
 const { nodes: flowNodes, addEdges, onConnect, edges: flowEdges, addNodes, onNodesChange, fitView } = useVueFlow()
-
-const { layout } = useLayout()
-
-
-async function layoutGraph() {
-
-}
 
 const graphStore = useGraphStore()
 
