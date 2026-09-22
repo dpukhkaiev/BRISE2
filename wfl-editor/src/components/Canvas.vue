@@ -97,11 +97,10 @@ onConnect((connection) => {
 })
 
 function onChange(changes: any[]) {
-    const removeChange = changes.find(c => c.type === 'remove')
+    const removeChanges = changes.filter(c => c.type === 'remove')
 
-    if (removeChange) {
-        const deletedNodeId = removeChange.id
-        graphStore.removeCategory(deletedNodeId)
+    if (removeChanges.length) {
+        removeChanges.forEach((c) => graphStore.removeCategory(c.id))
         // wait for canvas cycle, then recalculate tree positions
         nextTick(() => {
             graphStore.updateLevels()

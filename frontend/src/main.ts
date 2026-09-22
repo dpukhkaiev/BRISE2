@@ -4,13 +4,11 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
-const vuetify = createVuetify({ components, directives })
+const vuetify = createVuetify()
 
 const app = createApp(App)
 
-app.config.performance = true;
+app.config.performance = import.meta.env.DEV
 
 app.use(createPinia())
 app.use(vuetify)

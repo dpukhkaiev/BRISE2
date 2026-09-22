@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { MainEvent } from './main.types'
 import { stompClient } from '../../../shared/api/stomp.client'
@@ -16,7 +16,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
    const experiment_description = ref<ExperimentDescription | null>(null)
    const searchspace = ref<any>(null)
    const globalConfig = ref<any>(null)
-   const plotlyInstance = ref<any>(null)
+   const plotlyInstance = shallowRef<any>(null)
    const listeners: Record<string, Observable<IMessage>> = {
       [MainEvent.EXPERIMENT]: stompClient.watch('front_experiment_queue', { 'x-message-ttl': '1000' }),
       [MainEvent.FINAL]: stompClient.watch('front_final_queue', { 'x-message-ttl': '1000' }),

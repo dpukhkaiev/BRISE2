@@ -232,11 +232,11 @@ onUnmounted(() => {
             <span class="desc">Result: </span> <span>{{ solutionState.result }}</span>
           </v-list-item>
 
-          <v-list-item prepend-icon="mdi-network">
-            <span
-              v-if="dc.length && sol.length"
-              class="desc"
-            >Quality gain: </span>
+          <v-list-item
+            v-if="dc.length && sol.length"
+            prepend-icon="mdi-network"
+          >
+            <span class="desc">Quality gain: </span>
             <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
               %</span>
           </v-list-item>
