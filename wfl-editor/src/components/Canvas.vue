@@ -92,7 +92,19 @@ function onChange(changes: any[]) {
     const removeChanges = changes.filter(c => c.type === 'remove')
 
     if (removeChanges.length) {
+        const idsToDelete = new Set<string>()
+        removeChanges.forEach((c) => {
+            idsToDelete.add(c.id)
+            graphStore.getAllDescendants(c.id).forEach((d: any) => idsToDelete.add(d.id))
+        })
+
         removeChanges.forEach((c) => graphStore.removeCategory(c.id))
+
+        // keep VueFlow's internal node/edge lists in sync with the cascade,
+        // otherwise its v-model watcher resyncs the orphaned nodes back in
+        flowNodes.value = flowNodes.value.filter((n: any) => !idsToDelete.has(n.id))
+        flowEdges.value = flowEdges.value.filter((e: any) => !idsToDelete.has(e.source) && !idsToDelete.has(e.target))
+
         // wait for canvas cycle, then recalculate tree positions
         nextTick(() => {
             graphStore.updateLevels()
