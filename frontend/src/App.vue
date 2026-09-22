@@ -18,6 +18,9 @@ import { Heatmap } from './widgets/charts/heatmap'
 const tab = ref('info')
 const chartMenu = ref(false)
 
+const searchSpaceEditorUrl = `http://${import.meta.env.VITE_SEARCHSPACE_EDITOR_HOST}:${import.meta.env.VITE_SEARCHSPACE_EDITOR_PORT}`
+const waffleUrl = `http://${import.meta.env.VITE_WAFFLE_HOST}:${import.meta.env.VITE_WAFFLE_PORT}`
+
 
 const visibleCharts = ref(['multidim', 'impres', 'heatmap'])
 const drawer = ref(false)
@@ -99,7 +102,7 @@ function openSearchSpace() {
           <v-card title="Searchspace editor">
             <v-card-text>
               <iframe
-                src="http://localhost:3001"
+                :src="searchSpaceEditorUrl"
                 style="width: 100%; height: 70vh; border: none;"
               />
             </v-card-text>
@@ -117,7 +120,7 @@ function openSearchSpace() {
         <v-tab
           value="waffle"
           prepend-icon="mdi-open-in-new"
-          href="http://localhost:8000"
+          :href="waffleUrl"
           target="_blank"
         >
           Open Waffle

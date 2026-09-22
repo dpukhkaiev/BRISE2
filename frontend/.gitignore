@@ -14,9 +14,11 @@ dist-ssr
 stats.html
 .vite/
 
+# unchecked as a fallback for local development
+!.env
+
 # Editor directories and files
 .vscode/*
-!.vscode/extensions.json
 .idea
 .DS_Store
 *.suo

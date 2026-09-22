@@ -2,8 +2,8 @@ import type { RxStompConfig } from "@stomp/rx-stomp";
 
 export const stompConfig: RxStompConfig = {
 
-  // connection 
-  brokerURL: 'ws://localhost:49155/ws',
+  // connection
+  brokerURL: `ws://${import.meta.env.VITE_EVENT_SERVICE_HOST}:${import.meta.env.VITE_EVENT_SERVICE_PORT}/ws`,
   // login data
   connectHeaders: {
     login: 'guest',
@@ -12,7 +12,9 @@ export const stompConfig: RxStompConfig = {
   heartbeatIncoming: 0,
   heartbeatOutgoing: 20000,
   reconnectDelay: 200,
-  debug: (msg: string): void => {
-    console.log('[STOMP]', msg);
-  }
+  debug: import.meta.env.DEV
+    ? (msg: string): void => {
+        console.log('[STOMP]', msg);
+      }
+    : (): void => {}
 }
