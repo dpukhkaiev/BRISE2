@@ -50,18 +50,7 @@ const connectedChildren = computed(() => {
 
 })
 
-// manually created categories
-const categories = computed(() => {
-    if (!activeNode.value?.id) return []
-    return graphStore.nodes
-        .filter((node: Node) =>
-            node.type === 'category' &&
-            graphStore.edges.some((e: any) => e.source === activeNode.value.id && e.target === node.id)
-        )
-
-});
-
-// block sidebar from closing 
+// block sidebar from closing
 function blockSidebar() {
     if (!activeNode.value?.data.name || isNodeNameTaken.value || isConstraintsInvalid.value) {
         return
@@ -122,10 +111,15 @@ const updateName = computed({
     }
 })
 
-const directCategories = computed(() => {
+// direct categories of the active node, in childrenIds order
+const categories = computed(() => {
     if (!activeNode.value?.id) return []
     return graphStore.getDirectCategories(activeNode.value.id)
 })
+
+function categoryIndex(id: string): number {
+    return categories.value.findIndex((c: Node) => c.id === id)
+}
 
 const defaultCategoryId = computed({
     get() {
@@ -205,8 +199,14 @@ const defaultCategoryId = computed({
                 <ul>
 
                     <li v-for="item in categories.slice(0, 5)" :key="item.id">
-                        {{ item.data?.name }}
-                        <button class="btn btn-danger" @click="removeChild(item.id)">x</button>
+                        <span class="cat-name">{{ item.data?.name }}</span>
+                        <span class="cat-actions">
+                            <button class="btn btn-move" :disabled="categoryIndex(item.id) === 0"
+                                @click="graphStore.moveCategory(activeNode.id, item.id, 'up')" title="Move up">▲</button>
+                            <button class="btn btn-move" :disabled="categoryIndex(item.id) === categories.length - 1"
+                                @click="graphStore.moveCategory(activeNode.id, item.id, 'down')" title="Move down">▼</button>
+                            <button class="btn btn-danger" @click="removeChild(item.id)">x</button>
+                        </span>
                     </li>
 
                     <div v-if="categories.length > 5">
@@ -248,7 +248,7 @@ const defaultCategoryId = computed({
                 <select v-model="defaultCategoryId" class="styled-select">
 
                     <option value="">No category selected</option>
-                    <option v-for="cat in directCategories" :key="cat.id" :value="cat.id">
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                         {{ cat.data.name }}
                     </option>
 
@@ -444,6 +444,39 @@ const defaultCategoryId = computed({
 
 .btn-danger:hover {
     background-color: #fecaca;
+}
+
+.cat-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cat-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.btn-move {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 2px 6px;
+    font-size: 11px;
+    line-height: 1;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-move:hover:not(:disabled) {
+    background-color: #e2e8f0;
+}
+
+.btn-move:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 
 

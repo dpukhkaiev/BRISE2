@@ -211,6 +211,22 @@ export const useGraphStore = defineStore('graph', () => {
     return nodes.value.some((n: Node) => n.data?.defaultPathId === categoryId)
     }
 
+    // move a category one position up/down within its parent's childrenIds 
+    function moveCategory(parentId: string, categoryId: string, direction: 'up' | 'down') {
+        const parentNode = nodes.value.find((n: Node) => n.id === parentId)
+        if (!parentNode?.data?.childrenIds) return
+
+        const ids: string[] = parentNode.data.childrenIds
+        const index = ids.indexOf(categoryId)
+        if (index === -1) return
+
+        const targetIndex = direction === 'up' ? index - 1 : index + 1
+        if (targetIndex < 0 || targetIndex >= ids.length) return
+
+        saveCheckpoint();
+        [ids[index], ids[targetIndex]] = [ids[targetIndex], ids[index]]
+    }
+
     // calculate level
     function calculateLevelForNode(nodeId: string) {
     
@@ -538,6 +554,7 @@ export const useGraphStore = defineStore('graph', () => {
         getDirectCategories,
         setDefault,
         isDefaultOf,
+        moveCategory,
         updateLevels,
         saveCheckpoint,
         undoAction,

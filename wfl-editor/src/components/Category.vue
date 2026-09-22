@@ -24,16 +24,11 @@ const connectedChildren = computed(() => {
         .map((c: any) => c.data?.name || c.data?.label);
 })
 
-// manually created categories
-const customCategories = computed(() => {
+// manually created categories, in childrenIds order
+const customCategories = computed<Node[]>(() => {
     if (!activeNode.value?.id) return []
-    return graphStore.nodes
-        .filter((node: Node) =>
-            node.type === 'category' &&
-            node.data?.isManual &&
-            graphStore.edges.some((e: any) => e.source === activeNode.value.id && e.target === node.id)
-        )
-        .map((node: any) => node.data?.name)
+    return graphStore.getDirectCategories(activeNode.value.id)
+        .filter((node: Node) => node.data?.isManual)
 });
 
 </script>
@@ -44,8 +39,14 @@ const customCategories = computed(() => {
             <button class="cat-btn" @click="emit('close')">x</button>
             <h3>All Categories</h3>
             <ul>
-                <li v-for="(cat, index) in customCategories" :key="index">
-                    {{ cat }}
+                <li v-for="(cat, index) in customCategories" :key="cat.id">
+                    <span class="cat-name">{{ cat.data?.name }}</span>
+                    <span class="cat-actions">
+                        <button class="btn btn-move" :disabled="index === 0"
+                            @click="graphStore.moveCategory(activeNode.id, cat.id, 'up')" title="Move up">▲</button>
+                        <button class="btn btn-move" :disabled="index === customCategories.length - 1"
+                            @click="graphStore.moveCategory(activeNode.id, cat.id, 'down')" title="Move down">▼</button>
+                    </span>
                 </li>
             </ul>
         </div>
@@ -97,5 +98,53 @@ const customCategories = computed(() => {
 
 .btn-cat {
     background-color: #40E0D0;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.cat-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cat-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.btn-move {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 2px 6px;
+    font-size: 11px;
+    line-height: 1;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-move:hover:not(:disabled) {
+    background-color: #e2e8f0;
+}
+
+.btn-move:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 </style>
