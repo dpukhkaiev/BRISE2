@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, onUnmounted } from 'vue'
+import { computed, onMounted, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 // Constant
 import { MainEvent } from '../../../entities/main'
@@ -28,10 +28,16 @@ const {
   pushNews,
   triggerSnackbar,
   refresh,
-  formatPercent
+  formatPercent,
+  computeQualityGain
 } = useInfoBoard()
 
-
+const isMinimization = computed<boolean>(() => {
+  const objectives = experiment_description.value?.['Context']?.['TaskConfiguration']?.['Objectives'] as any
+  if (!objectives) return true
+  const firstObjectiveKey = Object.keys(objectives)[0]
+  return objectives?.[firstObjectiveKey]?.['Minimization'] ?? true
+})
 
 const duration = 3000
 
@@ -237,8 +243,7 @@ onUnmounted(() => {
             prepend-icon="mdi-network"
           >
             <span class="desc">Quality gain: </span>
-            <span>{{ formatPercent(100 * (dc[0] - sol[0]) / dc[0]) }}
-              %</span>
+            <span>{{ formatPercent(computeQualityGain(dc[0], sol[0], isMinimization)) }}{{ computeQualityGain(dc[0], sol[0], isMinimization) === null ? '' : ' %' }}</span>
           </v-list-item>
 
           <v-list-item prepend-icon="mdi-blur">

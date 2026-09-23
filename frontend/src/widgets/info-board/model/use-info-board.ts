@@ -46,8 +46,19 @@ export function useInfoBoard() {
     news.value = []
   }
 
+  function computeQualityGain(dcValue: number, solValue: number, isMinimization: boolean): number | null {
+    if (dcValue === 0) {
+      return null
+    }
+    const diff = isMinimization ? dcValue - solValue : solValue - dcValue
+    return 100 * diff / dcValue
+  }
+
 // decimalPipe alternative
-function formatPercent(value: number): string {
+function formatPercent(value: number | null): string {
+    if (value === null || !Number.isFinite(value)) {
+      return 'N/A'
+    }
     return value.toFixed(2)
 }
 
@@ -56,12 +67,13 @@ function formatPercent(value: number): string {
     snackbar,
     snackbarMsg,
     solutionState,
-    sol, 
+    sol,
     dc,
     default_configuration,
     pushNews,
     triggerSnackbar,
     refresh,
-    formatPercent
+    formatPercent,
+    computeQualityGain
   }
 }

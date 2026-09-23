@@ -173,4 +173,32 @@ describe('InfoBoard.vue', () => {
 
         expect(result).toBe('85.35')
     })
+
+    it('formatPercent renders N/A for null', () => {
+        const wrapper = mountComponent()
+        const result = wrapper.vm.formatPercent(null)
+
+        expect(result).toBe('N/A')
+    })
+
+    it('computeQualityGain reports positive gain for minimization when result decreases', () => {
+        const wrapper = mountComponent()
+        const result = wrapper.vm.computeQualityGain(100, 80, true)
+
+        expect(result).toBe(20)
+    })
+
+    it('computeQualityGain reports positive gain for maximization when result increases', () => {
+        const wrapper = mountComponent()
+        const result = wrapper.vm.computeQualityGain(100, 120, false)
+
+        expect(result).toBe(20)
+    })
+
+    it('computeQualityGain returns null when the default result is 0', () => {
+        const wrapper = mountComponent()
+        const result = wrapper.vm.computeQualityGain(0, 50, true)
+
+        expect(result).toBeNull()
+    })
 })
