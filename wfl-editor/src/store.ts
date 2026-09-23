@@ -144,10 +144,9 @@ export const useGraphStore = defineStore('graph', () => {
 
     // clean up the node names to remove spaces
     function updateNodeName(nodeId: string, newName: string) {
-        saveCheckpoint()
-        const node = nodes.value.find((n:Node) => n.id === nodeId) 
+        const node = nodes.value.find((n:Node) => n.id === nodeId)
         if(node) {
-
+            saveCheckpoint()
             node.data.name = newName.trim().replace(/[^a-zA-Z0-9_]/g, '').replace(/^[0-9]+/, '')
 
         }
@@ -200,9 +199,9 @@ export const useGraphStore = defineStore('graph', () => {
     }
 
     function setDefault(nodeId: string, categoryId: string) {
-        saveCheckpoint()
         const node = nodes.value.find((n: Node) => n.id === nodeId)
         if(!node) {return}
+        saveCheckpoint()
         // set default path to the selected category node
         node.data.defaultPathId = categoryId
     }
@@ -269,11 +268,11 @@ export const useGraphStore = defineStore('graph', () => {
     
     // store childId which of connected properties of a parent node
     function addChildToNode(parentId: string, childId: string) {
-          saveCheckpoint()
         const parentNode = nodes.value.find((n: any) => n.id === parentId)
         if (parentNode) {
             if (!parentNode.data.childrenIds) parentNode.data.childrenIds = []
             if (!parentNode.data.childrenIds.includes(childId)) {
+                saveCheckpoint()
                 parentNode.data.childrenIds.push(childId)
 
                 // after registering a child, updating levels
@@ -318,12 +317,12 @@ export const useGraphStore = defineStore('graph', () => {
 
     //create category node 
     function createCategoryBox(sourceNode: Node, categoryName?: string, targetNode?: Node) {
-        saveCheckpoint()
         if (targetNode && hasParent(targetNode.id)) {
-        console.warn('Target has already a parent')
+        console.warn('Target has a parent already')
         return null
      }
 
+        saveCheckpoint()
         const id = crypto.randomUUID()
 
         // position for custom categories on canvas
@@ -389,10 +388,10 @@ export const useGraphStore = defineStore('graph', () => {
 
     // delete categories custom and nested nodes 
     function removeCategory(targetId: string){
-         saveCheckpoint()
         if(!targetId) return
- 
-        // find current selected node (of whom sidebar is shown) 
+
+        saveCheckpoint()
+        // find current selected node (of whom sidebar is shown)
         const parentNode = getParent(targetId)
 
          // handle change of default path if default node is deleted
