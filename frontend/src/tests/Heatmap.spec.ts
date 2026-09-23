@@ -3,6 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import Heatmap from '@/widgets/charts/heatmap/ui/Heatmap.vue'
+import HeatmapReg from '@/widgets/charts/heatmap-reg/ui/HeatmapReg.vue'
+import { theme } from '../widgets/charts/model/heatmap-theme'
+
+globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
 
 const PlotlyMock = vi.hoisted(() => ({
     react: vi.fn().mockResolvedValue(undefined),
@@ -112,6 +120,25 @@ describe('Heatmap.vue', () => {
         await flushPromises()
 
         expect(PlotlyMock.react).toHaveBeenCalled()
+    })
+
+    it('shares the colorscale selection with HeatmapReg', async () => {
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        const selectColor = wrapper.findAll('select').at(0)
+        await selectColor?.setValue('Jet')
+        await selectColor?.trigger('change')
+        await flushPromises()
+
+        expect(theme.value.color).toBe('Jet')
+
+        const regWrapper = mount(HeatmapReg, {
+            global: { plugins: [createPinia()] }
+        })
+        await flushPromises()
+
+        expect((regWrapper.find('select').element as HTMLSelectElement).value).toBe('Jet')
     })
 
     it('should not render when searchspaceReady is false', async () => {

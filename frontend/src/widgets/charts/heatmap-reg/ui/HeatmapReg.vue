@@ -2,7 +2,8 @@
 import { ref, onMounted, watch, computed, nextTick, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Subscription } from 'rxjs'
-import { Color, PlotType, Smooth } from '../../model/chart.types'
+import { Color } from '../../model/chart.types'
+import { theme } from '../../model/heatmap-theme'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
@@ -25,11 +26,6 @@ const yParamKey = ref<string>('')
 const keyParam = ref<string>('')
 const map = ref<HTMLElement | null>(null)
 
-const theme = ref({
-    type: PlotType[0] as string,
-    color: Color[0] as string,
-    smooth: Smooth[0] as string | boolean
-})
 const colors = Color
 // const types = PlotType
 
@@ -255,17 +251,19 @@ function initMainEvents() {
       ref="map"
       class="heatmap-container"
     />
+    <select
+      v-model="theme.color"
+      @change="render"
+    >
+      <option
+        v-for="col in colors"
+        :key="col"
+        :value="col"
+      >
+        {{ col }}
+      </option>
+    </select>
   </div>
-  <select
-    v-model="theme.color"
-    @change="render"
-  >
-    <option
-      v-for="col in colors"
-      :key="col"
-      :value="col"
-    />
-  </select>
 </template>
 
 <style scoped>

@@ -4,7 +4,8 @@ import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Subscription } from 'rxjs'
 
-import { Color, PlotType, Smooth } from '../../model/chart.types'
+import { Color } from '../../model/chart.types'
+import { theme } from '../../model/heatmap-theme'
 
 import { MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model';
@@ -52,13 +53,6 @@ const xTitle = ref('')
 const yTitle = ref('')
 const keyParam = ref('')
 
-
-// default theme
-const theme = ref({
-    type: PlotType[0] as string,
-    color: Color[0] as string,
-    smooth: Smooth[0] as string | boolean
-})
 
 // values that possible to use in template
 const colors = Color
@@ -268,15 +262,17 @@ onUnmounted(() => {
 <template>
   <div v-if="isModelType === 'regression'">
     <div ref="map" />
+    <select
+      v-model="theme.color"
+      @change="render"
+    >
+      <option
+        v-for="col in colors"
+        :key="col"
+        :value="col"
+      >
+        {{ col }}
+      </option>
+    </select>
   </div>
-  <select
-    v-model="theme.color"
-    @change="render"
-  >
-    <option
-      v-for="col in colors"
-      :key="col"
-      :value="col"
-    />
-  </select>
 </template>
