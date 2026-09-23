@@ -13,7 +13,7 @@ import { zip, unpack, dimmensionsData } from '../lib/dimension-lib'
 
 // initialize store
 const store = useMainEventStore()
-const { experiment_description, searchspace } = storeToRefs(store)
+const { experiment_description, searchspace, searchspaceReady } = storeToRefs(store)
 
 
 const parameter_names = ref<string[]>()
@@ -62,8 +62,8 @@ async function chose() {
     resultParamsRange.value.set('result', undefined)
 }
 function initMainEvents() {
-    watch([experiment_description, searchspace], () => {
-        if (!experiment_description.value || !searchspace.value) {
+    watch([experiment_description, searchspace, searchspaceReady], () => {
+        if (!experiment_description.value || !searchspace.value || !searchspaceReady.value) {
             return
         }
         resetRes()

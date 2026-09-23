@@ -101,6 +101,12 @@ describe('useMainEventStore', () => {
         expect(store.experiment_description).toEqual(mockDescription)
         expect(store.searchspace).toEqual({ param: 'value' })
         expect(store.globalConfig).toEqual({ config: 'value' })
+        expect(store.searchspaceReady).toBe(true)
+    })
+
+    it('should default searchspaceReady to false', () => {
+        const store = useMainEventStore()
+        expect(store.searchspaceReady).toBe(false)
     })
 
     it('should preserve Infinity values in message body', () => {

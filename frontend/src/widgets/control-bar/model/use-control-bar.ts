@@ -63,7 +63,7 @@ subscriptions.add(
       try {
         const parsed = parseJsonWithInfinity(reader.result as string)
         store.experiment_description = parsed
-        store.searchspace = parsed?.["Context"]?.["SearchSpace"]
+        store.searchspaceReady = false // serialized search space is provided by the main node
         selectedFile.value = null // reset input
       } catch (error) {
         console.error('Failed to parse experiment file:', error)

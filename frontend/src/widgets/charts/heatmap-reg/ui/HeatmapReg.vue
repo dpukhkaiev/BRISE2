@@ -8,7 +8,7 @@ import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 import { cleanIdentifier } from '../../../../shared/lib'
 const store = useMainEventStore()
-const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
+const { experiment_description, searchspace, searchspaceReady, globalConfig } = storeToRefs(store)
 
 const solution = ref<Solution | null>(null)
 const result = ref(new Map<string, any>())
@@ -197,9 +197,9 @@ function initMainEvents() {
     }))
 
 
-    watch([experiment_description, searchspace], () => {
+    watch([experiment_description, searchspace, searchspaceReady], () => {
         console.log('[Heatmap-Reg] searchspace RAW', JSON.stringify(searchspace.value))
-        if (!experiment_description.value || !searchspace.value || !globalConfig.value) return
+        if (!experiment_description.value || !searchspace.value || !searchspaceReady.value || !globalConfig.value) return
         resetRes()
 
         const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries

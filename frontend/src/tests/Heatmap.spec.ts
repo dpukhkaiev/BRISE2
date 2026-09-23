@@ -9,9 +9,9 @@ const PlotlyMock = vi.hoisted(() => ({
     purge: vi.fn(),
 }))
 
-vi.mock('../entities/main', () => ({
-    useMainEventStore: vi.fn(() => ({
-         plotlyInstance: PlotlyMock,
+function buildMockStore(searchspaceReady = true) {
+    return {
+        plotlyInstance: PlotlyMock,
         experiment_description: ref({
             ConfigurationSelection: {
                 Predictor: {
@@ -31,6 +31,7 @@ vi.mock('../entities/main', () => ({
                 }
             }]
         }),
+        searchspaceReady: ref(searchspaceReady),
         globalConfig: ref({}),
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {
@@ -38,7 +39,11 @@ vi.mock('../entities/main', () => ({
                 return { unsubscribe: vi.fn() }
             })
         }))
-    })),
+    }
+}
+
+vi.mock('../entities/main', () => ({
+    useMainEventStore: vi.fn(() => buildMockStore()),
     MainEvent: { NEW: 'NEW', FINAL: 'FINAL', DEFAULT: 'DEFAULT' }
 }))
 
@@ -107,5 +112,15 @@ describe('Heatmap.vue', () => {
         await flushPromises()
 
         expect(PlotlyMock.react).toHaveBeenCalled()
+    })
+
+    it('should not render when searchspaceReady is false', async () => {
+        const { useMainEventStore } = await import('../entities/main')
+        vi.mocked(useMainEventStore).mockReturnValueOnce(buildMockStore(false) as any)
+
+        mountComponent()
+        await flushPromises()
+
+        expect(PlotlyMock.react).not.toHaveBeenCalled()
     })
 })

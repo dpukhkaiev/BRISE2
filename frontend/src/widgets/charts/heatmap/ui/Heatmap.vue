@@ -25,7 +25,7 @@ interface Configuration {
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace, globalConfig } = storeToRefs(store)
+const { experiment_description, searchspace, searchspaceReady, globalConfig } = storeToRefs(store)
 
 // experiment results
 const result = ref(new Map<string, any>())
@@ -156,8 +156,8 @@ async function render(): Promise<void> {
 }
 
 function initMainEvents() {
-    watch(experiment_description, () => {
-        if (!experiment_description.value || !searchspace.value || !globalConfig.value) {
+    watch([experiment_description, searchspace, searchspaceReady], () => {
+        if (!experiment_description.value || !searchspace.value || !searchspaceReady.value || !globalConfig.value) {
             return
         }
         resetRes()

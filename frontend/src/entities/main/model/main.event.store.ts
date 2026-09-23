@@ -15,6 +15,7 @@ stompClient.connectionState$.subscribe(state => {
 export const useMainEventStore = defineStore('mainEvent', () => {
    const experiment_description = ref<ExperimentDescription | null>(null)
    const searchspace = ref<any>(null)
+   const searchspaceReady = ref(false)
    const globalConfig = ref<any>(null)
    const plotlyInstance = shallowRef<any>(null)
    const listeners: Record<string, Observable<IMessage>> = {
@@ -75,6 +76,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
             console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)
             experiment_description.value = body.experiment_description
             searchspace.value = body.searchspace_description
+            searchspaceReady.value = true
             globalConfig.value = body.global_configuration
 
          }
@@ -83,5 +85,5 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
 
 
-   return { globalConfig, searchspace, experiment_description, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
+   return { globalConfig, searchspace, searchspaceReady, experiment_description, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

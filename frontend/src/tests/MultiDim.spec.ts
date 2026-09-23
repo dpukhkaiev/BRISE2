@@ -1,5 +1,5 @@
 import { mount, flushPromises } from '@vue/test-utils'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { nextTick, reactive, toRefs } from 'vue'
 import MultiDimComponent from '../widgets/charts/multi-dim/ui/MultiDim.vue'
 
@@ -32,6 +32,7 @@ const { hoistedPlotly, sharedCallbacks, rawSearchspace, rawExperimentDescription
 
 const mockStoreState = reactive({
     searchspace: rawSearchspace,
+    searchspaceReady: true,
     experiment_description: rawExperimentDescription,
     plotlyInstance: hoistedPlotly,
     onEvent: vi.fn((eventType) => ({
@@ -63,6 +64,10 @@ describe('MultiDim', () => {
         for (const key in sharedCallbacks) {
             delete sharedCallbacks[key]
         }
+    })
+
+    afterEach(() => {
+        mockStoreState.searchspaceReady = true
     })
 
     const mountWithState = () => {
@@ -144,5 +149,15 @@ describe('MultiDim', () => {
 
         expect(hoistedPlotly.purge).toHaveBeenCalledWith(chartElement)
         spyGetElement.mockRestore()
+    })
+
+    it('should not populate root parameters when searchspaceReady is false', async () => {
+        mockStoreState.searchspaceReady = false
+
+        mountWithState()
+        await flushPromises()
+        await nextTick()
+
+        expect(document.getElementById('my_experiment_id')).toBeNull()
     })
 })
