@@ -48,6 +48,8 @@ const x = ref<Array<any>>([])
 const y = ref<Array<any>>([])
 const xParamKey = ref('')
 const yParamKey = ref('')
+const xTitle = ref('')
+const yTitle = ref('')
 const keyParam = ref('')
 
 
@@ -132,7 +134,7 @@ async function render(): Promise<void> {
             autosize: true,
             showlegend: false,
             xaxis: {
-                title: xParamKey.value,
+                title: { text: xTitle.value },
                 type: 'category' as const,
                 autorange: true,
                 range: [-0.5, x.value.length - 0.5],
@@ -141,7 +143,7 @@ async function render(): Promise<void> {
                 categoryarray: x.value
             },
             yaxis: {
-                title: yParamKey.value,
+                title: { text: yTitle.value },
                 type: 'category' as const,
                 autorange: true,
                 range: [-0.5, y.value.length - 0.5],
@@ -166,6 +168,8 @@ function initMainEvents() {
         if (keys.length >= 2) {
             yParamKey.value = keys[0]
             xParamKey.value = keys[1]
+            yTitle.value = cleanIdentifier(keys[0])
+            xTitle.value = cleanIdentifier(keys[1])
             y.value = (boundaryObj[keys[0]] ?? []).map(cleanIdentifier)
             x.value = (boundaryObj[keys[1]] ?? []).map(cleanIdentifier)
         }
