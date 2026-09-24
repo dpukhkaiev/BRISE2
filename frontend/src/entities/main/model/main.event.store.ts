@@ -17,6 +17,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
    const searchspace = ref<any>(null)
    const searchspaceReady = ref(false)
    const globalConfig = ref<any>(null)
+   const experimentFinished = ref(false)
    const plotlyInstance = shallowRef<any>(null)
    const listeners: Record<string, Observable<IMessage>> = {
       [MainEvent.EXPERIMENT]: stompClient.watch('front_experiment_queue', { 'x-message-ttl': '1000' }),
@@ -78,12 +79,19 @@ export const useMainEventStore = defineStore('mainEvent', () => {
             searchspace.value = body.searchspace_description
             searchspaceReady.value = true
             globalConfig.value = body.global_configuration
+            experimentFinished.value = false
 
+         }
+      })
+
+      onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+         if (message.headers['message_subtype'] === 'configuration') {
+            experimentFinished.value = true
          }
       })
    }
 
 
 
-   return { globalConfig, searchspace, searchspaceReady, experiment_description, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
+   return { globalConfig, searchspace, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

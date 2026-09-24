@@ -34,6 +34,7 @@ const mockStoreState = reactive({
     searchspace: rawSearchspace,
     searchspaceReady: true,
     experiment_description: rawExperimentDescription,
+    experimentFinished: false,
     plotlyInstance: hoistedPlotly,
     onEvent: vi.fn((eventType) => ({
         subscribe: vi.fn((callback) => {

@@ -27,6 +27,7 @@ vi.mock('../entities/main', () => ({
             }
         }),
         globalConfig: ref({}),
+        experimentFinished: ref(false),
         // catching the callbacks
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {

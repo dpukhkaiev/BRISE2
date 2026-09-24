@@ -13,7 +13,7 @@ import { zip, unpack, dimmensionsData } from '../lib/dimension-lib'
 
 // initialize store
 const store = useMainEventStore()
-const { experiment_description, searchspace, searchspaceReady } = storeToRefs(store)
+const { experiment_description, searchspace, searchspaceReady, experimentFinished } = storeToRefs(store)
 
 
 const parameter_names = ref<string[]>()
@@ -85,6 +85,7 @@ function initMainEvents() {
 
     // Default message
     subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe(async (message: any) => {
+        if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !experiment) {
                 console.warn('not ready yet - rootParam or experiment not there ')
@@ -126,6 +127,7 @@ function initMainEvents() {
 
     // New points
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
+        if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
             if (!rootParam.value || !rootParam.value.length || !experiment) {
                 return

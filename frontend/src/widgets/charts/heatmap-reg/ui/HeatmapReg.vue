@@ -9,7 +9,7 @@ import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 import { cleanIdentifier } from '../../../../shared/lib'
 const store = useMainEventStore()
-const { experiment_description, searchspace, searchspaceReady, globalConfig } = storeToRefs(store)
+const { experiment_description, searchspace, searchspaceReady, globalConfig, experimentFinished } = storeToRefs(store)
 
 const solution = ref<Solution | null>(null)
 const result = ref(new Map<string, any>())
@@ -174,6 +174,7 @@ onUnmounted(() => {
 
 function initMainEvents() {
     subs.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe(async (message: any) => {
+        if (experimentFinished.value) return
         console.log('[Heatmap Debug] PREDICTIONS event received', message)
         const preds = JSON.parse(message.body)
         for (const item of preds) {

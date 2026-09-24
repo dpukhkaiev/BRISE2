@@ -20,11 +20,13 @@ let eventCallbacks: Record<string, (message: any) => void>
 let mockUnsubscribe: any
 let mockExperimentDescription: any
 let mockSearchspace: any
+const mockExperimentFinished = ref(false)
 
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
         experiment_description: mockExperimentDescription,
         searchspace: mockSearchspace,
+        experimentFinished: mockExperimentFinished,
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {
                 eventCallbacks[eventType] = callback
@@ -76,6 +78,7 @@ describe('TaskList.vue', () => {
         mockExperimentDescription = ref({
             Context: { TaskConfiguration: { TaskName: 'TestExperiment' } }
         })
+        mockExperimentFinished.value = false
     })
 
     afterEach(() => {

@@ -14,7 +14,7 @@ import { normalizeConfigKeys } from '../../../shared/lib'
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description } = storeToRefs(store)
+const { experiment_description, experimentFinished } = storeToRefs(store)
 
 
 const {
@@ -101,6 +101,7 @@ function initMainEvents(): void {
 
   // For information messages
   subscriptions.add(store.onEvent(MainEvent.LOG)?.subscribe((message: any) => {
+    if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'info' || message.headers['message_subtype'] === 'error') {
       let obj = JSON.parse(message.body)
       let temp = { 'time': Date.now(), 'message': obj }
@@ -128,6 +129,7 @@ function initMainEvents(): void {
     { deep: true })
 
   subscriptions.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+    if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'configuration') {
       let configs = JSON.parse(message.body)
       configs.forEach((configuration: any) => {
@@ -151,6 +153,7 @@ function initMainEvents(): void {
   // NOTE: main-node does not currently emit a "predictions" message at all, so this handler is presently dead code 
   // pending a rework.
   subscriptions.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe((message: any) => {
+    if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'configurations') {
       let obj = JSON.parse(message.body)
       let temp = {

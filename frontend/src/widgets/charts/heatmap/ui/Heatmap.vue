@@ -26,7 +26,7 @@ interface Configuration {
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace, searchspaceReady, globalConfig } = storeToRefs(store)
+const { experiment_description, searchspace, searchspaceReady, globalConfig, experimentFinished } = storeToRefs(store)
 
 // experiment results
 const result = ref(new Map<string, any>())
@@ -179,6 +179,7 @@ function initMainEvents() {
 
     // new configuration results
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
+        if (experimentFinished.value) return
         const configs = JSON.parse(message.body)
         let count = 0;
         for (const configuration of configs) {
@@ -228,6 +229,7 @@ function initMainEvents() {
 
     // Default message
     subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+        if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
             configs.forEach((configuration: any) => {

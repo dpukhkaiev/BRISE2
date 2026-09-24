@@ -20,12 +20,14 @@ const mockExperimentDescription = ref({
     Context: { TaskConfiguration: { TaskName: 'TestExperiment' } }
 })
 const mockSearchspace = ref([])
+const mockExperimentFinished = ref(false)
 
 // Mocks
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
         experiment_description: mockExperimentDescription,
         searchspace: mockSearchspace,
+        experimentFinished: mockExperimentFinished,
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {
                 eventCallbacks[eventType] = callback
@@ -53,6 +55,7 @@ describe('InfoBoard.vue', () => {
         setActivePinia(createPinia())
         vi.clearAllMocks()
         eventCallbacks = {}
+        mockExperimentFinished.value = false
 
         Object.defineProperty(window, 'visualViewport', {
             writable: true,
@@ -147,6 +150,29 @@ describe('InfoBoard.vue', () => {
         await flushPromises()
 
         expect(wrapper.vm.solutionState.solution).toBeDefined()
+    })
+
+    it('LOG and NEW messages arriving after the experiment has finished are ignored', async () => {
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        mockExperimentFinished.value = true
+
+        eventCallbacks['LOG']({
+            headers: { message_subtype: 'info' },
+            body: JSON.stringify('late log message')
+        })
+
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'configuration' },
+            body: JSON.stringify([{
+                configurations: { param1: 'value1' },
+                results: { metric: 1 }
+            }])
+        })
+        await flushPromises()
+
+        expect((wrapper.vm as any).news.length).toBe(0)
     })
 
     it('experiment_description change refreshes the state', async () => {

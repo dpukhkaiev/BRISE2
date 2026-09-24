@@ -37,7 +37,7 @@ const store = useMainEventStore()
 
 
 // destructure reactive value from main.event.store
-const { experiment_description } = storeToRefs(store)
+const { experiment_description, experimentFinished } = storeToRefs(store)
 function refresh() {
     result.value = []
     update.value = true
@@ -89,6 +89,7 @@ function handleConfigurationMessage(message: any): void {
 
 function initMainEvents(): void {
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message) => {
+        if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'task') {
             var fresh: Task = new Task(JSON.parse(message.body))
             var params_array = Object.values(fresh.config)
@@ -100,7 +101,10 @@ function initMainEvents(): void {
         handleConfigurationMessage(message)
     }));
 
-    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe(handleConfigurationMessage));
+    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message) => {
+        if (experimentFinished.value) return
+        handleConfigurationMessage(message)
+    }));
     subs.add(store.onEvent(MainEvent.FINAL)?.subscribe(handleConfigurationMessage));
 
     stopWatch = watch(experiment_description, () => {

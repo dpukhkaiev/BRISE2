@@ -14,7 +14,7 @@ import { useResultTracker, findMatchingPoint } from '../model/result-calc'
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description } = storeToRefs(store)
+const { experiment_description, experimentFinished } = storeToRefs(store)
 
 
 const isChartInitialized = ref(false)
@@ -167,6 +167,7 @@ function initMainEvents() {
 
     // add start point
     subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+        if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body)
             configs.forEach((configuration: any) => {
@@ -200,6 +201,7 @@ function initMainEvents() {
 
     // add new point
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
+        if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
             const configs = JSON.parse(message.body);
 

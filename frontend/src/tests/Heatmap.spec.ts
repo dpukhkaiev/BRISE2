@@ -41,6 +41,7 @@ function buildMockStore(searchspaceReady = true) {
         }),
         searchspaceReady: ref(searchspaceReady),
         globalConfig: ref({}),
+        experimentFinished: ref(false),
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {
                 eventCallbacks[eventType] = callback
