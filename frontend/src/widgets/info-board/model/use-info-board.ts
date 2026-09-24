@@ -1,15 +1,19 @@
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import type { Solution } from '../../../entities/task/model/task-data.model'
 
 
-export interface NewsPoint {
+export interface NewsEntry {
+  id: number
   time: number
   message: string
 }
 
+let nextNewsId = 0
+
 export function useInfoBoard() {
   // information log
-  const news = ref<NewsPoint[]>([])
+  const news = ref<NewsEntry[]>([])
+  const newsExpanded = ref(false)
   const snackbar = ref(false)
   const snackbarMsg = ref('')
 
@@ -27,8 +31,15 @@ export function useInfoBoard() {
 
  // threshold for event news messages
   function pushNews(message: string): void {
-    const updated = [...news.value, { time: Date.now(), message }]
-    news.value = updated.length > 30 ? updated.slice(-30) : updated
+    news.value = [...news.value, { id: nextNewsId++, time: Date.now(), message }]
+  }
+
+  const visibleNews = computed<NewsEntry[]>(() =>
+    newsExpanded.value ? news.value : news.value.slice(-30)
+  )
+
+  function toggleNewsExpanded(): void {
+    newsExpanded.value = !newsExpanded.value
   }
 
   function triggerSnackbar(msg: string): void {
@@ -44,6 +55,7 @@ export function useInfoBoard() {
     }
     default_configuration.value = null
     news.value = []
+    newsExpanded.value = false
   }
 
   function computeQualityGain(dcValue: number, solValue: number, isMinimization: boolean): number | null {
@@ -64,6 +76,8 @@ function formatPercent(value: number | null): string {
 
   return {
     news,
+    visibleNews,
+    newsExpanded,
     snackbar,
     snackbarMsg,
     solutionState,
@@ -71,6 +85,7 @@ function formatPercent(value: number | null): string {
     dc,
     default_configuration,
     pushNews,
+    toggleNewsExpanded,
     triggerSnackbar,
     refresh,
     formatPercent,

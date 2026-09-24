@@ -108,7 +108,7 @@ describe('InfoBoard.vue', () => {
         expect((wrapper.vm as any).news[lastNewsIndex].message).toBe('Server connection is successfully set')
     })
 
-    it('pushNews limits news array to max 30 messages', async () => {
+    it('pushNews keeps full history while visibleNews caps at 30 messages', async () => {
         const wrapper = mountComponent()
         await flushPromises()
 
@@ -120,8 +120,11 @@ describe('InfoBoard.vue', () => {
         }
         await flushPromises()
 
-        expect((wrapper.vm as any).news.length).toBe(30)
-        expect((wrapper.vm as any).news[0].message).toBe('message 6')
+        expect((wrapper.vm as any).news.length).toBe(35)
+        expect((wrapper.vm as any).news[0].message).toBe('message 1')
+
+        expect((wrapper.vm as any).visibleNews.length).toBe(30)
+        expect((wrapper.vm as any).visibleNews[0].message).toBe('message 6')
     })
 
     it('FINAL event defines the Solution space', async () => {
@@ -151,7 +154,7 @@ describe('InfoBoard.vue', () => {
         await flushPromises()
 
 
-        wrapper.vm.news = [{ time: Date.now(), message: 'some old message' }];
+        wrapper.vm.news = [{ id: 0, time: Date.now(), message: 'some old message' }];
         (wrapper.vm as any).solutionState = { solution: {}, configWithNones: 'test', result: 'test' } as any
 
 

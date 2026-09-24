@@ -19,6 +19,8 @@ const { experiment_description } = storeToRefs(store)
 
 const {
   news,
+  visibleNews,
+  newsExpanded,
   snackbar,
   snackbarMsg,
   solutionState,
@@ -26,6 +28,7 @@ const {
   dc,
   default_configuration,
   pushNews,
+  toggleNewsExpanded,
   triggerSnackbar,
   refresh,
   formatPercent,
@@ -85,7 +88,6 @@ function initMainEvents(): void {
         configWithNones: config,
         result: JSON.stringify(s?.results)
       }
-      // NewsPoint type everywhere?
       let temp = {
         'time': Date.now(),
         'message': '★★★ The optimum result is found. The best point is reached ★★★'
@@ -201,17 +203,26 @@ onUnmounted(() => {
           lines="two"
         >
           <v-list-item
-            v-for="info in news"
-            :key="info.time"
+            v-for="i in visibleNews.length"
+            :key="visibleNews[visibleNews.length - i].id"
             prepend-icon="mdi-check"
           >
-            <v-list-item-title>{{ info.message }}</v-list-item-title>
+            <v-list-item-title>{{ visibleNews[visibleNews.length - i].message }}</v-list-item-title>
             <v-list-item-subtitle>
-              {{ new Date(info.time).toLocaleDateString() }}
+              {{ new Date(visibleNews[visibleNews.length - i].time).toLocaleString() }}
             </v-list-item-subtitle>
             <v-divider />
           </v-list-item>
         </v-list>
+
+        <v-btn
+          v-if="news.length > 30"
+          variant="text"
+          size="small"
+          @click="toggleNewsExpanded"
+        >
+          {{ newsExpanded ? 'Show recent only' : `Show all (${news.length})` }}
+        </v-btn>
       </v-expansion-panel-text>
     </v-expansion-panel>
 
