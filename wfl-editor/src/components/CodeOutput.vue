@@ -14,8 +14,13 @@ const { convert } = useXmlToWfl()
 const canExport = computed(() => graphStore.canExport)
 
 const wflCode = computed(() => {
-  const xml = graphStore.exportGraphToXML()
-  return convert(xml)
+  try {
+    const xml = graphStore.exportGraphToXML()
+    return convert(xml)
+  } catch (e) {
+    console.error('Failed to generate WFL code', e)
+    return '// Failed to generate WFL code — see console for details'
+  }
 })
 
 const copied = ref(false)

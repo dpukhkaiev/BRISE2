@@ -11,7 +11,7 @@ const tagToType: Record<string, Children['type']> = {
 
 
 function parseXmlElement(el: Element): Children {
-    const constraintsEl = el.querySelector('Constraints')
+    const constraintsEl = Array.from(el.children).find(c => c.tagName === 'Constraints')
     const lowerText = constraintsEl?.querySelector('lower')?.textContent
     const upperText = constraintsEl?.querySelector('upper')?.textContent
     const defText = constraintsEl?.querySelector('default')?.textContent
