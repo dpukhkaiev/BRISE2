@@ -50,7 +50,7 @@ const mountComponent = (): any => mount(TaskList, {
 function makeTaskPayload(id: string, configValue = 'foo') {
     return JSON.stringify([{
         run: { method: 'someMethod', param: {} },
-        configurations: { ws_file: configValue },
+        configurations: { 'Context.SearchSpace.N': configValue },
         results: {
             'task id': id,
             owner: 'tester',
@@ -62,7 +62,7 @@ function makeTaskPayload(id: string, configValue = 'foo') {
 
 function makeConfigurationPayload(configValue: string, resultValue: number) {
     return JSON.stringify([{
-        configurations: { ws_file: configValue },
+        configurations: { 'Context.SearchSpace.N': configValue },
         results: { x: resultValue }
     }])
 }
@@ -196,7 +196,7 @@ describe('TaskList.vue', () => {
         vi.advanceTimersByTime(500)
         await flushPromises()
 
-        expect(wrapper.vm.cachedAvg({ ws_file: 'foo' })).toEqual([1])
+        expect(wrapper.vm.cachedAvg({ 'Context.SearchSpace.N': 'foo' })).toEqual([1])
     })
 
     it('average result should switch to the backend value once a configuration event is received', async () => {
@@ -210,7 +210,7 @@ describe('TaskList.vue', () => {
         })
         vi.advanceTimersByTime(500)
         await flushPromises()
-        expect(wrapper.vm.cachedAvg({ ws_file: 'foo' })).toEqual([1])
+        expect(wrapper.vm.cachedAvg({ 'Context.SearchSpace.N': 'foo' })).toEqual([1])
 
         eventCallbacks['NEW']({
             headers: { message_subtype: 'configuration' },
@@ -218,6 +218,21 @@ describe('TaskList.vue', () => {
         })
         await flushPromises()
 
-        expect(wrapper.vm.cachedAvg({ ws_file: 'foo' })).toEqual([42])
+        expect(wrapper.vm.cachedAvg({ 'Context.SearchSpace.N': 'foo' })).toEqual([42])
+    })
+
+    it('average result should be computed for a search-space parameter value containing a dot', async () => {
+        vi.useFakeTimers()
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'task' },
+            body: makeTaskPayload('1', 'Context.SearchSpace.N.N1')
+        })
+        vi.advanceTimersByTime(500)
+        await flushPromises()
+
+        expect(wrapper.vm.cachedAvg({ 'Context.SearchSpace.N': 'Context.SearchSpace.N.N1' })).toEqual([1])
     })
 })

@@ -84,11 +84,10 @@ export function useTaskMetrics() {
     }
 
     function cachedAvg(config: Record<string, any>): any[] {
-        const normalizedConfig = normalizeConfigKeys(config)
-        const key = JSON.stringify(normalizedConfig)
+        const key = JSON.stringify(normalizeConfigKeys(config))
         if (backendResultCache.has(key)) return backendResultCache.get(key)!
         if (avgResultCache.has(key)) return avgResultCache.get(key)!
-        const avg = getAverageResult(normalizedConfig)
+        const avg = getAverageResult(config)
         avgResultCache.set(key, avg)
         return avg
     }
