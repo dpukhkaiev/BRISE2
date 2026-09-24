@@ -101,7 +101,6 @@ function initMainEvents(): void {
 
   // For information messages
   subscriptions.add(store.onEvent(MainEvent.LOG)?.subscribe((message: any) => {
-    if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'info' || message.headers['message_subtype'] === 'error') {
       let obj = parseJsonWithInfinity(message.body)
       let temp = { 'time': Date.now(), 'message': obj }

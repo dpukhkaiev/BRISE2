@@ -93,6 +93,12 @@ export function useTaskMetrics() {
         return avg
     }
 
+    // drop the cached client-side average
+    function invalidateAverage(config: Record<string, any>) {
+        const key = stringifyWithInfinity(normalizeConfigKeys(config))
+        avgResultCache.delete(key)
+    }
+
     function clearCache() {
         avgResultCache.clear()
         backendResultCache.clear()
@@ -106,6 +112,7 @@ export function useTaskMetrics() {
         searchTasks,
         cachedAvg,
         recordBackendResult,
+        invalidateAverage,
         clearCache
     }
 }

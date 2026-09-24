@@ -401,11 +401,10 @@ export const useGraphStore = defineStore('graph', () => {
 
         }
 
-    // delete categories custom and nested nodes 
-    function removeCategory(targetId: string){
+    // shared cascade-delete logic for a single category/custom/nested node
+    function deleteCategoryCascade(targetId: string) {
         if(!targetId) return
 
-        saveCheckpoint()
         // find current selected node (of whom sidebar is shown)
         const parentNode = getParent(targetId)
 
@@ -417,7 +416,7 @@ export const useGraphStore = defineStore('graph', () => {
         //search in all descendants for the id of element to be deleted
        // const allDescendants = getAllDescendants(targetId)
        // const elementToDelete = allDescendants.find((n:Node) => n.data.name === categoryName)
-          
+
             // all sub nodes of the element to be deleted
         const subDescendants = getAllDescendants(targetId);
         const idsToDelete = [targetId, ...subDescendants.map((d: Node) => d.id)];
@@ -426,7 +425,7 @@ export const useGraphStore = defineStore('graph', () => {
         nodes.value = nodes.value.filter((n: Node) => !idsToDelete.includes(n.id));
 
         // delete edges
-        edges.value = edges.value.filter((e: Edge) => 
+        edges.value = edges.value.filter((e: Edge) =>
             !idsToDelete.includes(e.source) && !idsToDelete.includes(e.target)
         );
 
@@ -436,10 +435,26 @@ export const useGraphStore = defineStore('graph', () => {
                 n.data.childrenIds = n.data.childrenIds.filter((id: string) => !idsToDelete.includes(id));
             }
         });
-     
+
      // after all cases check for levels
      updateLevels()
-    }   
+    }
+
+    // delete a single category/custom/nested node
+    function removeCategory(targetId: string){
+        if(!targetId) return
+
+        saveCheckpoint()
+        deleteCategoryCascade(targetId)
+    }
+
+    // delete several categories as one undo step (e.g. a multi-select delete on the canvas)
+    function removeCategories(targetIds: string[]) {
+        if (!targetIds.length) return
+
+        saveCheckpoint()
+        targetIds.forEach((id: string) => deleteCategoryCascade(id))
+    }
         
   function calculateDefaultPath(nodeId: string): string {
     const ancestorNames = getAllAncestors(nodeId)
@@ -556,6 +571,7 @@ export const useGraphStore = defineStore('graph', () => {
         createCategoryBox,
         getAllDescendants,
         removeCategory,
+        removeCategories,
         checkDuplicates,
         hasParent,
         downloadCode,

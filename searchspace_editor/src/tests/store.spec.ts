@@ -57,3 +57,40 @@ describe('useGraphStore auto-save', () => {
         expect(unloadState.nodes[0].position).toEqual({ x: 999, y: 999 })
     })
 })
+
+describe('useGraphStore node removal', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia())
+    })
+
+    it('removeCategory pushes exactly one undo checkpoint for a single delete', () => {
+        const store = useGraphStore()
+        store.addNode({ id: 'n1', type: 'float', position: { x: 0, y: 0 }, data: { constraints: {} } } as any)
+
+        const undoCountBefore = store.undoStack.length
+        store.removeCategory('n1')
+
+        expect(store.nodes.find((n: any) => n.id === 'n1')).toBeUndefined()
+        expect(store.undoStack.length).toBe(undoCountBefore + 1)
+    })
+
+    it('removeCategories pushes exactly one undo checkpoint for a multi-node delete', () => {
+        const store = useGraphStore()
+        store.addNode({ id: 'n1', type: 'float', position: { x: 0, y: 0 }, data: { constraints: {} } } as any)
+        store.addNode({ id: 'n2', type: 'float', position: { x: 100, y: 0 }, data: { constraints: {} } } as any)
+        store.addNode({ id: 'n3', type: 'float', position: { x: 200, y: 0 }, data: { constraints: {} } } as any)
+
+        const undoCountBefore = store.undoStack.length
+        store.removeCategories(['n1', 'n2'])
+
+        expect(store.nodes.find((n: any) => n.id === 'n1')).toBeUndefined()
+        expect(store.nodes.find((n: any) => n.id === 'n2')).toBeUndefined()
+        expect(store.nodes.find((n: any) => n.id === 'n3')).toBeDefined()
+        // one checkpoint for the whole batch, not one per removed node
+        expect(store.undoStack.length).toBe(undoCountBefore + 1)
+
+        store.undoAction()
+        expect(store.nodes.find((n: any) => n.id === 'n1')).toBeDefined()
+        expect(store.nodes.find((n: any) => n.id === 'n2')).toBeDefined()
+    })
+})

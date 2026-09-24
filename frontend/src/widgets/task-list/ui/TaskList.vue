@@ -22,6 +22,7 @@ const {
     searchTasks,
     cachedAvg,
     recordBackendResult,
+    invalidateAverage,
     clearCache
 } = useTaskMetrics()
 
@@ -124,7 +125,9 @@ onMounted(() => {
 
     intervalId = setInterval(() => {
         if (pendingTasks.length === 0) return
-        result.value.push(...pendingTasks.splice(0, 20))
+        const newTasks = pendingTasks.splice(0, 20)
+        newTasks.forEach(task => invalidateAverage(task.config))
+        result.value.push(...newTasks)
     }, 500)
 
 })

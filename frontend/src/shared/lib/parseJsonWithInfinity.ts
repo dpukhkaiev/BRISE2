@@ -6,10 +6,11 @@ const NAN_TOKEN = '"__NAN__"'
 // (e.g. MinExpectedValue/MaxExpectedValue) and undefined results, which are not valid JSON.
 // Swap them then restore the real Infinity/-Infinity/NaN numbers.
 export function parseJsonWithInfinity(raw: string): any {
+   // a bare token can follow ':' (object value), '[' (first array element) or ',' (later array element)
    const clean = raw
-      .replace(/:\s*-Infinity/g, `: ${NEGATIVE_INFINITY_TOKEN}`)
-      .replace(/:\s*Infinity/g, `: ${POSITIVE_INFINITY_TOKEN}`)
-      .replace(/:\s*NaN/g, `: ${NAN_TOKEN}`)
+      .replace(/([:[,]\s*)-Infinity/g, `$1${NEGATIVE_INFINITY_TOKEN}`)
+      .replace(/([:[,]\s*)Infinity/g, `$1${POSITIVE_INFINITY_TOKEN}`)
+      .replace(/([:[,]\s*)NaN/g, `$1${NAN_TOKEN}`)
 
    return JSON.parse(clean, (_key, value) => {
       if (value === '__POSITIVE_INFINITY__') return Infinity

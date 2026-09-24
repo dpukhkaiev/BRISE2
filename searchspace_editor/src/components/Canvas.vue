@@ -98,7 +98,7 @@ function onChange(changes: any[]) {
             graphStore.getAllDescendants(c.id).forEach((d: any) => idsToDelete.add(d.id))
         })
 
-        removeChanges.forEach((c) => graphStore.removeCategory(c.id))
+        graphStore.removeCategories(removeChanges.map((c) => c.id))
 
         // keep VueFlow's internal node/edge lists in sync with the cascade,
         // otherwise its v-model watcher resyncs the orphaned nodes back in

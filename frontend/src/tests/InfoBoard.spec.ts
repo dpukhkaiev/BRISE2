@@ -152,16 +152,11 @@ describe('InfoBoard.vue', () => {
         expect(wrapper.vm.solutionState.solution).toBeDefined()
     })
 
-    it('LOG and NEW messages arriving after the experiment has finished are ignored', async () => {
+    it('NEW messages arriving after the experiment has finished are ignored', async () => {
         const wrapper = mountComponent()
         await flushPromises()
 
         mockExperimentFinished.value = true
-
-        eventCallbacks['LOG']({
-            headers: { message_subtype: 'info' },
-            body: JSON.stringify('late log message')
-        })
 
         eventCallbacks['NEW']({
             headers: { message_subtype: 'configuration' },
@@ -173,6 +168,22 @@ describe('InfoBoard.vue', () => {
         await flushPromises()
 
         expect((wrapper.vm as any).news.length).toBe(0)
+    })
+
+    it('LOG messages arriving after the experiment has finished are still shown', async () => {
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        mockExperimentFinished.value = true
+
+        eventCallbacks['LOG']({
+            headers: { message_subtype: 'info' },
+            body: JSON.stringify('late log message')
+        })
+        await flushPromises()
+
+        expect((wrapper.vm as any).news.length).toBe(1)
+        expect((wrapper.vm as any).news[0].message).toBe('late log message')
     })
 
     it('experiment_description change refreshes the state', async () => {

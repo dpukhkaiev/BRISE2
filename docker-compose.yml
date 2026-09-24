@@ -15,8 +15,6 @@ services:
     ports:
       - 3001:80
     restart: on-failure
-    volumes:
-      - ./searchspace_editor:/app
 
   event_service:
     build: ./event_service/
