@@ -27,14 +27,29 @@ export const useGraphStore = defineStore('graph', () => {
     const undoStack = ref<string[]>([])
     const redoStack = ref<string[]>([])
 
+    // tiny debounce so a drag doesn't re-serialize/re-write the whole graph every frame
+    function debounce(fn: () => void, delay: number) {
+        let timeoutId: ReturnType<typeof setTimeout>
+        return () => {
+            clearTimeout(timeoutId)
+            timeoutId = setTimeout(fn, delay)
+        }
+    }
+
+    function persistToLocalStorage() {
+        localStorage.setItem('graph-state', JSON.stringify({
+            nodes: nodes.value,
+            edges: edges.value,
+        }))
+    }
+
+    const persistToLocalStorageDebounced = debounce(persistToLocalStorage, 500)
+
     // localStorage for auto save
-    watch(() => [nodes.value, edges.value],
-        () => {
-            localStorage.setItem('graph-state', JSON.stringify({
-                nodes: nodes.value, 
-                edges: edges.value,
-            }))
-        }, {deep: true})
+    watch(() => [nodes.value, edges.value], persistToLocalStorageDebounced, {deep: true})
+
+    // flush immediately (bypassing the debounce) so an in-progress drag isn't lost on tab close
+    window.addEventListener('beforeunload', persistToLocalStorage)
 
     function removeFromLocalStorage() {
         nodes.value = []
