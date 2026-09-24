@@ -104,6 +104,7 @@ up() {
         docker compose up -d --scale worker=${N_workers} ${services[*]}
   elif [[ "${mode}" == "docker-compose-remote" ]]; then
         log "Building and deploying BRISE to docker-compose."
+        services=("main-node" "event_service" "worker_service" "front-end" "worker" "waffle" "waffle-gui")
         docker compose build --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}" \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\

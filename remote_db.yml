@@ -45,3 +45,11 @@ services:
     tty: true
     network_mode: host
     restart: on-failure
+
+  waffle-gui:
+    build: ./wfl-editor/
+    container_name: wfl-editor
+    tty: true
+    ports:
+      - 3001:80
+    restart: on-failure
