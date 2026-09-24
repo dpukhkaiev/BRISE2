@@ -1,7 +1,7 @@
 import { stompClient } from '../../../shared/api/stomp.client'
 import { RxStompRPC } from '@stomp/rx-stomp'
 import { firstValueFrom } from 'rxjs';
-import { stringifyWithInfinity } from '../../../shared/lib'
+import { parseJsonWithInfinity, stringifyWithInfinity } from '../../../shared/lib'
 
 // return a promise
 
@@ -36,7 +36,7 @@ export async function downloadDump(format = 'pkl'): Promise<any> {
     const myServiceEndPoint = '/queue/main_download_dump_queue'
     const request = `{"format": "${format}"}`
     const response = await firstValueFrom(rxStompRPC.rpc({ destination: myServiceEndPoint, body: request }))
-    const object = JSON.parse(response.body)
+    const object = parseJsonWithInfinity(response.body)
     // decoding the strings
     if (object['status'] === 'ok') {
         object['object'] = atob(object['body'])

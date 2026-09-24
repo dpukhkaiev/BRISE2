@@ -12,7 +12,7 @@ import type { Solution } from '../../../../entities/task/model/task-data.model';
 
 //service
 import { useMainEventStore } from '../../../../entities/main'
-import { cleanIdentifier } from '../../../../shared/lib'
+import { cleanIdentifier, parseJsonWithInfinity, stringifyWithInfinity } from '../../../../shared/lib'
 
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 
@@ -180,7 +180,7 @@ function initMainEvents() {
     // new configuration results
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
         if (experimentFinished.value) return
-        const configs = JSON.parse(message.body)
+        const configs = parseJsonWithInfinity(message.body)
         let count = 0;
         for (const configuration of configs) {
             if (configuration) {
@@ -203,14 +203,14 @@ function initMainEvents() {
 
     subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body);
+            const configs = parseJsonWithInfinity(message.body);
             configs.forEach((configuration: any) => {
                 if (configuration) {
                     solution = configuration; // In case if only one point solution
                     defaultConfiguration = configuration;
-                    configWithNones.value = JSON.stringify(solution.configurations, null, '\t');
+                    configWithNones.value = stringifyWithInfinity(solution.configurations, '\t');
                     configWithNones.value = configWithNones.value.replace(',,', ',None,');
-                    results.value = JSON.stringify(solution.results)
+                    results.value = stringifyWithInfinity(solution.results)
                     const conf = configuration['configurations'];
                     const yVal = cleanIdentifier(conf[yParamKey.value]);
                     const xVal = cleanIdentifier(conf[xParamKey.value]);
@@ -231,7 +231,7 @@ function initMainEvents() {
     subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body);
+            const configs = parseJsonWithInfinity(message.body);
             configs.forEach((configuration: any) => {
                 if (configuration) {
                     defaultConfiguration = configuration; // In case if only one point default

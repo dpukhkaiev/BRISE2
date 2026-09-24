@@ -10,6 +10,7 @@ import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { useMainEventStore } from '../../../../entities/main'
 
 import { useResultTracker, findMatchingPoint } from '../model/result-calc'
+import { parseJsonWithInfinity } from '../../../../shared/lib'
 
 // initialize store
 const store = useMainEventStore()
@@ -169,7 +170,7 @@ function initMainEvents() {
     subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
         if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body)
+            const configs = parseJsonWithInfinity(message.body)
             configs.forEach((configuration: any) => {
                 pushInitial(configuration)
             })
@@ -185,7 +186,7 @@ function initMainEvents() {
     // add last point
     subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body);
+            const configs = parseJsonWithInfinity(message.body);
             configs.forEach((configuration: any) => {
                 solution.value = configuration
                 if (!findMatchingPoint(configuration, allRes.value)) {
@@ -203,7 +204,7 @@ function initMainEvents() {
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
         if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body);
+            const configs = parseJsonWithInfinity(message.body);
 
             // check the best availbale point
             const descr = experiment_description.value

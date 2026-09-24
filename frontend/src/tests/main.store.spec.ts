@@ -142,4 +142,21 @@ describe('useMainEventStore', () => {
 
         expect(store.experiment_description).toEqual({ value: -Infinity })
     })
+
+    it('should preserve NaN values in message body', () => {
+        const mockMessage = {
+            headers: { message_subtype: 'description' },
+            body: `{
+                "experiment_description": {"value": NaN},
+                "searchspace_description": {},
+                "global_configuration": {}
+            }`
+        }
+        mockWatch.mockReturnValue(of(mockMessage))
+
+        const store = useMainEventStore()
+        store.initEvent()
+
+        expect(store.experiment_description).toEqual({ value: NaN })
+    })
 })

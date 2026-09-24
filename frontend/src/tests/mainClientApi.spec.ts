@@ -107,6 +107,27 @@ describe('MainClientApi - Full Test Suite', () => {
     });
   });
 
+  // startMain with an undefined result
+  it('should preserve NaN values in the description sent to the start queue', () => {
+    let capturedBody = '';
+
+    eventCallbacks['/queue/main_start_queue'] = (body: string) => {
+      capturedBody = body;
+      return { body: '{}' };
+    };
+
+    startMain({ result: NaN });
+
+    // the raw wire payload must carry a literal NaN token, not null
+    expect(capturedBody).toContain('"result":NaN');
+
+    const capturedPayload = parseJsonWithInfinity(capturedBody);
+    expect(capturedPayload).toEqual({
+      Method: 'GET',
+      Description: { result: NaN }
+    });
+  });
+
   //  downloadDump
   it('should return decoded data from download queue', async () => {
     eventCallbacks['/queue/main_download_dump_queue'] = () => {
@@ -117,5 +138,20 @@ describe('MainClientApi - Full Test Suite', () => {
 
     const result = await downloadDump('pkl');
     expect(result.object).toBe('dump_data');
+  });
+
+  // downloadDump with Infinity/NaN in the dumped data
+  it('should parse a download response body containing Infinity/-Infinity/NaN instead of throwing', async () => {
+    eventCallbacks['/queue/main_download_dump_queue'] = () => {
+      return {
+        body: '{"status": "ok", "body": "eyJvayI6IHRydWV9", "MinExpectedValue": -Infinity, "MaxExpectedValue": Infinity, "result": NaN}'
+      };
+    };
+
+    const result = await downloadDump('pkl');
+    expect(result.status).toBe('ok');
+    expect(result.MinExpectedValue).toBe(-Infinity);
+    expect(result.MaxExpectedValue).toBe(Infinity);
+    expect(result.result).toBeNaN();
   });
 });

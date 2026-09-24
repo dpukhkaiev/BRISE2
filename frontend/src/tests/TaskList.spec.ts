@@ -67,6 +67,19 @@ function makeConfigurationPayload(configValue: string, resultValue: number) {
     }])
 }
 
+function makeNaNTaskPayload(id: string, resultValue: number) {
+    return `[{
+        "run": {"method": "someMethod", "param": {}},
+        "configurations": {"Context.SearchSpace.N": NaN},
+        "results": {
+            "task id": "${id}",
+            "owner": "tester",
+            "receive": 1,
+            "result": {"x": ${resultValue}}
+        }
+    }]`
+}
+
 describe('TaskList.vue', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
@@ -234,5 +247,26 @@ describe('TaskList.vue', () => {
         await flushPromises()
 
         expect(wrapper.vm.cachedAvg({ 'Context.SearchSpace.N': 'Context.SearchSpace.N.N1' })).toEqual([1])
+    })
+
+    it('average result should match tasks whose config parameter is NaN', async () => {
+        vi.useFakeTimers()
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'task' },
+            body: makeNaNTaskPayload('1', 1)
+        })
+        eventCallbacks['NEW']({
+            headers: { message_subtype: 'task' },
+            body: makeNaNTaskPayload('2', 3)
+        })
+        vi.advanceTimersByTime(500)
+        await flushPromises()
+
+        // both tasks share the same NaN-valued parameter and must be grouped together,
+        // not treated as forever distinct because NaN !== NaN
+        expect(wrapper.vm.cachedAvg({ 'Context.SearchSpace.N': NaN })).toEqual([2])
     })
 })

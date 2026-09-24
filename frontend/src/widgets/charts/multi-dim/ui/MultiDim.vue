@@ -7,7 +7,7 @@ import { Subscription } from 'rxjs'
 import { MainEvent, useMainEventStore } from '../../../../entities/main'
 // import type { Solution } from '../../../../entities/task/model/task-data.model'
 
-import { cleanIdentifier } from '../../../../shared/lib'
+import { cleanIdentifier, parseJsonWithInfinity } from '../../../../shared/lib'
 
 import { zip, unpack, dimmensionsData } from '../lib/dimension-lib'
 
@@ -91,7 +91,7 @@ function initMainEvents() {
                 console.warn('not ready yet - rootParam or experiment not there ')
                 return
             }
-            let configs = JSON.parse(message.body)
+            let configs = parseJsonWithInfinity(message.body)
             let count = 0;
             for (const configuration of configs) {
                 if (configuration) {
@@ -132,7 +132,7 @@ function initMainEvents() {
             if (!rootParam.value || !rootParam.value.length || !experiment) {
                 return
             }
-            let configs = JSON.parse(message.body)
+            let configs = parseJsonWithInfinity(message.body)
             let count = 0;
 
             for (const configuration of configs) {

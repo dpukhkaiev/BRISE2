@@ -8,7 +8,7 @@ import { Task } from '../../../entities/task/model/task-data.model';
 //service
 import { useMainEventStore } from '../../../entities/main'
 
-import { normalizeConfigKeys } from '../../../shared/lib'
+import { normalizeConfigKeys, parseJsonWithInfinity } from '../../../shared/lib'
 
 import { useTaskMetrics } from '../model/task-metrics'
 
@@ -79,7 +79,7 @@ const headers = [
 
 function handleConfigurationMessage(message: any): void {
     if (message.headers['message_subtype'] !== 'configuration') return
-    const solutions: Array<{ configurations: Record<string, any>, results: Record<string, any> }> = JSON.parse(message.body)
+    const solutions: Array<{ configurations: Record<string, any>, results: Record<string, any> }> = parseJsonWithInfinity(message.body)
     solutions.forEach(solution => {
         if (solution?.configurations && solution?.results) {
             recordBackendResult(solution.configurations, solution.results)
@@ -91,7 +91,7 @@ function initMainEvents(): void {
     subs.add(store.onEvent(MainEvent.NEW)?.subscribe((message) => {
         if (experimentFinished.value) return
         if (message.headers['message_subtype'] === 'task') {
-            var fresh: Task = new Task(JSON.parse(message.body))
+            var fresh: Task = new Task(parseJsonWithInfinity(message.body))
             var params_array = Object.values(fresh.config)
             fresh.stub_config = replaceNones(params_array)
             // add a new task if it is not in the this.result

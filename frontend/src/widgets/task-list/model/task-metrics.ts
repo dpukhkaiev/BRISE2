@@ -1,7 +1,7 @@
 import { ref, computed  } from 'vue'
 
 import { Task } from '../../../entities/task/model/task-data.model'
-import { normalizeConfigKeys } from '../../../shared/lib'
+import { normalizeConfigKeys, stringifyWithInfinity } from '../../../shared/lib'
 
 export function useTaskMetrics() {
     const result = ref<Task[]>([])
@@ -15,6 +15,7 @@ export function useTaskMetrics() {
     function replaceNones(config: any[]) {
         return config.map(param => {
             if (param == '' || param == null) return 'None'
+            if (typeof param === 'number' && Number.isNaN(param)) return 'None'
             return param
         })
     }
@@ -79,12 +80,12 @@ export function useTaskMetrics() {
     }
 
     function recordBackendResult(configuration: Record<string, any>, results: Record<string, any>) {
-        const key = JSON.stringify(normalizeConfigKeys(configuration))
+        const key = stringifyWithInfinity(normalizeConfigKeys(configuration))
         backendResultCache.set(key, Object.values(results).map(Number))
     }
 
     function cachedAvg(config: Record<string, any>): any[] {
-        const key = JSON.stringify(normalizeConfigKeys(config))
+        const key = stringifyWithInfinity(normalizeConfigKeys(config))
         if (backendResultCache.has(key)) return backendResultCache.get(key)!
         if (avgResultCache.has(key)) return avgResultCache.get(key)!
         const avg = getAverageResult(config)

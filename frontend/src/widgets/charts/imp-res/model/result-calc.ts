@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { stringifyWithInfinity } from '../../../../shared/lib'
 
 
 export interface PointExp {
@@ -15,11 +16,11 @@ function formatTime(): string {
 }
 
 export function findMatchingPoint(configuration: any, points: PointExp[]): PointExp | undefined {
-    const configValues = JSON.stringify(Object.values(configuration.configurations))
-    const resultValues = JSON.stringify(Object.values(configuration.results))
+    const configValues = stringifyWithInfinity(Object.values(configuration.configurations))
+    const resultValues = stringifyWithInfinity(Object.values(configuration.results))
     return points.find(point =>
-        JSON.stringify(point.configurations) === configValues &&
-        JSON.stringify(point.results) === resultValues
+        stringifyWithInfinity(point.configurations) === configValues &&
+        stringifyWithInfinity(point.results) === resultValues
     )
 }
 

@@ -10,7 +10,7 @@ import { useMainEventStore } from '../../../entities/main'
 import { Subscription } from 'rxjs'
 
 import { useInfoBoard } from '../model/use-info-board'
-import { normalizeConfigKeys } from '../../../shared/lib'
+import { normalizeConfigKeys, parseJsonWithInfinity, stringifyWithInfinity } from '../../../shared/lib'
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
@@ -52,7 +52,7 @@ function initMainEvents(): void {
   // Main events
   subscriptions.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
     if (message.headers['message_subtype'] === 'configuration') {
-      let obj = JSON.parse(message.body)
+      let obj = parseJsonWithInfinity(message.body)
 
       default_configuration.value = obj[0]
       let temp = { 'time': Date.now(), 'message': 'Default configuration results received' }
@@ -68,10 +68,10 @@ function initMainEvents(): void {
 
   subscriptions.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
     if (message.headers['message_subtype'] === 'configuration') {
-      let obj = JSON.parse(message.body)
+      let obj = parseJsonWithInfinity(message.body)
       const s = obj[0]
       const cleanConfigObj = normalizeConfigKeys(s?.configurations ?? {})
-      const config = JSON.stringify(cleanConfigObj, null, 2)
+      const config = stringifyWithInfinity(cleanConfigObj, 2)
 
       if (!default_configuration.value) {
         console.warn('default_configuration not set yet')
@@ -86,7 +86,7 @@ function initMainEvents(): void {
       solutionState.value = {
         solution: s,
         configWithNones: config,
-        result: JSON.stringify(s?.results)
+        result: stringifyWithInfinity(s?.results)
       }
       let temp = {
         'time': Date.now(),
@@ -103,7 +103,7 @@ function initMainEvents(): void {
   subscriptions.add(store.onEvent(MainEvent.LOG)?.subscribe((message: any) => {
     if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'info' || message.headers['message_subtype'] === 'error') {
-      let obj = JSON.parse(message.body)
+      let obj = parseJsonWithInfinity(message.body)
       let temp = { 'time': Date.now(), 'message': obj }
       triggerSnackbar(temp.message)
       pushNews(temp.message)
@@ -113,7 +113,7 @@ function initMainEvents(): void {
 
   // oldValue, newValue?
   stopWatch = watch(experiment_description, () => {
-    console.log('experiment_description:', JSON.stringify(experiment_description.value, null, 2))
+    console.log('experiment_description:', stringifyWithInfinity(experiment_description.value, 2))
     refresh()
     /* if (searchspace.value && searchspace.value['size']) {
          searchspace.value['size'] = parseFloat(searchspace.value['size'])
@@ -131,14 +131,14 @@ function initMainEvents(): void {
   subscriptions.add(store.onEvent(MainEvent.NEW)?.subscribe((message: any) => {
     if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'configuration') {
-      let configs = JSON.parse(message.body)
+      let configs = parseJsonWithInfinity(message.body)
       configs.forEach((configuration: any) => {
         if (configuration?.configurations) {
           const cleanConfig = normalizeConfigKeys(configuration.configurations)
           const cleanResults = configuration.results ?? {}
           let temp = {
             'time': Date.now(),
-            'message': 'New results for ' + JSON.stringify(cleanConfig) + ' → ' + JSON.stringify(cleanResults)
+            'message': 'New results for ' + stringifyWithInfinity(cleanConfig) + ' → ' + stringifyWithInfinity(cleanResults)
           }
           triggerSnackbar(temp.message)
           pushNews(temp.message)
@@ -155,7 +155,7 @@ function initMainEvents(): void {
   subscriptions.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe((message: any) => {
     if (experimentFinished.value) return
     if (message.headers['message_subtype'] === 'configurations') {
-      let obj = JSON.parse(message.body)
+      let obj = parseJsonWithInfinity(message.body)
       let temp = {
         'time': Date.now(),
         'message': 'Prediction obtained. ' + obj.length + ' predictions'

@@ -7,7 +7,7 @@ import { theme } from '../../model/heatmap-theme'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
-import { cleanIdentifier } from '../../../../shared/lib'
+import { cleanIdentifier, parseJsonWithInfinity } from '../../../../shared/lib'
 const store = useMainEventStore()
 const { experiment_description, searchspace, searchspaceReady, globalConfig, experimentFinished } = storeToRefs(store)
 
@@ -176,7 +176,7 @@ function initMainEvents() {
     subs.add(store.onEvent(MainEvent.PREDICTIONS)?.subscribe(async (message: any) => {
         if (experimentFinished.value) return
         console.log('[Heatmap Debug] PREDICTIONS event received', message)
-        const preds = JSON.parse(message.body)
+        const preds = parseJsonWithInfinity(message.body)
         for (const item of preds) {
             if (item && item.configurations) {
                 const rawXVal = item.configurations[xParamKey.value]
@@ -231,7 +231,7 @@ function initMainEvents() {
 
     subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
         if (message.headers['message_subtype'] === 'configuration') {
-            const configs = JSON.parse(message.body)
+            const configs = parseJsonWithInfinity(message.body)
             const res = configs?.[0]
             if (res) {
 
