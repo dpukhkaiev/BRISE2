@@ -1,0 +1,280 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
+//import { useDebounceFn } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { Subscription } from 'rxjs'
+
+import { Color } from '../../model/chart.types'
+import { theme } from '../../model/heatmap-theme'
+
+import { MainEvent } from '../../../../entities/main'
+import type { Solution } from '../../../../entities/task/model/task-data.model';
+
+//service
+import { useMainEventStore } from '../../../../entities/main'
+import { cleanIdentifier, parseJsonWithInfinity, stringifyWithInfinity } from '../../../../shared/lib'
+
+import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
+
+defineOptions({ name: 'HeatmapChart' })
+
+interface Configuration {
+    configurations: Array<any>;
+    results: any;
+}
+
+// initialize store
+const store = useMainEventStore()
+// destructure reactive value from main.event.store
+const { experiment_description, searchspace, searchspaceReady, globalConfig, experimentFinished } = storeToRefs(store)
+
+// experiment results
+const result = ref(new Map<string, any>())
+
+// prediction results from model
+const prediction = ref(new Map<string, any>())
+
+// best point
+let solution: Solution
+const configWithNones = ref('')
+
+const measPoints = ref<Array<[any, any]>>([])
+let defaultConfiguration: Configuration
+let sol: any = ref()
+let dc: any = ref()
+let results = ref('')
+
+// rendering axises
+const x = ref<Array<any>>([])
+const y = ref<Array<any>>([])
+const xParamKey = ref('')
+const yParamKey = ref('')
+const xTitle = ref('')
+const yTitle = ref('')
+const keyParam = ref('')
+
+
+// values that possible to use in template
+const colors = Color
+
+
+const map = ref<HTMLElement | null>(null)
+
+const subs = new Subscription()
+
+function resetRes() {
+    result.value?.clear()
+    prediction.value?.clear()
+    measPoints.value = []
+}
+
+const isModelType = computed(() => {
+    if (!experiment_description.value) return 'unknown'
+    const exp = experiment_description.value as Record<string, any>
+    const model = exp?.ConfigurationSelection?.Predictor?.Model
+
+    const isReg = !!model?.Surrogate?.Instance?.LinearRegression
+    return isReg ? 'regression' : 'unknown'
+})
+
+// 
+const resultLookup = computed(() => {
+    const map = new Map<string, number>()
+    result.value.forEach((v, k) => map.set(k, v?.[keyParam.value]))
+    return map
+})
+// const zMatrix = computed(() => DataTransformer.buildZMatrix(
+//     x.value.map(String),
+//     y.value.map(String),
+//     resultLookup.value))
+
+async function render(): Promise<void> {
+    const Plotly = store.plotlyInstance
+
+    if (!Plotly) return
+    if (isModelType.value === 'regression') {
+        const zData = DataTransformer.buildZMatrix(x.value.map(String), y.value.map(String), resultLookup.value)
+        const element = map.value
+        const data: any[] = [
+            { // defined X and Y axises with data, type and color
+                z: zData,
+                x: x.value.map(String),
+                y: y.value.map(String),
+                type: theme.value.type,
+                colorscale: theme.value.color,
+                zsmooth: theme.value.smooth
+            },
+            { // Measured points
+                type: 'scatter' as const,
+                mode: 'markers' as const,
+                marker: { color: 'grey', size: 7, symbol: 'cross' },
+                x: measPoints.value.map(arr => arr[1]),
+                y: measPoints.value.map(arr => arr[0])
+            },
+            { // Best point solution
+                type: 'scatter' as const,
+                mode: 'markers' as const,
+                hoverinfo: 'none' as const,
+                showlegend: false as const,
+                marker: { color: 'Gold', size: 16, symbol: 'star' },
+                x: solution && [cleanIdentifier((solution.configurations as any)[xParamKey.value])],
+                y: solution && [cleanIdentifier((solution.configurations as any)[yParamKey.value])]
+            }
+        ];
+
+        const layout: any = {
+            margin: { l: 220 },
+            title: { text: 'Heat map results' } as any,
+            autosize: true,
+            showlegend: false,
+            xaxis: {
+                title: { text: xTitle.value },
+                type: 'category' as const,
+                autorange: true,
+                range: [-0.5, x.value.length - 0.5],
+                showgrid: true,
+                categoryorder: 'array',
+                categoryarray: x.value
+            },
+            yaxis: {
+                title: { text: yTitle.value },
+                type: 'category' as const,
+                autorange: true,
+                range: [-0.5, y.value.length - 0.5],
+                showgrid: true,
+                categoryorder: 'array',
+                categoryarray: y.value
+            }
+        };
+        if (element)
+            Plotly.react(element, data, layout);
+    }
+}
+
+function initMainEvents() {
+    watch([experiment_description, searchspace, searchspaceReady], () => {
+        if (!experiment_description.value || !searchspace.value || !searchspaceReady.value || !globalConfig.value) {
+            return
+        }
+        resetRes()
+        const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
+        const keys = Object.keys(boundaryObj ?? {}).filter(k => k !== 'root')
+        if (keys.length >= 2) {
+            yParamKey.value = keys[0]
+            xParamKey.value = keys[1]
+            yTitle.value = cleanIdentifier(keys[0])
+            xTitle.value = cleanIdentifier(keys[1])
+            y.value = (boundaryObj[keys[0]] ?? []).map(cleanIdentifier)
+            x.value = (boundaryObj[keys[1]] ?? []).map(cleanIdentifier)
+        }
+
+        const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives
+        if (priorities) {
+            keyParam.value = Object.keys(priorities)[0]
+        }
+    }, {
+        deep: true,
+        immediate: true
+    })
+
+    // new configuration results
+    subs.add(store.onEvent(MainEvent.NEW)?.subscribe(async (message: any) => {
+        if (experimentFinished.value) return
+        const configs = parseJsonWithInfinity(message.body)
+        let count = 0;
+        for (const configuration of configs) {
+            if (configuration) {
+                const conf = configuration['configurations'];
+                const yVal = cleanIdentifier(conf[yParamKey.value]);
+                const xVal = cleanIdentifier(conf[xParamKey.value]);
+                result.value.set(String([yVal, xVal]), configuration['results']);
+                measPoints.value.push([yVal, xVal]);
+            }
+            count++;
+            if (count % 50 === 0 && 'scheduler' in window && typeof scheduler.yield === 'function') {
+                await scheduler.yield();
+            }
+        }
+        // collect all configs first, then render
+        nextTick(() => render())
+    }))
+
+    // The final configuration, suggested by BRISE.
+
+    subs.add(store.onEvent(MainEvent.FINAL)?.subscribe((message: any) => {
+        if (message.headers['message_subtype'] === 'configuration') {
+            const configs = parseJsonWithInfinity(message.body);
+            configs.forEach((configuration: any) => {
+                if (configuration) {
+                    solution = configuration; // In case if only one point solution
+                    defaultConfiguration = configuration;
+                    configWithNones.value = stringifyWithInfinity(solution.configurations, '\t');
+                    configWithNones.value = configWithNones.value.replace(',,', ',None,');
+                    results.value = stringifyWithInfinity(solution.results)
+                    const conf = configuration['configurations'];
+                    const yVal = cleanIdentifier(conf[yParamKey.value]);
+                    const xVal = cleanIdentifier(conf[xParamKey.value]);
+                    result.value.set(String([yVal, xVal]), configuration['results']);
+                    measPoints.value.push([yVal, xVal]);
+                    sol.value = Object.values(solution.results)
+                    dc.value = Object.values(defaultConfiguration.results)
+
+                } else {
+                    console.log('Empty solution');
+                }
+            });
+            render();
+        }
+    }));
+
+    // Default message
+    subs.add(store.onEvent(MainEvent.DEFAULT)?.subscribe((message: any) => {
+        if (experimentFinished.value) return
+        if (message.headers['message_subtype'] === 'configuration') {
+            const configs = parseJsonWithInfinity(message.body);
+            configs.forEach((configuration: any) => {
+                if (configuration) {
+                    defaultConfiguration = configuration; // In case if only one point default
+                    const conf = configuration['configurations'];
+                    const yVal = cleanIdentifier(conf[yParamKey.value]);
+                    const xVal = cleanIdentifier(conf[xParamKey.value]);
+                    result.value.set(String([yVal, xVal]), configuration['results']);
+                    measPoints.value.push([yVal, xVal]);
+                } else {
+                    console.log('Empty default');
+                }
+            });
+            console.log('Default:', message.body);
+            render();
+        }
+    }));
+
+}
+
+onMounted(() => {
+    initMainEvents()
+})
+
+onUnmounted(() => {
+    subs.unsubscribe()
+})
+
+
+</script>
+<template>
+  <div v-if="isModelType === 'regression'">
+    <div ref="map" />
+    <select
+      v-model="theme.color"
+      @change="render"
+    >
+      <option
+        v-for="col in colors"
+        :key="col"
+        :value="col"
+      >
+        {{ col }}
+      </option>
+    </select>
+  </div>
+</template>

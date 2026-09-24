@@ -46,7 +46,6 @@ yarn-error.log*
 .python_history
 
 *.spec.ts
-front_end/text.txt
 
 # Internal debug tooling
 docker-compose.debug.yml

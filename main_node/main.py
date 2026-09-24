@@ -14,7 +14,7 @@ from configuration_selection.configuration_selection import ConfigurationSelecti
 from default_config_handler.default_configuration_handler_orchestrator import DefaultConfigHandlerOrchestrator
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
-from core_entities.search_space import Hyperparameter, get_search_space_record
+from core_entities.search_space import Hyperparameter, get_search_space_record, SearchSpace
 
 from logger.default_logger import BRISELogConfigurator
 from repeater.repeater_selector import RepeaterOrchestration
@@ -87,8 +87,8 @@ class MainThread(threading.Thread):
                 self.sub.send('log', 'warning', message=log_msg)
             experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
         else:
-            experiment_description = self.experiment_setup["metric_description"]
-            search_space = self.experiment_setup["search_space"]
+            experiment_description = self.experiment_setup
+            search_space = SearchSpace(self.experiment_setup["Context"]["SearchSpace"])
 
         os.makedirs("./Results/", exist_ok=True)
 

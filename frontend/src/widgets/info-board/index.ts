@@ -1,0 +1,1 @@
+export { default as InfoBoard } from './ui/InfoBoard.vue'
