@@ -43,11 +43,15 @@ The app will be available at the local Vite dev server URL (printed in the termi
 |---|---|
 | `npm run dev` | Start the Vite dev server with hot reload |
 | `npm run build` | Type-check (`vue-tsc -b`) and build for production |
+| `npm run build:analyze` | Same as `build`, plus a bundle-size report (`dist/stats.html`) |
+| `npm run type-check` | Type-check only (`vue-tsc -b --noEmit`), without building |
 | `npm run preview` | Preview the production build locally |
+| `npm run lint` | Lint with ESLint (`eslint .`) |
 | `npm run test` | Run the Vitest test suite in watch mode |
+| `npm run test:run` | Run the Vitest test suite once |
 
-
-> **Note:** there is currently no `npm run lint` script. FSD layer-boundary rules are enforced via `eslint.config.ts` (using `eslint-plugin-boundaries`) and are picked up automatically by IDEs with ESLint integration. 
+FSD layer-boundary rules are enforced via `eslint.config.ts` (using `eslint-plugin-boundaries`) and are
+checked both by `npm run lint` and automatically by IDEs with ESLint integration.
 
 ## Project Structure
 
@@ -74,10 +78,15 @@ Layer dependency rules (which layer may import from which) are enforced via `esl
 
 The frontend receives experiment updates via STOMP events (`DEFAULT`, `NEW`, `FINAL`, `PREDICTIONS`, `LOG`) dispatched through `entities/main`. Each chart/widget subscribes to the events it needs and derives its own view of the data (see `entities/experiment/lib/` for shared transformation logic).
 
+## Waffle / Searchspace Editor Integration
 
-## Known Issues
+The app bar (`src/App.vue`) links out to the two tools used to configure an experiment before it's run:
 
-- Restarting an experiment generally works through the UI, but after repeated runs (~5–10 experiments) in one session, the `main-node` backend accumulates stale state that a normal restart doesn't clear (symptoms: experiment name stops displaying, charts sometimes fail to render). Currently only a full Docker rebuild/restart of `main-node` resolves this.
+- **Open Searchspace Editor** — opens the [`searchspace_editor`](../searchspace_editor/README.md) app for visually designing the `SearchSpace` part of a Waffle `.wfl` model.
+- **Open Waffle** — opens the  Waffle configuration wizard, where the full `.wfl` model is submitted to produce the product configuration JSON.
 
+Both are driven by env vars read via `import.meta.env` (declared in `src/vite-env.d.ts`), alongside the event-service connection settings.
 
+For local dev, these are supplied by the checked-in `frontend/.env` (defaulting to `localhost`, mirroring `deployment_settings/LocalDeployment.json`'s `Frontend` block). In Docker builds they're injected instead via the `BRISE_FRONTEND_*` build args set by `brise.sh` (see `Dockerfile`).
 
+If `waffle` and/or `searchspace_editor` aren't running, these two links simply fail to load (the iframe stays blank, the external link 404s); the rest of the dashboard is unaffected.

@@ -89,7 +89,7 @@ function openSearchSpace() {
           Task List
         </v-tab>
         <v-tab
-          value="wfl-editor"
+          value="searchspace-editor"
           prepend-icon="mdi-open-in-new"
           @click="openSearchSpace()"
         >

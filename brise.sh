@@ -84,7 +84,7 @@ help() {
 up() {
   if [[ "${mode}" == "docker-compose" ]]; then
         log "Building and deploying BRISE to docker-compose."
-        services=("main-node" "event_service" "worker_service" "worker" "waffle" "waffle-gui" "mongo-db" "front-end")
+        services=("main-node" "event_service" "worker_service" "worker" "waffle" "searchspace-editor" "mongo-db" "front-end")
         docker compose build --build-arg BRISE_EVENT_SERVICE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.Address' ) \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.AMQTPort' )\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.GUIPort' )\
@@ -104,7 +104,7 @@ up() {
         docker compose up -d --scale worker=${N_workers} ${services[*]}
   elif [[ "${mode}" == "docker-compose-remote" ]]; then
         log "Building and deploying BRISE to docker-compose."
-        services=("main-node" "event_service" "worker_service" "front-end" "worker" "waffle" "waffle-gui")
+        services=("main-node" "event_service" "worker_service" "front-end" "worker" "waffle" "searchspace-editor")
         docker compose build --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}" \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\
