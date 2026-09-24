@@ -203,7 +203,7 @@ onUnmounted(() => {
 
         <v-list
           v-if="news.length != 0"
-          lines="two"
+          class="news-list"
         >
           <v-list-item
             v-for="i in visibleNews.length"
@@ -277,3 +277,14 @@ onUnmounted(() => {
     {{ snackbarMsg }}
   </v-snackbar>
 </template>
+
+<style scoped>
+.news-list :deep(.v-list-item-title),
+.news-list :deep(.v-list-item-subtitle) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: unset;
+}
+</style>
