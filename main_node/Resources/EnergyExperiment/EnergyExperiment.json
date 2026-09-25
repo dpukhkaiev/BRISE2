@@ -235,5 +235,16 @@
             "InitialTimeoutInSeconds": 5.0,
             "Type": "hybrid_distribution"
         }
+    },
+    "PlotSelection": {
+        "Plot": {
+            "OptimizationHistory": {},
+            "ContourPlot": {},
+            "ParallelCoordinates": {},
+            "RankPlot": {},
+            "SlicePlot": {},
+            "EDFPlot": {},
+            "HyperparameterImportances": {}
+        }
     }
 }

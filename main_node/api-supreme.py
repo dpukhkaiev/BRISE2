@@ -9,6 +9,7 @@ import pika
 # USER
 from logger.default_logger import BRISELogConfigurator
 from main import MainThread
+from main import PlotService
 from tools.front_API import API
 from tools.rabbit_API_class import RabbitApi
 
@@ -18,6 +19,12 @@ logger = BRISELogConfigurator().get_logger(__name__)
 # Initialize the API singleton
 API(api_object=RabbitApi(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))
 
+# "no data" reply for each plot type, matching what its chart already renders as an empty chart
+EMPTY_PLOT_RESULTS = {
+    "hyperparameter_importances": {},
+    "contour": {},
+    "pareto_front": {"objective_names": [], "all_points": [], "pareto_points": []},
+}
 
 class ConsumerThread(Thread):
     """
@@ -25,7 +32,7 @@ class ConsumerThread(Thread):
     connected to the `main_start_queue`, `main_status_queue`, `main_stop_queue`, `main_download_dump_queue`,
     produces results in specified queue with specified tag, works as server part of RPC
     """
-
+    
     def __init__(self, host, port, *args, **kwargs):
         super(ConsumerThread, self).__init__(*args, **kwargs)
 
@@ -34,9 +41,18 @@ class ConsumerThread(Thread):
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self._host, port=self._port))
         self._is_interrupted = False
         self.channel = self.connection.channel()
+        self.channel.queue_declare(queue="main_plot_queue", durable=True)
         self.channel.basic_qos(prefetch_count=1)
         self.MAIN_THREAD: MainThread = MainThread()
         self.logger = BRISELogConfigurator().get_logger(__name__)
+
+        self.plot_service = PlotService()
+
+        self.plot_handlers = {
+            "hyperparameter_importances": self.plot_service.calculate_importances,
+            "pareto_front": self.plot_service.calculate_pareto,
+            "contour": self.plot_service.calculate_contour
+        }
        
 
     def main_process_status(self):
@@ -174,6 +190,8 @@ class ConsumerThread(Thread):
                                    on_message_callback=self.main_stop)
         self.channel.basic_consume(queue='main_download_dump_queue', auto_ack=False,
                                    on_message_callback=self.download_dump_request_queue)
+        self.channel.basic_consume(queue='main_plot_queue', auto_ack=False,
+                                   on_message_callback=self.plot_callback)
        
         try:
             while self.channel._consumer_infos:
@@ -188,6 +206,33 @@ class ConsumerThread(Thread):
 
     def stop(self):
         self._is_interrupted = True
+        
+    # call main.PlotService
+    def plot_callback(self, ch, method, props, body):
+        request = json.loads(body)
+
+        plot = request["plot"]
+        try:
+            handler = self.plot_handlers[plot]
+            result = handler(request["payload"])
+        except Exception:
+            # A bad plot request must not take down this consumer thread - it also serves
+            # start/status/stop/download-dump. Reply with the same "no data" shape each chart
+            # already renders as empty, so the frontend's promise still resolves.
+            self.logger.exception(f"plot_callback failed for plot '{plot}'")
+            result = EMPTY_PLOT_RESULTS.get(plot, {})
+
+        # RPC reply
+        ch.basic_publish(
+            exchange="",
+            routing_key=props.reply_to,
+            properties=pika.BasicProperties(
+                correlation_id=props.correlation_id
+            ),
+            body=json.dumps(result)
+        )
+
+        ch.basic_ack(method.delivery_tag)
 
 
 if __name__ == '__main__':

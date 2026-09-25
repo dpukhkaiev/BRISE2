@@ -1,0 +1,1 @@
+export { default as HypImp } from './ui/HypImp.vue'
