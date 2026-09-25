@@ -6,9 +6,11 @@
 - **UI:** Vuetify 3
 - **State:** Pinia
 - **Real-time transport:** RxJS + `@stomp/rx-stomp` / `@stomp/stompjs` (STOMP over WebSocket)
-- **Charts:** Plotly.js (`plotly.js-dist-min`, lazy-loaded, bundled into its own chunk)
+- **Charts:** modular `plotly.js` (only the core plus the trace types actually used are registered), lazy-loaded
+  through `entities/main` into its own chunk
 - **Build tool:** Vite
-- **Testing:** Vitest + `@vue/test-utils` (jsdom environment)
+- **Testing:** Vitest + `@vue/test-utils` (jsdom environment) for unit tests, plus Vitest Browser Mode
+  (Playwright/Chromium) for the chart runtime benchmarks
 - **Architecture:** Feature-Sliced Design (FSD) — layer boundaries enforced via `eslint-plugin-boundaries`
 
 ## Requirements
@@ -47,8 +49,9 @@ The app will be available at the local Vite dev server URL (printed in the termi
 | `npm run type-check` | Type-check only (`vue-tsc -b --noEmit`), without building |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Lint with ESLint (`eslint .`) |
-| `npm run test` | Run the Vitest test suite in watch mode |
-| `npm run test:run` | Run the Vitest test suite once |
+| `npm run test` | Run the unit test suite in watch mode |
+| `npm run test:run` | Run the unit test suite once |
+| `npm run bench` | Run the chart runtime benchmarks (Vitest Browser Mode); needs a one-time `npx playwright install chromium` |
 
 FSD layer-boundary rules are enforced via `eslint.config.ts` (using `eslint-plugin-boundaries`) and are
 checked both by `npm run lint` and automatically by IDEs with ESLint integration.
@@ -66,10 +69,11 @@ src/
 ├── features/          # user-facing features (e.g. download-popup)
 ├── widgets/            # composed UI blocks built from entities/features (e.g. charts, launch control bar, info board)
 ├── shared/               # generic, domain-agnostic utilities
-├── tests/                # test setup / shared test utilities
+├── tests/                # unit tests (test setup / shared test utilities, plus `tests_frontend_visualization/`
+│                           for the chart widgets)
+├── benchmarks/           # chart runtime benchmarks, run separately via `npm run bench`
 ├── App.vue
-├── main.ts
-└── usePerformance.ts   # performance measurement composable
+└── main.ts
 ```
 
 Layer dependency rules (which layer may import from which) are enforced via `eslint-plugin-boundaries` — see the ESLint config for the exact ruleset.
@@ -77,6 +81,15 @@ Layer dependency rules (which layer may import from which) are enforced via `esl
 ## Real-time Data Flow
 
 The frontend receives experiment updates via STOMP events (`DEFAULT`, `NEW`, `FINAL`, `PREDICTIONS`, `LOG`) dispatched through `entities/main`. Each chart/widget subscribes to the events it needs and derives its own view of the data (see `entities/experiment/lib/` for shared transformation logic).
+
+## Charts
+
+Which charts an experiment shows is decided by the product configuration's `PlotSelection` block (see
+`main_node/Resources/example_plot_selection/` for an example); a chart with no matching `PlotSelection` entry is
+never listed. Once an experiment is running, the "Visible charts" menu toggles which of the selected charts are
+displayed. Most charts are computed client-side from measured trials, but Hyperparameter Importances, Contour and
+Pareto Front are instead computed by `main-node` over the `main_plot_queue` RPC, so they need `main-node` running to
+render.
 
 ## Waffle / Searchspace Editor Integration
 

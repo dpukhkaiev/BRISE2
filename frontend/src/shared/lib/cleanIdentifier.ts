@@ -16,3 +16,9 @@ export function normalizeConfigKeys(config: Record<string, unknown>): Record<str
   return normalized
 }
 
+const SEARCH_SPACE_PREFIX = 'Context.SearchSpace'
+
+export function toFullParamName(name: string): string {
+  return name.startsWith(`${SEARCH_SPACE_PREFIX}.`) ? name : `${SEARCH_SPACE_PREFIX}.${name}`
+}
+

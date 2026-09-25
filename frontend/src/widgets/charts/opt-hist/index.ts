@@ -1,0 +1,1 @@
+export { default as OptHist } from './ui/OptHist.vue'

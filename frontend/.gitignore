@@ -26,4 +26,6 @@ stats.html
 *.njsproj
 *.sln
 *.sw?
-!src/tests/*.spec.ts
+*.csv
+!src/tests/**/*.spec.ts
+!src/benchmarks/*.spec.ts

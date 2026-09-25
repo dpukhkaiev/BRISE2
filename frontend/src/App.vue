@@ -1,18 +1,68 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useMainEventStore } from './entities/main/model/main.event.store'
+import { usePlotStore } from './entities/main/model/plot.store'
 import logo from './assets/logo.svg'
 import { LaunchControl } from './widgets/control-bar'
 import { InfoBoard } from './widgets/info-board'
 import { TaskList } from './widgets/task-list'
-import { MultiDim } from './widgets/charts/multi-dim'
-import { ImpRes } from './widgets/charts/imp-res'
 import { Heatmap } from './widgets/charts/heatmap'
 // HeatmapReg is disabled: main-node never publishes a "predictions" message (see front_API.py's
 // SUPPORTED_MESSAGES / APIMessageBuilder - "PREDICTIONS" is registered but nothing ever sends it),
 // so the surrogate surface can never populate. Re-enable once main-node publishes predictions.
 // import { HeatmapReg } from './widgets/charts/heatmap-reg'
+import type { ExperimentDescription } from './entities/experiment/model/experiment.model'
+import { toFullParamName } from './shared/lib'
 
+import { Skeleton } from './widgets/charts/skeleton-chart'
+
+import { OptHist } from './widgets/charts/opt-hist'
+import { HypImp } from './widgets/charts/hyp-imp'
+import { ParaCoord } from './widgets/charts/para-coord'
+import { ParetoFront } from './widgets/charts/pareto-front'
+import { Slice } from './widgets/charts/slice'
+import { Rank } from './widgets/charts/rank'
+import { Contour } from './widgets/charts/contour'
+import { Edf } from './widgets/charts/edf'
+
+function isContourParameter(
+    parameter: string,
+    experimentDescription: ExperimentDescription
+): boolean {
+    const searchSpace =
+        (experimentDescription.Context?.SearchSpace as Record<string, any> | undefined)?.[parameter];
+
+    if (!searchSpace) {
+        return false;
+    }
+
+    // Float / Integer
+    if (
+        searchSpace.Type === "FloatHyperparameter" ||
+        searchSpace.Type === "IntegerHyperparameter"
+    ) {
+        return true;
+    }
+
+    // Nominal / Ordinal
+    if (
+        searchSpace.Type === "NominalHyperparameter" ||
+        searchSpace.Type === "OrdinalHyperparameter"
+    ) {
+        return (
+            Array.isArray(searchSpace.Categories) &&
+            searchSpace.Categories.length >= 2
+        );
+    }
+
+    return false;
+}
+
+const store = useMainEventStore()
+const plotStore = usePlotStore()
+const { selected, visibleCharts, canChangeVisibleCharts } = storeToRefs(plotStore)
+const { experiment_description } = storeToRefs(store)
 
 
 const tab = ref('info')
@@ -22,13 +72,136 @@ const searchSpaceEditorUrl = `http://${import.meta.env.VITE_SEARCHSPACE_EDITOR_H
 const waffleUrl = `http://${import.meta.env.VITE_WAFFLE_HOST}:${import.meta.env.VITE_WAFFLE_PORT}`
 
 
-const visibleCharts = ref(['multidim', 'impres', 'heatmap'])
 const drawer = ref(false)
 const searchSpace = ref(false)
 
+const selectedCharts = computed(() =>
+  Object.keys(selected.value).filter(
+    (chart) => selected.value[chart as keyof typeof selected.value]
+  )
+)
+
+// compute objectives of the experiment for dropdown options
+const objectiveNames = computed(() =>
+    Object.keys(
+        experiment_description.value?.Context?.TaskConfiguration?.Objectives ?? {}
+    )
+)
+
+// compute parameters of the experiment for dropdown options
+const parameterNames = computed(() => {
+    const searchSpace =
+        experiment_description.value?.Context?.SearchSpace ?? {};
+
+    return Object.entries(searchSpace)
+        .filter(([name, value]) =>
+            name !== "Structure" &&
+            typeof value === "object" &&
+            value !== null &&
+            "Type" in value
+        )
+        .map(([name]) => toFullParamName(name));
+});
+
+//compute parameters for Parallel Coordinates dropdown options
+const paraCoordParameterNames = computed(() => {
+    if (!experiment_description.value) {
+      return []
+    }
+    const searchSpace =
+        experiment_description.value?.Context?.SearchSpace ?? {};
+
+    let allParams = Object.entries(searchSpace)
+        .filter(([name, value]) =>
+            name !== "Structure" &&
+            typeof value === "object" &&
+            value !== null &&
+            "Type" in value
+        )
+        .map(([name]) => name);
+    let contourParams: string[] = []
+    for (var param of allParams) {
+      if (isContourParameter(param, experiment_description.value)) {
+        contourParams.push(param)
+      }
+    }
+    return contourParams.map(toFullParamName)
+})
+
+// manage selected dropdown values
+const optHistObjective = ref("")
+const selectedOptHistObjective = computed(() => {
+    return optHistObjective.value || objectiveNames.value[0] || ""
+})
+
+const paraCoordParams = ref<string[]>([])
+const selectedParaCoordParams = computed(() => {
+    return paraCoordParams.value.length
+        ? paraCoordParams.value
+        : parameterNames.value.slice(0, 1)
+})
+const paraCoordObjective = ref("")
+const selectedParaCoordObjective = computed(() => {
+    return paraCoordObjective.value || objectiveNames.value[0] || ""
+})
+
+const rankParam1 = ref("")
+const selectedRankParam1 = computed(() => {
+    return rankParam1.value || parameterNames.value[0] || ""
+})
+const rankParam2 = ref("")
+const selectedRankParam2 = computed(() => {
+    return rankParam2.value || parameterNames.value[1] || ""
+})
+const rankObjective = ref("")
+const selectedRankObjective = computed(() => {
+    return rankObjective.value || objectiveNames.value[0] || ""
+})
+
+const sliceParam = ref("")
+const selectedSliceParam = computed(() => {
+    return sliceParam.value || parameterNames.value[0] || ""
+})
+const sliceObjective = ref("")
+const selectedSliceObjective = computed(() => {
+    return sliceObjective.value || objectiveNames.value[0] || ""
+})
+
+const hypImpParams = ref<string[]>([])
+const selectedHypImpParams = computed(() => {
+    return hypImpParams.value.length
+        ? hypImpParams.value
+        : parameterNames.value.slice(0, 1)
+})
+const hypImpObjective = ref("")
+const selectedHypImpObjective = computed(() => {
+    return hypImpObjective.value || objectiveNames.value[0] || ""
+})
+
+const paretoObjective1 = ref("")
+const selectedParetoObjective1 = computed(() => {
+    return paretoObjective1.value || objectiveNames.value[0] || ""
+})
+const paretoObjective2 = ref("")
+const selectedParetoObjective2 = computed(() => {
+    return paretoObjective2.value || objectiveNames.value[1] || ""
+})
+const onlyShowParetoFront = ref(false)
+
+const contourParam1 = ref("")
+const selectedContourParam1 = computed(() => {
+    return contourParam1.value || paraCoordParameterNames.value[0] || ""
+})
+const contourParam2 = ref("")
+const selectedContourParam2 = computed(() => {
+    return contourParam2.value || paraCoordParameterNames.value[1] || ""
+})
+const contourObjective = ref("")
+const selectedContourObjective = computed(() => {
+    return contourObjective.value || objectiveNames.value[0] || ""
+})
 
 onMounted(() => {
-  const store = useMainEventStore()
   store.initEvent()
   store.loadPlotly()
 })
@@ -36,6 +209,44 @@ onMounted(() => {
 function openSearchSpace() {
   searchSpace.value = true
 }
+
+// update default dropdown values on initialization and new experiment description
+watch(
+    objectiveNames,
+    (objectives) => {
+        optHistObjective.value = objectives[0] ?? ""
+        paraCoordObjective.value = objectives[0] ?? ""
+        rankObjective.value = objectives[0] ?? ""
+        sliceObjective.value = objectives[0] ?? ""
+        hypImpObjective.value = objectives[0] ?? ""
+        paretoObjective1.value = objectives[0] ?? ""
+        paretoObjective2.value = objectives[1] ?? ""
+        onlyShowParetoFront.value = false
+        contourObjective.value = objectives[0] ?? ""
+    },
+    { immediate: true }
+)
+
+watch(
+    parameterNames,
+    (parameters) => {
+        paraCoordParams.value = [...parameters]
+        rankParam1.value = parameters[0] ?? ""
+        rankParam2.value = parameters[1] ?? ""
+        sliceParam.value = parameters[0] ?? ""
+        hypImpParams.value = [...parameters]
+    },
+    { immediate: true }
+)
+
+watch(
+    paraCoordParameterNames,
+    (params) => {
+        contourParam1.value = params[0] ?? ""
+        contourParam2.value = params[1] ?? ""
+    },
+    { immediate: true }
+)
 </script>
 
 <template>
@@ -152,20 +363,17 @@ function openSearchSpace() {
           <v-list-subheader>Visible charts</v-list-subheader>
           <!-- 'heatmap-reg' intentionally omitted, see HeatmapReg import comment above -->
           <v-list-item
-            v-for="chart in [
-              { id: 'multidim', label: 'Multi-dim' },
-              { id: 'impres', label: 'Imp-res' },
-              { id: 'heatmap', label: 'Heatmap' }
-            ]"
-            :key="chart.id"
+            v-for="chart in selectedCharts"
+            :key="chart"
           >
             <v-checkbox
               v-model="visibleCharts"
-              :value="chart.id"
-              :label="chart.label"
+              :value="chart"
+              :label="chart"
               density="compact"
               hide-details
               color="green-darken-2"
+              :disabled="!canChangeVisibleCharts"
             />
           </v-list-item>
         </v-list>
@@ -193,7 +401,7 @@ function openSearchSpace() {
           @click="openSearchSpace(); drawer = false"
         />
         <v-list-item
-          title=" Waffle"
+          title="Waffle"
           @click="tab = 'waffle'; drawer = false"
         />
         <v-list-item
@@ -219,6 +427,8 @@ function openSearchSpace() {
             class="pr-2"
           >
             <LaunchControl />
+            <!-- hidden data collector for the PlotSelection charts, independent of the active tab -->
+            <Skeleton />
           </v-col>
         </v-row>
         <v-divider class="my-4" />
@@ -242,30 +452,293 @@ function openSearchSpace() {
           >
             <v-row no-gutters>
               <v-col
-                v-show="visibleCharts.includes('impres')"
+                v-if="selected['Optimization History']"
+                v-show="visibleCharts.includes('Optimization History')"
                 cols="12"
-                md="8"
+                md="10"
                 class="pr-2"
               >
-                <ImpRes />
+                <v-select
+                  v-model="optHistObjective"
+                  :items="objectiveNames"
+                  label="Objective"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <OptHist :opt-hist-objective="selectedOptHistObjective" />
               </v-col>
+
               <v-col
-                v-show="visibleCharts.includes('heatmap')"
+                v-if="selected['Heatmap']"
+                v-show="visibleCharts.includes('Heatmap')"
                 cols="12"
                 md="8"
                 class="pr-2"
               >
                 <Heatmap />
               </v-col>
+
               <v-col
-                v-show="visibleCharts.includes('multidim')"
+                v-if="selected['Parallel Coordinates']"
+                v-show="visibleCharts.includes('Parallel Coordinates')"
                 cols="12"
                 md="10"
                 class="pr-2"
               >
-                <MultiDim />
+                <v-list
+                  density="compact"
+                  min-width="180"
+                  class="user-input"
+                >
+                  <v-list-subheader>Parameters</v-list-subheader>
+                  <v-list-item
+                    v-for="param in parameterNames"
+                    :key="param"
+                  >
+                    <v-checkbox
+                      v-model="paraCoordParams"
+                      :value="param"
+                      :label="param"
+                      density="compact"
+                      hide-details
+                      color="green-darken-2"
+                      :disabled="paraCoordParams.length === 1 && paraCoordParams.includes(param)"
+                    />
+                  </v-list-item>
+                </v-list>
+                <v-select
+                  v-model="paraCoordObjective"
+                  :items="objectiveNames"
+                  label="Objective"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <ParaCoord
+                  :para-coord-params="selectedParaCoordParams"
+                  :para-coord-objective="selectedParaCoordObjective"
+                />
               </v-col>
+
+              <v-col
+                v-if="selected['Rank Plot']"
+                v-show="visibleCharts.includes('Rank Plot')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <v-select
+                  v-model="rankParam1"
+                  :items="parameterNames"
+                  label="Parameter 1"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-select
+                  v-model="rankParam2"
+                  :items="parameterNames"
+                  label="Parameter 2"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-select
+                  v-model="rankObjective"
+                  :items="objectiveNames"
+                  label="Objective"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <Rank
+                  :rank-param1="selectedRankParam1"
+                  :rank-param2="selectedRankParam2"
+                  :rank-objective="selectedRankObjective"
+                />
+              </v-col>
+
+              <v-col
+                v-if="selected['Hyperparameter Importances']"
+                v-show="visibleCharts.includes('Hyperparameter Importances')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <v-list
+                  density="compact"
+                  min-width="180"
+                  class="user-input"
+                >
+                  <v-list-subheader>Parameters</v-list-subheader>
+                  <v-list-item
+                    v-for="param in parameterNames"
+                    :key="param"
+                  >
+                    <v-checkbox
+                      v-model="hypImpParams"
+                      :value="param"
+                      :label="param"
+                      density="compact"
+                      hide-details
+                      color="green-darken-2"
+                    />
+                  </v-list-item>
+                </v-list>
+                <v-select
+                  v-model="hypImpObjective"
+                  :items="objectiveNames"
+                  label="Objective"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <HypImp
+                  :hyp-imp-params="selectedHypImpParams"
+                  :hyp-imp-objective="selectedHypImpObjective"
+                />
+              </v-col>
+
+              <v-col
+                v-if="selected['Slice Plot']"
+                v-show="visibleCharts.includes('Slice Plot')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <v-select
+                  v-model="sliceParam"
+                  :items="parameterNames"
+                  label="Parameter"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-select
+                  v-model="sliceObjective"
+                  :items="objectiveNames"
+                  label="Objective"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <Slice
+                  :slice-param="selectedSliceParam"
+                  :slice-objective="selectedSliceObjective"
+                />
+              </v-col>
+
+              <v-col
+                v-if="selected['Contour Plot']"
+                v-show="visibleCharts.includes('Contour Plot')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <v-select
+                  v-model="contourParam1"
+                  :items="paraCoordParameterNames"
+                  label="Parameter 1"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-select
+                  v-model="contourParam2"
+                  :items="paraCoordParameterNames"
+                  label="Parameter 2"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-select
+                  v-model="contourObjective"
+                  :items="objectiveNames"
+                  label="Objective"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <Contour
+                  :contour-param1="selectedContourParam1"
+                  :contour-param2="selectedContourParam2"
+                  :contour-objective="selectedContourObjective"
+                />
+              </v-col>
+
+              <v-col
+                v-if="selected['Pareto Front']"
+                v-show="visibleCharts.includes('Pareto Front')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <v-select
+                  v-model="paretoObjective1"
+                  :items="objectiveNames"
+                  label="Objective 1"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-select
+                  v-model="paretoObjective2"
+                  :items="objectiveNames"
+                  label="Objective 2"
+                  density="compact"
+                  variant="outlined"
+                  hide-details
+                  class="user-input"
+                />
+                <v-switch
+                  v-model="onlyShowParetoFront"
+                  label="Show only Pareto front"
+                  color="primary"
+                  hide-details
+                  class="user-input"
+                />
+                <ParetoFront
+                  :pareto-objective1="selectedParetoObjective1"
+                  :pareto-objective2="selectedParetoObjective2"
+                  :only-show-pareto-front="onlyShowParetoFront"
+                />
+              </v-col>
+
+              <v-col
+                v-if="selected['EDF Plot']"
+                v-show="visibleCharts.includes('EDF Plot')"
+                cols="12"
+                md="10"
+                class="pr-2"
+              >
+                <Edf />
+              </v-col>
+
               <!-- HeatmapReg is not rendered, see HeatmapReg import comment above -->
+              <!--
+              <v-col
+                v-if="selected['Heatmap Reg']"
+                v-show="visibleCharts.includes('Heatmap Reg')"
+                cols="12"
+                md="8"
+                class="pr-2"
+              >
+                <HeatmapReg />
+              </v-col>
+              -->
             </v-row>
           </v-tabs-window-item>
         </v-tabs-window>
@@ -305,5 +778,9 @@ function openSearchSpace() {
 .logo {
   width: 100%;
   height: auto;
+}
+
+.user-input {
+  margin: 10px
 }
 </style>
