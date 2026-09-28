@@ -68,16 +68,7 @@ function resetRes() {
     measPoints.value = []
 }
 
-const isModelType = computed(() => {
-    if (!experiment_description.value) return 'unknown'
-    const exp = experiment_description.value as Record<string, any>
-    const model = exp?.ConfigurationSelection?.Predictor?.Model
-
-    const isReg = !!model?.Surrogate?.Instance?.LinearRegression
-    return isReg ? 'regression' : 'unknown'
-})
-
-// 
+//
 const resultLookup = computed(() => {
     const map = new Map<string, number>()
     result.value.forEach((v, k) => map.set(k, v?.[keyParam.value]))
@@ -92,63 +83,61 @@ async function render(): Promise<void> {
     const Plotly = store.plotlyInstance
 
     if (!Plotly) return
-    if (isModelType.value === 'regression') {
-        const zData = DataTransformer.buildZMatrix(x.value.map(String), y.value.map(String), resultLookup.value)
-        const element = map.value
-        const data: any[] = [
-            { // defined X and Y axises with data, type and color
-                z: zData,
-                x: x.value.map(String),
-                y: y.value.map(String),
-                type: theme.value.type,
-                colorscale: theme.value.color,
-                zsmooth: theme.value.smooth
-            },
-            { // Measured points
-                type: 'scatter' as const,
-                mode: 'markers' as const,
-                marker: { color: 'grey', size: 7, symbol: 'cross' },
-                x: measPoints.value.map(arr => arr[1]),
-                y: measPoints.value.map(arr => arr[0])
-            },
-            { // Best point solution
-                type: 'scatter' as const,
-                mode: 'markers' as const,
-                hoverinfo: 'none' as const,
-                showlegend: false as const,
-                marker: { color: 'Gold', size: 16, symbol: 'star' },
-                x: solution && [cleanIdentifier((solution.configurations as any)[xParamKey.value])],
-                y: solution && [cleanIdentifier((solution.configurations as any)[yParamKey.value])]
-            }
-        ];
+    const zData = DataTransformer.buildZMatrix(x.value.map(String), y.value.map(String), resultLookup.value)
+    const element = map.value
+    const data: any[] = [
+        { // defined X and Y axises with data, type and color
+            z: zData,
+            x: x.value.map(String),
+            y: y.value.map(String),
+            type: theme.value.type,
+            colorscale: theme.value.color,
+            zsmooth: theme.value.smooth
+        },
+        { // Measured points
+            type: 'scatter' as const,
+            mode: 'markers' as const,
+            marker: { color: 'grey', size: 7, symbol: 'cross' },
+            x: measPoints.value.map(arr => arr[1]),
+            y: measPoints.value.map(arr => arr[0])
+        },
+        { // Best point solution
+            type: 'scatter' as const,
+            mode: 'markers' as const,
+            hoverinfo: 'none' as const,
+            showlegend: false as const,
+            marker: { color: 'Gold', size: 16, symbol: 'star' },
+            x: solution && [cleanIdentifier((solution.configurations as any)[xParamKey.value])],
+            y: solution && [cleanIdentifier((solution.configurations as any)[yParamKey.value])]
+        }
+    ];
 
-        const layout: any = {
-            margin: { l: 220 },
-            title: { text: 'Heat map results' } as any,
-            autosize: true,
-            showlegend: false,
-            xaxis: {
-                title: { text: xTitle.value },
-                type: 'category' as const,
-                autorange: true,
-                range: [-0.5, x.value.length - 0.5],
-                showgrid: true,
-                categoryorder: 'array',
-                categoryarray: x.value
-            },
-            yaxis: {
-                title: { text: yTitle.value },
-                type: 'category' as const,
-                autorange: true,
-                range: [-0.5, y.value.length - 0.5],
-                showgrid: true,
-                categoryorder: 'array',
-                categoryarray: y.value
-            }
-        };
-        if (element)
-            Plotly.react(element, data, layout);
-    }
+    const layout: any = {
+        margin: { l: 220 },
+        title: { text: 'Heat map results' } as any,
+        autosize: true,
+        showlegend: false,
+        xaxis: {
+            title: { text: xTitle.value },
+            type: 'category' as const,
+            autorange: true,
+            range: [-0.5, x.value.length - 0.5],
+            showgrid: true,
+            categoryorder: 'array',
+            categoryarray: x.value
+        },
+        yaxis: {
+            title: { text: yTitle.value },
+            type: 'category' as const,
+            autorange: true,
+            range: [-0.5, y.value.length - 0.5],
+            showgrid: true,
+            categoryorder: 'array',
+            categoryarray: y.value
+        }
+    };
+    if (element)
+        Plotly.react(element, data, layout);
 }
 
 function initMainEvents() {
@@ -262,7 +251,7 @@ onUnmounted(() => {
 
 </script>
 <template>
-  <div v-if="isModelType === 'regression'">
+  <div>
     <div ref="map" />
     <select
       v-model="theme.color"

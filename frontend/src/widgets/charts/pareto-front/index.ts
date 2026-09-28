@@ -1,0 +1,1 @@
+export { default as ParetoFront } from './ui/ParetoFront.vue'

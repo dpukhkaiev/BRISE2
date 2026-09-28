@@ -81,6 +81,7 @@ Context {
       [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.MultiTaskLearning.Filters.OnlyBestConfigurations]
     }
     [if size childs.self.Objectives > 1 then fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 1 else fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 0]
+    [if size childs.self.Objectives < 2 then fcard.PlotSelection.Plot.ParetoFront = 0]
   }
 
   SearchSpace {
@@ -96,6 +97,11 @@ Context {
       Hierarchical
     }
     [fcard.ConfigurationSelection.Predictor.Model = size unique Level at self]
+    // Note: Rank and ContourPlot are to be excluded, when there are less then 2 params
+    // and if there are 2 params, but a categorical param has only 1 Category.
+    // Cannot be modeled by Waffle now. Disabled.
+    // [if size childs.self < 3 then fcard.PlotSelection.Plot.RankPlot = 0]
+    // [if size childs.self < 3 then fcard.PlotSelection.Plot.ContourPlot = 0]
   }
 }
 
@@ -861,5 +867,20 @@ DefaultConfigurationHandler ? {
   RandomDCH {
     Type -> predefined
     [Type = "random_default_config_handler"]
+  }
+}
+
+
+PlotSelection ? {
+  or Plot {
+    OptimizationHistory
+    ParallelCoordinates
+    RankPlot
+    HyperparameterImportances
+    SlicePlot
+    ContourPlot
+    ParetoFront
+    EDFPlot
+    Heatmap
   }
 }

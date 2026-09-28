@@ -5,6 +5,7 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import LaunchControl from '../widgets/control-bar/ui/LaunchControl.vue'
+import { usePlotStore } from '../entities/main/model/plot.store'
 import { ref } from 'vue'
 
 // Vuetify setup
@@ -156,5 +157,34 @@ describe('LaunchControl.vue', () => {
             .find(b => b.text().includes('Save Experiment'))
 
         expect(saveBtn).toBeDefined()
+    })
+
+    it('enables changing the visible charts once an experiment is started', async () => {
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        // launch control state is module-level: finish any experiment started by previous tests
+        eventCallback['FINAL']?.()
+        await flushPromises()
+
+        await wrapper.findAllComponents({ name: 'VBtn' })
+            .find(b => b.text().includes('Start'))?.trigger('click')
+        await flushPromises()
+
+        expect(usePlotStore().canChangeVisibleCharts).toBe(true)
+    })
+
+    it('disables changing the visible charts when a new experiment description is uploaded', async () => {
+        const wrapper = mountComponent()
+        await flushPromises()
+        const plotStore = usePlotStore()
+        plotStore.canChangeVisibleCharts = true
+
+        await wrapper.findComponent({ name: 'VFileInput' })
+            .vm.$emit('update:modelValue', new File(['{"Context":{}}'], 'exp.json'))
+        await wrapper.findAllComponents({ name: 'VBtn' })
+            .find(b => b.text().includes('Upload Experiment'))?.trigger('click')
+
+        await vi.waitFor(() => expect(plotStore.canChangeVisibleCharts).toBe(false))
     })
 })

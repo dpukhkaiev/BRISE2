@@ -28,7 +28,7 @@ vi.mock('@stomp/rx-stomp', () => {
 vi.mock('../shared/api/stomp.client', () => ({ stompClient: {} }));
 
 // import main.client.store below the hoisting setup
-import { startMain, getMainStatus, stopMain, downloadDump } from '../entities/main/api/main.client.store';
+import { startMain, getMainStatus, stopMain, downloadDump, calculatePlot } from '../entities/main/api/main.client.store';
 
 describe('MainClientApi - Full Test Suite', () => {
   
@@ -153,5 +153,55 @@ describe('MainClientApi - Full Test Suite', () => {
     expect(result.MinExpectedValue).toBe(-Infinity);
     expect(result.MaxExpectedValue).toBe(Infinity);
     expect(result.result).toBeNaN();
+  });
+
+  // calculatePlot
+  it('should send the plot request as JSON to the plot queue', async () => {
+    let calledHeaders: Record<string, string> | null = null;
+    let calledBody = '';
+
+    eventCallbacks['/queue/main_plot_queue'] = (body: string, headers: Record<string, string>) => {
+      calledBody = body;
+      calledHeaders = headers;
+      return { body: '{}' };
+    };
+
+    await calculatePlot('contour', { objective: 'runtime' });
+
+    expect(calledHeaders).toEqual({ body_type: 'json' });
+    expect(parseJsonWithInfinity(calledBody)).toEqual({
+      plot: 'contour',
+      payload: { objective: 'runtime' }
+    });
+  });
+
+  // calculatePlot with unbounded payload values
+  it('should preserve Infinity/-Infinity/NaN values in the plot payload', async () => {
+    let calledBody = '';
+
+    eventCallbacks['/queue/main_plot_queue'] = (body: string) => {
+      calledBody = body;
+      return { body: '{}' };
+    };
+
+    await calculatePlot('contour', { MinExpectedValue: -Infinity, MaxExpectedValue: Infinity, result: NaN });
+
+    expect(calledBody).toContain('"MinExpectedValue":-Infinity');
+    expect(calledBody).toContain('"MaxExpectedValue":Infinity');
+    expect(calledBody).toContain('"result":NaN');
+  });
+
+  // calculatePlot with Infinity/NaN in the response
+  it('should parse a plot response body containing Infinity/NaN instead of throwing', async () => {
+    eventCallbacks['/queue/main_plot_queue'] = () => {
+      return {
+        body: '{"contour": {"x": [1, 2], "MinExpectedValue": -Infinity, "MaxExpectedValue": Infinity, "result": NaN}}'
+      };
+    };
+
+    const result = await calculatePlot('contour', { objective: 'runtime' });
+    expect(result.contour.MinExpectedValue).toBe(-Infinity);
+    expect(result.contour.MaxExpectedValue).toBe(Infinity);
+    expect(result.contour.result).toBeNaN();
   });
 });

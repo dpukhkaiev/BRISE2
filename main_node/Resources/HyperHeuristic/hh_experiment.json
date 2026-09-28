@@ -369,5 +369,17 @@
         "AsynchronousDistribution": {
             "Type": "asynchronous_distribution"
         }
+    },
+    "PlotSelection": {
+        "Plot": {
+            "OptimizationHistory": {},
+            "ParallelCoordinates": {},
+            "RankPlot": {},
+            "HyperparameterImportances": {},
+            "SlicePlot": {},
+            "ContourPlot": {},
+            "EDFPlot": {},
+            "Heatmap": {}
+        }
     }
 }

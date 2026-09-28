@@ -10,10 +10,15 @@ export interface ExperimentDescription {
     ConfigurationSelection?: unknown
     RepetitionManager?: unknown
     StopCondition?: unknown
+    PlotSelection?: PlotSelection
 }
 
 interface DomainDescription {
     DataFile: String
+}
+
+interface PlotSelection {
+    Plot?: Record<string, unknown>
 }
 
 export interface SurrogateModel {
@@ -31,6 +36,7 @@ export interface SurrogateModel {
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number
     MaxTimeToRunTask: number
+    RepeaterDecisionFunction?: string
 Objectives: Record<string, Objective>
     ObjectivesDataTypes: Array<string>
     ObjectivesPriorities: Array<number>

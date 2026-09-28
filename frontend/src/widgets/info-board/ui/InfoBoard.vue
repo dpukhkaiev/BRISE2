@@ -191,6 +191,7 @@ onUnmounted(() => {
 
         <v-icon
           icon="mdi-text-box"
+          color="primary"
           class="mx-2"
         />
         <p class="ml-4">
@@ -233,7 +234,10 @@ onUnmounted(() => {
       <v-expansion-panel-title>
         Solution
 
-        <v-icon icon="mdi-star" />
+        <v-icon
+          icon="mdi-star"
+          color="accent"
+        />
       </v-expansion-panel-title>
       <v-expansion-panel-text>
         A solution that is found by BRISE ({{ solutionState.solution ? 'Done' : 'Please stand by..' }})
@@ -285,5 +289,13 @@ onUnmounted(() => {
   text-overflow: unset;
   overflow-wrap: anywhere;
   -webkit-line-clamp: unset;
+}
+
+.news-list :deep(.v-icon) {
+  color: rgb(var(--v-theme-success));
+}
+
+.solution :deep(.v-icon) {
+  color: rgb(var(--v-theme-accent));
 }
 </style>

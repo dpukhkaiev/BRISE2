@@ -51,8 +51,7 @@ const scenarioLabel = computed(() =>
         <v-btn
           :disabled="isRunning || !isConnected"
           :ripple="false"
-          color="#A8D5A2"
-          style="color: #2D6A27;"
+          color="success"
           variant="elevated"
           prepend-icon="mdi-play"
           @click="startMainControl"
@@ -62,8 +61,7 @@ const scenarioLabel = computed(() =>
         <v-btn
           :ripple="false"
           :disabled="!isRunning"
-          color="#F4B8B8"
-          style="color: #8B2E2E;"
+          color="error"
           variant="elevated"
           prepend-icon="mdi-stop"
           @click="stopMainControl"
@@ -75,8 +73,7 @@ const scenarioLabel = computed(() =>
           :ripple="false"
           class="text-none text-body-small"
           append-icon="mdi-content-save"
-          color="#B8C9F4"
-          style="color: #2E3F8B;"
+          color="primary"
           variant="outlined"
           @click="openDownloadOption"
         >
@@ -101,7 +98,7 @@ const scenarioLabel = computed(() =>
       <v-progress-linear
         v-if="isRunning"
         indeterminate
-        color="#FF9800"
+        color="warning"
         height="4"
         style="position:absolute; bottom: 0; left: 0; right: 0;"
       />
@@ -139,20 +136,5 @@ const scenarioLabel = computed(() =>
 .mono {
   font-family: monospace;
   font-size: 13px;
-}
-
-.btn-start {
-  background: #A8D5A2;
-  color: #2D6A27;
-}
-
-.btn-stop {
-  background: #F4B8B8;
-  color: #8B2E2E;
-}
-
-.btn-save {
-  background: #B8C9F4;
-  color: #354baa;
 }
 </style>

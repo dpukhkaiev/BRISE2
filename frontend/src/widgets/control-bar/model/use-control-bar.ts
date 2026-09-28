@@ -1,6 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore, MainClientApi } from '../../../entities/main'
+import { usePlotStore } from '../../../entities/main/model/plot.store'
 //data
 import { MainEvent } from '../../../entities/main'
 import { Subscription } from 'rxjs'
@@ -16,6 +17,8 @@ export function useLaunchControl() {
   const store = useMainEventStore()
   // destructure reactive value from main.event.store
   const { experiment_description, isConnected } = storeToRefs(store)
+  // plot selection in the frontend is allowed only once an experiment is started
+  const { canChangeVisibleCharts } = storeToRefs(usePlotStore())
 
 const subscriptions = new Subscription()
 subscriptions.add(
@@ -42,6 +45,7 @@ subscriptions.add(
       MainClientApi.startMain(experiment_description.value);
       isRunning.value = true
       isFinish.value = false
+      canChangeVisibleCharts.value = true
     }
   }
 
@@ -64,6 +68,7 @@ subscriptions.add(
         const parsed = parseJsonWithInfinity(reader.result as string)
         store.experiment_description = parsed
         store.searchspaceReady = false // serialized search space is provided by the main node
+        canChangeVisibleCharts.value = false
         selectedFile.value = null // reset input
       } catch (error) {
         console.error('Failed to parse experiment file:', error)
