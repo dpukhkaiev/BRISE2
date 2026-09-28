@@ -364,16 +364,18 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="optHistObjective"
-                  :items="objectiveNames"
-                  label="Objective"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <OptHist :opt-hist-objective="selectedOptHistObjective" />
+                <div class="chart-block chart-block--opt-hist">
+                  <v-select
+                    v-model="optHistObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <OptHist :opt-hist-objective="selectedOptHistObjective" />
+                </div>
               </v-col>
 
               <v-col
@@ -383,7 +385,9 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <Heatmap />
+                <div class="chart-block chart-block--heatmap">
+                  <Heatmap />
+                </div>
               </v-col>
 
               <v-col
@@ -393,22 +397,24 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="paraCoordObjective"
-                  :items="objectiveNames"
-                  label="Objective"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <ParaCoordRegionPanel
-                  v-for="(regionParameters, index) in regions"
-                  :key="index"
-                  :region-parameters="regionParameters"
-                  :show-title="regions.length > 1"
-                  :para-coord-objective="selectedParaCoordObjective"
-                />
+                <div class="chart-block chart-block--parallel">
+                  <v-select
+                    v-model="paraCoordObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <ParaCoordRegionPanel
+                    v-for="(regionParameters, index) in regions"
+                    :key="index"
+                    :region-parameters="regionParameters"
+                    :show-title="regions.length > 1"
+                    :para-coord-objective="selectedParaCoordObjective"
+                  />
+                </div>
               </v-col>
 
               <v-col
@@ -418,38 +424,40 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="rankParam1"
-                  :items="parameterNames"
-                  label="Parameter 1"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-select
-                  v-model="rankParam2"
-                  :items="parameterNames"
-                  label="Parameter 2"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-select
-                  v-model="rankObjective"
-                  :items="objectiveNames"
-                  label="Objective"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <Rank
-                  :rank-param1="selectedRankParam1"
-                  :rank-param2="selectedRankParam2"
-                  :rank-objective="selectedRankObjective"
-                />
+                <div class="chart-block chart-block--rank">
+                  <v-select
+                    v-model="rankParam1"
+                    :items="parameterNames"
+                    label="Parameter 1"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <v-select
+                    v-model="rankParam2"
+                    :items="parameterNames"
+                    label="Parameter 2"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <v-select
+                    v-model="rankObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <Rank
+                    :rank-param1="selectedRankParam1"
+                    :rank-param2="selectedRankParam2"
+                    :rank-objective="selectedRankObjective"
+                  />
+                </div>
               </v-col>
 
               <v-col
@@ -459,22 +467,24 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="hypImpObjective"
-                  :items="objectiveNames"
-                  label="Objective"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <HypImpRegionPanel
-                  v-for="(regionParameters, index) in regions"
-                  :key="index"
-                  :region-parameters="regionParameters"
-                  :show-title="regions.length > 1"
-                  :hyp-imp-objective="selectedHypImpObjective"
-                />
+                <div class="chart-block chart-block--hyp-imp">
+                  <v-select
+                    v-model="hypImpObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <HypImpRegionPanel
+                    v-for="(regionParameters, index) in regions"
+                    :key="index"
+                    :region-parameters="regionParameters"
+                    :show-title="regions.length > 1"
+                    :hyp-imp-objective="selectedHypImpObjective"
+                  />
+                </div>
               </v-col>
 
               <v-col
@@ -484,22 +494,24 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="sliceObjective"
-                  :items="objectiveNames"
-                  label="Objective"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <SliceRegionPanel
-                  v-for="(regionParameters, index) in regions"
-                  :key="index"
-                  :region-parameters="regionParameters"
-                  :show-title="regions.length > 1"
-                  :slice-objective="selectedSliceObjective"
-                />
+                <div class="chart-block chart-block--slice">
+                  <v-select
+                    v-model="sliceObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <SliceRegionPanel
+                    v-for="(regionParameters, index) in regions"
+                    :key="index"
+                    :region-parameters="regionParameters"
+                    :show-title="regions.length > 1"
+                    :slice-objective="selectedSliceObjective"
+                  />
+                </div>
               </v-col>
 
               <v-col
@@ -509,22 +521,24 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="contourObjective"
-                  :items="objectiveNames"
-                  label="Objective"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <ContourRegionPanel
-                  v-for="(regionParameters, index) in regions"
-                  :key="index"
-                  :region-parameters="regionParameters"
-                  :show-title="regions.length > 1"
-                  :contour-objective="selectedContourObjective"
-                />
+                <div class="chart-block chart-block--contour">
+                  <v-select
+                    v-model="contourObjective"
+                    :items="objectiveNames"
+                    label="Objective"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <ContourRegionPanel
+                    v-for="(regionParameters, index) in regions"
+                    :key="index"
+                    :region-parameters="regionParameters"
+                    :show-title="regions.length > 1"
+                    :contour-objective="selectedContourObjective"
+                  />
+                </div>
               </v-col>
 
               <v-col
@@ -534,36 +548,38 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-select
-                  v-model="paretoObjective1"
-                  :items="objectiveNames"
-                  label="Objective 1"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-select
-                  v-model="paretoObjective2"
-                  :items="objectiveNames"
-                  label="Objective 2"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-switch
-                  v-model="onlyShowParetoFront"
-                  label="Show only Pareto front"
-                  color="primary"
-                  hide-details
-                  class="user-input"
-                />
-                <ParetoFront
-                  :pareto-objective1="selectedParetoObjective1"
-                  :pareto-objective2="selectedParetoObjective2"
-                  :only-show-pareto-front="onlyShowParetoFront"
-                />
+                <div class="chart-block chart-block--pareto">
+                  <v-select
+                    v-model="paretoObjective1"
+                    :items="objectiveNames"
+                    label="Objective 1"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <v-select
+                    v-model="paretoObjective2"
+                    :items="objectiveNames"
+                    label="Objective 2"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="user-input"
+                  />
+                  <v-switch
+                    v-model="onlyShowParetoFront"
+                    label="Show only Pareto front"
+                    color="primary"
+                    hide-details
+                    class="user-input"
+                  />
+                  <ParetoFront
+                    :pareto-objective1="selectedParetoObjective1"
+                    :pareto-objective2="selectedParetoObjective2"
+                    :only-show-pareto-front="onlyShowParetoFront"
+                  />
+                </div>
               </v-col>
 
               <v-col
@@ -573,7 +589,9 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <Edf />
+                <div class="chart-block chart-block--edf">
+                  <Edf />
+                </div>
               </v-col>
 
               <!-- HeatmapReg is not rendered, see HeatmapReg import comment above -->
@@ -601,4 +619,28 @@ watch(
 .user-input {
   margin: 10px
 }
+
+/*
+ * Each chart type gets its own semi-opaque colored block, so it's visually clear
+ * where one plot's section ends and the next begins - especially now that Slice,
+ * Contour, Parallel Coordinates and Hyperparameter Importances can render several
+ * stacked region plots inside a single block. Hues are the validated 8-slot
+ * categorical palette (dataviz skill), checked against this app's surface color;
+ * Heatmap gets a neutral tint instead, since it already carries its own color scale.
+ */
+.chart-block {
+  border-radius: 8px;
+  border-left: 4px solid transparent;
+  padding: 4px 8px 8px;
+  margin-bottom: 16px;
+}
+.chart-block--opt-hist  { background-color: #2a78d61f; border-left-color: #2a78d6; }
+.chart-block--parallel  { background-color: #0083001f; border-left-color: #008300; }
+.chart-block--rank      { background-color: #eb68341f; border-left-color: #eb6834; }
+.chart-block--hyp-imp   { background-color: #e87ba41f; border-left-color: #e87ba4; }
+.chart-block--slice     { background-color: #1baf7a1f; border-left-color: #1baf7a; }
+.chart-block--contour   { background-color: #eda1001f; border-left-color: #eda100; }
+.chart-block--pareto    { background-color: #4a3aa71f; border-left-color: #4a3aa7; }
+.chart-block--edf       { background-color: #e349481f; border-left-color: #e34948; }
+.chart-block--heatmap   { background-color: #64748b14; border-left-color: #64748b; }
 </style>
