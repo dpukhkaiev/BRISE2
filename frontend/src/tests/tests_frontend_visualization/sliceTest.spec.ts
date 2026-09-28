@@ -143,4 +143,18 @@ describe('Slice Plot', () => {
         expect(renderSliceMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
+
+    it('leaves out trials in which the selected parameter is inactive', async () => {
+        mountComponent()
+
+        await flushPromises()
+
+        const active = { configurations: { frequency: 60 }, results: { runtime: 100 } }
+        const inactive = { configurations: { threads: 8 }, results: { runtime: 90 } }
+        allRes.value = [active, inactive]
+
+        await flushPromises()
+
+        expect(renderSliceMock.mock.lastCall?.[2]).toEqual([active])
+    })
 })

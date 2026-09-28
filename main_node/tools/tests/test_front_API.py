@@ -93,7 +93,8 @@ class TestFrontApi:
         global_config = experiment_description["General"]
         actual_result = APIMessageBuilder.build('EXPERIMENT', global_config=global_config,
                                                 experiment_description=experiment_description,
-                                                searchspace_description=searchspace_description)
+                                                searchspace_description=searchspace_description,
+                                                regions=[["Context.SearchSpace.frequency", "Context.SearchSpace.threads"]])
         assert actual_result["global_configuration"]
         assert actual_result["metric_description"]
         assert actual_result["searchspace_description"]
@@ -108,6 +109,15 @@ class TestFrontApi:
         global_config = experiment_description["General"]
         with pytest.raises(KeyError) as excinfo:
             APIMessageBuilder.build('EXPERIMENT', global_config=global_config, experiment_description=experiment_description)
+        assert expected_result in str(excinfo.value)
+
+    def test_9_1_experiment_message_without_regions_is_rejected(self):
+        # Test #9.1. Build experiment message without the search space regions
+        # Expected result: error is raised
+        expected_result = "Invalid parameters passed to send message via API: The search space regions are not provided!"
+        with pytest.raises(KeyError) as excinfo:
+            APIMessageBuilder.build('EXPERIMENT', global_config={}, experiment_description={},
+                                    searchspace_description={})
         assert expected_result in str(excinfo.value)
 
     def test_10_send_valid_message(self):

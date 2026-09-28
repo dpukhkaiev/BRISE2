@@ -180,4 +180,44 @@ describe('renderParaCoord', () => {
             } 
         )
     })
+
+    it('orders a nested ordinal parameter by its categories', () => {
+        const element = document.createElement('div')
+        const level = 'Context.SearchSpace.Algorithm.A.level'
+        const hierarchicalDescription = {
+            ...experiment_description.value,
+            Context: {
+                ...experiment_description.value.Context,
+                SearchSpace: {
+                    Algorithm: {
+                        Type: 'NominalHyperparameter',
+                        Level: 0,
+                        Categories: ['Context.SearchSpace.Algorithm.A'],
+                        A: {
+                            Type: 'Category',
+                            level: {
+                                Type: 'OrdinalHyperparameter',
+                                Level: 1,
+                                Categories: [`${level}.low`, `${level}.high`],
+                                low: { Type: 'Category' },
+                                high: { Type: 'Category' }
+                            }
+                        }
+                    },
+                    Structure: { Hierarchical: {} }
+                }
+            }
+        }
+        const trials: PointExp[] = [
+            { configurations: { [level]: `${level}.high` }, results: { runtime: 10 }, time: '1m 0s', 'measured points': 1 },
+            { configurations: { [level]: `${level}.low` }, results: { runtime: 20 }, time: '2m 0s', 'measured points': 2 }
+        ]
+
+        renderSlice(plotly, element, trials, level, 'runtime', hierarchicalDescription)
+
+        const [, data, layout] = plotly.react.mock.calls[0]
+        expect(data[0].x).toEqual([1, 0])
+        expect(layout.xaxis.tickvals).toEqual([0, 1])
+        expect(layout.xaxis.ticktext).toEqual(['low', 'high'])
+    })
 })

@@ -273,4 +273,18 @@ describe('Hyperparameter Importances', () => {
             emptyResult
         )
     })
+
+    it('leaves out trials in which a selected parameter is inactive', async () => {
+        mountComponent()
+
+        await flushPromises()
+
+        const active = { configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }
+        const inactive = { configurations: { frequency: 50 }, results: { runtime: 90 } }
+        allRes.value = [active, inactive]
+
+        await flushPromises()
+
+        expect(calculatePlotMock.mock.lastCall?.[1].trials).toEqual([active])
+    })
 })

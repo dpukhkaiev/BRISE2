@@ -5,6 +5,7 @@ import { renderHypImp } from '../render'
 import { storeToRefs } from 'pinia'
 import { MainClientApi } from '../../../../entities/main/api/main.client.store'
 import { useMainEventStore } from '../../../../entities/main'
+import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
 
 const plotStore = usePlotStore()
 const store = useMainEventStore()
@@ -22,11 +23,13 @@ async function render() {
 
     if (!plotlyInstance.value) return
     if (!hypimp.value) return
+    // Optuna requires every requested parameter to be present in every trial
+    const trials = trialsWithParameters(allRes.value, props.hypImpParams)
     const result = await MainClientApi.calculatePlot(
         "hyperparameter_importances",
         {
             "experiment_description": experiment_description.value,
-            "trials": allRes.value,
+            "trials": trials,
             "parameters": props.hypImpParams,
             "objective": props.hypImpObjective
         }

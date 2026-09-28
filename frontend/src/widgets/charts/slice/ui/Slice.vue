@@ -4,6 +4,7 @@ import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderSlice } from '../render'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from '../../../../entities/main'
+import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
 
 defineOptions({ name: 'SliceChart' })
 
@@ -25,7 +26,8 @@ async function render() {
     if (!slice.value) return
     if (!experiment_description.value) 
         return
-    renderSlice(plotlyInstance.value, slice.value, allRes.value, props.sliceParam, props.sliceObjective, experiment_description.value)
+    const trials = trialsWithParameters(allRes.value, [props.sliceParam])
+    renderSlice(plotlyInstance.value, slice.value, trials, props.sliceParam, props.sliceObjective, experiment_description.value)
 }
 
 watch(

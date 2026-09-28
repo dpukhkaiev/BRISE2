@@ -206,4 +206,21 @@ describe('Parallel Coordinates', () => {
 
         expect(renderParaCoordMock).toHaveBeenCalled()
     })
+
+    it('leaves out trials in which a selected parameter is inactive', async () => {
+        const wrapper = mountComponent()
+
+        await wrapper.setProps({
+            paraCoordParams: ['frequency', 'threads']
+        })
+        await flushPromises()
+
+        const active = { configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }
+        const inactive = { configurations: { frequency: 50 }, results: { runtime: 90 } }
+        allRes.value = [active, inactive]
+
+        await flushPromises()
+
+        expect(renderParaCoordMock.mock.lastCall?.[2]).toEqual([active])
+    })
 })

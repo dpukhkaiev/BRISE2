@@ -13,57 +13,23 @@ import { Heatmap } from './widgets/charts/heatmap'
 // SUPPORTED_MESSAGES / APIMessageBuilder - "PREDICTIONS" is registered but nothing ever sends it),
 // so the surrogate surface can never populate. Re-enable once main-node publishes predictions.
 // import { HeatmapReg } from './widgets/charts/heatmap-reg'
-import type { ExperimentDescription } from './entities/experiment/model/experiment.model'
 import { toFullParamName } from './shared/lib'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
 
 import { OptHist } from './widgets/charts/opt-hist'
-import { HypImp } from './widgets/charts/hyp-imp'
-import { ParaCoord } from './widgets/charts/para-coord'
+import { HypImpRegionPanel } from './widgets/charts/hyp-imp'
+import { ParaCoordRegionPanel } from './widgets/charts/para-coord'
 import { ParetoFront } from './widgets/charts/pareto-front'
-import { Slice } from './widgets/charts/slice'
+import { SliceRegionPanel } from './widgets/charts/slice'
 import { Rank } from './widgets/charts/rank'
-import { Contour } from './widgets/charts/contour'
+import { ContourRegionPanel } from './widgets/charts/contour'
 import { Edf } from './widgets/charts/edf'
-
-function isContourParameter(
-    parameter: string,
-    experimentDescription: ExperimentDescription
-): boolean {
-    const searchSpace =
-        (experimentDescription.Context?.SearchSpace as Record<string, any> | undefined)?.[parameter];
-
-    if (!searchSpace) {
-        return false;
-    }
-
-    // Float / Integer
-    if (
-        searchSpace.Type === "FloatHyperparameter" ||
-        searchSpace.Type === "IntegerHyperparameter"
-    ) {
-        return true;
-    }
-
-    // Nominal / Ordinal
-    if (
-        searchSpace.Type === "NominalHyperparameter" ||
-        searchSpace.Type === "OrdinalHyperparameter"
-    ) {
-        return (
-            Array.isArray(searchSpace.Categories) &&
-            searchSpace.Categories.length >= 2
-        );
-    }
-
-    return false;
-}
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
 const { selected, visibleCharts, canChangeVisibleCharts } = storeToRefs(plotStore)
-const { experiment_description } = storeToRefs(store)
+const { experiment_description, regions } = storeToRefs(store)
 
 
 const tab = ref('info')
@@ -104,43 +70,12 @@ const parameterNames = computed(() => {
         .map(([name]) => toFullParamName(name));
 });
 
-//compute parameters for Parallel Coordinates dropdown options
-const paraCoordParameterNames = computed(() => {
-    if (!experiment_description.value) {
-      return []
-    }
-    const searchSpace =
-        experiment_description.value?.Context?.SearchSpace ?? {};
-
-    let allParams = Object.entries(searchSpace)
-        .filter(([name, value]) =>
-            name !== "Structure" &&
-            typeof value === "object" &&
-            value !== null &&
-            "Type" in value
-        )
-        .map(([name]) => name);
-    let contourParams: string[] = []
-    for (var param of allParams) {
-      if (isContourParameter(param, experiment_description.value)) {
-        contourParams.push(param)
-      }
-    }
-    return contourParams.map(toFullParamName)
-})
-
 // manage selected dropdown values
 const optHistObjective = ref("")
 const selectedOptHistObjective = computed(() => {
     return optHistObjective.value || objectiveNames.value[0] || ""
 })
 
-const paraCoordParams = ref<string[]>([])
-const selectedParaCoordParams = computed(() => {
-    return paraCoordParams.value.length
-        ? paraCoordParams.value
-        : parameterNames.value.slice(0, 1)
-})
 const paraCoordObjective = ref("")
 const selectedParaCoordObjective = computed(() => {
     return paraCoordObjective.value || objectiveNames.value[0] || ""
@@ -159,21 +94,11 @@ const selectedRankObjective = computed(() => {
     return rankObjective.value || objectiveNames.value[0] || ""
 })
 
-const sliceParam = ref("")
-const selectedSliceParam = computed(() => {
-    return sliceParam.value || parameterNames.value[0] || ""
-})
 const sliceObjective = ref("")
 const selectedSliceObjective = computed(() => {
     return sliceObjective.value || objectiveNames.value[0] || ""
 })
 
-const hypImpParams = ref<string[]>([])
-const selectedHypImpParams = computed(() => {
-    return hypImpParams.value.length
-        ? hypImpParams.value
-        : parameterNames.value.slice(0, 1)
-})
 const hypImpObjective = ref("")
 const selectedHypImpObjective = computed(() => {
     return hypImpObjective.value || objectiveNames.value[0] || ""
@@ -189,14 +114,6 @@ const selectedParetoObjective2 = computed(() => {
 })
 const onlyShowParetoFront = ref(false)
 
-const contourParam1 = ref("")
-const selectedContourParam1 = computed(() => {
-    return contourParam1.value || paraCoordParameterNames.value[0] || ""
-})
-const contourParam2 = ref("")
-const selectedContourParam2 = computed(() => {
-    return contourParam2.value || paraCoordParameterNames.value[1] || ""
-})
 const contourObjective = ref("")
 const selectedContourObjective = computed(() => {
     return contourObjective.value || objectiveNames.value[0] || ""
@@ -231,20 +148,8 @@ watch(
 watch(
     parameterNames,
     (parameters) => {
-        paraCoordParams.value = [...parameters]
         rankParam1.value = parameters[0] ?? ""
         rankParam2.value = parameters[1] ?? ""
-        sliceParam.value = parameters[0] ?? ""
-        hypImpParams.value = [...parameters]
-    },
-    { immediate: true }
-)
-
-watch(
-    paraCoordParameterNames,
-    (params) => {
-        contourParam1.value = params[0] ?? ""
-        contourParam2.value = params[1] ?? ""
     },
     { immediate: true }
 )
@@ -488,27 +393,6 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-list
-                  density="compact"
-                  min-width="180"
-                  class="user-input"
-                >
-                  <v-list-subheader>Parameters</v-list-subheader>
-                  <v-list-item
-                    v-for="param in parameterNames"
-                    :key="param"
-                  >
-                    <v-checkbox
-                      v-model="paraCoordParams"
-                      :value="param"
-                      :label="param"
-                      density="compact"
-                      hide-details
-                      color="primary"
-                      :disabled="paraCoordParams.length === 1 && paraCoordParams.includes(param)"
-                    />
-                  </v-list-item>
-                </v-list>
                 <v-select
                   v-model="paraCoordObjective"
                   :items="objectiveNames"
@@ -518,8 +402,11 @@ watch(
                   hide-details
                   class="user-input"
                 />
-                <ParaCoord
-                  :para-coord-params="selectedParaCoordParams"
+                <ParaCoordRegionPanel
+                  v-for="(regionParameters, index) in regions"
+                  :key="index"
+                  :region-parameters="regionParameters"
+                  :show-title="regions.length > 1"
                   :para-coord-objective="selectedParaCoordObjective"
                 />
               </v-col>
@@ -572,26 +459,6 @@ watch(
                 md="10"
                 class="pr-2"
               >
-                <v-list
-                  density="compact"
-                  min-width="180"
-                  class="user-input"
-                >
-                  <v-list-subheader>Parameters</v-list-subheader>
-                  <v-list-item
-                    v-for="param in parameterNames"
-                    :key="param"
-                  >
-                    <v-checkbox
-                      v-model="hypImpParams"
-                      :value="param"
-                      :label="param"
-                      density="compact"
-                      hide-details
-                      color="primary"
-                    />
-                  </v-list-item>
-                </v-list>
                 <v-select
                   v-model="hypImpObjective"
                   :items="objectiveNames"
@@ -601,8 +468,11 @@ watch(
                   hide-details
                   class="user-input"
                 />
-                <HypImp
-                  :hyp-imp-params="selectedHypImpParams"
+                <HypImpRegionPanel
+                  v-for="(regionParameters, index) in regions"
+                  :key="index"
+                  :region-parameters="regionParameters"
+                  :show-title="regions.length > 1"
                   :hyp-imp-objective="selectedHypImpObjective"
                 />
               </v-col>
@@ -615,15 +485,6 @@ watch(
                 class="pr-2"
               >
                 <v-select
-                  v-model="sliceParam"
-                  :items="parameterNames"
-                  label="Parameter"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-select
                   v-model="sliceObjective"
                   :items="objectiveNames"
                   label="Objective"
@@ -632,8 +493,11 @@ watch(
                   hide-details
                   class="user-input"
                 />
-                <Slice
-                  :slice-param="selectedSliceParam"
+                <SliceRegionPanel
+                  v-for="(regionParameters, index) in regions"
+                  :key="index"
+                  :region-parameters="regionParameters"
+                  :show-title="regions.length > 1"
                   :slice-objective="selectedSliceObjective"
                 />
               </v-col>
@@ -646,24 +510,6 @@ watch(
                 class="pr-2"
               >
                 <v-select
-                  v-model="contourParam1"
-                  :items="paraCoordParameterNames"
-                  label="Parameter 1"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-select
-                  v-model="contourParam2"
-                  :items="paraCoordParameterNames"
-                  label="Parameter 2"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  class="user-input"
-                />
-                <v-select
                   v-model="contourObjective"
                   :items="objectiveNames"
                   label="Objective"
@@ -672,9 +518,11 @@ watch(
                   hide-details
                   class="user-input"
                 />
-                <Contour
-                  :contour-param1="selectedContourParam1"
-                  :contour-param2="selectedContourParam2"
+                <ContourRegionPanel
+                  v-for="(regionParameters, index) in regions"
+                  :key="index"
+                  :region-parameters="regionParameters"
+                  :show-title="regions.length > 1"
                   :contour-objective="selectedContourObjective"
                 />
               </v-col>

@@ -15,6 +15,8 @@ stompClient.connectionState$.subscribe(state => {
 export const useMainEventStore = defineStore('mainEvent', () => {
    const experiment_description = ref<ExperimentDescription | null>(null)
    const searchspace = ref<any>(null)
+   // full names of the parameters of each search space region, in main-node's region order
+   const regions = ref<string[][]>([])
    const searchspaceReady = ref(false)
    const globalConfig = ref<any>(null)
    const experimentFinished = ref(false)
@@ -73,10 +75,11 @@ export const useMainEventStore = defineStore('mainEvent', () => {
          if (message.headers['message_subtype'] === 'description') {
             console.log(message.body)
             // cleans invalid json parts (raw Infinity/-Infinity tokens) while preserving the real value
-            const body = parseJsonWithInfinity(message.body) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any }
+            const body = parseJsonWithInfinity(message.body) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any, regions?: string[][] }
             console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)
             experiment_description.value = body.experiment_description
             searchspace.value = body.searchspace_description
+            regions.value = body.regions ?? []
             searchspaceReady.value = true
             globalConfig.value = body.global_configuration
             experimentFinished.value = false
@@ -93,5 +96,5 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
 
 
-   return { globalConfig, searchspace, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
+   return { globalConfig, searchspace, regions, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

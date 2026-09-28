@@ -3,6 +3,7 @@ import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from "../../../entities/main/model/plot.store";
 import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
+import { findParameterSpec } from "../../../entities/experiment/lib/search-space";
 
 export function renderSlice(
     plotly: PlotlyInstance,
@@ -21,11 +22,8 @@ export function renderSlice(
         return;
     }
 
-    const searchSpace =
-        experiment_description.Context?.SearchSpace as Record<string, any> | undefined;
-
     const parameterDescription =
-        searchSpace?.[cleanIdentifier(sliceParam)];
+        findParameterSpec(experiment_description, sliceParam);
 
     const isOrdinal =
         parameterDescription?.Type === "OrdinalHyperparameter";

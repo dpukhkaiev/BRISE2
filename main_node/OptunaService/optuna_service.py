@@ -16,12 +16,28 @@ CategoricalDistribution = (
 create_trial = optuna.trial.create_trial
 
 
-def normalize_search_space(search_space):
-    return {
-        f"{SEARCH_SPACE_PREFIX}.{name}": data
-        for name, data in search_space.items()
-        if name != "Structure"
-    }
+def normalize_search_space(search_space, prefix=SEARCH_SPACE_PREFIX):
+    """
+    Flattens the nested search space of a product configuration into {full parameter name: description}.
+    A child parameter of a category is named <parent full name>.<category>.<child>,
+    as in core_entities/search_space.py.
+    """
+    normalized = {}
+
+    for name, data in search_space.items():
+        if name == "Structure" or not isinstance(data, dict) or "Type" not in data:
+            continue
+
+        full_name = f"{prefix}.{name}"
+        normalized[full_name] = data
+
+        for category_name, category_data in data.items():
+            if isinstance(category_data, dict) and category_data.get("Type") == "Category":
+                normalized.update(
+                    normalize_search_space(category_data, f"{full_name}.{category_name}")
+                )
+
+    return normalized
 
 
 def build_distributions(search_space):
@@ -119,9 +135,14 @@ def reconstruct_study(input_data):
             for value in t["results"].values()
         ]
 
+        # in a hierarchical search space a trial holds only the parameters of its activated regions
+        trial_distributions = {}
+        for name in params:
+            trial_distributions[name] = distributions[name]
+
         frozen_trial = create_trial(
             params=params,
-            distributions=distributions,
+            distributions=trial_distributions,
             values=objective_values
         )
 

@@ -4,6 +4,7 @@ import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderParaCoord } from '../render'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from '../../../../entities/main'
+import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
@@ -22,7 +23,8 @@ async function render() {
     if (!paraCoord.value) return
     if (!experiment_description.value) 
         return
-    renderParaCoord(plotlyInstance.value, paraCoord.value, allRes.value, props.paraCoordParams, props.paraCoordObjective, experiment_description.value)
+    const trials = trialsWithParameters(allRes.value, props.paraCoordParams)
+    renderParaCoord(plotlyInstance.value, paraCoord.value, trials, props.paraCoordParams, props.paraCoordObjective, experiment_description.value)
 }
 
 watch(
