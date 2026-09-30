@@ -28,6 +28,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import warnings
+
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
@@ -114,8 +116,14 @@ class TreeParzenEstimator(Surrogate):
         # 'normal_reference' - default, quick, rule of thumb
         bw_estimation = 'normal_reference'
 
-        good_kde = sm.nonparametric.KDEMultivariate(data=t_features_good, var_type=self.kde_vartypes, bw=bw_estimation)
-        bad_kde = sm.nonparametric.KDEMultivariate(data=t_features_bad, var_type=self.kde_vartypes, bw=bw_estimation)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", 
+                message="divide by zero encountered in divide", 
+                category=RuntimeWarning
+            )
+            good_kde = sm.nonparametric.KDEMultivariate(data=t_features_good, var_type=self.kde_vartypes, bw=bw_estimation)
+            bad_kde = sm.nonparametric.KDEMultivariate(data=t_features_bad, var_type=self.kde_vartypes, bw=bw_estimation)
 
         good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth, None)
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth, None)
