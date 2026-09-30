@@ -1,83 +1,118 @@
-import pytest
 from repeater.results_check.outliers_detection.outliers_detector_selector import (
     get_outlier_detectors
 )
 from repeater.results_check.task_errors_check import error_check
 
 
-@pytest.mark.skip(reason="Skipping tests for outlier detection as they are disabled in 2.6.0")
 class TestOutliers:
     # in all tests size of dataset is equal 10 (as max number of repeats per each configuration)
 
-    def test_0(self, get_energy_configurations):
+    def test_0(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #0. Initial case - no outliers in dataset
         # All criteria are used and no outliers in dataset
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 0, 0, 0, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            0, 0, 0, 0
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 5
 
-    def test_1(self, get_energy_configurations):
+    def test_1(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #1. Add single outlier
         # All criteria are used and 1 outlier is added to dataset (inputs[0] = 100000)
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 0, 0, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 0, 0, 0
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 5
 
-    def test_2(self, get_energy_configurations):
+    def test_2(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #2. Add multiple outliers
         # All criteria are used and 2 outliers are added to dataset (inputs[0] = 50000, inouts[1] = 100000)
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 2, 0, 0, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            2, 0, 0, 0
+        )
+
         assert actual_results == expected_results
         assert outlier_detectors_used == 5
 
-    def test_3(self, get_energy_configurations):
+    def test_3(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #3. Add single outlier + single bad value
         # All criteria are used and 1 outlier + 1 bad value are added to dataset (inputs[0] = 100000, inputs[1] = 'Bad value')
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 1, 0, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 1, 0, 0
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 5
 
-    def test_4(self, get_energy_configurations):
+    def test_4(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #4. Add single outlier + multiple bad values
         # All criteria is used and 1 outlier + 2 bad values are added to dataset (inputs[0] = 100000, inputs[1,2] = 'Bad value')
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 2, 0, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 2, 0, 0
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 5
 
-    def test_5(self, get_energy_configurations):
+    def test_5(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #5. Add single outlier + reverse MinActiveNumberOfTasks and MaxActiveNumberOfTasks
         # parameter values (MinActiveNumberOfTasks > MaxActiveNumberOfTasks) in Dixon criteria
         # All criteria are used except Dixon and 1 outlier values is added to dataset
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 0, 1, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 0, 1, 0
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 4
 
-    def test_6(self, get_energy_configurations):
+    def test_6(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #6. Add single outlier + flexible limits for different criterias
         # 3 criteria are used (Dixon, Mad, Quartiles) and 1 outlier values is added to dataset
         # for parameter MinActiveNumberOfTasks in Chauvenet value 15 is set
         # for parameter MaxActiveNumberOfTasks in Grubbs value 5 is set
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 0, 1, 1)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 0, 1, 1
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 4
 
-    def test_7(self, get_energy_configurations):
+    def test_7(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #7. Add single outlier + all criterias are disabled
         # No criteria is used and 1 outlier values is added to dataset
         # for parameter MaxActiveNumberOfTasks in all criterias value 0 is set
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 0, 1, 2)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 0, 1, 2
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 4
 
-    def test_8(self, get_energy_configurations):
+    def test_8(self, get_energy_tasks, get_energy_experiment_and_search_space):
         # Test #8. Add single outlier + all criterias are disabled
         # No criteria is used and 1 outlier values is added to dataset
         # for parameter MaxActiveNumberOfTasks in all criterias value 0 is set
-        expected_results, actual_results, outlier_detectors_used = self.result_check_block(get_energy_configurations[1], get_energy_configurations[2], 1, 0, 5, 0)
+        expected_results, actual_results, outlier_detectors_used = self.result_check_block(
+            get_energy_tasks, 
+            get_energy_experiment_and_search_space[0], 
+            1, 0, 5, 0
+        )
         assert actual_results == expected_results
         assert outlier_detectors_used == 0
 
-    def result_check_block(self, tasks_sample: list, experiment_description: dict,
+    def result_check_block(self, tasks_sample: list[dict[str, dict[str, float]]], experiment_description: dict,
                            outliers_num: int, broken_num: int, disabled_num: int, disabled_type: int):
         """
         Test function for result_check submodule of Repeater.
@@ -129,12 +164,10 @@ class TestOutliers:
                 expected_results.append('OK')
 
         # 4. Check for errors.
-        objectives = experiment_description["TaskConfiguration"]["Objectives"]
-        expected_values_range = experiment_description["TaskConfiguration"]["ExpectedValuesRange"]
-        expected_data_type = experiment_description["TaskConfiguration"]["ObjectivesDataTypes"]
-        for index, parameter in enumerate(objectives):
-            tasks_sample_error_checked = error_check(tasks_sample, parameter,
-                                                     expected_values_range[index], expected_data_type[index])
+        objectives: dict = experiment_description["Context"]["TaskConfiguration"]["Objectives"]
+        for parameter_name, parameter_data in objectives.items():
+            tasks_sample_error_checked = error_check(tasks_sample, parameter_data["Name"],
+                                                     [parameter_data["MinExpectedValue"], parameter_data["MaxExpectedValue"]], parameter_data["DataType"])
 
         # 5. Check for outliers.
         outlier_detectors = get_outlier_detectors(experiment_description["OutliersDetection"])

@@ -17,11 +17,10 @@ def get_outlier_detectors(parameters: dict) -> OutlierDetector:
     logger = logging.getLogger(__name__)
     if parameters["isEnabled"]:
         outlier_detectors = OutlierDetector()
-        for od in parameters["Detectors"]:
-            od_type = od["Type"]
-            outlier_detector = reflective_class_import(class_name=od["Type"],
+        for od_type in parameters["Detectors"]:
+            outlier_detector = reflective_class_import(class_name=od_type,
                                                        folder_path="repeater/results_check/outliers_detection")
-            outlier_detectors = outlier_detector(outlier_detectors, od["Parameters"])
+            outlier_detectors = outlier_detector(outlier_detectors, parameters["Detectors"][od_type])
             logger.debug(f"Assigned {od_type} Outlier detection criteria.")
     else:
         outlier_detectors = None
