@@ -73,4 +73,21 @@ class SklearnOrdinalTransformer(OrdinalTransformer):
         return result
 
     def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
+        # Optimizers (e.g. MOEA) propose continuous values in [0, n-1], while OrdinalEncoder truncates them to int,
+        # so the last category is reachable only at exactly n-1. Snap values to equal-width bins first.
+        transformed_features = transformed_features.copy()
+        for feature_name in self.mapping_old_feature_pipeline:
+            number_of_categories = len(
+                list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0].categories)
+            for column in self.mapping_old_new_features[feature_name]:
+                if column not in transformed_features.columns:
+                    continue
+                snapped_values = []
+                for value in transformed_features[column]:
+                    if number_of_categories == 1:
+                        snapped_values.append(0)
+                    else:
+                        index = int(max(value, 0) * number_of_categories / (number_of_categories - 1))
+                        snapped_values.append(min(index, number_of_categories - 1))
+                transformed_features[column] = snapped_values
         return super()._inverse_sklearn_transform(transformed_features, self.mapping_old_feature_pipeline)

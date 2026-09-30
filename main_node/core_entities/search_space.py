@@ -266,7 +266,8 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
 
     def transform(self, value):
         categories = list(self._categories.keys())
-        category_index = round(value * (len(categories) - 1))
+        # equal-width bins; value == 1 is clamped to the last category
+        category_index = min(int(value * len(categories)), len(categories) - 1)
         return categories[category_index]
 
     def __eq__(self, other):
@@ -357,7 +358,8 @@ class IntegerHyperparameter(NumericHyperparameter):
         return self._upper - self._lower + 1
 
     def transform(self, value) -> int:
-        return round(self._lower + value*(self._upper - self._lower))
+        # equal-width bins; value == 1 is clamped to the upper bound
+        return min(self._lower + int(value*(self._upper - self._lower + 1)), self._upper)
 
     def __eq__(self, other):
         return super.__eq__(self, other)
