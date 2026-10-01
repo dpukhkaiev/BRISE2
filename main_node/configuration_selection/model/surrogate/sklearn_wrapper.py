@@ -49,6 +49,23 @@ class SklearnWrapper(Surrogate):
 
         return result
 
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        # a single call to the underlying sklearn model's predict() over all rows, instead of one call per row
+        configurations = configurations.reset_index(drop=True)
+
+        if transform:
+            transformed_configurations = self._transform_configuration(configurations)
+        else:
+            transformed_configurations = configurations
+
+        predicted = self.surrogate_instance.predict(transformed_configurations)
+        if not self.scalarized:
+            result = pd.DataFrame(predicted, columns=list(self.objectives.keys()))
+        else:
+            result = pd.DataFrame(predicted, columns=["Y"])
+
+        return result
+
     def _transform_values(self, labels: pd.DataFrame) -> pd.DataFrame:
         # flatten labels to be 1d-array
         transformed_labels = super()._transform_values(labels)

@@ -30,24 +30,10 @@ class SklearnOrdinalTransformer(OrdinalTransformer):
         transformed_features = pd.DataFrame()
 
         for feature_name in relevant_features.columns:
-            categories = [list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0].categories]
+            features_pipeline = self._get_or_build_pipeline(feature_name)
 
-            # create encoder object
-            encoder = OrdinalEncoder(categories=categories)
-            encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
-            name = list(self.configuration_transformer_description.keys())[0]
-            encoder_name = f"{name} for {feature_name}"
-
-            # append to steps
-            steps = []
-            steps.append((encoder_name, encoder))
-
-            # create pipeline
-            features_pipeline = Pipeline(steps)
-
-            # fit transform by pipeline
-            transformed_feature = features_pipeline.fit_transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
-            self.mapping_old_feature_pipeline[feature_name] = features_pipeline
+            # transform only - the pipeline was already fit once, on the hyperparameter's own categories
+            transformed_feature = features_pipeline.transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
             if transformed_features.empty:
                 transformed_features = pd.DataFrame(transformed_feature)
             else:
@@ -91,3 +77,29 @@ class SklearnOrdinalTransformer(OrdinalTransformer):
                         snapped_values.append(min(index, number_of_categories - 1))
                 transformed_features[column] = snapped_values
         return super()._inverse_sklearn_transform(transformed_features, self.mapping_old_feature_pipeline)
+
+    def _get_or_build_pipeline(self, feature_name: str) -> Pipeline:
+        """
+        Build and fit this feature's Pipeline once, from the hyperparameter's own category list - not from
+        whatever batch of rows happens to be passed to transform(). OrdinalEncoder(categories=...) already
+        fixes the category-to-index mapping from that list regardless of what data it is fit on, so this is
+        a pure performance fix (skip rebuilding and refitting the encoder on every call), not a correctness
+        one; every later transform() call reuses this fitted pipeline.
+        """
+        if feature_name in self.mapping_old_feature_pipeline:
+            return self.mapping_old_feature_pipeline[feature_name]
+
+        hyperparameter = list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0]
+        categories = [hyperparameter.categories]
+        reference_data = pd.DataFrame({feature_name: hyperparameter.categories})
+
+        encoder = OrdinalEncoder(categories=categories)
+        encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
+        name = list(self.configuration_transformer_description.keys())[0]
+        encoder_name = f"{name} for {feature_name}"
+
+        features_pipeline = Pipeline([(encoder_name, encoder)])
+        features_pipeline.fit(reference_data)
+
+        self.mapping_old_feature_pipeline[feature_name] = features_pipeline
+        return features_pipeline

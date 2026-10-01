@@ -2,6 +2,8 @@ import pandas as pd
 
 from typing import List
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import check_is_fitted
 
 
 class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
@@ -65,6 +67,24 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         self.original_data_types = df.dtypes.to_dict()
         self.transformer = self.transformer.fit(df[self.input_column_names], y=y, **fit_params)
         return self
+
+    def __sklearn_is_fitted__(self) -> bool:
+        # none of this adapter's own attributes follow sklearn's "fitted" naming convention (a trailing
+        # underscore), so sklearn.utils.validation.check_is_fitted() - which Pipeline.transform() calls
+        # whenever fit() and transform() are invoked as two separate calls, rather than one fit_transform()
+        # call - can't otherwise tell this was already fit, and without this hook every such transform()
+        # call emits a "Pipeline instance is not fitted yet" FutureWarning (an error from sklearn 1.8 on).
+        # Delegate to the wrapped transformer's own fitted state (e.g. MinMaxScaler.data_min_,
+        # OrdinalEncoder.categories_) instead of tracking a separate flag here: a flag set only in fit()
+        # would be missing on objects unpickled from before this attribute existed (e.g. a Model dump
+        # restored for transfer learning), since unpickling restores __dict__ directly without calling
+        # __init__ - such an object's wrapped transformer is still genuinely fitted, so this reports it
+        # correctly instead of raising AttributeError.
+        try:
+            check_is_fitted(self.transformer)
+            return True
+        except NotFittedError:
+            return False
 
     def transform(self, df: pd.DataFrame, y=None) -> pd.DataFrame:
         df = df.copy(deep=True)

@@ -97,3 +97,12 @@ class MultiArmedBandit(Surrogate):
             result = pd.DataFrame([summed_ucb], columns=["Y"])
 
         return result
+
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        # UCB values come from a category lookup table, not a fittable model, so there is no vectorized
+        # form to call into; each row is predicted on its own, same as predict(), just collected into one result
+        predicted = pd.DataFrame()
+        for _, cfg in configurations.reset_index(drop=True).iterrows():
+            prediction = self.predict(cfg, transform)
+            predicted = pd.concat([predicted, prediction], ignore_index=True)
+        return predicted

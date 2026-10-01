@@ -151,3 +151,29 @@ class TreeParzenEstimator(Surrogate):
                                self.objective["Name"] + "_probability_bad": predicted_probability_bad}, index=[0])
 
         return result
+
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        # KDEMultivariate.pdf() natively accepts a multi-row data_predict and returns one density per row
+        # in a single call, so - like SklearnWrapper - this is a real vectorized call, not a loop over predict()
+        if self.model == {}:
+            return pd.DataFrame()
+
+        configurations = configurations.reset_index(drop=True)
+
+        if transform:
+            transformed_configurations = self._transform_configuration(configurations)
+        else:
+            transformed_configurations = configurations
+
+        good_pdf = self.model['good'].pdf
+        bad_pdf = self.model['bad'].pdf
+
+        predicted_probability_good = np.maximum(good_pdf(transformed_configurations), 1e-32)
+        predicted_probability_bad = np.maximum(bad_pdf(transformed_configurations), 1e-32)
+
+        result = pd.DataFrame({
+            self.objective["Name"] + "_probability_good": predicted_probability_good,
+            self.objective["Name"] + "_probability_bad": predicted_probability_bad
+        })
+
+        return result

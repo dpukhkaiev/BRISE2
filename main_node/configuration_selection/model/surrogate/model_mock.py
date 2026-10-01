@@ -22,6 +22,15 @@ class ModelMock(Surrogate):
 
         return transformed_prediction
 
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        # each row's mock value is independently random, so there is nothing to vectorize; each row is
+        # predicted on its own, same as predict(), just collected into a single result Dataframe
+        predicted = pd.DataFrame()
+        for _, cfg in configurations.reset_index(drop=True).iterrows():
+            prediction = self.predict(cfg, transform)
+            predicted = pd.concat([predicted, prediction], ignore_index=True)
+        return predicted
+
     def _transform(self, mapping_predicted_objective: Dict[float, str]) -> pd.DataFrame:
         """
         Transform a floating point value between 0 and 1 into a DataFrame according to the Objective type.

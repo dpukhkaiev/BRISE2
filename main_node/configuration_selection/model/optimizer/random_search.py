@@ -17,14 +17,15 @@ class RandomSearch(Optimizer):
         """
         :returns: pd.Dataframe: (n,m), where n is sampling size and m the number of parameters
         """
-        predicted = pd.DataFrame()
-        for i in range(self.sampling_size):
-            # sample pd.Series
-            configuration = self.sampler.sample()
-            configuration_as_series: pd.Series = configuration.iloc[0]
-            # predict value
-            prediction = surrogate.predict(configuration_as_series)
-            evaluated_configuration = configuration.join(prediction)
-            predicted = pd.concat([predicted, evaluated_configuration])
+        # sample every candidate first, then predict all of them in one batched call instead of
+        # sampling_size separate predict() calls - cheaper whenever the surrogate can vectorize (see
+        # Surrogate.predict_batch on each surrogate implementation)
+        sampled = [self.sampler.sample() for _ in range(self.sampling_size)]
+        if not sampled:
+            return pd.DataFrame()
+
+        sampled_configurations = pd.concat(sampled, ignore_index=True)
+        predicted_values = surrogate.predict_batch(sampled_configurations)
+        predicted = sampled_configurations.join(predicted_values)
 
         return predicted

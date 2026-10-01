@@ -37,3 +37,14 @@ class CompositeSurrogate(Surrogate):
                 temp = s.predict(cfg, transform)
                 result = result.join(temp)
         return result
+
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        result = pd.DataFrame()
+
+        for s in self.surrogates:
+            if result.empty:
+                result = s.predict_batch(configurations, transform)
+            else:
+                temp = s.predict_batch(configurations, transform)
+                result = result.join(temp)
+        return result

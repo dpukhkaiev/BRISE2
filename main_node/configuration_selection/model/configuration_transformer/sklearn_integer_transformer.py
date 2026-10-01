@@ -30,22 +30,10 @@ class SklearnIntegerTransformer(IntegerTransformer):
         transformed_features = pd.DataFrame()
 
         for feature_name in relevant_features.columns:
-            # create encoder object
-            encoder = MinMaxScaler()
-            encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
-            name = list(self.configuration_transformer_description.keys())[0]
-            encoder_name = f"{name} for {feature_name}"
+            features_pipeline = self._get_or_build_pipeline(feature_name)
 
-            # append to steps
-            steps = []
-            steps.append((encoder_name, encoder))
-
-            # create pipeline
-            features_pipeline = Pipeline(steps)
-
-            # fit transform by pipeline
-            transformed_feature = features_pipeline.fit_transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
-            self.mapping_old_feature_pipeline[feature_name] = features_pipeline
+            # transform only - the pipeline was already fit once, on the hyperparameter's own bounds
+            transformed_feature = features_pipeline.transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
             if transformed_features.empty:
                 transformed_features = pd.DataFrame(transformed_feature)
             else:
@@ -72,3 +60,28 @@ class SklearnIntegerTransformer(IntegerTransformer):
 
     def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
         return super()._inverse_sklearn_transform(transformed_features, self.mapping_old_feature_pipeline)
+
+    def _get_or_build_pipeline(self, feature_name: str) -> Pipeline:
+        """
+        Build and fit this feature's Pipeline once, from the hyperparameter's own [lower, upper] bounds -
+        not from whatever batch of rows happens to be passed to transform(). A MinMaxScaler fit on the rows
+        passed at prediction time (often just one row) would scale every value to 0, since a single point
+        always sits at its own min and max; fitting on the actual bounds instead keeps scaling consistent
+        between training and prediction, and every later transform() call reuses this fitted pipeline.
+        """
+        if feature_name in self.mapping_old_feature_pipeline:
+            return self.mapping_old_feature_pipeline[feature_name]
+
+        hyperparameter = list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0]
+        reference_data = pd.DataFrame({feature_name: [hyperparameter.get_lower(), hyperparameter.get_upper()]})
+
+        encoder = MinMaxScaler()
+        encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
+        name = list(self.configuration_transformer_description.keys())[0]
+        encoder_name = f"{name} for {feature_name}"
+
+        features_pipeline = Pipeline([(encoder_name, encoder)])
+        features_pipeline.fit(reference_data)
+
+        self.mapping_old_feature_pipeline[feature_name] = features_pipeline
+        return features_pipeline

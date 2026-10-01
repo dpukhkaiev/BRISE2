@@ -60,6 +60,19 @@ class Surrogate(ABC):
         """
         pass
 
+    @abstractmethod
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        """
+        Predict several configurations at once, instead of one at a time via predict(). Intended for optimizers
+        that evaluate many candidates per optimize() call (e.g. random search), where batching the predictions
+        can be significantly cheaper than calling predict() once per candidate.
+        :param configurations: configurations to be predicted, one per row
+        :param transform: whether to apply the transformation or not, e.g., if transformation is already done by the optimizer
+        :return: predicted value(-s) as a Dataframe, one row per input configuration, in the same row order,
+        with a default RangeIndex (0..n-1)
+        """
+        pass
+
     def _transform_configuration(self, features: pd.DataFrame) -> pd.DataFrame:
         features = features.reset_index(drop=True)
         if len(self.mapping_config_transformer_parameter) > 0:
