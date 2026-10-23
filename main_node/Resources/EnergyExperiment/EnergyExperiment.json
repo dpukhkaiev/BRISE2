@@ -14,6 +14,13 @@
                     "Minimization": true,
                     "MinExpectedValue": 0,
                     "MaxExpectedValue": Infinity
+                },
+                "time": {
+                    "Name": "time",
+                    "DataType": "float",
+                    "Minimization": true,
+                    "MinExpectedValue": 0,
+                    "MaxExpectedValue": Infinity
                 }
             }
         },
@@ -154,10 +161,13 @@
                         }
                     },
                     "Instance": {
-                        "LinearRegression": {
-                            "MultiObjective": false,
+                        "GaussianProcessRegressor": {
+                            "MultiObjective": true,
+                            "Parameters": {
+                                "n_restarts_optimizer": 1
+                            },
                             "Type": "sklearn_model_wrapper",
-                            "Class": "sklearn.linear_model.LinearRegression"
+                            "Class": "sklearn.gaussian_process.GaussianProcessRegressor"
                         }
                     }
                 },
@@ -172,8 +182,8 @@
                 },
                 "Validator": {
                     "ExternalValidator": {
-                        "EnergyValidator": {
-                            "Type": "energy_validator"
+                        "MockValidator": {
+                            "Type": "mock_validator"
                         }
                     }
                 },
@@ -230,10 +240,8 @@
         }
     },
     "DistributionMode": {
-        "HybridDistribution": {
-            "BatchSize": 5,
-            "InitialTimeoutInSeconds": 5.0,
-            "Type": "hybrid_distribution"
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
         }
     },
     "PlotSelection": {
@@ -245,7 +253,8 @@
             "SlicePlot": {},
             "ContourPlot": {},
             "EDFPlot": {},
-            "Heatmap": {}
+            "Heatmap": {},
+            "ParetoFront": {}
         }
     }
 }
