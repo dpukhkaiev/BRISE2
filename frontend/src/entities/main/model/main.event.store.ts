@@ -75,11 +75,11 @@ export const useMainEventStore = defineStore('mainEvent', () => {
          if (message.headers['message_subtype'] === 'description') {
             console.log(message.body)
             // cleans invalid json parts (raw Infinity/-Infinity tokens) while preserving the real value
-            const body = parseJsonWithInfinity(message.body) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any, regions?: string[][] }
+            const body = parseJsonWithInfinity(message.body) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any, regions: string[][] }
             console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)
             experiment_description.value = body.experiment_description
             searchspace.value = body.searchspace_description
-            regions.value = body.regions ?? []
+            regions.value = body.regions
             searchspaceReady.value = true
             globalConfig.value = body.global_configuration
             experimentFinished.value = false

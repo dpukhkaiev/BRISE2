@@ -90,7 +90,8 @@ describe('useMainEventStore', () => {
             body: JSON.stringify({
                 experiment_description: mockDescription,
                 searchspace_description: { param: 'value' },
-                global_configuration: { config: 'value' }
+                global_configuration: { config: 'value' },
+                regions: [['Context.SearchSpace.param']]
             })
         }
         mockWatch.mockReturnValue(of(mockMessage))
@@ -101,6 +102,7 @@ describe('useMainEventStore', () => {
         expect(store.experiment_description).toEqual(mockDescription)
         expect(store.searchspace).toEqual({ param: 'value' })
         expect(store.globalConfig).toEqual({ config: 'value' })
+        expect(store.regions).toEqual([['Context.SearchSpace.param']])
         expect(store.searchspaceReady).toBe(true)
     })
 
