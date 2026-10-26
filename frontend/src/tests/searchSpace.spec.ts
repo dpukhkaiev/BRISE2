@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
     findParameterSpec,
     flattenSearchSpace,
-    isContourParameter
+    isAxisParameter
 } from '../entities/experiment/lib/search-space'
 import type { ExperimentDescription } from '../entities/experiment/model/experiment.model'
 
@@ -68,14 +68,14 @@ describe('findParameterSpec', () => {
     })
 })
 
-describe('isContourParameter', () => {
+describe('isAxisParameter', () => {
     it('accepts numeric parameters and parameters with at least two categories', () => {
-        expect(isContourParameter(searchSpace.Algorithm.A.alpha)).toBe(true)
-        expect(isContourParameter(searchSpace.Algorithm.A.beta)).toBe(true)
+        expect(isAxisParameter(searchSpace.Algorithm.A.alpha)).toBe(true)
+        expect(isAxisParameter(searchSpace.Algorithm.A.beta)).toBe(true)
     })
 
     it('rejects unknown parameters and parameters with a single category', () => {
-        expect(isContourParameter(undefined)).toBe(false)
-        expect(isContourParameter({ Type: 'NominalHyperparameter', Categories: ['only'] })).toBe(false)
+        expect(isAxisParameter(undefined)).toBe(false)
+        expect(isAxisParameter({ Type: 'NominalHyperparameter', Categories: ['only'] })).toBe(false)
     })
 })

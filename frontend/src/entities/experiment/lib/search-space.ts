@@ -49,8 +49,8 @@ export function findParameterSpec(
     return flattenSearchSpace(searchSpace ?? {})[toFullParamName(parameter)]
 }
 
-// a parameter can span a contour axis if it is numeric or has at least two categories
-export function isContourParameter(spec: ParameterSpec | undefined): boolean {
+// a parameter can span a plot axis (contour, rank) if it is numeric or has at least two categories
+export function isAxisParameter(spec: ParameterSpec | undefined): boolean {
     if (!spec) {
         return false
     }

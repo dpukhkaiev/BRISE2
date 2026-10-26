@@ -111,6 +111,15 @@ class TestFrontApi:
             APIMessageBuilder.build('EXPERIMENT', global_config=global_config, experiment_description=experiment_description)
         assert expected_result in str(excinfo.value)
 
+    def test_9_1_experiment_message_without_regions_is_rejected(self):
+        # Test #9.1. Build experiment message without the search space regions
+        # Expected result: error is raised
+        expected_result = "Invalid parameters passed to send message via API: The search space regions are not provided!"
+        with pytest.raises(KeyError) as excinfo:
+            APIMessageBuilder.build('EXPERIMENT', global_config={}, experiment_description={},
+                                    searchspace_description={})
+        assert expected_result in str(excinfo.value)
+
     def test_10_send_valid_message(self):
         # Test #10. Send messages of all supported types and subtypes via the dummy API
         # Expected result: no errors are arised, sending is simulated

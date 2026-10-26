@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import ParaCoord from './ParaCoord.vue'
-import { regionLabel } from '../../../../entities/experiment/lib/regions'
+import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
 
 defineOptions({ name: 'ParaCoordRegionPanel' })
 
@@ -30,12 +30,10 @@ watch(
 
 <template>
   <div>
-    <div
+    <RegionTitle
       v-if="showTitle"
-      class="text-subtitle-1 region-title"
-    >
-      {{ regionLabel(regionParameters) }}
-    </div>
+      :region-parameters="regionParameters"
+    />
     <v-list
       density="compact"
       min-width="180"
@@ -66,9 +64,6 @@ watch(
 
 <style scoped>
 .user-input {
-  margin: 10px
-}
-.region-title {
   margin: 10px
 }
 </style>

@@ -161,4 +161,18 @@ describe('Rank Plot', () => {
         expect(renderRankMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
     })
+
+    it('leaves out trials in which a selected parameter is inactive', async () => {
+        mountComponent()
+
+        await flushPromises()
+
+        const active = { configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }
+        const inactive = { configurations: { frequency: 50 }, results: { runtime: 90 } }
+        allRes.value = [active, inactive]
+
+        await flushPromises()
+
+        expect(renderRankMock.mock.lastCall?.[2]).toEqual([active])
+    })
 })

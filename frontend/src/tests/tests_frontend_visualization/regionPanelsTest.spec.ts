@@ -1,10 +1,13 @@
-import { shallowMount } from '@vue/test-utils'
+import { mount, shallowMount } from '@vue/test-utils'
 import { describe, it, expect, vi } from 'vitest'
 import { createPinia } from 'pinia'
 import { ref } from 'vue'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { VCheckbox, VSelect } from 'vuetify/components'
+import RegionTitle from '../../entities/experiment/ui/RegionTitle.vue'
+import { Rank, RankRegionPanel } from '../../widgets/charts/rank'
 import { Slice, SliceRegionPanel } from '../../widgets/charts/slice'
 import { Contour, ContourRegionPanel } from '../../widgets/charts/contour'
 import { ParaCoord, ParaCoordRegionPanel } from '../../widgets/charts/para-coord'
@@ -90,11 +93,11 @@ describe('Region panels', () => {
             sliceObjective: 'runtime'
         })
 
-        expect(wrapper.text()).toContain('Algorithm.A')
+        expect(wrapper.findComponent(RegionTitle).props('regionParameters')).toEqual([ALPHA, BETA])
 
         await wrapper.setProps({ showTitle: false })
 
-        expect(wrapper.text()).not.toContain('Algorithm.A')
+        expect(wrapper.findComponent(RegionTitle).exists()).toBe(false)
     })
 
     it('contour panel selects the first two parameters of its region that can span an axis', () => {
@@ -138,5 +141,64 @@ describe('Region panels', () => {
         })
 
         expect(wrapper.findComponent(HypImp).props('hypImpParams')).toEqual([ALPHA, FLAG, BETA])
+    })
+
+    it('rank panel selects the first two parameters of its region that can span an axis', () => {
+        const wrapper = mountPanel(RankRegionPanel, {
+            regionParameters: [ALPHA, FLAG, BETA],
+            showTitle: false,
+            rankObjective: 'runtime'
+        })
+
+        const rank = wrapper.findComponent(Rank)
+        expect(rank.props('rankParam1')).toBe(ALPHA)
+        expect(rank.props('rankParam2')).toBe(BETA)
+    })
+
+    it('rank panel never offers the parameter chosen for one axis on the other axis', () => {
+        const wrapper = mountPanel(RankRegionPanel, {
+            regionParameters: [ALPHA, FLAG, BETA],
+            showTitle: false,
+            rankObjective: 'runtime'
+        })
+
+        const [axis1, axis2] = wrapper.findAllComponents(VSelect)
+        expect(axis1.props('items')).toEqual([ALPHA])
+        expect(axis2.props('items')).toEqual([BETA])
+    })
+
+    it('rank panel explains instead of plotting a region with fewer than two parameters', () => {
+        const wrapper = mountPanel(RankRegionPanel, {
+            regionParameters: [GAMMA],
+            showTitle: false,
+            rankObjective: 'runtime'
+        })
+
+        expect(wrapper.findComponent(Rank).exists()).toBe(false)
+        expect(wrapper.text()).toContain('Not enough parameters in this region for a rank plot.')
+    })
+
+    it('hyperparameter importances panel keeps the last selected parameter checked', async () => {
+        // full mount, so that the checkboxes inside the list items are rendered; only the chart is stubbed
+        const wrapper = mount(HypImpRegionPanel, {
+            props: {
+                regionParameters: [ALPHA, BETA],
+                showTitle: false,
+                hypImpObjective: 'runtime'
+            },
+            global: {
+                plugins: [vuetify, createPinia()],
+                stubs: { HypImp: true }
+            }
+        })
+
+        const [alphaBox, betaBox] = wrapper.findAllComponents(VCheckbox)
+        expect(alphaBox.props('disabled')).toBe(false)
+        expect(betaBox.props('disabled')).toBe(false)
+
+        await alphaBox.vm.$emit('update:modelValue', [ALPHA])
+
+        expect(wrapper.findAllComponents(VCheckbox)[0].props('disabled')).toBe(true)
+        expect(wrapper.findAllComponents(VCheckbox)[1].props('disabled')).toBe(false)
     })
 })

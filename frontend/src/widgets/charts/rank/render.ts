@@ -3,6 +3,7 @@ import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from "../../../entities/main/model/plot.store";
 import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
+import { findParameterSpec } from "../../../entities/experiment/lib/search-space";
 
 function getParameterValues(
     parameter: string,
@@ -14,7 +15,7 @@ function getParameterValues(
     );
 
     const searchSpace =
-        (experiment_description.Context?.SearchSpace as Record<string, any> | undefined)?.[cleanIdentifier(parameter)];
+        findParameterSpec(experiment_description, parameter);
 
     // Ordinal parameter
     if (

@@ -13,7 +13,6 @@ import { Heatmap } from './widgets/charts/heatmap'
 // SUPPORTED_MESSAGES / APIMessageBuilder - "PREDICTIONS" is registered but nothing ever sends it),
 // so the surrogate surface can never populate. Re-enable once main-node publishes predictions.
 // import { HeatmapReg } from './widgets/charts/heatmap-reg'
-import { toFullParamName } from './shared/lib'
 
 import { Skeleton } from './widgets/charts/skeleton-chart'
 
@@ -22,7 +21,7 @@ import { HypImpRegionPanel } from './widgets/charts/hyp-imp'
 import { ParaCoordRegionPanel } from './widgets/charts/para-coord'
 import { ParetoFront } from './widgets/charts/pareto-front'
 import { SliceRegionPanel } from './widgets/charts/slice'
-import { Rank } from './widgets/charts/rank'
+import { RankRegionPanel } from './widgets/charts/rank'
 import { ContourRegionPanel } from './widgets/charts/contour'
 import { Edf } from './widgets/charts/edf'
 
@@ -55,21 +54,6 @@ const objectiveNames = computed(() =>
     )
 )
 
-// compute parameters of the experiment for dropdown options
-const parameterNames = computed(() => {
-    const searchSpace =
-        experiment_description.value?.Context?.SearchSpace ?? {};
-
-    return Object.entries(searchSpace)
-        .filter(([name, value]) =>
-            name !== "Structure" &&
-            typeof value === "object" &&
-            value !== null &&
-            "Type" in value
-        )
-        .map(([name]) => toFullParamName(name));
-});
-
 // manage selected dropdown values
 const optHistObjective = ref("")
 const selectedOptHistObjective = computed(() => {
@@ -81,14 +65,6 @@ const selectedParaCoordObjective = computed(() => {
     return paraCoordObjective.value || objectiveNames.value[0] || ""
 })
 
-const rankParam1 = ref("")
-const selectedRankParam1 = computed(() => {
-    return rankParam1.value || parameterNames.value[0] || ""
-})
-const rankParam2 = ref("")
-const selectedRankParam2 = computed(() => {
-    return rankParam2.value || parameterNames.value[1] || ""
-})
 const rankObjective = ref("")
 const selectedRankObjective = computed(() => {
     return rankObjective.value || objectiveNames.value[0] || ""
@@ -141,15 +117,6 @@ watch(
         paretoObjective2.value = objectives[1] ?? ""
         onlyShowParetoFront.value = false
         contourObjective.value = objectives[0] ?? ""
-    },
-    { immediate: true }
-)
-
-watch(
-    parameterNames,
-    (parameters) => {
-        rankParam1.value = parameters[0] ?? ""
-        rankParam2.value = parameters[1] ?? ""
     },
     { immediate: true }
 )
@@ -426,24 +393,6 @@ watch(
               >
                 <div class="chart-block chart-block--rank">
                   <v-select
-                    v-model="rankParam1"
-                    :items="parameterNames"
-                    label="Parameter 1"
-                    density="compact"
-                    variant="outlined"
-                    hide-details
-                    class="user-input"
-                  />
-                  <v-select
-                    v-model="rankParam2"
-                    :items="parameterNames"
-                    label="Parameter 2"
-                    density="compact"
-                    variant="outlined"
-                    hide-details
-                    class="user-input"
-                  />
-                  <v-select
                     v-model="rankObjective"
                     :items="objectiveNames"
                     label="Objective"
@@ -452,9 +401,11 @@ watch(
                     hide-details
                     class="user-input"
                   />
-                  <Rank
-                    :rank-param1="selectedRankParam1"
-                    :rank-param2="selectedRankParam2"
+                  <RankRegionPanel
+                    v-for="(regionParameters, index) in regions"
+                    :key="index"
+                    :region-parameters="regionParameters"
+                    :show-title="regions.length > 1"
                     :rank-objective="selectedRankObjective"
                   />
                 </div>
@@ -622,11 +573,7 @@ watch(
 
 /*
  * Each chart type gets its own semi-opaque colored block, so it's visually clear
- * where one plot's section ends and the next begins - especially now that Slice,
- * Contour, Parallel Coordinates and Hyperparameter Importances can render several
- * stacked region plots inside a single block. Hues are the validated 8-slot
- * categorical palette (dataviz skill), checked against this app's surface color;
- * Heatmap gets a neutral tint instead, since it already carries its own color scale.
+ * where one plot's section ends and the next begins.
  */
 .chart-block {
   border-radius: 8px;

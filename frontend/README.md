@@ -84,8 +84,7 @@ The frontend receives experiment updates via STOMP events (`DEFAULT`, `NEW`, `FI
 
 ## Charts
 
-Which charts an experiment shows is decided by the product configuration's `PlotSelection` block (see
-`main_node/Resources/example_plot_selection/` for an example); a chart with no matching `PlotSelection` entry is
+Which charts an experiment shows is decided by the product configuration's `PlotSelection` block; a chart with no matching `PlotSelection` entry is
 never listed. Once an experiment is running, the "Visible charts" menu toggles which of the selected charts are
 displayed. Most charts are computed client-side from measured trials, but Hyperparameter Importances, Contour and
 Pareto Front are instead computed by `main-node` over the `main_plot_queue` RPC, so they need `main-node` running to

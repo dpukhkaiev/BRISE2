@@ -4,6 +4,7 @@ import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderRank } from '../render'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from '../../../../entities/main'
+import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
 
 defineOptions({ name: 'RankChart' })
 
@@ -27,7 +28,8 @@ async function render() {
         return
     if (!experiment_description.value) 
         return
-    renderRank(plotlyInstance.value, rank.value, allRes.value, props.rankParam1, props.rankParam2, props.rankObjective, experiment_description.value)
+    const trials = trialsWithParameters(allRes.value, [props.rankParam1, props.rankParam2])
+    renderRank(plotlyInstance.value, rank.value, trials, props.rankParam1, props.rankParam2, props.rankObjective, experiment_description.value)
 }
 
 watch(

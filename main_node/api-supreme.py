@@ -14,7 +14,6 @@ from tools.front_API import API
 from tools.rabbit_API_class import RabbitApi
 
 logger = BRISELogConfigurator().get_logger(__name__)
-# from tools.main_mock import run as main_run
 
 # Initialize the API singleton
 API(api_object=RabbitApi(os.getenv("BRISE_EVENT_SERVICE_HOST"), os.getenv("BRISE_EVENT_SERVICE_AMQP_PORT")))

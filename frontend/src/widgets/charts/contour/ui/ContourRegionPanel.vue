@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import Contour from './Contour.vue'
 import { useMainEventStore } from '../../../../entities/main'
-import { regionLabel } from '../../../../entities/experiment/lib/regions'
-import { findParameterSpec, isContourParameter } from '../../../../entities/experiment/lib/search-space'
+import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
+import { findParameterSpec, isAxisParameter } from '../../../../entities/experiment/lib/search-space'
 
 defineOptions({ name: 'ContourRegionPanel' })
 
@@ -24,7 +24,7 @@ const contourParameterNames = computed(() => {
         return []
     }
     return props.regionParameters.filter(param =>
-        isContourParameter(findParameterSpec(description, param))
+        isAxisParameter(findParameterSpec(description, param))
     )
 })
 
@@ -44,12 +44,10 @@ watch(
 
 <template>
   <div>
-    <div
+    <RegionTitle
       v-if="showTitle"
-      class="text-subtitle-1 region-title"
-    >
-      {{ regionLabel(regionParameters) }}
-    </div>
+      :region-parameters="regionParameters"
+    />
     <div
       v-if="contourParameterNames.length < 2"
       class="text-body-2 text-medium-emphasis region-title"

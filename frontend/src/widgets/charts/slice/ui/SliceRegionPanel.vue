@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import Slice from './Slice.vue'
-import { regionLabel } from '../../../../entities/experiment/lib/regions'
+import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
 
 defineOptions({ name: 'SliceRegionPanel' })
 
@@ -25,12 +25,10 @@ watch(
 
 <template>
   <div>
-    <div
+    <RegionTitle
       v-if="showTitle"
-      class="text-subtitle-1 region-title"
-    >
-      {{ regionLabel(regionParameters) }}
-    </div>
+      :region-parameters="regionParameters"
+    />
     <v-select
       v-model="sliceParam"
       :items="regionParameters"
@@ -49,9 +47,6 @@ watch(
 
 <style scoped>
 .user-input {
-  margin: 10px
-}
-.region-title {
   margin: 10px
 }
 </style>
