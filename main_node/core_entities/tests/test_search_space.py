@@ -1,3 +1,6 @@
+from core_entities.search_space import FloatHyperparameter, IntegerHyperparameter, NominalHyperparameter
+
+
 class TestRegions:
     """
     Regions are collected into a set, whose iteration order differs between processes, while the
@@ -32,3 +35,16 @@ class TestRegions:
             "Context.SearchSpace.N0.N01.X.XA",
         ]
         assert [region[0].level for region in search_space.regions] == [0, 1, 1, 2]
+
+
+class TestDefaultValues:
+
+    def test_declared_zero_default_is_kept(self):
+        assert IntegerHyperparameter("i", 0, 0, 10, default_value=0).get_default()["i"] == 0
+        assert NominalHyperparameter("n", 0, [0, 1, 2], default_value=0).get_default()["n"] == 0
+        assert FloatHyperparameter("f", 0, 0.0, 1.0, default_value=0.0).get_default()["f"] == 0.0
+
+    def test_missing_default_is_the_middle_of_the_bounds(self):
+        assert IntegerHyperparameter("i", 0, 3, 7).get_default()["i"] == 5
+        assert FloatHyperparameter("f", 0, 2.0, 4.0).get_default()["f"] == 3.0
+        assert NominalHyperparameter("n", 0, ["x", "y", "z"]).get_default()["n"] == "y"

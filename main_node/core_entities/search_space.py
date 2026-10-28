@@ -162,7 +162,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
         # Each category could 'activate' children, so list of activated children is 'behind' each category.
         self._categories: MutableMapping[_CATEGORY, List[Hyperparameter]] = OrderedDict({cat: [] for cat in categories})
 
-        self._default_value = default_value or list(self._categories)[len(self._categories) // 2]
+        self._default_value = default_value if default_value is not None else list(self._categories)[len(self._categories) // 2]
 
     @property
     def categories(self):
@@ -350,7 +350,8 @@ class IntegerHyperparameter(NumericHyperparameter):
                  default_value: Union[int, float] = None,
                  parent: Hyperparameter = None,
                  activation_category: _CATEGORY = None):
-        default_value = default_value or (upper - lower) // 2
+        if default_value is None:
+            default_value = lower + (upper - lower) // 2
         super().__init__(name, level, int(lower), int(upper), default_value, parent, activation_category)
         self.type = "Integer"
 
@@ -378,7 +379,8 @@ class FloatHyperparameter(NumericHyperparameter):
                  default_value: Union[int, float] = None,
                  parent: Hyperparameter = None,
                  activation_category: _CATEGORY = None):
-        default_value = default_value or (upper - lower) / 2
+        if default_value is None:
+            default_value = lower + (upper - lower) / 2
         super().__init__(name, level, float(lower), float(upper), default_value, parent, activation_category)
         self.type = "Float"
 
