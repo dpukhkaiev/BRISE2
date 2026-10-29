@@ -11,6 +11,7 @@ from core_entities.search_space import (
     NominalHyperparameter,
     OrdinalHyperparameter,
 )
+from configuration_selection.model.configuration_transformer.binary_transformer import BinaryTransformer
 from configuration_selection.model.configuration_transformer.sklearn_column_encoder import SklearnColumnTransformer
 from configuration_selection.model.configuration_transformer.sklearn_binary_transformer import SklearnBinaryTransformer
 from configuration_selection.model.configuration_transformer.sklearn_float_transformer import SklearnFloatTransformer
@@ -21,6 +22,8 @@ FLOAT = FloatHyperparameter("f", 0, 2.0, 6.0)
 INTEGER = IntegerHyperparameter("i", 0, 1, 10)
 ORDINAL = OrdinalHyperparameter("o", 0, ["a", "b", "c", "d"])
 NOMINAL = NominalHyperparameter("n", 0, ["a", "b", "c", "d"])
+# five categories take three bits in a binary code, so three of the eight codes are unused
+BIT_CODED = NominalHyperparameter("b", 0, ["a", "b", "c", "d", "e"])
 
 
 def _transformer(transformer_class, hyperparameter):
@@ -80,7 +83,8 @@ class TestFittedState:
 
     def test_every_pipeline_a_transformer_builds_is_fitted(self):
         cases = ((SklearnFloatTransformer, FLOAT, 3.0), (SklearnIntegerTransformer, INTEGER, 5),
-                 (SklearnOrdinalTransformer, ORDINAL, "b"), (SklearnBinaryTransformer, NOMINAL, "b"))
+                 (SklearnOrdinalTransformer, ORDINAL, "b"), (SklearnBinaryTransformer, NOMINAL, "b"),
+                 (BinaryTransformer, BIT_CODED, "b"))
         for transformer_class, hyperparameter, value in cases:
             transformer = _transformer(transformer_class, hyperparameter)
 
@@ -156,3 +160,44 @@ class TestEqualWidthDecoding:
         decoded = self._decode(transformer, FLOAT, 2.0, [0.0, 0.25, 1.0])
 
         assert decoded.tolist() == [2.0, 3.0, 6.0]
+
+
+class TestBinaryCode:
+    """
+    BinaryTransformer encodes a nominal parameter as the binary code of its category's index, one column per bit.
+    """
+
+    def test_a_category_encodes_to_the_binary_code_of_its_index_in_any_batch(self):
+        transformer = _transformer(BinaryTransformer, BIT_CODED)
+
+        alone = transformer.transform(pd.DataFrame({"b": ["c"]}))
+        batch = transformer.transform(pd.DataFrame({"b": ["a", "c", "e"]}))
+
+        assert alone.values.tolist() == [[0, 1, 0]]
+        assert batch.values.tolist() == [[0, 0, 0], [0, 1, 0], [1, 0, 0]]
+
+    def test_transforming_a_batch_gives_the_same_encoding_as_transforming_each_row_alone(self):
+        transformer = _transformer(BinaryTransformer, BIT_CODED)
+
+        batch = transformer.transform(pd.DataFrame({"b": BIT_CODED.categories})).values.tolist()
+        rows = [transformer.transform(pd.DataFrame({"b": [c]})).values.tolist()[0] for c in BIT_CODED.categories]
+
+        assert batch == rows
+
+    def test_decoding_an_exact_code_returns_its_category(self):
+        transformer = _transformer(BinaryTransformer, BIT_CODED)
+        encoded = transformer.transform(pd.DataFrame({"b": BIT_CODED.categories})).astype(float)
+
+        assert transformer.inverse_transform(encoded)["b"].tolist() == list(BIT_CODED.categories)
+
+    def test_a_continuous_bit_vector_decodes_to_the_category_with_the_nearest_code(self):
+        """
+        A vector that is not a valid code is decoded to the nearest valid one. 
+        Thus, categories get unequal shares.
+        """
+        transformer = _transformer(BinaryTransformer, BIT_CODED)
+        columns = transformer.transform(pd.DataFrame({"b": ["a"]})).columns
+        proposals = pd.DataFrame([[0.1, 0.2, 0.1], [0.9, 0.9, 0.9], [0.9, 0.1, 0.4]], columns=columns)
+
+        # nearest codes: 000 (a); 011 (d), as the unused code 111 is not valid; 100 (e)
+        assert transformer.inverse_transform(proposals)["b"].tolist() == ["a", "d", "e"]

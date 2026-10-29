@@ -13,6 +13,7 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
 
     Decoding is done with O(n) complexity by selecting the value of parameter, binary representation of which is the
     closest to one of the existing categories in terms of Euclidean distance.
+    The categories get unequal shares of the bit space, unless their number is a power of two.
 
     Choices object should be hashable.
     """
