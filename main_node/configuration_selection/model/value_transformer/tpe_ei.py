@@ -47,10 +47,10 @@ class TpeEi(AcquisitionFunction):
         bad = None
         for name in names:
             if "probability_good" in name:
-                good = objective_function_values[name][0]  # value of pd.Series
+                good = objective_function_values[name].to_numpy(dtype=float)  # one value per configuration
                 continue
             if "probability_bad" in name:
-                bad = objective_function_values[name][0]
+                bad = objective_function_values[name].to_numpy(dtype=float)
         if good is None or bad is None:
             raise ValueError("Check Tree Parzen Estimator implementation for output columns!")
 
@@ -60,13 +60,11 @@ class TpeEi(AcquisitionFunction):
             ratio = good / bad
 
         # Applies if prediction is infinity.
-        if not np.isfinite(ratio):
-            # right now, this happens because a KDE does not contain all values for a categorical parameter
-            # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
-            # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
-            if np.isfinite(good):
-                ratio = good
+        # right now, this happens because a KDE does not contain all values for a categorical parameter
+        # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
+        # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
+        ratio = np.where(~np.isfinite(ratio) & np.isfinite(good), good, ratio)
 
-        result = pd.DataFrame([ratio], columns=["ratio"])
+        result = pd.DataFrame({"ratio": ratio})
 
         return result
