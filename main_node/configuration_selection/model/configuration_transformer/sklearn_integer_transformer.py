@@ -59,7 +59,18 @@ class SklearnIntegerTransformer(IntegerTransformer):
         return result
 
     def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
-        return super()._inverse_sklearn_transform(transformed_features, self.mapping_old_feature_pipeline)
+        # If optimizers propose continuous values, scaling them back and casting to int would
+        # truncate, so that the upper bound is reachable only at exactly 1. Decode through the hyperparameter's
+        # equal-width bins instead (Hyperparameter.transform), the same rule sampling uses.
+        decoded = []
+        for feature_name in self.mapping_old_feature_pipeline:
+            column = self.mapping_old_new_features[feature_name][0]
+            if column not in transformed_features.columns:
+                continue
+            hyperparameter = list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0]
+            values = [hyperparameter.transform(min(max(value, 0), 1)) for value in transformed_features[column]]
+            decoded.append(pd.DataFrame({feature_name: values}, index=transformed_features.index))
+        return pd.concat(decoded, axis=1) if decoded else pd.DataFrame()
 
     def _get_or_build_pipeline(self, feature_name: str) -> Pipeline:
         """

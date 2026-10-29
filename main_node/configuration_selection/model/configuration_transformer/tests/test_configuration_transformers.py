@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from sklearn.exceptions import NotFittedError
@@ -24,6 +25,10 @@ NOMINAL = NominalHyperparameter("n", 0, ["a", "b", "c", "d"])
 
 def _transformer(transformer_class, hyperparameter):
     return transformer_class({"Transformer": {"Type": "test"}}, (hyperparameter,))
+
+
+def _shares(decoded: pd.Series) -> pd.Series:
+    return decoded.value_counts(normalize=True).sort_index()
 
 
 class TestDomainFitting:
@@ -84,3 +89,70 @@ class TestFittedState:
             assert len(transformer.mapping_old_feature_pipeline) == 1
             for pipeline in transformer.mapping_old_feature_pipeline.values():
                 check_is_fitted(pipeline)
+
+
+class TestEqualWidthDecoding:
+    """
+    Some Optimizers (e.g. MOEA) propose continuous values, so every category and every integer must get an equal share
+    of the range they are drawn from, including the first and the last one.
+    """
+
+    @staticmethod
+    def _decode(transformer, hyperparameter, any_valid_value, encoded_values):
+        # a transformer knows its pipelines and encoded column names only after its first transform()
+        encoded_name = transformer.transform(pd.DataFrame({hyperparameter.name: [any_valid_value]})).columns[0]
+        return transformer.inverse_transform(pd.DataFrame({encoded_name: encoded_values}))[hyperparameter.name]
+
+    def test_ordinal_categories_get_equal_shares_of_the_encoded_range(self):
+        transformer = _transformer(SklearnOrdinalTransformer, ORDINAL)
+
+        decoded = self._decode(transformer, ORDINAL, "a", np.linspace(0, 3, 4000))
+
+        assert list(_shares(decoded).index) == ["a", "b", "c", "d"]
+        assert np.allclose(_shares(decoded).values, 0.25, atol=0.01)
+
+    def test_nominal_categories_get_equal_shares_of_the_encoded_range(self):
+        transformer = _transformer(SklearnBinaryTransformer, NOMINAL)
+
+        decoded = self._decode(transformer, NOMINAL, "a", np.linspace(0, 3, 4000))
+
+        assert list(_shares(decoded).index) == ["a", "b", "c", "d"]
+        assert np.allclose(_shares(decoded).values, 0.25, atol=0.01)
+
+    def test_decoding_an_exact_category_index_returns_that_category(self):
+        for transformer_class, hyperparameter in ((SklearnOrdinalTransformer, ORDINAL), (SklearnBinaryTransformer, NOMINAL)):
+            transformer = _transformer(transformer_class, hyperparameter)
+
+            decoded = self._decode(transformer, hyperparameter, "a", [0.0, 1.0, 2.0, 3.0])
+
+            assert decoded.tolist() == ["a", "b", "c", "d"]
+
+    def test_a_single_category_is_always_decoded_to_itself(self):
+        hyperparameter = NominalHyperparameter("n", 0, ["only"])
+        transformer = _transformer(SklearnBinaryTransformer, hyperparameter)
+
+        decoded = self._decode(transformer, hyperparameter, "only", [0.0, 0.4, 1.0])
+
+        assert decoded.tolist() == ["only"] * 3
+
+    def test_integers_get_equal_shares_of_the_encoded_range(self):
+        transformer = _transformer(SklearnIntegerTransformer, INTEGER)
+
+        decoded = self._decode(transformer, INTEGER, 1, np.linspace(0, 1, 10000))
+
+        assert list(_shares(decoded).index) == list(range(1, 11))
+        assert np.allclose(_shares(decoded).values, 0.1, atol=0.01)
+
+    def test_the_ends_of_the_encoded_range_decode_to_the_integer_bounds(self):
+        transformer = _transformer(SklearnIntegerTransformer, INTEGER)
+
+        decoded = self._decode(transformer, INTEGER, 1, [0.0, 1.0])
+
+        assert decoded.tolist() == [1, 10]
+
+    def test_floats_decode_linearly_between_their_bounds(self):
+        transformer = _transformer(SklearnFloatTransformer, FLOAT)
+
+        decoded = self._decode(transformer, FLOAT, 2.0, [0.0, 0.25, 1.0])
+
+        assert decoded.tolist() == [2.0, 3.0, 6.0]
