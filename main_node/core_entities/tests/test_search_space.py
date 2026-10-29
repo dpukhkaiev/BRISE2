@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 from core_entities.search_space import FloatHyperparameter, IntegerHyperparameter, NominalHyperparameter
 
 
@@ -35,6 +38,36 @@ class TestRegions:
             "Context.SearchSpace.N0.N01.X.XA",
         ]
         assert [region[0].level for region in search_space.regions] == [0, 1, 1, 2]
+
+
+class TestEqualWidthBins:
+    """
+    Sampling maps a value of [0, 1] to a category or an integer, so each of them must get an equal share of it.
+    """
+
+    @staticmethod
+    def _counts(hyperparameter, resolution=10000):
+        values = [hyperparameter.transform(v) for v in np.linspace(0, 1, resolution)]
+        return pd.Series(values).value_counts(normalize=True).sort_index()
+
+    def test_every_category_gets_an_equal_share(self):
+        shares = self._counts(NominalHyperparameter("n", 0, list("abcde")))
+
+        assert list(shares.index) == list("abcde")
+        assert np.allclose(shares.values, 0.2, atol=0.01)
+
+    def test_every_integer_gets_an_equal_share(self):
+        shares = self._counts(IntegerHyperparameter("i", 0, 1, 10))
+
+        assert list(shares.index) == list(range(1, 11))
+        assert np.allclose(shares.values, 0.1, atol=0.01)
+
+    def test_the_ends_of_the_range_map_to_the_bounds(self):
+        integer = IntegerHyperparameter("i", 0, 3, 7, default_value=5)
+        nominal = NominalHyperparameter("n", 0, ["x", "y", "z"])
+
+        assert (integer.transform(0), integer.transform(1)) == (3, 7)
+        assert (nominal.transform(0), nominal.transform(1)) == ("x", "z")
 
 
 class TestDefaultValues:
