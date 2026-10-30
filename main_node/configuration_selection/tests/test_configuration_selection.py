@@ -94,7 +94,7 @@ class TestConfigurationSelection:
 
     def test_2(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
+         ['1 nom 1 float 1 nom 1 int 1 ord', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
          'surr.vt.none', 'surr.ct',  'optimizer.nsga2-moead', 'opt.ct',, 'opt.vt.none'
          'validator.quality', 'validator.internal.none' , 'cs.random',
          'ted.none', 'mr.none', 'mtl.none', 'sc.guaranteed', 'rm.quality', 'dch.random', 'ss.sobol']
@@ -124,7 +124,7 @@ class TestConfigurationSelection:
 
     def test_3(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
+         ['1 nom 1 float 1 nom 1 int 1 ord', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
          'surr.vt.none', 'surr.ct', 'optimizer.gaco', 'optimizer.gaco', 'optimizer.gaco',
          'optimizer.gaco', 'optimizer.gaco', 'opt.vt', 'opt.ct','validator.mock', 'validator.internal.none',
          'cs.best', 'ted.none', 'mr.none', 'mtl.none', 'sc.bad', 'rm.experiment_aware', 'dch.none', 'ss.mersenne']
@@ -319,7 +319,7 @@ class TestConfigurationSelection:
 
     def test_8(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
+         ['1 nom 1 float 1 nom 1 int 1 ord', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
          'surr.vt', 'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct.none',
          'validator.mock-q', 'validator.internal.none-y', 'cs.best', 'ted.none',
          'mr.none', 'mtl.none', 'sc.time', 'rm.quality', 'dch.none', 'ss.sobol']
@@ -334,17 +334,10 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[second_region].mapping_surrogate_objective) == 9  # PF 2 Obj 4 Surr 1 MO
 
         configs = []
-        for i in range(40):
-            j = i
-            if i > 19:
-                j = i - 20
+        for i in range(20):
             predicted, _ = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = get_configurations_all_types[j]['Result']
-            if not i > 19:
-                del results["Y3"]
-                del results["Y4"]
-                del results["Y5"]
-            predicted[0].results = results
+            measured = get_configurations_all_types[i]['Result']
+            predicted[0].results = {"Y1": measured["Y1"], "Y2": measured["Y2"]}
             predicted[0].status['measured'] = True
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
@@ -463,7 +456,7 @@ class TestConfigurationSelection:
 
     def test_11(self, get_experiment, get_workers, get_configurations_all_types):
         """
-        ['1 nom 1 float 1 nom 1 ord 1 float, 'hierarchical', 'so', 'mo.none', 'mab-brr',
+        ['1 nom 1 float 1 nom 1 int 1 ord, 'hierarchical', 'so', 'mo.none', 'mab-brr',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.bee-gwo', 'opt.vt.none', 'opt.ct.y-none',
         'validator.mock', 'validator.internal.none', 'cs.random', 'ted.quantity', 'mr.none',
         'mtl.oldnewratio-onlybest', 'sc.guaranteed', 'rm.experiment_aware', 'dch.none', 'ss.mersenne']
@@ -520,7 +513,7 @@ class TestConfigurationSelection:
 
     def test_12(self, get_experiment, get_workers, get_configurations_all_types):
         """
-        ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', 'so', 'mo.none', 'framab-tpe',
+        ['1 nom 1 float 1 nom 1 int 1 ord', 'hierarchical', 'so', 'mo.none', 'framab-tpe',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.de-cmaes', 'opt.vt.none-af', 'opt.ct.y-none',
         'validator.mock', 'validator.internal.none', 'cs.best', 'ted.none', 'mr.fsl', 'mtl.none',
         'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
@@ -577,7 +570,7 @@ class TestConfigurationSelection:
 
     def test_13(self, get_experiment, get_workers, get_configurations_all_types):
         """
-        ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
+        ['1 nom 1 float 1 nom 1 int 1 ord', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
         'optimizer.sade', 'opt.vt.none', 'opt.ct', 'validator.mock', 'validator.internal.none', 'cs.random',
         'ted.quantity', 'mr.dynamic', 'mtl.none', 'sc.bad', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
         """

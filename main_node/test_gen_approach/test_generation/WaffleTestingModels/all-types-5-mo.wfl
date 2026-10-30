@@ -118,14 +118,14 @@ Context {
     N0 : NominalHyperparameter {
         N01 : Category {
             F1 : FloatHyperparameter
-            I1 : IntegerHyperparameter
-        }
-        N02 : Category {
             N1 : NominalHyperparameter {
                 N11 : Category
                 N12 : Category
-                [Default = "Context.SearchSpace.N0.N02.N1.N11"]
+                [Default = "Context.SearchSpace.N0.N01.N1.N11"]
             }
+        }
+        N02 : Category {
+            I1 : IntegerHyperparameter
             O1 : OrdinalHyperparameter {
                 O11 : Category
                 O12 : Category
