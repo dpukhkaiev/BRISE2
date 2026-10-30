@@ -15,7 +15,8 @@ class RandomSearch(Optimizer):
 
     def optimize(self, surrogate: Surrogate) -> pd.DataFrame:
         """
-        :returns: pd.Dataframe: (n,m), where n is sampling size and m the number of parameters
+        :returns: pd.Dataframe: (n,m), where n is sampling size and m the number of parameters, followed by the
+        predictions after the optimizer's value transformers. The best candidate comes first.
         """
         sampled = [self.sampler.sample() for _ in range(self.sampling_size)]
         if not sampled:
@@ -23,6 +24,11 @@ class RandomSearch(Optimizer):
 
         sampled_configurations = pd.concat(sampled, ignore_index=True)
         predicted_values = surrogate.predict_batch(sampled_configurations)
-        predicted = sampled_configurations.join(predicted_values)
+        labels = self._transform_values(predicted_values)
+        if len(self.value_transformers) > 0:
+            names = ["Y"] if surrogate.scalarized else list(self.objectives.keys())
+            if len(names) == len(labels.columns):
+                labels.columns = names
 
-        return predicted
+        predicted = sampled_configurations.join(labels)
+        return self._rank_candidates(predicted, list(labels.columns))

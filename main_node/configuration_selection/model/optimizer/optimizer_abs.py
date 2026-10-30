@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
-from typing import Dict, Tuple, Mapping
+import pygmo as pg
+from typing import Dict, List, Tuple, Mapping
 from abc import ABC, abstractmethod
 
 from configuration_selection.model.configuration_transformer.configuration_transformer_orchestrator import ConfigurationTransformerOrchestrator
@@ -43,9 +45,39 @@ class Optimizer(ABC):
     def optimize(self, surrogate: Surrogate) -> pd.DataFrame:
         """
         :param surrogate: surrogate used for evaluation.
-        :return: a list of evaluated configurations, sorted by their quality.
+        :return: a list of evaluated configurations, sorted by their quality, the best first.
         """
         pass
+
+    def _get_direction_signs(self, label_columns: List[str]) -> np.ndarray:
+        """
+        Gives the direction of each column as a sign.
+        :param label_columns: columns holding the (value-transformed) predictions of candidates: objective names, or the
+        single column produced by a value transformer.
+        :return: +1 for a column to be minimized and -1 for one to be maximized, so that multiplying a column by its
+        sign makes it a column to be minimized. A column that is not an objective follows the direction of the first
+        objective.
+        """
+        first_objective = next(iter(self.objectives.values()))
+        return np.array([1.0 if self.objectives.get(column, first_objective)["Minimization"] else -1.0
+                         for column in label_columns])
+
+    def _rank_candidates(self, candidates: pd.DataFrame, label_columns: List[str]) -> pd.DataFrame:
+        """
+        Sorts candidates by their predicted quality, the best first, each column in its own direction.
+        :param candidates: parameter values of candidates, followed by their predictions.
+        :param label_columns: names of the columns that hold the predictions to rank: one per objective,
+        or the single column of a value transformer.
+        :return: the same candidates, reordered, with a default index.
+        """
+        if candidates.empty:
+            return candidates
+        values_to_minimize = candidates[label_columns].to_numpy(dtype=float) * self._get_direction_signs(label_columns)
+        if len(label_columns) == 1:
+            order = np.argsort(values_to_minimize[:, 0], kind="stable")
+        else:
+            order = pg.sort_population_mo(values_to_minimize.tolist())
+        return candidates.iloc[order].reset_index(drop=True)
 
     def _resolve_configuration_transformers(self, surrogate: Surrogate) -> Tuple[bool, bool]:
         """

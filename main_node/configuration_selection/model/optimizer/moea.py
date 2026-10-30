@@ -105,10 +105,9 @@ class MOEA(Optimizer):
             population = algo.evolve(population)
 
         optimized_features = pd.DataFrame(population.get_x(), columns=self.params)
-        if surrogate.scalarized:
-            optimized_labels = pd.DataFrame(population.get_f(), columns=["Y"])
-        else:
-            optimized_labels = pd.DataFrame(population.get_f(), columns=list(self.objectives.keys()))
+        label_columns = ["Y"] if surrogate.scalarized else list(self.objectives.keys())
+        # pygmo minimizes, so the fitness of a maximized objective is negated; restore the predicted values
+        optimized_labels = pd.DataFrame(population.get_f() * problem.signs, columns=label_columns)
 
         for p, val_ind in self.masked_params.items():
             optimized_features.insert(loc=val_ind[1], column=p, value=val_ind[0])
@@ -116,7 +115,7 @@ class MOEA(Optimizer):
         optimized_features = self._inverse_transform_configuration(optimized_features)  # inverse transform
 
         result = optimized_features.join(optimized_labels)
-        return result
+        return self._rank_candidates(result, label_columns)
 
     def _inverse_transform_configuration(self, optimized_features: pd.DataFrame) -> pd.DataFrame:
         result = super()._inverse_transform_configuration(optimized_features)
@@ -140,6 +139,8 @@ class MOEA(Optimizer):
             self._optimizer: MOEA = optimizer
             self._bounds = self._optimizer.bounds
             self._objectives = self._optimizer.objectives
+            label_columns = ["Y"] if surrogate.scalarized else list(self._objectives.keys())
+            self.signs = self._optimizer._get_direction_signs(label_columns)
             self._params = self._optimizer.params
             self._transform_surrogate, self._inverse_transform_optimizer = (
                 self._optimizer._resolve_configuration_transformers(surrogate))
@@ -163,7 +164,7 @@ class MOEA(Optimizer):
             result = self._surrogate.predict(x, self._transform_surrogate)
 
             transformed_result = self._optimizer._transform_values(result)
-            return transformed_result.values.flatten().tolist()
+            return (transformed_result.values.flatten() * self.signs).tolist()
 
         def get_nobj(self):
             return len(self._objectives) if not self._surrogate.scalarized else 1
