@@ -37,7 +37,7 @@ class SklearnBinaryTransformer(BinaryTransformer):
             if transformed_features.empty:
                 transformed_features = pd.DataFrame(transformed_feature)
             else:
-                transformed_features = pd.concat([transformed_features, transformed_feature])
+                transformed_features = pd.concat([transformed_features, transformed_feature], axis=1)
             self.mapping_old_new_features[feature_name] = transformed_feature.columns.tolist()
 
         transformed_features['temp_index'] = range(1, len(transformed_features) + 1)

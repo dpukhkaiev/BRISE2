@@ -201,3 +201,54 @@ class TestBinaryCode:
 
         # nearest codes: 000 (a); 011 (d), as the unused code 111 is not valid; 100 (e)
         assert transformer.inverse_transform(proposals)["b"].tolist() == ["a", "d", "e"]
+
+
+TWO_PARAMETERS = [
+    (SklearnFloatTransformer, FloatHyperparameter("f1", 0, 2.0, 6.0), FloatHyperparameter("f2", 0, 0.0, 1.0),
+     [2.0, 4.0, 6.0], [0.0, 0.5, 1.0]),
+    (SklearnIntegerTransformer, IntegerHyperparameter("i1", 0, 1, 10), IntegerHyperparameter("i2", 0, 0, 4),
+     [1, 5, 10], [0, 2, 4]),
+    (SklearnOrdinalTransformer, OrdinalHyperparameter("o1", 0, ["a", "b", "c"]),
+     OrdinalHyperparameter("o2", 0, ["x", "y", "z"]), ["a", "b", "c"], ["z", "y", "x"]),
+    (SklearnBinaryTransformer, NominalHyperparameter("n1", 0, ["a", "b", "c"]),
+     NominalHyperparameter("n2", 0, ["x", "y", "z"]), ["a", "b", "c"], ["z", "y", "x"]),
+    (BinaryTransformer, NominalHyperparameter("n1", 0, ["a", "b", "c", "d", "e"]),
+     NominalHyperparameter("n2", 0, ["x", "y", "z"]), ["a", "c", "e"], ["z", "y", "x"]),
+]
+
+
+@pytest.mark.parametrize("transformer_class, first, second, first_values, second_values", TWO_PARAMETERS,
+                         ids=lambda value: value.__name__ if isinstance(value, type) else None)
+class TestSeveralParameters:
+    """
+    A transformer can be responsible for several parameters, which it must handle side by side in one frame.
+    """
+
+    @staticmethod
+    def _setup(transformer_class, first, second, first_values, second_values):
+        transformer = transformer_class({"Transformer": {"Type": "test"}}, (first, second))
+        return transformer, pd.DataFrame({first.name: first_values, second.name: second_values})
+
+    def test_transforming_several_parameters_at_once_equals_transforming_each_alone(
+            self, transformer_class, first, second, first_values, second_values):
+        transformer, features = self._setup(transformer_class, first, second, first_values, second_values)
+
+        together = transformer.transform(features)
+        alone = transformer.transform(features[[first.name]]).join(transformer.transform(features[[second.name]]))
+
+        # isna() marks the missing cells, the first any() reduces each column, the second any() the whole frame
+        assert not together.isna().any().any()
+        pd.testing.assert_frame_equal(together, alone)
+
+    def test_decoding_several_parameters_at_once_equals_decoding_each_alone(
+            self, transformer_class, first, second, first_values, second_values):
+        transformer, features = self._setup(transformer_class, first, second, first_values, second_values)
+        first_encoded = transformer.transform(features[[first.name]])
+        second_encoded = transformer.transform(features[[second.name]])
+
+        together = transformer.inverse_transform(first_encoded.join(second_encoded))
+        alone = transformer.inverse_transform(first_encoded).join(transformer.inverse_transform(second_encoded))
+
+        # isna() marks the missing cells, the first any() reduces each column, the second any() the whole frame
+        assert not together.isna().any().any()
+        pd.testing.assert_frame_equal(together, alone)

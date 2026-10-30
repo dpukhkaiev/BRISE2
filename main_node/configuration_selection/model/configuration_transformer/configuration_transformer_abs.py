@@ -42,7 +42,7 @@ class ConfigurationTransformer(ABC):
             if result.empty:
                 result = transformed
             else:
-                result = pd.concat([result, transformed])
+                result = pd.concat([result, transformed], axis=1)
         return result
 
     def _filter_relevant_features(self, features: pd.DataFrame) -> pd.DataFrame:
