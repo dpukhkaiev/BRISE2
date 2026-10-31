@@ -18,10 +18,19 @@ def run_benchmark():
         try:
             # ---    Add User defined benchmark scenarios execution below  ---#
             # --- Possible variants: benchmark_test, fill_db, benchmark_distribution_modes,
-            # --- benchmark_hierarchical_multi_point ---#
+            # --- benchmark_hierarchical_multi_point, benchmark_successive_halving,
+            # --- benchmark_successive_halving_hh ---#
             # runner.fill_db()
             # runner.benchmark_distribution_modes()
-            runner.benchmark_hierarchical_multi_point(number_of_points=2)
+            # runner.benchmark_hierarchical_multi_point(number_of_points=2)
+            # runner.benchmark_successive_halving(eta=3, n=9, min_budget=1, max_budget=9, number_of_brackets=3)
+            # Successive Halving + multi-point on the TSP hyper-heuristic (kroA100.tsp).
+            # Minimizes the tour length, one Task = one LLH run of seconds_per_task
+            # seconds from scratch. number_of_workers only sizes the safety-net
+            # timeouts, it has to match `./brise.sh -w N`.
+            runner.benchmark_successive_halving_hh(eta=3, n=9, min_budget=1, max_budget=9,
+                                                   number_of_brackets=3, number_of_repetitions=1,
+                                                   seconds_per_task=30, number_of_workers=3)
 
             # --- Helper method to move outdated experiments from `./results` folder ---#
             runner.move_redundant_experiments(location=runner.results_storage + "outdated/")

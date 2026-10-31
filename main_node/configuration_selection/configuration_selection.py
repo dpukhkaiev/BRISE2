@@ -48,6 +48,10 @@ class ConfigurationSelection:
         # let results — and therefore selection — overlap.
         self._selection_lock = threading.Lock()
 
+        # Called with (published_count, wave_token) once a wave is dispatched; set
+        # by the core when Racing owns the loop (MainThread).
+        self.wave_dispatched_callback = None
+
         self.logger = logging.getLogger(__name__)
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
             self.connection_thread = self._EventServiceConnection(self)
@@ -71,7 +75,14 @@ class ConfigurationSelection:
                                 * configs_to_be_evaluated: contains all parameters for the flat search space
                                 * hierarchical_configs: the way a configuration is being sent to the worker
         """
-        needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
+        wave = json.loads(body.decode())
+        needed_configs = wave.get("worker_capacity", 1)
+        # Set by the Racing layer: the budget the whole wave is measured with.
+        # Without it the repeater falls back to its global task count.
+        task_budget = wave.get("task_budget")
+        # Dates the rung, so the strategy recognises a late dispatch report as stale.
+        wave_token = wave.get("wave_token")
+        requested_configs = needed_configs
 
         predicted_configs = []
         configs_to_be_evaluated = []
@@ -203,6 +214,8 @@ class ConfigurationSelection:
                 dispatch_msg = f"Sending configuration {c} to be measured."
                 self.logger.info(dispatch_msg)
                 c_to_send = deepcopy(c)
+                c_to_send.task_budget = task_budget
+                c_to_send.rung_token = wave_token
                 if self.experiment.search_space.is_flat:
                     c_to_send.parameters = self.experiment.search_space.transform_flat_parameters_to_hierarchic(
                         c.parameters)
@@ -213,7 +226,28 @@ class ConfigurationSelection:
                             routing_key=self.experiment.unique_id,
                             body=json.dumps({"configuration": c_to_send.to_json()}))
 
+        if len(configs_to_be_evaluated) < requested_configs:
+            self.logger.warning(f"Wave requested {requested_configs} Configuration(s) but only "
+                                f"{len(configs_to_be_evaluated)} distinct one(s) could be proposed.")
+
+        # Always report: a barrier cannot tell a still-publishing wave from a
+        # finished one that came up short.
+        self._report_dispatched(len(configs_to_be_evaluated), wave_token)
+
         return configs_to_be_evaluated, hierarchical_configs
+
+    def _report_dispatched(self, number_of_configurations: int, wave_token) -> None:
+        """
+        Tell the core how many Configurations this wave really published. The wave
+        is already on its way, so a broken listener must not take this thread down.
+        """
+        if self.wave_dispatched_callback is None:
+            return
+        try:
+            self.wave_dispatched_callback(number_of_configurations, wave_token)
+        except Exception:
+            self.logger.exception(f"Failed to report a dispatched wave of "
+                                  f"{number_of_configurations} Configuration(s).")
 
     def _regular_prediction(self, needed_configs: int) -> List[Configuration]:
         """

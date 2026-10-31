@@ -171,6 +171,18 @@ def test_hierarchical_multi_point_returns_exactly_n_configs():
         f"{[dict(c.parameters) for c in result]}")
 
 
+def test_hierarchical_multi_point_shares_one_proposal_batch_id():
+    """All points of one proposal carry the same, non-empty batch id."""
+    predictor = _build_predictor(number_of_points=2)
+    first = predictor.predict([], sample=False)
+    batch_ids = {config.proposal_batch_id for config in first}
+    assert len(batch_ids) == 1 and None not in batch_ids, batch_ids
+
+    # a second proposal is a distinct build and gets its own batch id
+    second = predictor.predict([], sample=False)
+    assert second[0].proposal_batch_id != first[0].proposal_batch_id
+
+
 def test_hierarchical_multi_point_configs_are_single_branch():
     result = _build_predictor(number_of_points=2).predict([], sample=False)
     for config in result:

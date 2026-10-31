@@ -6,23 +6,28 @@ import logging
 import os
 import pickle
 import threading
+from copy import deepcopy
 from enum import Enum
 from sys import argv
 
 import pika
 from configuration_selection.configuration_selection import ConfigurationSelection
 from default_config_handler.default_configuration_handler_orchestrator import DefaultConfigHandlerOrchestrator
+from configuration_racing.racing_abs import DecisionKind, RacingDecision
+from configuration_racing.racing_orchestrator import RacingOrchestrator
 from core_entities.configuration import Configuration
 from core_entities.experiment import Experiment
 from core_entities.search_space import Hyperparameter, get_search_space_record
 
 from logger.default_logger import BRISELogConfigurator
+from repeater.budget_type import is_task_time_budget
 from repeater.repeater_selector import RepeaterOrchestration
 from stop_condition.stop_condition_selector import (
     launch_stop_condition_threads
 )
 from tools.front_API import API
 from tools.initial_config import load_experiment_setup
+from tools.rabbitmq_common_tools import publish
 
 from tools.mongo_dao import MongoDB
 from WorkerServiceClient.WSClient_events import WSClient
@@ -64,6 +69,14 @@ class MainThread(threading.Thread):
         self.wsc_client: WSClient = None
         self.database: MongoDB = None
         self.is_transfer_enabled = False
+        self.configuration_selection: ConfigurationSelection = None
+        # Optional Racing controller (Successive Halving / Hyperband). When present
+        # it owns the loop cadence - rungs, promotions, brackets - instead of the
+        # default per-result self-clocking. None keeps the default behaviour.
+        self.racing = None
+        # Rung safety net: armed by the decision that opens a rung, cancelled by
+        # the one that closes it.
+        self._rung_timer: threading.Timer = None
 
     def run(self):
         """
@@ -152,7 +165,12 @@ class MainThread(threading.Thread):
         # Initialize Repetition Manager - a mechanism for handling nondeterminism.
         RepeaterOrchestration(experiment_id=self.experiment.unique_id, experiment=self.experiment)
 
-        ConfigurationSelection(self.experiment)
+        self.configuration_selection = ConfigurationSelection(self.experiment)
+
+        self.racing = RacingOrchestrator().get_racing(self.experiment.description)
+        if self.racing:
+            # The barrier waits for what is really dispatched, not what it asked for.
+            self.configuration_selection.wave_dispatched_callback = self._on_wave_dispatched
 
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=self.experiment)
@@ -201,9 +219,15 @@ class MainThread(threading.Thread):
             self.sub.send('log', 'info', message=temp_msg)
 
             # starting main work: building model and choosing configuration for measuring
-            self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
-                                               routing_key=self.experiment.unique_id,
-                                               body='')
+            if self.racing:
+                # Same lock as every later decision: the wave cannot report back
+                # before its rung timer is armed.
+                with self.conf_lock:
+                    self._drive_racing(self.racing.start())
+            else:
+                self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
+                                                   routing_key=self.experiment.unique_id,
+                                                   body='')
 
     def get_configurations_results(self, ch, method, properties, body):
         """
@@ -217,13 +241,119 @@ class MainThread(threading.Thread):
             configuration = Configuration.from_json(body.decode())
             self.logger.info("Got REGULAR config from Repeater")
             if not self._is_interrupted and configuration.status['measured']:
-                self.experiment.add_configuration(configuration)
+                was_added = self.experiment.add_configuration(configuration)
                 temp_msg = "-- New Configuration was evaluated. Building Target System model."
                 self.logger.info(temp_msg)
                 self.sub.send('log', 'info', message=temp_msg)
-                self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
-                                                   routing_key=self.experiment.unique_id,
-                                                   body='')
+                if self.racing:
+                    # A promoted survivor returns with the same parameters but more
+                    # tasks; reflect its higher-budget results in the Experiment.
+                    if not was_added:
+                        self.experiment.update_measured_configuration(configuration)
+                    decision = self.racing.on_configuration_measured(
+                        configuration, self.experiment.get_objectives_minimization())
+                    self._drive_racing(decision)
+                else:
+                    self.consume_channel.basic_publish(exchange='get_worker_capacity_exchange',
+                                                       routing_key=self.experiment.unique_id,
+                                                       body='')
+
+    def _drive_racing(self, decision: RacingDecision):
+        """
+        Translate a Racing decision into the corresponding loop action.
+        This is the only place the strategy's rung state machine meets the message
+        bus, keeping the strategy itself transport-free.
+
+        Publishing goes through `publish` (own connection): decisions are driven
+        from three threads and a pika channel belongs to its I/O-loop thread.
+        """
+        if decision.kind is DecisionKind.WAIT:
+            # The rung is still filling; leave its timer armed.
+            return
+
+        # Any other decision closes the rung the timer was armed for.
+        self._cancel_rung_timer()
+
+        if decision.kind is DecisionKind.PROMOTE:
+            # Re-measure a copy so the Experiment's stored Configuration keeps its
+            # 'measured' state; the copy carries the tasks already taken, so the
+            # repeater only requests the delta up to the new rung budget.
+            # A task_time budget raises the fidelity of a single Task instead, so
+            # the survivor is measured afresh - its previous, cheaper Tasks
+            # measured a different quantity and must not be averaged in.
+            budget_scales_task = is_task_time_budget(self.experiment.description)
+            for configuration in decision.configurations:
+                promoted = deepcopy(configuration)
+                promoted.task_budget = decision.budget
+                promoted.rung_token = decision.token
+                if budget_scales_task:
+                    promoted.reset_tasks()
+                promoted.status['evaluated'] = False
+                promoted.status['measured'] = False
+                publish(exchange='measure_new_configuration_exchange',
+                        routing_key=self.experiment.unique_id,
+                        body=json.dumps({"configuration": promoted.to_json()}))
+            # The count already matches; only a lost measurement can stall this rung.
+            self._arm_rung_timer(decision.token)
+        elif decision.kind is DecisionKind.NEW_BRACKET:
+            # One surrogate build proposes the whole rung-0 batch of n_0 points,
+            # each measured with this bracket's rung-0 budget.
+            publish(exchange='get_new_configuration_exchange',
+                    routing_key=self.experiment.unique_id,
+                    body=json.dumps({"worker_capacity": decision.number_of_configurations,
+                                     "task_budget": decision.budget,
+                                     "wave_token": decision.token}))
+            self._arm_rung_timer(decision.token)
+        elif decision.kind is DecisionKind.STOP:
+            publish(exchange='stop_experiment_exchange',
+                    routing_key=self.experiment.unique_id,
+                    body="Successive Halving completed all brackets.")
+
+    def _on_wave_dispatched(self, number_of_configurations: int, wave_token):
+        """
+        Selection finished publishing a wave; let the strategy lower a rung
+        expectation that could otherwise never be met.
+        """
+        if self._is_interrupted or not self.racing:
+            return
+        with self.conf_lock:
+            if self._is_interrupted:
+                return
+            decision = self.racing.on_wave_dispatched(
+                number_of_configurations, self.experiment.get_objectives_minimization(), wave_token)
+            self._drive_racing(decision)
+
+    def _arm_rung_timer(self, token):
+        """
+        Safety net for the rung just opened: a Task terminated as a straggler never
+        reports a result, so its Configuration never returns and the barrier waits
+        forever.
+        """
+        timeout = self.racing.rung_timeout_seconds if self.racing else None
+        if not timeout or self._is_interrupted:
+            return
+        self._rung_timer = threading.Timer(timeout, self._on_rung_timeout, args=(token,))
+        self._rung_timer.daemon = True
+        self._rung_timer.start()
+
+    def _cancel_rung_timer(self):
+        if self._rung_timer is not None:
+            self._rung_timer.cancel()
+            self._rung_timer = None
+
+    def _on_rung_timeout(self, token):
+        """
+        The rung outlived its timeout; the strategy ranks what arrived and drops a
+        stale token itself.
+        """
+        if self._is_interrupted or not self.racing:
+            return
+        with self.conf_lock:
+            if self._is_interrupted:
+                return
+            decision = self.racing.on_rung_timeout(
+                self.experiment.get_objectives_minimization(), token)
+            self._drive_racing(decision)
 
     def experiment_api(self, ch=None, method=None, properties=None, body=None):
         dictionary_dump = json.loads(body.decode())
@@ -249,6 +379,7 @@ class MainThread(threading.Thread):
             self.logger.info(f"Terminating experiment. Reason: {body}")
             self._state = self.State.SHUTTING_DOWN
             self._is_interrupted = True
+            self._cancel_rung_timer()
             optimal_configuration = self.experiment.get_final_report_and_result()
             self._state = self.State.IDLE
             self.consume_channel.basic_publish(exchange='experiment_termination_exchange',

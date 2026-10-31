@@ -4,6 +4,7 @@ import glob
 import hashlib
 import json
 import logging
+import math
 import os
 import pickle
 import shutil
@@ -16,6 +17,7 @@ from typing import Union
 import numpy as np
 import pika
 from core_entities.search_space import SearchSpace
+from repeater.budget_schedule import HyperbandSchedule
 from tools.initial_config import load_experiment_setup
 
 TIME_BASED_STOP_CONDITION = {
@@ -520,6 +522,33 @@ class BRISEBenchmarkRunner:
         return self.counter
 
     @staticmethod
+    def _declare_race(experiment_description: dict, eta: int, n: int, min_budget: int,
+                      max_budget: int, number_of_brackets: int, budget_type: str):
+        """
+        Split a race across the two features that own it: the budget ladder belongs
+        to the RepetitionManager, the race control to Racing.
+        """
+        experiment_description["RepetitionManager"]["BudgetSchedule"] = {
+            "Eta": eta, "MinBudget": min_budget, "MaxBudget": max_budget,
+            "BudgetType": budget_type
+        }
+        experiment_description["Racing"] = {
+            "SuccessiveHalving": {"N": n, "NumberOfBrackets": number_of_brackets,
+                                  "Type": "successive_halving"}
+        }
+
+    @staticmethod
+    def _use_asynchronous_distribution(experiment_description: dict):
+        """
+        Make Racing the only wave publisher (base.wfl: it requires
+        AsynchronousDistribution). A batched/hybrid mode would inject waves the
+        rung never counted.
+        """
+        experiment_description["DistributionMode"] = {
+            "AsynchronousDistribution": {"Type": "AsynchronousDistribution"}
+        }
+
+    @staticmethod
     def _set_number_of_points(experiment_description: dict, number_of_points: int):
         """
         Re-scale an already multi-point description to `number_of_points`.
@@ -536,7 +565,10 @@ class BRISEBenchmarkRunner:
                 for candidate_selector in model["CandidateSelector"].values():
                     candidate_selector["NumberOfPoints"] = number_of_points
 
-        experiment_description["DistributionMode"]["batchSize"]["Int"] = str(number_of_points)
+        # A raced run uses AsynchronousDistribution, which has no batchSize.
+        distribution = experiment_description.get("DistributionMode", {})
+        if "batchSize" in distribution:
+            distribution["batchSize"]["Int"] = str(number_of_points)
 
     @_benchmarkable
     def benchmark_hierarchical_multi_point(self, number_of_points: int = None):
@@ -566,6 +598,204 @@ class BRISEBenchmarkRunner:
             self.logger.info(f"Executing benchmark: {test_case} with batchSize "
                              f"{experiment_description['DistributionMode']['batchSize']['Int']}")
             self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        return self.counter
+
+    @_benchmarkable
+    def benchmark_successive_halving(self, eta: int = 3, n: int = 9,
+                                     min_budget: int = 1, max_budget: int = 9,
+                                     number_of_brackets: int = 3):
+        """
+        Benchmarks synchronous, barrier-based Successive Halving under the
+        Hyperband outer loop.
+
+        Reuses the multi-point machinery: rung 0 of every bracket is one surrogate
+        build of at most n = N points. The Racing controller then owns the loop - it
+        races the batch over the RepetitionManager's geometric budget ladder, keeps
+        the top 1/eta at each rung, and moves on to the next bracket, which trades
+        configurations against the budget they start with.
+
+        Budget is repetition tasks: every configuration carries the budget of its
+        rung, from MinBudget up to MaxBudget. The controller terminates the run
+        itself; the time-based stop condition is only a safety net.
+        """
+        self._experiment_timeout = 10 * 60
+
+        self._base_experiment_description, self._base_search_space = load_experiment_setup(
+            "./Resources/tests/test_cases_product_configurations/test_case_16.json")
+
+        experiment_description = self.base_experiment_description
+        experiment_description.update(deepcopy(TIME_BASED_STOP_CONDITION))
+        # One rung unit is one repetition Task of the same Scenario.
+        self._declare_race(experiment_description, eta, n, min_budget, max_budget,
+                           number_of_brackets, budget_type="repetitions")
+        # test_case_16 ships a BatchedDistribution; Racing brings its own barrier.
+        self._use_asynchronous_distribution(experiment_description)
+        # The widest bracket's rung 0 is N points from one build, so NumberOfPoints
+        # (and the wave size) must equal N.
+        self._set_number_of_points(experiment_description, n)
+        # Every rung carries its own budget; the repeater's global task count only
+        # applies to the default Configuration, measured before Hyperband starts.
+        feature_name = list(experiment_description["RepetitionManager"]["Instance"].keys())[0]
+        experiment_description["RepetitionManager"]["Instance"][feature_name]["MaxTasksPerConfiguration"] = min_budget
+
+        self.logger.info(f"Executing benchmark: SuccessiveHalving eta={eta} N={n} "
+                         f"MinBudget={min_budget} MaxBudget={max_budget} brackets={number_of_brackets}")
+        self.execute_experiment(experiment_description, number_of_repetitions=1)
+
+        return self.counter
+
+    @_benchmarkable
+    def benchmark_successive_halving_hh(self, eta: int = 3, n: int = 9,
+                                       min_budget: int = 1, max_budget: int = 9,
+                                       number_of_brackets: int = 3,
+                                       number_of_repetitions: int = 1,
+                                       seconds_per_task: int = 30,
+                                       number_of_workers: int = 3):
+        """
+        Successive Halving under the Hyperband outer loop + multi-point proposal on
+        the TSP hyper-heuristic experiment (hh_experiment.json, e.g. kroA100.tsp).
+
+        BudgetType "task_time": a Configuration on a rung of b units is measured
+        with ONE low-level-heuristic run of b * `seconds_per_task` seconds, so a
+        promotion buys more search time rather than more repetitions of the same
+        run. Produces one serialized Experiment per repetition.
+
+        Overrides of hh_experiment.json, so rungs stay comparable:
+
+        * Objective: the tour length instead of the relative `improvement`, whose
+          baseline moves with the last improving Configuration.
+        * isParameterControlEnabled off: every Configuration is an independent
+          trial instead of inheriting the tours of earlier ones.
+        * Level 0 uses TPE + MOEA, since the MultiArmedBandit rejects minimization.
+        * NumberOfPoints = N on all levels, with the AsynchronousDistribution that
+          Racing requires.
+        """
+        self._base_experiment_description, self._base_search_space = load_experiment_setup(
+            "./Resources/HyperHeuristic/hh_experiment.json")
+
+        # The tour length, reported by every Task next to the improvement.
+        tour_length_objective = {
+            "objective": {
+                "Name": "objective",
+                "DataType": "float",
+                "Minimization": True,
+                # error_check discards Task results outside of this range
+                # (repeater/results_check/task_errors_check.py).
+                "MinExpectedValue": 0,
+                "MaxExpectedValue": 10 ** 7
+            }
+        }
+        # Level 0 selects the low-level heuristic - a single nominal
+        # hyperparameter, hence only a NominalTransformer to encode it for the
+        # KDEs of the surrogate and for the numeric box pygmo optimizes.
+        level_0_model = {
+            "Surrogate": {
+                "ConfigurationTransformers": {
+                    "NominalTransformer": {
+                        "BinaryEncoder": {"Type": "binary_transformer", "Class": "brise.BinaryEncoder"}
+                    }
+                },
+                "Instance": {
+                    "TreeParzenEstimator": {
+                        "MultiObjective": False,
+                        "Parameters": {"top_n_percent": 33, "random_fraction": 0.2, "min_bandwidth": 0.3},
+                        "Type": "tree_parzen_estimator"
+                    }
+                }
+            },
+            "Optimizer": {
+                "ConfigurationTransformers": {
+                    "NominalTransformer": {
+                        "BinaryEncoder": {"Type": "binary_transformer", "Class": "brise.BinaryEncoder"}
+                    }
+                },
+                "ValueTransformers": {"AcquisitionFunction": {"TPE_EI": {"Type": "tpe_ei"}}},
+                "Instance": {
+                    "MOEA": {
+                        "Generations": 10,
+                        "PopulationSize": 100,
+                        "Algorithms": {"GACO": {"MultiObjective": {}}},
+                        "Type": "moea"
+                    }
+                }
+            },
+            "Validator": {"ExternalValidator": {"MockValidator": {"Type": "mock_validator"}}},
+            # Re-scaled to N by _set_number_of_points below.
+            "CandidateSelector": {"BestMultiPointProposal": {"NumberOfPoints": 1, "Type": "best_multi_point"}}
+        }
+        # SH terminates the run itself once NumberOfBrackets are done; the time
+        # based stop condition and the harness timeout are safety nets, and a net
+        # that trips first truncates the run (perform_experiment stops the Main
+        # node without a dump), so both are sized from the schedule.
+        #
+        # A rung is a barrier: its n_k Tasks of b * seconds_per_task fill the
+        # Workers ceil(n_k / workers) times before the next rung starts. Per-Task
+        # overhead is the ~10 s measured on the reference run (kroA100, 3 Workers),
+        # and the whole estimate is doubled for headroom.
+        overhead_per_task = 10
+        schedule = HyperbandSchedule(eta=eta, n=n, min_budget=min_budget,
+                                     max_budget=max_budget, number_of_brackets=number_of_brackets)
+        rungs = [[(rung.n_configurations, rung.budget) for rung in bracket.rungs]
+                 for bracket in schedule]
+        configurations = sum(bracket[0][0] for bracket in rungs)
+        tasks = 1 + sum(n_k for bracket in rungs for n_k, _ in bracket)
+        workers = max(1, number_of_workers)
+        estimated_seconds = seconds_per_task + overhead_per_task  # the default Configuration
+        estimated_seconds += sum(math.ceil(n_k / workers) * (budget * seconds_per_task + overhead_per_task)
+                                 for bracket in rungs for n_k, budget in bracket)
+        safety_net_minutes = max(10, math.ceil(2 * estimated_seconds / 60))
+        self._experiment_timeout = safety_net_minutes * 60
+        hh_stop_condition = {
+            "StopCondition": {
+                "Instance": {
+                    "TimeBasedSC": {
+                        "Parameters": {"MaxRunTime": safety_net_minutes, "TimeUnit": "minutes"},
+                        "Type": "time_based", "Name": "t"
+                    }
+                },
+                "StopConditionTriggerLogic": {
+                    "Expression": "t",
+                    "InspectionParameters": {"RepetitionPeriod": 1, "TimeUnit": "seconds"}
+                }
+            }
+        }
+
+        experiment_description = self.base_experiment_description
+        task_configuration = experiment_description["Context"]["TaskConfiguration"]
+        task_configuration["Objectives"] = deepcopy(tour_length_objective)
+        task_configuration["Scenario"]["isParameterControlEnabled"] = False
+        # One rung unit. A Configuration on rung budget b is measured with
+        # b * seconds_per_task (WSClient._task_budget scales both of these).
+        task_configuration["Scenario"]["Budget"]["Amount"] = seconds_per_task
+        # The straggler detector terminates a Task that outlives this limit
+        # (worker_service/intro.py), so it has to exceed the LLH budget.
+        task_configuration["MaxTimeToRunTask"] = 2 * seconds_per_task
+        experiment_description["ConfigurationSelection"]["Predictor"]["Model_0"] = deepcopy(level_0_model)
+        # Racing is the only wave publisher.
+        self._use_asynchronous_distribution(experiment_description)
+        experiment_description.update(deepcopy(hh_stop_condition))
+        # One rung unit is one Scenario.Budget.Amount inside a single Task, not one
+        # repetition of it.
+        self._declare_race(experiment_description, eta, n, min_budget, max_budget,
+                           number_of_brackets, budget_type="task_time")
+        # The widest bracket's rung 0 is N points from one build, so NumberOfPoints
+        # (all levels) and the wave size must equal N.
+        self._set_number_of_points(experiment_description, n)
+        # The rung budget goes into the Task, so one Task per rung is the whole
+        # measurement - repetitions on top would multiply the run time.
+        feature_name = list(experiment_description["RepetitionManager"]["Instance"].keys())[0]
+        experiment_description["RepetitionManager"]["Instance"][feature_name]["MaxTasksPerConfiguration"] = 1
+
+        self.logger.info(f"Executing benchmark: SuccessiveHalving on hh_experiment "
+                         f"eta={eta} N={n} MinBudget={min_budget} MaxBudget={max_budget} "
+                         f"brackets={number_of_brackets}, minimizing the tour length of "
+                         f"{task_configuration['Scenario']['InitializationParameters']['instance']}")
+        self.logger.info(f"Rung ladders (n, budget): {rungs}, one unit = {seconds_per_task}s of LLH time.")
+        self.logger.info(f"At most {configurations} Configurations / {tasks} Tasks per repetition: "
+                         f"~{estimated_seconds / 60:.0f} min on {number_of_workers} Worker(s), "
+                         f"safety nets at {safety_net_minutes} min.")
+        self.execute_experiment(experiment_description, number_of_repetitions=number_of_repetitions)
 
         return self.counter
 

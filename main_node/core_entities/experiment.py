@@ -77,6 +77,18 @@ class Experiment:
 
     description = property(_get_description, _set_description, _del_description)
 
+    @property
+    def is_parameter_control_enabled(self) -> bool:
+        """
+        Does a Worker Task continue the search of the Configuration measured
+        before it (warm startup), or solve the problem from scratch?
+
+        Only the hyper-heuristic Scenario declares this; every other
+        TaskConfiguration has no notion of a solution to inherit.
+        """
+        scenario = self._description["Context"]["TaskConfiguration"].get("Scenario", {})
+        return bool(scenario.get("isParameterControlEnabled", False))
+
     def __getstate__(self):
         space = self.__dict__.copy()
         del space['api']
@@ -115,10 +127,14 @@ class Experiment:
                     "Configuration",
                     default_configuration.get_configuration_record()
                 )
-                self.database.write_one_record(
-                    collection_name="Parameter_control_info",
-                    record={"Exp_unique_ID": self.unique_id, "parameter_control_info": default_configuration.parameter_control_info}
-                )
+                # The record every Worker Task reads to warm-start its optimizer
+                # (worker_tools/hh/llh_runner.py). Without parameter control it is
+                # not created, so a Task solves the problem from scratch.
+                if self.is_parameter_control_enabled:
+                    self.database.write_one_record(
+                        collection_name="Parameter_control_info",
+                        record={"Exp_unique_ID": self.unique_id, "parameter_control_info": default_configuration.parameter_control_info}
+                    )
                 self.send_state_to_db()
             else:
                 raise ValueError("The default Configuration was registered already.")
@@ -285,11 +301,12 @@ class Experiment:
             self.current_best_configurations[0].parameter_control_info = {}
             self.current_best_configurations = [configuration]
 
-            self.database.update_record(
-                collection_name="Parameter_control_info",
-                query={"Exp_unique_ID": self.unique_id},
-                new_val={"parameter_control_info": configuration.parameter_control_info}
-            )
+            if self.is_parameter_control_enabled:
+                self.database.update_record(
+                    collection_name="Parameter_control_info",
+                    query={"Exp_unique_ID": self.unique_id},
+                    new_val={"parameter_control_info": configuration.parameter_control_info}
+                )
         else:
             # this configuration did not improve the previous solution, no need to keep track its solutions.
             configuration.parameter_control_info = {}
@@ -301,6 +318,85 @@ class Experiment:
                       configurations=[configuration.parameters],
                       results=[configuration.results])
         self.logger.info("Adding to Experiment: %s" % configuration)
+
+    def update_measured_configuration(self, configuration: Configuration) -> bool:
+        """
+        Replace an already-measured Configuration with a higher-budget re-measurement
+        of the same parameters. Used by the Racing promotion path: a survivor is
+        measured again at a higher rung budget, so the Experiment's stored results
+        and the reported best must reflect the budget it actually reached.
+
+        :param configuration: the promoted Configuration (higher budget, same parameters).
+        :return: True if a stored Configuration was replaced.
+        """
+        # A survivor whose re-measurement failed must not replace a valid reading.
+        if not configuration.status["enabled"] or not configuration.results:
+            return False
+        with self.measured_conf_lock:
+            for index, existing in enumerate(self.measured_configurations):
+                if existing.parameters == configuration.parameters:
+                    if self._reached_budget(configuration) <= self._reached_budget(existing):
+                        return False
+                    self.measured_configurations[index] = configuration
+                    self._recompute_current_best()
+                    # Update, not insert: a duplicate row would inflate every
+                    # consumer counting this collection, e.g. ImprovementBasedSC.
+                    record = configuration.get_configuration_record()
+                    self.database.update_record(
+                        collection_name="Configuration",
+                        query={"Exp_unique_ID": record["Exp_unique_ID"],
+                               "Configuration_ID": record["Configuration_ID"]},
+                        new_val=record
+                    )
+                    self.send_state_to_db()
+                    self.api.send("new", "configuration",
+                                  configurations=[configuration.parameters],
+                                  results=[configuration.results])
+                    self.logger.info(f"Updating in Experiment (budget "
+                                     f"{self._reached_budget(existing)} -> "
+                                     f"{self._reached_budget(configuration)}): {configuration}")
+                    return True
+        return False
+
+    @staticmethod
+    def _reached_budget(configuration: Configuration) -> int:
+        """
+        How far a Configuration got: the rung budget the Racing layer assigned it,
+        or the number of Tasks it was measured with when there is no such budget.
+
+        Counting Tasks alone is not enough: a task_time rung raises the budget of
+        one Task, so a promoted survivor comes back with a single, longer Task and
+        would look like a step backwards.
+        """
+        return configuration.task_budget or len(configuration.get_tasks())
+
+    def _recompute_current_best(self) -> None:
+        """
+        Re-derive the best after a stored measurement was updated. The best may
+        legitimately get worse - the higher-fidelity reading is the one to trust.
+
+        `current_best_curve` is not extended: it holds one entry per newly measured
+        Configuration and is read positionally against prediction_infos
+        (transfer_learning dynamic_model_recommendation).
+        """
+        previous_best = self.get_current_solution()
+        best = self.measured_configurations[0]
+        for configuration in self.measured_configurations[1:]:
+            if configuration.is_better(self.get_objectives_minimization(), best):
+                best = configuration
+        if best is previous_best:
+            return
+
+        if previous_best is not None:
+            # The displaced Configuration no longer warm-starts anything.
+            previous_best.parameter_control_info = {}
+        self.current_best_configurations = [best]
+        if self.is_parameter_control_enabled:
+            self.database.update_record(
+                collection_name="Parameter_control_info",
+                query={"Exp_unique_ID": self.unique_id},
+                new_val={"parameter_control_info": best.parameter_control_info}
+            )
 
     def add_evaluated_configuration_to_experiment(self, configuration: Configuration) -> None:
         """

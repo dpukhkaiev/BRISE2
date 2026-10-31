@@ -52,7 +52,11 @@ class JMetalWrapper(ILLHWrapper):
         self._attach_termination(scenario["Budget"])
         self._call_arguments.append(f"isWarmStartupEnabled={scenario['isParameterControlEnabled']}")
 
-        self._attach_initial_solutions(parameter_control_info)
+        # Whether the jar honours isWarmStartupEnabled=False for a file it was
+        # handed anyway is not observable from here, so without parameter control
+        # it is not handed one.
+        if scenario["isParameterControlEnabled"]:
+            self._attach_initial_solutions(parameter_control_info)
 
     def run_and_report(self) -> Mapping:
         stdout, stderr, return_code = jar_runner(*self._call_arguments)

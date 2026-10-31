@@ -77,9 +77,10 @@ class JMetalPyWrapper(ILLHWrapper):
             offsp_population += offsp_population % 2
             init_args['offspring_population_size'] = offsp_population
 
-        # elitist should be bool
+        # elitist should be bool. The search space names its categories
+        # `...elitist.true` / `...elitist.false`, hence case-insensitive.
         if "elitist" in init_args:
-            init_args['elitist'] = True if init_args.pop('elitist').split(".")[-1] == "True" else False
+            init_args['elitist'] = init_args.pop('elitist').split(".")[-1].lower() == "true"
 
         if "population_size" in init_args:
             init_args["population_size"] = init_args.pop("population_size")

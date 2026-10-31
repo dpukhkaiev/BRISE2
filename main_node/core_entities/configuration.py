@@ -8,7 +8,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Mapping, MutableMapping, Set, Tuple
+from typing import Any, Dict, List, Mapping, MutableMapping, Optional, Set, Tuple
 
 import pandas as pd
 from tools.front_API import API
@@ -80,6 +80,15 @@ class Configuration:
         self._task_number = 0
         self.parameter_control_info = {}  # additional information used in parameter control experiments, e.g., initial solution for a warm startup of an optimizer within the worker node
         self.experiment_id = experiment_id
+        # Per-Configuration measurement budget, set by the Racing layer to raise a
+        # survivor's budget for the next rung and spent by the RepetitionManager
+        # (BudgetAwareRepeater). None means the Instance's own target applies.
+        self.task_budget: Optional[int] = None
+        # Rung this Configuration was dispatched for, so the Racing layer can
+        # recognise a result that arrives after its rung was closed.
+        self.rung_token: Optional[int] = None
+        # Shared by all points of one Predictor proposal (one model build).
+        self.proposal_batch_id: Optional[str] = None
         # Configuration status flags
         self.status = {'enabled': True, 'evaluated': False, 'measured': False}
 
@@ -153,6 +162,21 @@ class Configuration:
     def get_tasks(self) -> Mapping:
         return self._tasks.copy()
 
+    def reset_tasks(self) -> None:
+        """
+        Forget every Task measured so far, and the results derived from them.
+
+        Used by the Racing promotion path when a rung budget scales what a single
+        Task measures (task_time) instead of how often it is repeated: a
+        re-measurement at a higher fidelity is a new measurement, and averaging it
+        together with the lower-fidelity ones would describe neither.
+        """
+        self._tasks = {}
+        self._results = OrderedDict()
+        self._standard_deviation = []
+        self._task_number = 0
+        self.number_of_failed_tasks = 0
+
     def get_required_results_with_marks_from_all_tasks(self) -> Tuple[List[OrderedDict], List[str]]:
         from_all_tasks = []
         marks = []
@@ -180,7 +204,10 @@ class Configuration:
                            "number_of_failed_tasks": self.number_of_failed_tasks,
                            "_task_number": self._task_number,
                            "parameter_control_info": self.parameter_control_info,
-                           "experiment_id": self.experiment_id
+                           "experiment_id": self.experiment_id,
+                           "task_budget": self.task_budget,
+                           "rung_token": self.rung_token,
+                           "proposal_batch_id": self.proposal_batch_id
                            }
         return json.dumps(dictionary_dump)
 
@@ -199,6 +226,9 @@ class Configuration:
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
         conf._task_number = dictionary_dump["_task_number"]
         conf.parameter_control_info = dictionary_dump["parameter_control_info"]
+        conf.task_budget = dictionary_dump.get("task_budget")
+        conf.rung_token = dictionary_dump.get("rung_token")
+        conf.proposal_batch_id = dictionary_dump.get("proposal_batch_id")
         return conf
 
     def is_better(self, o_minimize: List[bool], other: Configuration) -> bool:

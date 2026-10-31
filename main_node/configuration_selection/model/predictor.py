@@ -1,6 +1,7 @@
 import logging
 import pickle
 import os
+import uuid
 from collections import defaultdict
 from typing import Dict, List, Mapping, Tuple
 
@@ -128,7 +129,13 @@ class Predictor:
             self.hierarchical_models_dumps.append(model_dump)
 
         self.store_model_dumps_to_db()
-        return [point.to_configuration(self.experiment_id, prediction_info) for point in points]
+        # All points of this proposal share one batch id, so a benchmark can group
+        # the N configurations a single surrogate build produced.
+        batch_id = str(uuid.uuid4())
+        proposal = [point.to_configuration(self.experiment_id, prediction_info) for point in points]
+        for configuration in proposal:
+            configuration.proposal_batch_id = batch_id
+        return proposal
 
     @staticmethod
     def _subscriptions(points: List[PartialConfiguration]) -> Dict[Tuple[Hyperparameter], List[PartialConfiguration]]:

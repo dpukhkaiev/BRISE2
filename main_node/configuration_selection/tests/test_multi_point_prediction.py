@@ -154,6 +154,8 @@ def _make_full_selection(number_of_points, scripted_builds):
     selection.transfer_is_enabled = False
     selection._selection_lock = threading.Lock()
     selection.logger = MagicMock()
+    # Mirrors __init__: the core only sets this when Racing owns the loop.
+    selection.wave_dispatched_callback = None
 
     predictor = MagicMock()
     model = MagicMock()
@@ -176,9 +178,10 @@ def _make_full_selection(number_of_points, scripted_builds):
     return selection
 
 
-def _wave_body(worker_capacity):
+def _wave_body(worker_capacity, task_budget=None, wave_token=None):
     import json
-    return json.dumps({"worker_capacity": worker_capacity}).encode()
+    return json.dumps({"worker_capacity": worker_capacity, "task_budget": task_budget,
+                       "wave_token": wave_token}).encode()
 
 
 def test_wave_of_distinct_points_is_passed_through():
@@ -193,6 +196,24 @@ def test_wave_of_distinct_points_is_passed_through():
         "", "", "", _wave_body(5))
     assert len(to_evaluate) == 5
     assert len(set(_params(to_evaluate))) == 5
+
+
+def test_wave_budget_is_attached_to_dispatched_configurations():
+    """
+    The rung budget of a Racing wave travels with the configurations
+    that are sent to be measured, so the repeater targets it instead of its
+    global task count.
+    """
+    selection = _make_full_selection(
+        number_of_points=2,
+        scripted_builds=[[_cfg(2900, 32), _cfg(1300, 25)]],
+    )
+    to_evaluate, hierarchical = selection.send_new_configurations_to_measure(
+        "", "", "", _wave_body(2, task_budget=3))
+
+    assert [c.task_budget for c in hierarchical] == [3, 3]
+    # The Experiment's own copies stay budget-free; only the dispatched ones carry it.
+    assert [c.task_budget for c in to_evaluate] == [None, None]
 
 
 def test_no_duplicate_config_is_measured_within_one_wave():
@@ -251,3 +272,66 @@ def test_wave_shrinks_when_no_distinct_resample_is_available():
     # The duplicate is dropped (no distinct resample); only the fresh point
     # survives, and the call terminates (no infinite resample loop).
     assert _params(to_evaluate) == _params([fresh])
+
+
+# ---------------------------------------------------------------------------
+# Dispatch reporting.
+#
+# A Racing rung is a barrier: it releases once the Configurations it
+# is waiting for have all been measured. A wave can legitimately publish fewer
+# points than it was asked for (a duplicate it could not break by resampling, a
+# nearly exhausted search space), so the barrier has to be told what really went
+# out - otherwise it waits for a Configuration that was never dispatched.
+# ---------------------------------------------------------------------------
+
+def test_dispatch_report_carries_the_published_count_and_token():
+    a, b = _cfg(2900, 32), _cfg(1300, 25)
+    selection = _make_full_selection(number_of_points=2, scripted_builds=[[a, b]])
+    reports = []
+    selection.wave_dispatched_callback = lambda count, token: reports.append((count, token))
+
+    to_evaluate, _ = selection.send_new_configurations_to_measure(
+        "", "", "", _wave_body(2, wave_token=7))
+
+    assert len(to_evaluate) == 2
+    assert reports == [(2, 7)]
+
+
+def test_short_wave_reports_what_it_could_publish():
+    """The duplicate cannot be broken, so only one point of the wave goes out."""
+    duplicate = _cfg(2900, 32)
+    selection = _make_full_selection(
+        number_of_points=2,
+        scripted_builds=[[duplicate, _cfg(2900, 32)]],
+    )
+    # Every resample collides too, so the second point is dropped entirely.
+    selection.predictor.predict.side_effect = (
+        lambda measured_configurations, sample=False, *a, **k:
+        [_cfg(2900, 32)] if sample else [duplicate, _cfg(2900, 32)])
+
+    reports = []
+    selection.wave_dispatched_callback = lambda count, token: reports.append((count, token))
+
+    to_evaluate, _ = selection.send_new_configurations_to_measure(
+        "", "", "", _wave_body(2, wave_token=3))
+
+    assert len(to_evaluate) == 1
+    assert reports == [(1, 3)]
+
+
+def test_a_failing_listener_does_not_lose_a_dispatched_wave():
+    """
+    The Configurations are already on their way when the report is made, so a
+    listener that raises must not take the selection thread down with it.
+    """
+    a, b = _cfg(2900, 32), _cfg(1300, 25)
+    selection = _make_full_selection(number_of_points=2, scripted_builds=[[a, b]])
+
+    def _explode(count, token):
+        raise RuntimeError("listener is broken")
+
+    selection.wave_dispatched_callback = _explode
+
+    to_evaluate, _ = selection.send_new_configurations_to_measure("", "", "", _wave_body(2))
+    assert len(to_evaluate) == 2
+    assert selection.logger.exception.called
