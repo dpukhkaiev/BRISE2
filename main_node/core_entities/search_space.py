@@ -148,13 +148,6 @@ class Hyperparameter(ABC):
     def __hash__(self):
         return hash(self.name)
 
-    def serialize(self, first, boundaries=None) -> Dict:
-        """
-        Serialize search space to mapping object, which could be later used to restore search space object.
-        :return: Mapping
-        """
-        raise NotImplementedError
-
 
 class CategoricalHyperparameter(Hyperparameter, ABC):
     """
@@ -238,49 +231,6 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
                 represent += "\n├+   " + "\n├    ".join(str(child).split("\n"))
         return represent
 
-    def serialize(self, first, boundaries=None) -> Dict:
-        if first is True:
-            self.first = True
-            boundaries = {}
-            parameters = []
-            root_parameters_list = []
-        else:
-            self.first = False
-
-        first = False
-        categories_description = []
-        for category, children in self._categories.items():
-            categories_description.append(category)
-            if self.first:
-                parameters.append({"RootParameter": category})
-                root_parameters_list.append(category)
-        if not self.first:
-            boundaries[self.name] = categories_description
-        for category, children in self._categories.items():
-            if self.first:
-                boundaries[self.name] = [category]
-            for child in children:
-                boundaries = child.serialize(first, boundaries)
-            if self.first:
-                for index in range(0, len(parameters)):
-                    if parameters[index]["RootParameter"] == category:
-                        parameters[index]["Boundaries"] = boundaries
-                        boundaries = {}
-
-        if self.first:
-            search_space_size = self.get_size()
-            if search_space_size == np.inf:
-                search_space_size = "Infinity"
-            serialization = dict(
-                size=search_space_size,
-                name=self.name,
-                boundaries=parameters,
-                root_parameters_list=root_parameters_list
-            )
-            return serialization
-        else:
-            return boundaries
-
     def transform(self, value):
         categories = list(self._categories.keys())
         # equal-width bins; value == 1 is clamped to the last category
@@ -358,10 +308,6 @@ class NumericHyperparameter(Hyperparameter, ABC):
 
     def __hash__(self):
         return super().__hash__(self)
-
-    def serialize(self, first, boundaries=None) -> Dict:
-        boundaries[self.name] = self._lower, self._upper
-        return boundaries
 
 
 class IntegerHyperparameter(NumericHyperparameter):
@@ -575,10 +521,6 @@ class SearchSpace:
                         if hp.activation_category in p:
                             activated_regions.add(r)
         return activated_regions
-
-    def serialize(self) -> Dict:
-        serialized_search_space_description = self.search_space_description.serialize(True)
-        return serialized_search_space_description
 
     def flatten(self, h: Hyperparameter):
         """

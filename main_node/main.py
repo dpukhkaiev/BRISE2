@@ -141,9 +141,8 @@ class MainThread(threading.Thread):
 
         self.sub.send('experiment', 'description',
                       global_config={},
-                      experiment_description=self.experiment.description,
-                      searchspace_description=self.experiment.search_space.serialize(),
-                      regions=[[hp.name for hp in region] for region in self.experiment.search_space.regions]
+                      experiment_description=self.experiment.get_description_without_search_space(),
+                      regions=self.experiment.search_space.describe_regions()
                       )
         self.logger.debug("Experiment description and global configuration sent to the API.")
 

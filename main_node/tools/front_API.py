@@ -184,11 +184,11 @@ class APIMessageBuilder:
     def _build_experiment_message(**kwargs) -> dict:
         """
             Takes all key-value parameters
-            and checks if "global_config", "experiment_description", "searchspace_description" and "regions" are presents.
+            and checks if "global_config", "experiment_description" and "regions" are presents.
             Currently, it just provides validation of input (needed fields are present).
 
-        :param kwargs: "global_config", "experiment_description", "searchspace_description" and "regions"
-            (names of the parameters of each search space region, in the order of SearchSpace.regions)
+        :param kwargs: "global_config", "experiment_description" (without Context.SearchSpace) and "regions"
+            (SearchSpace.describe_regions(): the regions of the search space with their parameters)
             as mandatory fields.
         :return: Dictionary.
         """
@@ -196,7 +196,6 @@ class APIMessageBuilder:
         try:
             assert "global_config" in kwargs.keys(), "The global configuration is not provided!"
             assert "experiment_description" in kwargs.keys(), "The experiment description is not provided!"
-            assert "searchspace_description" in kwargs.keys(), "The search space description is not provided!"
             assert "regions" in kwargs.keys(), "The search space regions are not provided!"
         except AssertionError as error:
             getLogger(__name__).error(error)
@@ -205,6 +204,5 @@ class APIMessageBuilder:
         return {
             "global_configuration": kwargs["global_config"],
             "experiment_description": kwargs["experiment_description"],
-            "searchspace_description": kwargs["searchspace_description"],
             "regions": kwargs["regions"]
         }

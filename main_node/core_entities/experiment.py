@@ -63,6 +63,15 @@ class Experiment:
     def _get_description(self):
         return deepcopy(self._description)
 
+    def get_description_without_search_space(self) -> dict:
+        """
+        The description that is sent to the clients of main-node. They get the search space as the regions of
+        SearchSpace.describe_regions(), so Context.SearchSpace is left out of it.
+        """
+        description = self.description  # a copy
+        del description["Context"]["SearchSpace"]
+        return description
+
     def _set_description(self, description):
         if not self._description:
             self._description = description

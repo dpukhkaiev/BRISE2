@@ -83,41 +83,37 @@ class TestFrontApi:
             APIMessageBuilder.build('NEW', configurations=configurations, results=results)
         assert expected_result in str(excinfo.value)
 
-    @pytest.mark.skip(reason="Global config is deprecated, return when the Frontend is enabled")
     def test_8_build_experiment_message(self):
         # Test #8. Build experiment message according to the API message format
-        # Expected result: the message of type 'dictionary' is built and contains all needed fields
+        # Expected result: the message holds the global configuration, the experiment description and the regions
+        # of the search space, and no separate search space description
         from tools.initial_config import load_experiment_setup
-        experiment_description, searchspace_description = \
+        experiment_description, search_space = \
             load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
-        global_config = experiment_description["General"]
-        actual_result = APIMessageBuilder.build('EXPERIMENT', global_config=global_config,
+        regions = search_space.describe_regions()
+        actual_result = APIMessageBuilder.build('EXPERIMENT', global_config={},
                                                 experiment_description=experiment_description,
-                                                searchspace_description=searchspace_description,
-                                                regions=[["Context.SearchSpace.frequency", "Context.SearchSpace.threads"]])
-        assert actual_result["global_configuration"]
-        assert actual_result["metric_description"]
-        assert actual_result["searchspace_description"]
+                                                regions=regions)
+        assert set(actual_result.keys()) == {"global_configuration", "experiment_description", "regions"}
+        assert actual_result["experiment_description"] == experiment_description
+        assert actual_result["regions"] == regions
 
-    @pytest.mark.skip(reason="Global config is deprecated, return when the Frontend is enabled")
-    def test_9_build_incomplete_experiment_message(self):
-        # Test #9. Build experiment message from incomplete parameters
+    @pytest.mark.parametrize("missing", ["global_config", "experiment_description", "regions"])
+    def test_9_build_incomplete_experiment_message(self, missing):
+        # Test #9. Build experiment message with one of the mandatory fields missing
         # Expected result: error is raised
-        from tools.initial_config import load_experiment_setup
-        expected_result = "Invalid parameters passed to send message via API: The search space description is not provided!"
-        experiment_description, _ = load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
-        global_config = experiment_description["General"]
+        fields = {"global_config": {}, "experiment_description": {}, "regions": []}
+        del fields[missing]
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('EXPERIMENT', global_config=global_config, experiment_description=experiment_description)
-        assert expected_result in str(excinfo.value)
+            APIMessageBuilder.build('EXPERIMENT', **fields)
+        assert "Invalid parameters passed to send message via API" in str(excinfo.value)
 
     def test_9_1_experiment_message_without_regions_is_rejected(self):
         # Test #9.1. Build experiment message without the search space regions
         # Expected result: error is raised
         expected_result = "Invalid parameters passed to send message via API: The search space regions are not provided!"
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('EXPERIMENT', global_config={}, experiment_description={},
-                                    searchspace_description={})
+            APIMessageBuilder.build('EXPERIMENT', global_config={}, experiment_description={})
         assert expected_result in str(excinfo.value)
 
     def test_10_send_valid_message(self):
