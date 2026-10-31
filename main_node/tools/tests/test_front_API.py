@@ -85,24 +85,22 @@ class TestFrontApi:
 
     def test_8_build_experiment_message(self):
         # Test #8. Build experiment message according to the API message format
-        # Expected result: the message holds the global configuration, the experiment description and the regions
-        # of the search space, and no separate search space description
+        # Expected result: the message holds the experiment description and the regions of the search space
         from tools.initial_config import load_experiment_setup
         experiment_description, search_space = \
             load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment.json")
         regions = search_space.describe_regions()
-        actual_result = APIMessageBuilder.build('EXPERIMENT', global_config={},
-                                                experiment_description=experiment_description,
+        actual_result = APIMessageBuilder.build('EXPERIMENT', experiment_description=experiment_description,
                                                 regions=regions)
-        assert set(actual_result.keys()) == {"global_configuration", "experiment_description", "regions"}
+        assert set(actual_result.keys()) == {"experiment_description", "regions"}
         assert actual_result["experiment_description"] == experiment_description
         assert actual_result["regions"] == regions
 
-    @pytest.mark.parametrize("missing", ["global_config", "experiment_description", "regions"])
+    @pytest.mark.parametrize("missing", ["experiment_description", "regions"])
     def test_9_build_incomplete_experiment_message(self, missing):
         # Test #9. Build experiment message with one of the mandatory fields missing
         # Expected result: error is raised
-        fields = {"global_config": {}, "experiment_description": {}, "regions": []}
+        fields = {"experiment_description": {}, "regions": []}
         del fields[missing]
         with pytest.raises(KeyError) as excinfo:
             APIMessageBuilder.build('EXPERIMENT', **fields)
@@ -113,7 +111,7 @@ class TestFrontApi:
         # Expected result: error is raised
         expected_result = "Invalid parameters passed to send message via API: The search space regions are not provided!"
         with pytest.raises(KeyError) as excinfo:
-            APIMessageBuilder.build('EXPERIMENT', global_config={}, experiment_description={})
+            APIMessageBuilder.build('EXPERIMENT', experiment_description={})
         assert expected_result in str(excinfo.value)
 
     def test_10_send_valid_message(self):

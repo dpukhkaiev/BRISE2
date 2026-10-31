@@ -140,11 +140,10 @@ class MainThread(threading.Thread):
         self.experiment.send_state_to_db()
 
         self.sub.send('experiment', 'description',
-                      global_config={},
                       experiment_description=self.experiment.get_description_without_search_space(),
                       regions=self.experiment.search_space.describe_regions()
                       )
-        self.logger.debug("Experiment description and global configuration sent to the API.")
+        self.logger.debug("Experiment description and search space regions sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
         launch_stop_condition_threads(self.experiment.unique_id)
