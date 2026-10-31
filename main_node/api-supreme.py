@@ -9,7 +9,7 @@ import pika
 # USER
 from logger.default_logger import BRISELogConfigurator
 from main import MainThread
-from main import PlotService
+from plot_service.plot_service import PlotService
 from tools.front_API import API
 from tools.rabbit_API_class import RabbitApi
 
@@ -206,14 +206,16 @@ class ConsumerThread(Thread):
     def stop(self):
         self._is_interrupted = True
         
-    # call main.PlotService
+    # call plot_service.PlotService
     def plot_callback(self, ch, method, props, body):
         request = json.loads(body)
 
         plot = request["plot"]
         try:
             handler = self.plot_handlers[plot]
-            result = handler(request["payload"])
+            # the experiment is kept after it has finished, so its plots can still be requested; there is none before
+            # the first start, which fails the handler and replies with the empty result
+            result = handler(request["payload"], self.MAIN_THREAD.experiment)
         except Exception:
             # A bad plot request must not take down this consumer thread - it also serves
             # start/status/stop/download-dump. Reply with the same "no data" shape each chart

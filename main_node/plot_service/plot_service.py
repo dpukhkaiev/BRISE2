@@ -4,9 +4,9 @@ import numpy as np
 import scipy.sparse
 import scipy.sparse.linalg
 
-CONTOUR_POINT_NUM = 100
+from core_entities.experiment import Experiment
 
-SEARCH_SPACE_PREFIX = "Context.SearchSpace"  # matches core_entities/search_space.py
+CONTOUR_POINT_NUM = 100
 
 FloatDistribution = optuna.distributions.FloatDistribution
 IntDistribution = optuna.distributions.IntDistribution
@@ -16,36 +16,19 @@ CategoricalDistribution = (
 create_trial = optuna.trial.create_trial
 
 
-def normalize_search_space(search_space, prefix=SEARCH_SPACE_PREFIX):
+def parameter_specs(search_space):
     """
-    Flattens the nested search space of a product configuration into {full parameter name: description}.
-    A child parameter of a category is named <parent full name>.<category>.<child>,
-    as in core_entities/search_space.py.
+    The specs of all parameters of the search space as {full parameter name: spec}, where a spec is a parameter of
+    SearchSpace.describe_regions().
     """
-    normalized = {}
-
-    for name, data in search_space.items():
-        if name == "Structure" or not isinstance(data, dict) or "Type" not in data:
-            continue
-
-        full_name = f"{prefix}.{name}"
-        normalized[full_name] = data
-
-        for category_name, category_data in data.items():
-            if isinstance(category_data, dict) and category_data.get("Type") == "Category":
-                normalized.update(
-                    normalize_search_space(category_data, f"{full_name}.{category_name}")
-                )
-
-    return normalized
+    return {parameter["Name"]: parameter
+            for region in search_space.describe_regions() for parameter in region["Parameters"]}
 
 
-def build_distributions(search_space):
+def build_distributions(specs):
     distributions = {}
 
-    for param_name, param_data in search_space.items():
-        if param_name == "Structure":
-            continue
+    for param_name, param_data in specs.items():
         hp_type = param_data.get("Type")
         
         # FLOAT
@@ -94,26 +77,11 @@ def extract_objective_values(objectives_dict):
     return list(objectives_dict.values())
 
 
-def reconstruct_study(input_data):
-    experiment_description = (
-        input_data["experiment_description"]
-    )
-
-    search_space = normalize_search_space(
-        experiment_description["Context"]
-        ["SearchSpace"]
-    )
-
-    objectives = (
-        experiment_description["Context"]
-        ["TaskConfiguration"]
-        ["Objectives"]
-    )
-
+def reconstruct_study(payload, search_space, objectives):
     directions = build_directions(objectives)
 
     distributions = build_distributions(
-        search_space
+        parameter_specs(search_space)
     )
 
     # CREATE STUDY
@@ -127,12 +95,12 @@ def reconstruct_study(input_data):
         )
 
     # ADD TRIALS
-    for t in input_data["trials"]:
+    for t in payload["trials"]:
         params = t["configurations"]
 
         objective_values = [
-            float(value)
-            for value in t["results"].values()
+            float(t["results"][name])
+            for name in objectives
         ]
 
         # in a hierarchical search space a trial holds only the parameters of its activated regions
@@ -221,9 +189,9 @@ def interpolate_zmap(
 def get_axis_values(
     study,
     parameter: str,
-    search_space,
+    specs,
 ):
-    parameter_search_space = search_space.get(parameter)
+    parameter_search_space = specs.get(parameter)
 
     if parameter_search_space is None:
         raise ValueError(
@@ -278,48 +246,37 @@ def get_axis_values(
 
 
 # DIRECTLY CALLABLE FUNCTIONS
-def calculate_importances(payload):
+def calculate_importances(payload, search_space, objectives):
     allRes = payload["trials"]
     if len(allRes) < 2:
         return {}
 
-    study = reconstruct_study(payload)
+    study = reconstruct_study(payload, search_space, objectives)
 
     parameters = payload.get("parameters", [])
     objective = payload.get("objective")
 
-    experiment_description = payload["experiment_description"]
-
-    objective_names = list(
-        experiment_description["Context"]
-        ["TaskConfiguration"]
-        ["Objectives"]
-        .keys()
-    )
+    objective_names = list(objectives.keys())
 
     objective_index = objective_names.index(objective)
+
+    # with a custom target, Optuna's default evaluator measures what leads to low values
+    sign = 1 if objectives[objective]["Minimization"] else -1
 
     importances = optuna.importance.get_param_importances(
         study,
         params=parameters if parameters else None,
-        target=lambda trial: trial.values[objective_index]
+        target=lambda trial: sign * trial.values[objective_index]
     )
 
     return {
         "importances": importances
     }
 
-def calculate_pareto(payload):
-    study = reconstruct_study(payload)
+def calculate_pareto(payload, search_space, objectives):
+    study = reconstruct_study(payload, search_space, objectives)
 
-    experiment_description = payload["experiment_description"]
-
-    objective_names = list(
-        experiment_description["Context"]
-        ["TaskConfiguration"]
-        ["Objectives"]
-        .keys()
-    )
+    objective_names = list(objectives.keys())
 
     objective1 = payload["objective1"]
     objective2 = payload["objective2"]
@@ -354,47 +311,35 @@ def calculate_pareto(payload):
         "pareto_points": pareto_points,
     }
         
-def calculate_contour(payload):
+def calculate_contour(payload, search_space, objectives):
     allRes = payload["trials"]
 
     if len(allRes) < 2:
         return {}
 
-    study = reconstruct_study(payload)
+    study = reconstruct_study(payload, search_space, objectives)
 
     param1 = payload["param1"]
     param2 = payload["param2"]
     objective = payload["objective"]
 
-    experiment_description = payload["experiment_description"]
-
-    objective_names = list(
-        experiment_description
-        ["Context"]
-        ["TaskConfiguration"]
-        ["Objectives"]
-        .keys()
-    )
+    objective_names = list(objectives.keys())
 
     objective_index = objective_names.index(objective)
 
-    search_space = normalize_search_space(
-        experiment_description
-        ["Context"]
-        ["SearchSpace"]
-    )
+    specs = parameter_specs(search_space)
 
     # get axes
     xi, x_categories = get_axis_values(
         study,
         param1,
-        search_space,
+        specs,
     )
 
     yi, y_categories = get_axis_values(
         study,
         param2,
-        search_space,
+        specs,
     )
 
     # grid dimensions
@@ -496,3 +441,19 @@ def calculate_contour(payload):
     return {
         "contour": contour
     }
+
+
+class PlotService:
+    """
+    The plots are computed from the search space and the objectives of the experiment, which main-node holds. A plot
+    request carries only what is specific to the plot.
+    """
+
+    def calculate_importances(self, payload, experiment: Experiment):
+        return calculate_importances(payload, experiment.search_space, experiment.get_objectives())
+
+    def calculate_pareto(self, payload, experiment: Experiment):
+        return calculate_pareto(payload, experiment.search_space, experiment.get_objectives())
+
+    def calculate_contour(self, payload, experiment: Experiment):
+        return calculate_contour(payload, experiment.search_space, experiment.get_objectives())
