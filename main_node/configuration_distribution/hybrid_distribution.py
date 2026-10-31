@@ -39,6 +39,10 @@ class EventGate:
         self.triggered = False
         self.timer = threading.Timer(self._timeout, self._trigger_by_timeout)
         self.timer.start()
+
+        # exactly one released worker per wave publishes the next selection request
+        self.publish_lock = threading.Lock()
+        self.has_published = False
         # self.logger.info(f"New gate created with batch_size {self._batch_size} and timeout {self._timeout}s")
 
     def _trigger_release(self, result: str):
@@ -99,9 +103,12 @@ class EventGate:
         if self.cleanup_callback:
             self.cleanup_callback(stats)
 
-    def wait_at_gate(self):
+    def wait_at_gate(self) -> bool:
         """
         The main barrier logic. The worker thread just waits here.
+
+        :return: True for exactly one released worker per wave (the designated
+                 publisher), False for the rest.
         """
         # 1. Count arrival
         with self.count_lock:
@@ -119,6 +126,10 @@ class EventGate:
         self.gate.wait()
         wait_time = time.time() - wait_start_time
 
+        with self.publish_lock:
+            should_publish = not self.has_published
+            self.has_published = True
+
         is_last_reporter = False
         
         with self.stats_lock:
@@ -130,6 +141,8 @@ class EventGate:
 
         if is_last_reporter:
             self._aggregate_and_cleanup()
+
+        return should_publish
 
 class HybridDistribution(AbstractDistribution):
     """
@@ -223,11 +236,14 @@ class HybridDistribution(AbstractDistribution):
 
         gate = self._get_or_create_gate()
 
-        gate.wait_at_gate()
+        should_publish = gate.wait_at_gate()
 
-        publish(exchange='get_new_configuration_exchange',
-                routing_key=experiment_id,
-                body=body)
+        # One request per released wave, carrying the full batch size, so a single
+        # surrogate build proposes BatchSize points (multi-point proposal).
+        if should_publish:
+            publish(exchange='get_new_configuration_exchange',
+                    routing_key=experiment_id,
+                    body=json.dumps({"worker_capacity": self._batch_size}))
 
     def dispatch(self, experiment_id, body):
 

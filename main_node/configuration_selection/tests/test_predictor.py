@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pandas as pd
 
 from configuration_selection.model.predictor import Predictor
-from core_entities.configuration import Configuration
+from core_entities.configuration import Configuration, PartialConfiguration
 
 
 def _make_config(parameters):
@@ -16,32 +16,29 @@ def _make_region(parent_name, activation_category, hp_names):
                  for hp_name in hp_names)
 
 
-class TestUpdatePrediction:
+class TestRegionPredictionsAreMerged:
 
-    def test_updating_prediction_with_colliding_objective_columns(self):
+    def test_parameters_of_every_region_are_kept_and_objectives_do_not_collide(self):
         """
-        Each hierarchical region's model predicts the same objective column names, so merging several regions'
-        predictions must rename those columns.
+        Each hierarchical region's model predicts the same objective names, so a point walking several
+        regions must keep every region's parameters and still end up with one value per objective.
         """
         region_names = [f"hp{i}" for i in range(4)]
-        predicted = pd.DataFrame()
+        point = PartialConfiguration()
         for i, hp_name in enumerate(region_names):
-            partial_configuration = pd.DataFrame({hp_name: [i], "Y1": [float(i)]})
-            predicted = Predictor._update_prediction(None, predicted, partial_configuration, str(i), [hp_name])
+            point.absorb(pd.Series({hp_name: i, "Y1": float(i)}), _make_region("root", "root", [hp_name]))
 
-        assert len(predicted) == 1
-        assert set(region_names).issubset(predicted.columns)
+        configuration = point.to_configuration("experiment_id", prediction_info={})
+        assert configuration.parameters == {hp_name: i for i, hp_name in enumerate(region_names)}
+        assert configuration.predicted_result == [1.5]
 
-        objective_columns = [c for c in predicted.columns if c not in region_names]
-        assert len(objective_columns) == len(region_names)
-        assert len(set(objective_columns)) == len(objective_columns)
-        assert sorted(predicted[objective_columns].iloc[0].tolist()) == [0.0, 1.0, 2.0, 3.0]
+    def test_single_region_prediction_is_returned_as_is(self):
+        point = PartialConfiguration()
+        point.absorb(pd.Series({"hp0": 1, "Y1": 0.5}), _make_region("root", "root", ["hp0"]))
 
-    def test_updating_prediction_with_no_prior_predictions_returns_partial_configuration_unchanged(self):
-        partial_configuration = pd.DataFrame({"hp0": [1], "Y1": [0.5]})
-        merged = Predictor._update_prediction(None, pd.DataFrame(), partial_configuration, "0", ["hp0"])
-
-        pd.testing.assert_frame_equal(merged, partial_configuration)
+        configuration = point.to_configuration("experiment_id", prediction_info={})
+        assert configuration.parameters == {"hp0": 1}
+        assert configuration.predicted_result == [0.5]
 
 
 class TestConsideredConfigsForRegion:
@@ -58,8 +55,8 @@ class TestConsideredConfigsForRegion:
         region_a = _make_region("algorithm", "A", ["A.param"])
         region_b = _make_region("algorithm", "B", ["B.param"])
 
-        configs_for_a = Predictor._considered_configs_for_region(None, base_considered_configs, region_a, ["A.param"])
-        configs_for_b = Predictor._considered_configs_for_region(None, base_considered_configs, region_b, ["B.param"])
+        configs_for_a = Predictor._configs_within_region(region_a, base_considered_configs)
+        configs_for_b = Predictor._configs_within_region(region_b, base_considered_configs)
 
         assert [c.parameters["algorithm"] for c in configs_for_a] == ["A"]
         assert [c.parameters["algorithm"] for c in configs_for_b] == ["B"]
@@ -68,7 +65,7 @@ class TestConsideredConfigsForRegion:
         base_considered_configs = [_make_config({"algorithm": "A"})]
         root_region = _make_region("root", "root", ["algorithm"])
 
-        configs = Predictor._considered_configs_for_region(None, base_considered_configs, root_region, ["algorithm"])
+        configs = Predictor._configs_within_region(root_region, base_considered_configs)
 
         assert configs == base_considered_configs
 
@@ -83,8 +80,7 @@ class TestConsideredConfigsForRegion:
         ]
         deeper_region = _make_region("N01.O1", "N01.O1.X", ["N01.O1.X.param"])
 
-        configs = Predictor._considered_configs_for_region(None, base_considered_configs, deeper_region,
-                                                            ["N01.O1.X.param"])
+        configs = Predictor._configs_within_region(deeper_region, base_considered_configs)
 
         assert [c.parameters["branch"] for c in configs] == ["N01"]
 
@@ -96,30 +92,23 @@ class TestConsideredConfigsForRegion:
         original = list(base_considered_configs)
         region_a = _make_region("algorithm", "A", ["A.param"])
 
-        Predictor._considered_configs_for_region(None, base_considered_configs, region_a, ["A.param"])
+        Predictor._configs_within_region(region_a, base_considered_configs)
 
         assert base_considered_configs == original
 
 
 class TestAveragePredictionsPerObjective:
 
-    def test_predictions_of_one_objective_from_several_regions_are_averaged(self):
-        predicted_values = pd.Series({"Y1": 1.0, "Y1__region2": 2.0, "Y1__region3": 6.0})
-        averaged = Predictor._average_predictions_per_objective(None, predicted_values)
+    @staticmethod
+    def _predicted_result(*rows):
+        point = PartialConfiguration()
+        for i, row in enumerate(rows):
+            hp_name = f"hp{i}"
+            point.absorb(pd.Series({hp_name: i, **row}), _make_region("root", "root", [hp_name]))
+        return point.to_configuration("experiment_id", prediction_info={}).predicted_result
 
-        assert averaged == {"Y1": 3.0}
+    def test_predictions_of_one_objective_from_several_regions_are_averaged(self):
+        assert self._predicted_result({"Y1": 1.0}, {"Y1": 2.0}, {"Y1": 6.0}) == [3.0]
 
     def test_every_objective_keeps_its_own_average(self):
-        predicted_values = pd.Series(
-            {"Y1": 1.0, "Y2": 10.0, "Y1__region2": 3.0, "Y2__region2": 20.0}
-        )
-        averaged = Predictor._average_predictions_per_objective(None, predicted_values)
-
-        assert averaged == {"Y1": 2.0, "Y2": 15.0}
-        assert list(averaged.keys()) == ["Y1", "Y2"]
-
-    def test_single_region_prediction_is_returned_as_is(self):
-        predicted_values = pd.Series({"Y1": 0.5})
-        averaged = Predictor._average_predictions_per_objective(None, predicted_values)
-
-        assert averaged == {"Y1": 0.5}
+        assert self._predicted_result({"Y1": 1.0, "Y2": 10.0}, {"Y1": 3.0, "Y2": 20.0}) == [2.0, 15.0]

@@ -6,11 +6,14 @@ import pickle
 import uuid
 from collections import OrderedDict
 from copy import deepcopy
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Mapping, MutableMapping, Tuple
+from typing import Any, Dict, List, Mapping, MutableMapping, Optional, Set, Tuple
 
 import pandas as pd
 from tools.front_API import API
+
+from core_entities.search_space import Hyperparameter
 
 
 class Configuration:
@@ -87,6 +90,15 @@ class Configuration:
         self._task_number = 0
         self.parameter_control_info = {}  # additional information used in parameter control experiments, e.g., initial solution for a warm startup of an optimizer within the worker node
         self.experiment_id = experiment_id
+        # Per-Configuration measurement budget, set by the Racing layer to raise a
+        # survivor's budget for the next rung and spent by the RepetitionManager
+        # (BudgetAwareRepeater). None means the Instance's own target applies.
+        self.task_budget: Optional[int] = None
+        # Rung this Configuration was dispatched for, so the Racing layer can
+        # recognise a result that arrives after its rung was closed.
+        self.rung_token: Optional[int] = None
+        # Shared by all points of one Predictor proposal (one model build).
+        self.proposal_batch_id: Optional[str] = None
         # Configuration status flags
         self.status = {'enabled': True, 'evaluated': False, 'measured': False}
 
@@ -154,6 +166,22 @@ class Configuration:
     def get_tasks(self) -> Mapping:
         return self._tasks.copy()
 
+    def reset_tasks(self) -> None:
+        """
+        Forget every Task measured so far, and the results derived from them.
+
+        Used by the Racing promotion path when a rung budget scales what a single
+        Task measures (task_time) instead of how often it is repeated: a
+        re-measurement at a higher fidelity is a new measurement, and averaging it
+        together with the lower-fidelity ones would describe neither.
+        """
+        self._tasks = {}
+        self._results = OrderedDict()
+        self._standard_deviation = []
+        self._evaluation_time = None
+        self._task_number = 0
+        self.number_of_failed_tasks = 0
+
     def get_required_results_with_marks_from_all_tasks(self) -> Tuple[List[OrderedDict], List[float], List[str]]:
         from_all_tasks = []
         evaluation_times = []
@@ -187,7 +215,10 @@ class Configuration:
                            "number_of_failed_tasks": self.number_of_failed_tasks,
                            "_task_number": self._task_number,
                            "parameter_control_info": self.parameter_control_info,
-                           "experiment_id": self.experiment_id
+                           "experiment_id": self.experiment_id,
+                           "task_budget": self.task_budget,
+                           "rung_token": self.rung_token,
+                           "proposal_batch_id": self.proposal_batch_id
                            }
         return json.dumps(dictionary_dump)
 
@@ -207,6 +238,9 @@ class Configuration:
         conf.number_of_failed_tasks = dictionary_dump["number_of_failed_tasks"]
         conf._task_number = dictionary_dump["_task_number"]
         conf.parameter_control_info = dictionary_dump["parameter_control_info"]
+        conf.task_budget = dictionary_dump.get("task_budget")
+        conf.rung_token = dictionary_dump.get("rung_token")
+        conf.proposal_batch_id = dictionary_dump.get("proposal_batch_id")
         return conf
 
     def is_better(self, o_minimize: List[bool], other: Configuration) -> bool:
@@ -369,3 +403,39 @@ class Configuration:
         record["Task_ID"] = task['task id']
         record["Task"] = task
         return record
+
+
+@dataclass
+class PartialConfiguration:
+    """
+    One point of a multi-point proposal, while it is still being assembled.
+
+    A lightweight builder for a :class:`Configuration`: the Predictor walks the
+    tree-shaped search space level by level and each point keeps its own lineage -
+    the parameters it has decided on so far, and the regions it activated on the
+    previous level and has yet to expand. This is what keeps a point on a single
+    root-to-leaf branch when sibling points descend into other branches. Once the
+    walk is done, :meth:`to_configuration` produces the finished Configuration.
+    """
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    # Every region's model predicts all objectives; collected per objective name.
+    predicted_values: Dict[str, List[float]] = field(default_factory=dict)
+    pending_regions: Set[Tuple[Hyperparameter]] = field(default_factory=set)
+    type: Configuration.Type = Configuration.Type.PREDICTED
+
+    def absorb(self, candidate: pd.Series, region: Tuple[Hyperparameter]) -> None:
+        """Take one candidate row of a region: its parameters and its objective values."""
+        region_hp_names = [hp.name for hp in region]
+        # to_dict() unboxes the numpy scalars of the row into native Python types,
+        # which the database can encode.
+        for name, value in candidate.to_dict().items():
+            if name in region_hp_names:
+                self.parameters[name] = value
+            else:
+                self.predicted_values.setdefault(name, []).append(value)
+
+    def to_configuration(self, experiment_id: str, prediction_info: Mapping) -> Configuration:
+        configuration = Configuration(self.parameters, self.type, experiment_id, prediction_info=prediction_info)
+        # One value per objective: the regions' predictions are averaged.
+        configuration.predicted_result = [sum(values) / len(values) for values in self.predicted_values.values()]
+        return configuration

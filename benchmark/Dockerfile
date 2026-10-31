@@ -4,6 +4,8 @@ FROM brisedev/benchmark-dev:2.6.1
 COPY ./main_node/core_entities /home/benchmark_user/core_entities/
 COPY ./main_node/tools /home/benchmark_user/tools/
 COPY ./main_node/logger /home/benchmark_user/logger/
+# For the rung ladder (repeater.budget_schedule), used to size the safety nets.
+COPY ./main_node/repeater /home/benchmark_user/repeater/
 
 # Copying common information for benchmark
 COPY ./benchmark/ /home/benchmark_user/

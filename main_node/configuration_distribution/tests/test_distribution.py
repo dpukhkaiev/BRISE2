@@ -377,12 +377,69 @@ class TestBatchedDistribution:
         # * Check that the barrier was correctly waited upon
         mock_barrier_instance.wait.assert_called_once()
 
-        # * Check that publish was called
+        # * Check that one wave request with the full batch size was published
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=self.body
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
+
+    @patch('configuration_distribution.batched_distribution.publish')
+    def test_only_one_worker_per_wave_publishes(self, mock_publish):
+        """
+        Multi-point proposal: a released wave triggers exactly ONE selection request
+        (worker_capacity = BatchSize). Only the worker with barrier index 0 publishes.
+        """
+        distributionAlgorithm = BatchedDistribution(self.config)
+        distributionAlgorithm.logger = MagicMock()
+        mock_barrier = MagicMock()
+        mock_barrier.n_waiting = 0
+        distributionAlgorithm._barrier = mock_barrier
+
+        mock_barrier.wait.return_value = 3
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
+        mock_publish.assert_not_called()
+
+        mock_barrier.wait.return_value = 0
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
+        mock_publish.assert_called_once_with(
+            exchange='get_new_configuration_exchange',
+            routing_key=self.experiment_id,
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
+        )
+
+    @patch('configuration_distribution.batched_distribution.publish')
+    def test_handle_recovers_from_broken_barrier(self, mock_publish):
+        """
+        A wave left incomplete (a worker died, or the barrier was aborted) must not
+        hang the waiting workers: the broken barrier is dropped and nothing is published.
+        """
+        distributionAlgorithm = BatchedDistribution(self.config)
+        distributionAlgorithm.logger = MagicMock()
+        broken_barrier = threading.Barrier(distributionAlgorithm._batch_size)
+        broken_barrier.abort()
+        distributionAlgorithm._barrier = broken_barrier
+
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
+
+        assert distributionAlgorithm._barrier is None
+        mock_publish.assert_not_called()
+        distributionAlgorithm.logger.warning.assert_called_once()
+
+    @patch('threading.Thread')
+    def test_dispatch_replaces_broken_barrier(self, MockThread):
+        """A subsequent dispatch replaces a broken barrier with a fresh one."""
+        distributionAlgorithm = BatchedDistribution(self.config)
+        distributionAlgorithm.logger = MagicMock()
+        distributionAlgorithm.first_it = MagicMock(return_value=False)
+        broken_barrier = threading.Barrier(distributionAlgorithm._batch_size)
+        broken_barrier.abort()
+        distributionAlgorithm._barrier = broken_barrier
+
+        distributionAlgorithm.dispatch(self.experiment_id, self.body)
+
+        assert distributionAlgorithm._barrier is not broken_barrier
+        assert not distributionAlgorithm._barrier.broken
 
 class TestHybridDistribution:
 
@@ -543,11 +600,11 @@ class TestHybridDistribution:
         # * Check that the worker waited at the gate
         mock_gate_instance.wait_at_gate.assert_called_once()
 
-        # * Check that the new configuration was published after unblocking from the gate
+        # * Check that one wave request was published after unblocking from the gate
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=self.body
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
 
     @patch('threading.Thread')
@@ -575,12 +632,23 @@ class TestHybridDistribution:
         # * The worker still waits at the gate.
         mock_gate_instance.wait_at_gate.assert_called_once()
 
-        # * A new configuration is published after the wait.
+        # * A wave request is published after the wait.
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=self.body
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
+
+    @patch('configuration_distribution.hybrid_distribution.publish')
+    def test_non_publisher_worker_stays_silent(self, mock_publish):
+        distributionAlgorithm = HybridDistribution(self.config)
+        mock_gate_instance = MagicMock()
+        mock_gate_instance.wait_at_gate.return_value = False
+        distributionAlgorithm._gate = mock_gate_instance
+
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
+
+        mock_publish.assert_not_called()
 
     def test_cleanup_gate(self):
         """
@@ -696,6 +764,29 @@ class TestHybridDistribution:
 
 
 class TestEventGate:
+
+    def test_exactly_one_publisher_per_wave(self):
+        """
+        wait_at_gate returns True for exactly one released worker, so a wave
+        produces a single selection request however many workers it released.
+        """
+        gate = EventGate(3, 30, MagicMock())
+        results = []
+        results_lock = threading.Lock()
+
+        def worker():
+            should_publish = gate.wait_at_gate()
+            with results_lock:
+                results.append(should_publish)
+
+        threads = [threading.Thread(target=worker) for _ in range(3)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+
+        assert len(results) == 3
+        assert sum(1 for r in results if r) == 1
     """Unit tests for the timeout-based synchronization gate (EventGate)."""
 
     def test_release_on_completion(self):

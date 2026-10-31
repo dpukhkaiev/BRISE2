@@ -609,13 +609,27 @@ ConfigurationSelection {
       xor CandidateSelector {
         BestMultiPointProposal {
           NumberOfPoints -> integer
-          [NumberOfPoints == 1] // multipoint proposal is disabled until synchronous mode is provided
+          [NumberOfPoints >= 1]
+          // Multi-point proposal (N > 1) only makes sense when the pipeline is
+          // bounded: either a synchronizing distribution mode releases a whole
+          // wave at once, or SuccessiveHalving owns the rung barrier itself.
+          [if NumberOfPoints > 1 then (DistributionMode.BatchedDistribution or DistributionMode.HybridDistribution or Racing.SuccessiveHalving)]
+          // The wave size (BatchSize) must equal the number of proposed points so
+          // one surrogate build feeds exactly one wave of Workers.
+          [if DistributionMode.BatchedDistribution then NumberOfPoints == DistributionMode.BatchedDistribution.BatchSize]
+          [if DistributionMode.HybridDistribution then NumberOfPoints == DistributionMode.HybridDistribution.BatchSize]
+          // N is the widest bracket's rung 0, so one build of N points covers the rung 0 of every bracket.
+          [if Racing.SuccessiveHalving then NumberOfPoints == Racing.SuccessiveHalving.N]
           Type -> predefined
           [Type = "best_multi_point"]
         }
         RandomMultiPointProposal {
           NumberOfPoints -> integer
-          [NumberOfPoints == 1] // multipoint proposal is disabled until synchronous mode is provided
+          [NumberOfPoints >= 1]
+          [if NumberOfPoints > 1 then (DistributionMode.BatchedDistribution or DistributionMode.HybridDistribution or Racing.SuccessiveHalving)]
+          [if DistributionMode.BatchedDistribution then NumberOfPoints == DistributionMode.BatchedDistribution.BatchSize]
+          [if DistributionMode.HybridDistribution then NumberOfPoints == DistributionMode.HybridDistribution.BatchSize]
+          [if Racing.SuccessiveHalving then NumberOfPoints == Racing.SuccessiveHalving.N]
           Type -> predefined
           [Type = "random_multi_point"]
         }
@@ -665,6 +679,23 @@ RepetitionManager {
         [MinTasksPerUnderperformingConfiguration = 1]
       }
     }
+  }
+
+  // Optional multi-fidelity ladder: a Configuration can carry a budget of its
+  // own (b_k = MinBudget * Eta^k) instead of the Instance's flat one. Racing
+  // walks the ladder; the Instance only has to honour the budget it is handed.
+  BudgetSchedule ? {
+    Eta -> integer
+    [Eta >= 2]
+    MinBudget -> integer
+    [MinBudget >= 1]
+    MaxBudget -> integer
+    [MaxBudget >= MinBudget]
+    // What one unit buys: "repetitions" repeats the Task, "task_time" scales the
+    // Task's own Scenario.Budget.Amount. Only task_time is multi-fidelity;
+    // repetitions merely sharpen the estimate.
+    BudgetType -> string
+    [BudgetType in {"repetitions", "task_time"}]
   }
 }
 // ----------------------Stop Condition--------------------------
@@ -756,7 +787,37 @@ xor DistributionMode {
     [Type = "hybrid_distribution"]
   }
 }
+// --------------------Configuration Racing----------------------
+// Optional elimination layer: race a batch of Configurations against each other
+// and keep only the best at every rung of RepetitionManager.BudgetSchedule.
+// NumberOfBrackets is the Hyperband outer loop over (batch size, start budget).
+Racing ? {
+  SuccessiveHalving {
+    // Batch size: the widest bracket's rung 0, proposed by one surrogate build.
+    N -> integer
+    [N >= 2]
+    NumberOfBrackets -> integer
+    [NumberOfBrackets >= 1]
+    Type -> predefined
+    [Type = "successive_halving"]
 
+    // The ladder Racing walks belongs to the RepetitionManager, and only the
+    // QuantityBased Instance honours a per-Configuration budget today.
+    [self requires RepetitionManager.BudgetSchedule]
+    [self requires RepetitionManager.Instance.QuantityBased]
+
+    // A rung is a barrier, so Racing must be the only wave publisher; a
+    // batched/hybrid mode would inject waves the rung never counted.
+    [self requires DistributionMode.AsynchronousDistribution]
+
+    // Ranks the rung with whatever arrived if a measurement is lost - a Task
+    // terminated as a straggler never reports a result. Absent = wait forever.
+    RungTimeout ? {
+      TimeoutInSeconds -> float
+      [TimeoutInSeconds > 0]
+    }
+  }
+}
 // ---------------------Transfer Learning------------------------
 TransferLearning ? {
   TransferExpediencyDetermination {

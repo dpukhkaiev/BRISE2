@@ -30,24 +30,44 @@ class BatchedDistribution(AbstractDistribution):
         self.logger.info(f"Waiting for all workers to be synchronized")
 
         # ? wait until every worker has came to wait()
-        if self._barrier:
-            self.logger.info(f'Workers currently waiting {str(self._barrier.n_waiting + 1)}')
-            self._barrier.wait()
+        barrier = self._barrier
+        release_index = None
+        if barrier:
+            self.logger.info(f'Workers currently waiting {str(barrier.n_waiting + 1)}')
+            try:
+                release_index = barrier.wait()
+            except threading.BrokenBarrierError:
+                # The wave can never release on its own (a worker died or the
+                # barrier was aborted): start the next wave from a fresh barrier.
+                self.logger.warning("Barrier broke before the batch completed; "
+                                    "discarding it and recovering for the next wave.")
+                self._discard_broken_barrier(barrier)
+                return
 
         self.logger.info(f"Worker synchronized")
 
-        publish(exchange='get_new_configuration_exchange',
-                routing_key=experiment_id,
-                body=body)
+        # One request per released wave, carrying the full batch size, so a single
+        # surrogate build proposes BatchSize points (multi-point proposal).
+        # Barrier.wait() hands every released thread a unique index; index 0 publishes.
+        if release_index in (None, 0):
+            publish(exchange='get_new_configuration_exchange',
+                    routing_key=experiment_id,
+                    body=json.dumps({"worker_capacity": self._batch_size}))
+
+    def _discard_broken_barrier(self, barrier):
+        """Drop a broken barrier, unless a fresh one has already replaced it."""
+        with self._barrier_lock:
+            if self._barrier is barrier:
+                self._barrier = None
 
     def dispatch(self, experiment_id, body):
 
         if self.first_it(experiment_id):
             return
 
-        # * Check for existing or broken barrier and create one
+        # * Check for a missing or broken barrier and create a fresh one
         with self._barrier_lock:
-            if self._barrier is None:
+            if self._barrier is None or self._barrier.broken:
                 self.logger.info(f"Creating new barrier with size {self._batch_size}")
                 self._barrier = threading.Barrier(self._batch_size)
 

@@ -42,7 +42,9 @@ Synchronizes workers using a python barrier to ensure they process tasks in batc
 * **`dispatch(...)`**: creates the barrier when needed and spawns a **daemon thread** to run the logic. This is
   critical to prevent the main event-thread from blocking while waiting for the barrier.
 * **`handle_configuration_distribution(...)`**: waits at the barrier. The code execution pauses here until the
-  `BatchSize` arrival, at which point all configurations are published simultaneously.
+  `BatchSize` arrival. The released wave then publishes a single request for `BatchSize` configurations, so one
+  surrogate build proposes the whole batch (multi-point proposal). A broken barrier is discarded so the next wave
+  starts from a fresh one.
 
 ### 3. Hybrid Distribution ([hybrid_distribution.py](hybrid_distribution.py))
 A smart barrier approach that prevents the pipeline from stalling due to slow workers or deadlocks by using a
@@ -60,7 +62,8 @@ its threads waited, and hands those statistics over when the finished wave is cl
 * **`dispatch(...)`**: spawns a **daemon thread** to run the logic, and records the evaluation times reported by
   the workers.
 * **`handle_configuration_distribution(...)`**: workers wait at the gate. This allows the logic to release threads
-  **either** when a full batch is ready **or** when the maximum waiting time expires.
+  **either** when a full batch is ready **or** when the maximum waiting time expires. Exactly one released worker
+  publishes the request for the next `BatchSize` configurations.
 * **Adaptive timeout**: `InitialTimeoutInSeconds` applies to the first waves only. Once enough evaluation times have been
   observed, every wave is given a timeout derived from how long the preceding configurations actually took, plus a
   safety margin. Workers report evaluation time in milliseconds; it is converted to seconds before being used as a

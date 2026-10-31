@@ -3,6 +3,8 @@ import logging
 import os
 
 from core_entities.configuration import Configuration
+from repeater.budget_aware import BudgetAwareRepeater
+from repeater.budget_type import budget_schedule
 from repeater.results_check.outliers_detection.outliers_detector_selector import (
     get_outlier_detectors
 )
@@ -93,9 +95,15 @@ class RepeaterOrchestration:
         msg = parameters["Instance"][feature_name]["Type"]
         logger.debug(f"Assigned {msg} Repetition Management strategy.")
         if os.environ.get('TEST_MODE') != 'UNIT_TEST':
-            return repeater_class(self.experiment_description, self.experiment_id)
+            repeater = repeater_class(self.experiment_description, self.experiment_id)
         else:
-            return repeater_class(self.experiment_description, self.experiment_id, self.experiment)
+            repeater = repeater_class(self.experiment_description, self.experiment_id, self.experiment)
+
+        # A declared ladder lets a Configuration carry its own rung budget; the
+        # Instance keeps deciding everything else.
+        if budget_schedule(self.experiment_description):
+            repeater = BudgetAwareRepeater(repeater, self.experiment_description, self.experiment_id)
+        return repeater
 
     def evaluation_by_type(self, current_configuration: Configuration):
         """
@@ -107,14 +115,11 @@ class RepeaterOrchestration:
         if self._type is None:
             raise TypeError("Repeater evaluation Type was not selected!")
         else:
-            if not current_configuration.status['evaluated'] or current_configuration.results:
-                number_of_measurements = self._type.evaluate(current_configuration=current_configuration)
-                current_configuration.status['evaluated'] = True
-                if number_of_measurements == 0:
-                    current_configuration.status['measured'] = True
-                return number_of_measurements
-            else:
-                return 0
+            number_of_measurements = self._type.evaluate(current_configuration=current_configuration)
+            current_configuration.status['evaluated'] = True
+            if number_of_measurements == 0:
+                current_configuration.status['measured'] = True
+            return number_of_measurements
 
     def measure_configurations(self, channel, method, properties, body):
         """
@@ -159,8 +164,7 @@ class RepeaterOrchestration:
                 publish(exchange="experiment_api_exchange",
                         routing_key=self.experiment_id,
                         body="increment_bad_configuration_number")
-                configuration.disable_configuration()
-            configuration.status['enabled'] = False
+            configuration.disable_configuration()
         current_measurement = {
             str(configuration.parameters): {
                 'parameters': configuration.parameters,

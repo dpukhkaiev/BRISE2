@@ -6,6 +6,7 @@ import uuid
 
 from configuration_distribution.configuration_distribution_orchestrator import ConfigurationDistributionOrchestrator
 from core_entities.configuration import Configuration
+from repeater.budget_type import is_task_time_budget, scale_scenario_budget
 from tools.mongo_dao import MongoDB
 from tools.rabbitmq_common_tools import RabbitMQConnection, publish
 
@@ -35,6 +36,10 @@ class WSClient:
         self._scenario = task_configuration["Scenario"]
         self._time_for_one_task_running = task_configuration[
             "MaxTimeToRunTask"] if "MaxTimeToRunTask" in task_configuration else float("inf")
+        # With a task_time rung budget the Scenario of a Task is not the declared
+        # one: its Budget covers as many units as the Configuration's rung, and
+        # the straggler limit has to grow with it.
+        self._budget_scales_task = is_task_time_budget(experiment_description)
         # Properties that holds current task data.
         self.measurement = {}
         # Create a connection and channel for sending configurations
@@ -62,23 +67,43 @@ class WSClient:
         :param measurement: measurement description
         """
         number_ready_task = len(measurement['tasks_results'])
+        config = Configuration.from_json(measurement["configuration"])
+        scenario, time_for_run = self._task_budget(config)
         for i, task_parameter in enumerate(measurement['tasks_to_send']):
             if i >= number_ready_task:
                 self.logger.info("Sending task: %s" % task_parameter)
                 task_description = dict()
-                task_description["experiment_id"] = self.experiment_id
+                task_description["experiment_id"] = config.experiment_id
                 task_description["id_measurement"] = id_measurement
                 task_description["task_id"] = str(uuid.uuid4())
-                config = Configuration.from_json(measurement["configuration"])
-                task_description["experiment_id"] = config.experiment_id
                 task_description["task_name"] = self._task_name
-                task_description["time_for_run"] = self._time_for_one_task_running
-                task_description["Scenario"] = self._scenario
+                task_description["time_for_run"] = time_for_run
+                task_description["Scenario"] = scenario
                 task_description["result_structure"] = self._objectives
                 task_description["parameters"] = task_parameter
                 publish(exchange='',
                         routing_key='task_queue',
                         body=json.dumps(task_description))
+
+    def _task_budget(self, configuration: Configuration) -> tuple:
+        """
+        The Scenario and the straggler limit one Task of `configuration` runs with.
+
+        Both are the declared ones, unless the Racing layer measures its rungs by
+        Task budget rather than by repetitions: then the Configuration's
+        rung scales the Scenario's own Budget, and the limit that terminates a
+        Task has to scale with it - otherwise every promoted Task is a straggler.
+
+        :return: (Scenario, time_for_run)
+        """
+        if not self._budget_scales_task or not configuration.task_budget:
+            return self._scenario, self._time_for_one_task_running
+
+        scenario = scale_scenario_budget(self._scenario, configuration.task_budget)
+        time_for_run = self._time_for_one_task_running
+        if time_for_run != float("inf"):
+            time_for_run *= configuration.task_budget
+        return scenario, time_for_run
 
     def work(self, ch, method, properties, body) -> None:
         """

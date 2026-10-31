@@ -60,14 +60,17 @@ class TreeParzenEstimator(Surrogate):
         if np.random.rand() <= self.random_fraction:
             return is_built
 
-        # 1. Check if enough data in model.
-        min_points_in_model = len(features.keys()) + 1
+        transformed_features = self._transform_configuration(features)
+
+        # 1. Check if enough data in model. The KDE needs strictly more
+        # observations than variables, and a transformer can widen one
+        # hyperparameter into several columns (e.g. a binary-encoded category).
+        min_points_in_model = len(transformed_features.keys()) + 1
         n_good = max(min_points_in_model, (self.top_n_percent * features.shape[0]) // 100)
 
         if len(features) < n_good * 2:
             return is_built
 
-        transformed_features = self._transform_configuration(features)
         transformed_labels = self._transform_values(labels)
         transformed_labels.reset_index(inplace=True, drop=True)  # reindex, since transformation changes indices
 
@@ -128,6 +131,20 @@ class TreeParzenEstimator(Surrogate):
         is_built = True
         return is_built
 
+    @staticmethod
+    def _bounded_density(density: float) -> float:
+        """Floor a KDE density, treating a non-finite one as unlikely.
+
+        statsmodels derives the number of levels of an unordered variable from
+        the data the KDE was fitted on. A category that is missing there makes
+        its kernel divide by zero, so the density of a Configuration carrying
+        that category comes back non-finite. Such a Configuration is one the KDE
+        has no evidence for, not an infinitely likely one.
+        """
+        if not np.isfinite(density):
+            return 1e-32
+        return max(1e-32, density)
+
     def predict(self, cfg: pd.Series, transform: bool = True) -> pd.DataFrame:
         if self.model == {}:
             return pd.DataFrame()
@@ -144,8 +161,12 @@ class TreeParzenEstimator(Surrogate):
         good_pdf = self.model['good'].pdf
         bad_pdf = self.model['bad'].pdf
 
-        predicted_probability_good = max(1e-32, good_pdf(transformed_configuration))
-        predicted_probability_bad = max(1e-32, bad_pdf(transformed_configuration))
+        # The missing-category division by zero is expected and handled by
+        # _bounded_density, so it must not flood the log on every candidate the
+        # optimizer evaluates.
+        with np.errstate(divide='ignore', invalid='ignore'):
+            predicted_probability_good = self._bounded_density(good_pdf(transformed_configuration))
+            predicted_probability_bad = self._bounded_density(bad_pdf(transformed_configuration))
 
         result = pd.DataFrame({self.objective["Name"] + "_probability_good": predicted_probability_good,
                                self.objective["Name"] + "_probability_bad": predicted_probability_bad}, index=[0])
