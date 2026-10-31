@@ -2,7 +2,6 @@ export interface ExperimentDescription {
     DomainDescription?: DomainDescription
     Context: {
         TaskConfiguration: TaskConfiguration
-        SearchSpace: unknown
     }
     TaskConfiguration?: TaskConfiguration
     Predictor?: Predictor
@@ -19,6 +18,24 @@ interface DomainDescription {
 
 interface PlotSelection {
     Plot?: Record<string, unknown>
+}
+
+// a parameter of the search space as main-node describes it (SearchSpace.describe_regions()); Inactive is the value
+// that stands for the parameter in a configuration where it is not active
+export interface ParameterSpec {
+    Name: string
+    Type: string
+    Level: number
+    Categories?: string[]
+    Lower?: number
+    Upper?: number
+    Inactive: string | number
+}
+
+// the parameters that are activated together; the ActivationCategory is 'root' for the top-level ones
+export interface SearchSpaceRegion {
+    ActivationCategory: string
+    Parameters: ParameterSpec[]
 }
 
 export interface SurrogateModel {

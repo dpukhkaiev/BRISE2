@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { regionLabel } from '../lib/regions'
+import type { SearchSpaceRegion } from '../model/experiment.model'
 
 defineOptions({ name: 'RegionTitle' })
 
 defineProps<{
-    regionParameters: string[]
+    region: SearchSpaceRegion
 }>()
 </script>
 
 <template>
   <div class="text-subtitle-1 region-title">
-    {{ regionLabel(regionParameters) }}
+    {{ regionLabel(region) }}
   </div>
 </template>
 
