@@ -147,7 +147,13 @@ export function renderSlice(
                         tickmode: "array" as const,
                         ...numericTicksWithInactive(spec)
                     }
-                    : {})
+                    : hasInactive && spec?.Categories
+                        // Plotly orders categories by first appearance, so the inactive one is put first
+                        ? {
+                            categoryorder: "array" as const,
+                            categoryarray: [spec.Inactive, ...spec.Categories]
+                        }
+                        : {})
         },
 
         yaxis: {

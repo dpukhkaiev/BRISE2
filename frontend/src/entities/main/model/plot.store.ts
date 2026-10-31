@@ -31,11 +31,22 @@ export const usePlotStore = defineStore('plots', () => {
     // final configuration suggested by BRISE
     const solution = ref<PointExp | null>(null)
     
+    // forgets the previous experiment: its measured points and the charts it selected
+    function clearCharts() {
+        allRes.value = []
+        solution.value = null
+        for (const chart of Object.keys(selected.value) as Array<keyof typeof selected.value>) {
+            selected.value[chart] = false
+        }
+        visibleCharts.value = []
+    }
+
     return {
         selected,
         visibleCharts,
         allRes,
         canChangeVisibleCharts,
-        solution
+        solution,
+        clearCharts
     }
 })

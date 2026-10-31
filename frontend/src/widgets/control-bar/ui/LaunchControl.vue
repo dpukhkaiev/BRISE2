@@ -14,7 +14,7 @@ const {
   isFinish,
   showDownload,
   selectedFile,
-  experiment_description,
+  shownConfiguration,
   isConnected,
   openDownloadOption,
 
@@ -25,7 +25,7 @@ const {
 
 
 const scenarioLabel = computed(() =>
-  resolveScenarioLabel(experiment_description.value?.Context?.TaskConfiguration?.Scenario)
+  resolveScenarioLabel(shownConfiguration.value?.Context?.TaskConfiguration?.Scenario)
 )
 </script>
 <template>
@@ -38,7 +38,7 @@ const scenarioLabel = computed(() =>
       <v-card-item class="mb-2">
         <div class="info-row">
           <span class="label">Experiment</span>
-          <span class="value"> {{ experiment_description?.Context?.TaskConfiguration?.TaskName }}</span>
+          <span class="value"> {{ shownConfiguration?.Context?.TaskConfiguration?.TaskName }}</span>
         </div>
       </v-card-item>
       <v-card-item>
@@ -79,8 +79,14 @@ const scenarioLabel = computed(() =>
         >
           Save Experiment
         </v-btn>
-        <v-file-input v-model="selectedFile" />
-        <v-btn @click="uploadFile">
+        <v-file-input
+          v-model="selectedFile"
+          :disabled="isRunning"
+        />
+        <v-btn
+          :disabled="isRunning"
+          @click="uploadFile"
+        >
           Upload Experiment
         </v-btn>
         <!--     <v-select v-model="selectedExperiment" :items="experiments">

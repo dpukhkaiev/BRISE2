@@ -2,7 +2,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { MainEvent } from './main.types'
 import { stompClient } from '../../../shared/api/stomp.client'
-import type { ExperimentDescription, ParameterSpec, SearchSpaceRegion } from '../../experiment/model/experiment.model'
+import type { ExperimentDescription, ParameterSpec, RawProductConfiguration, SearchSpaceRegion } from '../../experiment/model/experiment.model'
 import type { IMessage } from '@stomp/stompjs'
 import type { Observable } from 'rxjs'
 import { parseJsonWithInfinity } from '../../../shared/lib'
@@ -13,7 +13,11 @@ stompClient.connectionState$.subscribe(state => {
 })
 
 export const useMainEventStore = defineStore('mainEvent', () => {
+   // the description of the running experiment, written only by the description event
    const experiment_description = ref<ExperimentDescription | null>(null)
+   // the uploaded product configuration, written only by the upload and read only by Start: the description event
+   // has no search space, so the running description could not start an experiment again
+   const raw_product_configuration = ref<RawProductConfiguration | null>(null)
    // the search space regions as main-node describes them, in its canonical order
    const regions = ref<SearchSpaceRegion[]>([])
    // every parameter of the search space by its full name
@@ -109,5 +113,5 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
 
 
-   return { regions, specsByName, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
+   return { regions, specsByName, searchspaceReady, experiment_description, raw_product_configuration, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

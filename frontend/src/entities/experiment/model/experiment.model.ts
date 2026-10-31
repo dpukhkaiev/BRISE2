@@ -20,6 +20,12 @@ interface PlotSelection {
     Plot?: Record<string, unknown>
 }
 
+// the product configuration as uploaded and sent by Start: the description of the experiment together with its
+// search space, which main-node sends to the frontend separately, as regions
+export interface RawProductConfiguration extends Omit<ExperimentDescription, 'Context'> {
+    Context: ExperimentDescription['Context'] & { SearchSpace: unknown }
+}
+
 // a parameter of the search space as main-node describes it (SearchSpace.describe_regions()); Inactive is the value
 // that stands for the parameter in a configuration where it is not active
 export interface ParameterSpec {

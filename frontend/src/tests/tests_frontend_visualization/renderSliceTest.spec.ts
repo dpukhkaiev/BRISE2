@@ -207,6 +207,22 @@ describe('renderParaCoord', () => {
             expect(trace.x).toEqual([`${level}.high`, 'inactive'])
         })
 
+        it.each([
+            ['after', [trial({ [level]: `${level}.high` }, 10), trial({}, 20)]],
+            ['before', [trial({}, 20), trial({ [level]: `${level}.high` }, 10)]]
+        ])('is the first category of a nominal axis when its trial comes %s the others', (_, trials) => {
+            const { xaxis } = render(nominal, trials)
+
+            expect(xaxis.categoryorder).toBe('array')
+            expect(xaxis.categoryarray).toEqual(['inactive', `${level}.low`, `${level}.high`])
+        })
+
+        it('leaves the order of a nominal axis to Plotly when the parameter is active in every trial', () => {
+            const { xaxis } = render(nominal, [trial({ [level]: `${level}.high` }, 10), trial({ [level]: `${level}.low` }, 20)])
+
+            expect(xaxis.categoryorder).toBeUndefined()
+        })
+
         it('is drawn below the lower bound of a numeric parameter, on a labelled tick', () => {
             const { trace, xaxis } = render(numeric, [trial({ [level]: 4 }, 10), trial({}, 20)])
 

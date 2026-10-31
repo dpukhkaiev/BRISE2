@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { of, BehaviorSubject, Subject } from 'rxjs'
 import { MainEvent } from '../entities/main/model/main.types'
-import type { SearchSpaceRegion } from '../entities/experiment/model/experiment.model'
+import type { RawProductConfiguration, SearchSpaceRegion } from '../entities/experiment/model/experiment.model'
 
 const mockRegions: SearchSpaceRegion[] = [
     {
@@ -230,6 +230,25 @@ describe('useMainEventStore', () => {
 
         messages.next(descriptionMessage(mockRegions))
         expect(store.experimentFinished).toBe(false)
+    })
+
+    it('should have no raw product configuration until a file is uploaded', () => {
+        const store = useMainEventStore()
+        expect(store.raw_product_configuration).toBeNull()
+    })
+
+    it('should keep the raw product configuration apart from the description of the running experiment', () => {
+        const messages = new Subject<any>()
+        mockWatch.mockReturnValue(messages)
+        const uploaded = { Context: { TaskConfiguration: {}, SearchSpace: { N0: {} } } } as unknown as RawProductConfiguration
+
+        const store = useMainEventStore()
+        store.initEvent()
+        store.raw_product_configuration = uploaded
+        messages.next(descriptionMessage(mockRegions))
+
+        expect(store.raw_product_configuration).toEqual(uploaded)
+        expect(store.experiment_description).not.toEqual(uploaded)
     })
 
     it('should default searchspaceReady to false', () => {
