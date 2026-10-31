@@ -723,6 +723,33 @@ StopCondition {
     }
   }
 }
+// ------------------Configuration Distribution------------------
+// Selects how generated Configurations are dispatched to the Workers.
+xor DistributionMode {
+  // Send each Configuration to the Workers immediately (no synchronization)
+  AsynchronousDistribution {
+    Type -> predefined
+    [Type = "asynchronous_distribution"]
+  }
+  // Release a full wave only once BatchSize Workers have synchronized at a barrier
+  BatchedDistribution {
+    BatchSize -> integer
+    [BatchSize >= 1]
+    Type -> predefined
+    [Type = "batched_distribution"]
+  }
+  // Like Batched, but a per-wave InitialTimeoutInSeconds also releases the wave so
+  // slow/dead Workers cannot deadlock the pipeline
+  HybridDistribution {
+    BatchSize -> integer
+    [BatchSize >= 1]
+    InitialTimeoutInSeconds -> float
+    [InitialTimeoutInSeconds > 0]
+    Type -> predefined
+    [Type = "hybrid_distribution"]
+  }
+}
+
 // ---------------------Transfer Learning------------------------
 TransferLearning ? {
   TransferExpediencyDetermination {

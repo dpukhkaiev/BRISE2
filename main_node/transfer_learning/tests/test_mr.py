@@ -1,5 +1,6 @@
 from typing import Dict, Tuple
 from copy import deepcopy
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -9,6 +10,7 @@ from core_entities.search_space import SearchSpace, get_search_space_record
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from transfer_learning.transfer_learning_module import TransferLearningOrchestrator
+from transfer_learning.model_recommendation.dynamic_model_recommendation import DynamicModelRecommendation
 from sklearn.gaussian_process import GaussianProcessRegressor
 from tools.initial_config import load_experiment_setup
 from tools.restore_db import RestoreDB
@@ -228,3 +230,25 @@ class TestMR:
         experiment = Experiment(modified_description, search_space)
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         return experiment, search_space
+
+
+class TestMappingRegionModel:
+
+    def test_model_description_is_taken_from_the_level_of_the_region(self, get_experiment):
+        """
+        A single model description is shared by all regions on the same level, so a region index
+        must not be used to address the list of model descriptions.
+        """
+        # test_case_15 holds 6 regions spread over 4 levels
+        experiment_description, search_space = get_experiment(15)
+        recommendation = SimpleNamespace(experiment_description=experiment_description)
+        # an empty list of surrogate descriptions keeps the models as they were constructed
+        model_combination = {str(index): {"Model": []} for index in range(len(search_space.regions))}
+
+        mapping_region_model = DynamicModelRecommendation._build_mapping_region_model(
+            recommendation, model_combination, search_space)
+
+        assert list(mapping_region_model.keys()) == search_space.regions
+        for region, model in mapping_region_model.items():
+            assert model.model_name == "Model_{}".format(region[0].level)
+            assert model.region == region

@@ -38,23 +38,23 @@ help() {
   echo "                * test:  Running selected services locally by docker-compose using bridge networking mode."
   echo "        Optional parameters: "
   echo "        --event_service_host or -e: A parameter that overrides the hostname/IP of an event service."
-  echo "                                    By default equal the 'EventService.Address' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'EventService.Address' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --event_service_AMQP_port or -eAMQP: A parameter that overrides the AMQP port of an event service."
-  echo "                                    By default equal the 'EventService.AMQTPort' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'EventService.AMQTPort' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --event_service_GUI_port or -eGUI: A parameter that overrides the GUI port of an event service."
-  echo "                                    By default equal the 'EventService.GUIPort' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'EventService.GUIPort' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --database_host or -db_host: A parameter that overrides the hostname/IP of a BRISE database."
-  echo "                                    By default equal the 'Database.Address' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.Address' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --database_port or -db_port: A parameter that overrides the port of a BRISE database."
-  echo "                                    By default equal the 'Database.Port' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.Port' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --database_name or -db_name: A parameter that overrides the name of a BRISE database."
-  echo "                                    By default equal the 'Database.DatabaseName' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.DatabaseName' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --database_user or -db_user: A parameter that overrides the username of a BRISE database."
-  echo "                                    By default equal the 'Database.DatabaseUser' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.DatabaseUser' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --database_pass or -db_pass: A parameter that overrides the password of a BRISE database user."
-  echo "                                    By default equal the 'Database.DatabasePass' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default equal the 'Database.DatabasePass' in 'deployment_settings/LocalDeployment.json' (per-mode file, e.g. RemoteDeployment.json for docker-compose-remote)"
   echo "        --workers or -w: A parameter that overrides the number of workers."
-  echo "                                    By default equal the 'NumberOfWorkers' in 'main_node/Resources/SettingsBRISE.json'"
+  echo "                                    By default 3, hardcoded as N_workers at the top of this script"
   echo "        --k8s_docker_hub_name or -k8s_d_n: A parameter to specify the docker hub name that is used by Kubernetes for deployment."
   echo "                                    By default equals to 'master-node'. "
   echo "        --k8s_docker_hub_port or -k8s_d_p: A parameter to specify the local docker hub port that is used by Kubernetes."
@@ -84,7 +84,7 @@ help() {
 up() {
   if [[ "${mode}" == "docker-compose" ]]; then
         log "Building and deploying BRISE to docker-compose."
-        services=("main-node" "event_service" "worker_service" "worker" "waffle" "mongo-db")
+        services=("main-node" "event_service" "worker_service" "worker" "waffle" "searchspace-editor" "mongo-db" "front-end")
         docker compose build --build-arg BRISE_EVENT_SERVICE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.Address' ) \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.AMQTPort' )\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.EventService.GUIPort' )\
@@ -93,11 +93,18 @@ up() {
                              --build-arg BRISE_DATABASE_NAME=$( cat deployment_settings/LocalDeployment.json | jq -r '.Database.DatabaseName' ) \
                              --build-arg BRISE_DATABASE_USER=$( cat deployment_settings/LocalDeployment.json | jq -r '.Database.DatabaseUser' ) \
                              --build-arg BRISE_DATABASE_PASS=$( cat deployment_settings/LocalDeployment.json | jq -r '.Database.DatabasePass' ) \
+                             --build-arg BRISE_FRONTEND_EVENT_SERVICE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.Frontend.EventServiceHost' ) \
+                             --build-arg BRISE_FRONTEND_EVENT_SERVICE_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.Frontend.EventServicePort' ) \
+                             --build-arg BRISE_FRONTEND_SEARCHSPACE_EDITOR_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.Frontend.SearchSpaceEditorHost' ) \
+                             --build-arg BRISE_FRONTEND_SEARCHSPACE_EDITOR_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.Frontend.SearchSpaceEditorPort' ) \
+                             --build-arg BRISE_FRONTEND_WAFFLE_HOST=$( cat deployment_settings/LocalDeployment.json | jq -r '.Frontend.WaffleHost' ) \
+                             --build-arg BRISE_FRONTEND_WAFFLE_PORT=$( cat deployment_settings/LocalDeployment.json | jq -r '.Frontend.WafflePort' ) \
                               ${services[*]}
         log "Starting ${services[*]}"
         docker compose up -d --scale worker=${N_workers} ${services[*]}
   elif [[ "${mode}" == "docker-compose-remote" ]]; then
         log "Building and deploying BRISE to docker-compose."
+        services=("main-node" "event_service" "worker_service" "front-end" "worker" "waffle" "searchspace-editor")
         docker compose build --build-arg BRISE_EVENT_SERVICE_HOST="${event_service_host}" \
                              --build-arg BRISE_EVENT_SERVICE_AMQP_PORT="${event_service_AMQP_port}"\
                              --build-arg BRISE_EVENT_SERVICE_GUI_PORT="${event_service_GUI_port}"\
@@ -106,6 +113,12 @@ up() {
                              --build-arg BRISE_DATABASE_NAME="${database_name}" \
                              --build-arg BRISE_DATABASE_USER="${database_user}" \
                              --build-arg BRISE_DATABASE_PASS="${database_pass}" \
+                             --build-arg BRISE_FRONTEND_EVENT_SERVICE_HOST="${frontend_event_service_host}" \
+                             --build-arg BRISE_FRONTEND_EVENT_SERVICE_PORT="${frontend_event_service_port}" \
+                             --build-arg BRISE_FRONTEND_SEARCHSPACE_EDITOR_HOST="${frontend_searchspace_editor_host}" \
+                             --build-arg BRISE_FRONTEND_SEARCHSPACE_EDITOR_PORT="${frontend_searchspace_editor_port}" \
+                             --build-arg BRISE_FRONTEND_WAFFLE_HOST="${frontend_waffle_host}" \
+                             --build-arg BRISE_FRONTEND_WAFFLE_PORT="${frontend_waffle_port}" \
                               ${services[*]}
         log "Starting ${services[*]}"
         docker compose -f remote_db.yml up -d --scale worker=${N_workers} ${services[*]}
@@ -121,6 +134,12 @@ up() {
                              --build-arg BRISE_DATABASE_NAME="${database_name}" \
                              --build-arg BRISE_DATABASE_USER="${database_user}" \
                              --build-arg BRISE_DATABASE_PASS="${database_pass}" \
+                             --build-arg BRISE_FRONTEND_EVENT_SERVICE_HOST="${frontend_event_service_host}" \
+                             --build-arg BRISE_FRONTEND_EVENT_SERVICE_PORT="${frontend_event_service_port}" \
+                             --build-arg BRISE_FRONTEND_SEARCHSPACE_EDITOR_HOST="${frontend_searchspace_editor_host}" \
+                             --build-arg BRISE_FRONTEND_SEARCHSPACE_EDITOR_PORT="${frontend_searchspace_editor_port}" \
+                             --build-arg BRISE_FRONTEND_WAFFLE_HOST="${frontend_waffle_host}" \
+                             --build-arg BRISE_FRONTEND_WAFFLE_PORT="${frontend_waffle_port}" \
                                                         "./${service}/"
                 docker tag "${service}_image:latest" "${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
                 docker push "${k8s_docker_hub_name}:${k8s_docker_hub_port}/local/${service}_image"
@@ -247,6 +266,12 @@ else
     database_name=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Database.DatabaseName' )
     database_user=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Database.DatabaseUser' )
     database_pass=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Database.DatabasePass' )
+    frontend_event_service_host=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Frontend.EventServiceHost' )
+    frontend_event_service_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Frontend.EventServicePort' )
+    frontend_searchspace_editor_host=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Frontend.SearchSpaceEditorHost' )
+    frontend_searchspace_editor_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Frontend.SearchSpaceEditorPort' )
+    frontend_waffle_host=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Frontend.WaffleHost' )
+    frontend_waffle_port=$( cat deployment_settings/RemoteDeployment.json | jq -r '.Frontend.WafflePort' )
     k8s_docker_hub_name='master-node'
     k8s_docker_hub_port='5000'
 

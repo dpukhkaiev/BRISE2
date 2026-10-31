@@ -543,5 +543,10 @@
                 "TimeUnit": "seconds"
             }
         }
+    },
+    "DistributionMode": {
+        "AsynchronousDistribution": {
+            "Type": "asynchronous_distribution"
+        }
     }
 }

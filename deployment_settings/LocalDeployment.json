@@ -10,5 +10,13 @@
     "Address": "event_service",
     "AMQTPort": 49153,
     "GUIPort": 49154
+  },
+  "Frontend": {
+    "EventServiceHost": "localhost",
+    "EventServicePort": 49155,
+    "SearchSpaceEditorHost": "localhost",
+    "SearchSpaceEditorPort": 3001,
+    "WaffleHost": "localhost",
+    "WafflePort": 8000
   }
 }

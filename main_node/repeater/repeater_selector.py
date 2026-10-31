@@ -163,7 +163,7 @@ class RepeaterOrchestration:
             if len(configuration.get_tasks()) == 0:
                 publish(exchange="experiment_api_exchange",
                         routing_key=self.experiment_id,
-                        body=json.dumps("increment_bad_configuration_number"))
+                        body="increment_bad_configuration_number")
             configuration.disable_configuration()
         current_measurement = {
             str(configuration.parameters): {

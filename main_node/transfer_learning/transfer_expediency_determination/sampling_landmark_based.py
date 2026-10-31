@@ -17,6 +17,7 @@ class SamplingLandmarkBased(TransferExpediencyAnalyser):
         else:
             self.number_of_similar_experiments = (
                 self.ted_description)[self.feature_name]["ExperimentsQuantity"]["FixedQuantity"]["NumberOfSimilarExperiments"]
+        self.banned_experiments: List[str] = []
 
     def _get_comparator(self):
         """
@@ -47,6 +48,15 @@ class SamplingLandmarkBased(TransferExpediencyAnalyser):
             self.ted_description[self.feature_name]["ExperimentsQuantity"]["AdaptiveQuantity"]["Clustering"][
                 clustering_key])
 
+    def ban_experiments(self, experiment_ids: List[str]) -> None:
+        newly_banned = [e_id for e_id in experiment_ids if e_id not in self.banned_experiments]
+        if len(newly_banned) == 0:
+            return
+        self.banned_experiments.extend(newly_banned)
+        self.similar_experiments = [
+            e for e in self.similar_experiments if e["Exp_unique_ID"] not in self.banned_experiments]
+        self.logger.info(f"Source experiments exhausted and banned from further transfer: {newly_banned}")
+
     def analyse_experiments_similarity(self) -> Union[List, None]:
         if self.database.get_last_record_by_experiment_id("Experiment_state", self.experiment_id) is None:
             return None
@@ -61,7 +71,10 @@ class SamplingLandmarkBased(TransferExpediencyAnalyser):
 
         all_source_experiments = self.database.get_all_records("Transfer_learning_info")
         source_experiments = list(
-            filter(lambda exp: exp["Exp_unique_ID"] != self.experiment_id, all_source_experiments))
+            filter(lambda exp: exp["Exp_unique_ID"] != self.experiment_id
+                   and exp["Exp_unique_ID"] not in self.banned_experiments, all_source_experiments))
+        if len(source_experiments) == 0:
+            return source_experiments
         sorted_similar_experiments = self.comparator.get_similar_experiments(source_experiments)
 
         similar_experiments = []

@@ -46,7 +46,7 @@ class TestDatabase:
         # Test #1. Format and write Experiment state (ES) record to the database
         # Expected result: record can be read from the database and contains all required ES fields. The Experiment id matches
         experiment, _ = self.initialize_experiment()
-        c1 = Configuration(OrderedDict({"frequency": 2900.0, "threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
+        c1 = Configuration(OrderedDict({"Context.SearchSpace.frequency": 2900.0, "Context.SearchSpace.threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
         experiment.default_configuration = c1
         database.write_one_record("Experiment_state", experiment.get_experiment_state_record())
         written_record = database.get_all_records("Experiment_state")[-1]
@@ -74,8 +74,8 @@ class TestDatabase:
         # Expected result: records can be read from the database.
         # They belong to the expected experiment and contain expected configuration IDs
         experiment, _ = self.initialize_experiment()
-        c1 = Configuration(OrderedDict({"frequency": 2900.0, "threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
-        c2 = Configuration(OrderedDict({"frequency": 2200.0, "threads": 8}), Configuration.Type.FROM_SELECTOR, experiment.unique_id)
+        c1 = Configuration(OrderedDict({"Context.SearchSpace.frequency": 2900.0, "Context.SearchSpace.threads": 32}), Configuration.Type.DEFAULT, experiment.unique_id)
+        c2 = Configuration(OrderedDict({"Context.SearchSpace.frequency": 2200.0, "Context.SearchSpace.threads": 8}), Configuration.Type.FROM_SELECTOR, experiment.unique_id)
         experiment.measured_configurations.append(c1)
         experiment.measured_configurations.append(c2)
         records = []
@@ -96,7 +96,7 @@ class TestDatabase:
         # Test #4. Format and write Task record to the database
         # Expected result: record can be read from the database.
         # Task belongs to the expected configuration and has expected task ID
-        c1 = Configuration(OrderedDict({"frequency": "dummy", "threads": "dummy"}), Configuration.Type.DEFAULT, "DummyID")
+        c1 = Configuration(OrderedDict({"Context.SearchSpace.frequency": "dummy", "Context.SearchSpace.threads": "dummy"}), Configuration.Type.DEFAULT, "DummyID")
         task = {'task id': 'id', 'worker': 'worker', 'result': {'energy': 0.9}, 'ResultValidityCheckMark': 'OK'}
         c1.add_task(task)
         database.write_one_record("Task", c1.get_task_record(task))

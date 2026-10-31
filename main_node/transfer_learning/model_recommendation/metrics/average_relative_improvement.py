@@ -10,6 +10,20 @@ class AverageRelativeImprovementMetric(ModelPerformanceMetric):
         self.logger = logging.getLogger(__name__)
         self.is_minimization_experiment = is_minimization_experiment
 
+    @staticmethod
+    def _get_model_types(prediction_info: Dict) -> List:
+        """
+        Extracts model types of a prediction. 
+        :param prediction_info: dict. Information about a prediction
+        :return: list of the used model types, ordered by level
+        """
+        model_types = []
+        for region in sorted(prediction_info, key=int):
+            model_type = prediction_info[region]["Model"]
+            if model_type not in model_types:
+                model_types.append(model_type)
+        return model_types
+
     def compute(self, improvement_curve: List, prediction_infos: List, start_index: int, end_index: int, multi_model: bool) -> Dict:
         """
         Computes average relative improvement metric to evaluate the performance of models' combination
@@ -33,9 +47,9 @@ class AverageRelativeImprovementMetric(ModelPerformanceMetric):
             # if model was used to predict the configuration
             if not all([len(m["Model"]) > 0 for m in prediction_info.values()]):
                 continue
-            # if it is the first combination or any model within the combination is not identical
+            # if it is the first combination or any model type within the combination is not identical
             if (len(combinations) == 0 or
-                    any([combinations[-1][r]["Model"] != p_i["Model"] for r, p_i in prediction_info.items()])):
+                    self._get_model_types(combinations[-1]) != self._get_model_types(prediction_info)):
                 combinations.append(prediction_info)
                 start_indices_for_combinations.append(start_index + i)
         try:

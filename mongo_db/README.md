@@ -39,7 +39,7 @@ find using `./brise.sh help` command.
 For the debugging purposes you may login to the database server (via SSH) and access the database 
 manually using MongoDB console. To run the MongoDB console type `mongo --username database_user --password database_pass 
 127.0.0.1/BRISE_db` - please, note that you need to login with the respective credentials 
-(see main_node/Resources/SettingsBRISE.json).
+(see `Database` in `deployment_settings/LocalDeployment.json`, or the relevant mode's file).
 When the console is running, switch to the used database with `use database_name` (`database_name`=`BRISE_db` 
 by default). Here you can list the collections or perform other actions you may be interested in. Useful mongo 
 Shell commands you may find at [mongo Shell Quick Reference](https://docs.mongodb.com/manual/reference/mongo-shell/).

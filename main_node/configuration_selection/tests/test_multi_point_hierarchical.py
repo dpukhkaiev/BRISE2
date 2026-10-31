@@ -46,9 +46,11 @@ _SIMPLE_DESCRIPTION = {
     },
     "Structure": {"Hierarchical": {}},
 }
-CAT_A = "Context.SearchSpace.root_choice.catA"
-CAT_B = "Context.SearchSpace.root_choice.catB"
-SIMPLE_BRANCH_LEAF = {CAT_A: "xa", CAT_B: "xb"}
+# Hyperparameters are named by their absolute path in the search space.
+ROOT = "Context.SearchSpace.root_choice"
+CAT_A = f"{ROOT}.catA"
+CAT_B = f"{ROOT}.catB"
+SIMPLE_BRANCH_LEAF = {CAT_A: f"{CAT_A}.xa", CAT_B: f"{CAT_B}.xb"}
 
 
 _DEEP_DESCRIPTION = {
@@ -75,9 +77,10 @@ _DEEP_DESCRIPTION = {
     },
     "Structure": {"Hierarchical": {}},
 }
-DEEP_SUB_X = "Context.SearchSpace.root_choice.catB.sub.subX"
-DEEP_SUB_Y = "Context.SearchSpace.root_choice.catB.sub.subY"
-DEEP_SUB_LEAF = {DEEP_SUB_X: "xbx", DEEP_SUB_Y: "xby"}
+DEEP_SUB = f"{CAT_B}.sub"
+DEEP_SUB_X = f"{DEEP_SUB}.subX"
+DEEP_SUB_Y = f"{DEEP_SUB}.subY"
+DEEP_SUB_LEAF = {DEEP_SUB_X: f"{DEEP_SUB_X}.xbx", DEEP_SUB_Y: f"{DEEP_SUB_Y}.xby"}
 
 
 class _FakeModel:
@@ -141,19 +144,19 @@ def _build_predictor(number_of_points, description=_SIMPLE_DESCRIPTION, model=_F
 
 def _assert_simple_branch(config):
     params = dict(config.parameters)
-    expected_leaf = SIMPLE_BRANCH_LEAF[params["root_choice"]]
-    assert set(params) == {"root_choice", expected_leaf}, (
+    expected_leaf = SIMPLE_BRANCH_LEAF[params[ROOT]]
+    assert set(params) == {ROOT, expected_leaf}, (
         f"configuration is not a valid single branch: {params}")
     
 
 def _assert_deep_branch(config):
     params = dict(config.parameters)
-    if params["root_choice"] == CAT_A:
-        assert set(params) == {"root_choice", "xa"}, params
+    if params[ROOT] == CAT_A:
+        assert set(params) == {ROOT, f"{CAT_A}.xa"}, params
     else:
-        assert params["root_choice"] == CAT_B, params
-        leaf = DEEP_SUB_LEAF[params["sub"]]
-        assert set(params) == {"root_choice", "sub", leaf}, params
+        assert params[ROOT] == CAT_B, params
+        leaf = DEEP_SUB_LEAF[params[DEEP_SUB]]
+        assert set(params) == {ROOT, DEEP_SUB, leaf}, params
 
 
 def test_hierarchical_single_point_is_valid():
@@ -192,7 +195,7 @@ def test_hierarchical_multi_point_configs_are_single_branch():
 def test_hierarchical_multi_point_covers_distinct_branches():
     """When the root build proposes two categories, the N points follow both."""
     result = _build_predictor(number_of_points=2).predict([], sample=False)
-    chosen_branches = {dict(c.parameters)["root_choice"] for c in result}
+    chosen_branches = {dict(c.parameters)[ROOT] for c in result}
     assert chosen_branches == {CAT_A, CAT_B}
 
 

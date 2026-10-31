@@ -11,18 +11,11 @@ class OldNewRatioDecorator(MultiTaskLearningDecorator):
         self.old_new_configs_ratio = self.experiment_description["TransferLearning"]["MultiTaskLearning"]["Filters"][
             "OldNewRatio"]["OldNewConfigsRatio"]
 
-    def transfer_configurations(self, similar_experiments: List) -> List[Configuration]:
+    def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         """
         Filters configurations according to the given ratio of old and new configurations.
         :return: Filtered configurations.
         """
-
-        base_transferred_configurations = self.base_mtl.transfer_configurations(similar_experiments)
-        transferred_configurations = self._filter_configurations(base_transferred_configurations)
-
-        return transferred_configurations
-
-    def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         measured_configurations = self.database.get_records_by_experiment_id("Configuration", self.experiment_id)
         number_of_configs_to_transfer = round(len(measured_configurations) * self.old_new_configs_ratio)
         configs_to_transfer = configurations[:number_of_configs_to_transfer]

@@ -14,20 +14,16 @@ class FewShotDecorator(MultiTaskLearningDecorator):
         self.is_few_shot = True
 
     def transfer_configurations(self, similar_experiments: List) -> List[Configuration]:
+        if self.has_fired:
+            return []
+        return super().transfer_configurations(similar_experiments)
+
+    def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         """
         Returns the best configuration from the most similar source experiment
         to be directly measured in the target experiment
         :return: Configuration to be directly transferred
         """
-        if self.has_fired:
-            return []
-
-        base_transferred_configurations = self.base_mtl.transfer_configurations(similar_experiments)
-        transferred_configurations = self._filter_configurations(base_transferred_configurations)
-
-        return transferred_configurations
-
-    def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         configs_to_transfer: List[Configuration] = []
 
         if self.is_minimization:

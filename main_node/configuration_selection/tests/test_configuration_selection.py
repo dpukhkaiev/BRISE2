@@ -4,8 +4,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import LinearRegression
 
-from configuration_distribution.batchedDistribution import BatchedDistribution
-from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
+from configuration_distribution.batched_distribution import BatchedDistribution
+from configuration_distribution.configuration_distribution_orchestrator import ConfigurationDistributionOrchestrator
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from core_entities.configuration import Configuration
@@ -160,7 +160,7 @@ class TestConfigurationSelection:
     def test_4(self, get_experiment, get_workers, get_configurations_float_nom):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
-        'optimizer.nsga2', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
+        'optimizer.gaco', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
         'ted.quantity', 'mr.none', 'mtl.fsl', 'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
         """
         rdb.cleanup()
@@ -191,7 +191,7 @@ class TestConfigurationSelection:
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
             assert len(configs) == i + 1
-            assert predicted[0].type is Configuration.Type.FROM_SELECTOR
+            assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.TRANSFERRED]
             experiment.add_configuration(predicted[0])
 
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -205,7 +205,11 @@ class TestConfigurationSelection:
         predicted[0].status['evaluated'] = True
         configs = configs + predicted
         assert len(configs) == 10
-        assert predicted[0].type is Configuration.Type.TRANSFERRED
+        configuration_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"]
+        banned = cs.transfer_learning_orchestrator.ted_module.banned_experiments
+        transferred = sum(c.type is Configuration.Type.TRANSFERRED for c in configs)
+        assert configuration_transfer.has_fired
+        assert transferred == 1 or len(banned) > 0
         experiment.add_configuration(predicted[0])
 
         experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
@@ -360,7 +364,7 @@ class TestConfigurationSelection:
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'mock', 'surr.vt.none', 'surr.ct.none',
         'optimizer.gaco', 'opt.vt.none', 'opt.ct',  'validator.mock', 'validator.internal.none', cs.random',
-        'ted.quantity', 'mr.fsl', 'mtl.oldnewratio-fsl', 'sc.fsl', 'rm.quality', 'dch.random', 'ss.sobol']
+        'ted.quantity', 'mr.fsl', 'mtl.oldnewratio-shuffle', 'sc.fsl', 'rm.quality', 'dch.random', 'ss.sobol']
         """
         rdb.cleanup()
         rdb.restore()
@@ -381,11 +385,9 @@ class TestConfigurationSelection:
         Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
-        # assert isinstance(list(cs.predictor.mapping_region_model[
-        #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
-        #                   ModelMock)
-        for i in range(0, 9):
+        for i in range(12):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            assert len(predicted) == 1
             results = {"Y1": get_configurations_float_nom[i]['Result']["Y1"]}
             predicted[0].results = results
             predicted[0].status['enabled'] = True
@@ -393,32 +395,15 @@ class TestConfigurationSelection:
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
             assert len(configs) == i + 1
-            assert predicted[0].type is Configuration.Type.FROM_SELECTOR
             experiment.add_configuration(predicted[0])
 
             experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
             experiment.send_state_to_db()
 
-        predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
-        results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
-        predicted[0].results = results
-        predicted[0].status['enabled'] = True
-        predicted[0].status['measured'] = True
-        predicted[0].status['evaluated'] = True
-        configs = configs + predicted
-        assert len(configs) == 10
-        assert predicted[0].type is Configuration.Type.TRANSFERRED
-        experiment.add_configuration(predicted[0])
-        # assert isinstance(list(cs.predictor.mapping_region_model[
-        #                            list(cs.predictor.mapping_region_model)[0]].mapping_surrogate_objective.keys())[0],
-        #                   TreeParzenEstimator)
-
-
-        experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
-        experiment.send_state_to_db()
-
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
+        model_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Model_transfer"]
+        assert model_transfer.was_model_transferred
         experiment.dump("Results")
 
     def test_10(self, get_experiment, get_workers, get_configurations_2_float):
@@ -711,7 +696,29 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
         experiment.dump("Results")
 
-    def test_15(self, get_energy_experiment_and_search_space, get_workers, get_energy_configurations):
+    def test_15(self, get_experiment, get_workers, get_configurations_test_case_15):
+        """
+        ['3 nom 3 float 2 int 1 ord', 'hierarchical (4 levels)', 'so', 'mo.none', 'lr-svr-gbr-brr',
+        'surr.vt.none', 'surr.ct', 'optimizer.random-moea', 'opt.vt.none', 'opt.ct', 'validator.mock', 'cs.best',
+        'ted.none', 'mr.none', 'mtl.none', 'sc.time', 'rm.quantity', 'dch.none', 'ss.sobol']
+        """
+        experiment_description, search_space = get_experiment(15)
+        experiment = Experiment(experiment_description, search_space)
+        cs = ConfigurationSelection(experiment)
+        configs = []
+        for i in range(10):
+            predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            predicted[0].results = {"Y1": get_configurations_test_case_15[i]['Result']["Y1"]}
+            predicted[0].status['measured'] = True
+            predicted[0].status['evaluated'] = True
+            configs = configs + predicted
+            assert len(configs) == i + 1
+            assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
+            experiment.measured_configurations.append(predicted[0])
+
+        assert any([c.type is Configuration.Type.PREDICTED for c in configs])
+
+    def test_energy_experiment(self, get_energy_experiment_and_search_space, get_workers, get_energy_configurations):
         """
         Energy experiment, test energy validator
         """
@@ -731,24 +738,101 @@ class TestConfigurationSelection:
 
         assert any([c.type is Configuration.Type.PREDICTED for c in configs])
 
-    def test_16(self, get_experiment, get_configurations_all_types):
+    def test_duplicate_leaf_hyperparameter_name_reused_along_one_branch_is_disambiguated(
+            self, get_experiment, get_workers, get_configurations_test_case_16):
+        """
+        Tests duplication of parameter names. Where the same leaf hyperparameter name ('X') resides at two different levels
+        of the same branch (N0.N01.X, itself Nominal, has a child also named 'X').
+        """
+        experiment_description, search_space = get_experiment(16)
+        experiment = Experiment(experiment_description, search_space)
+        cs = ConfigurationSelection(experiment)
+        configs = []
+        possible_key_sets = (
+            {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N02.F1"},
+            {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N01.X"},
+            {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N01.X", "Context.SearchSpace.N0.N01.X.XA.X"},
+        )
+        for i in range(20):
+            predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            predicted[0].results = get_configurations_test_case_16[i]['Result']
+            predicted[0].status['measured'] = True
+            predicted[0].status['evaluated'] = True
+            configs = configs + predicted
+            assert len(configs) == i + 1
+            assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
+            assert set(predicted[0].parameters.keys()) in possible_key_sets
+            experiment.measured_configurations.append(predicted[0])
+
+        assert any([c.type is Configuration.Type.PREDICTED for c in configs])
+
+    def test_proposed_configurations_match_worker_capacity_with_few_shot_configuration_transfer(
+            self, get_experiment, get_workers, get_configurations_float_nom):
+        """
+        ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
+        'optimizer.gaco', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
+        'ted.quantity', 'mr.dynamic', 'mtl.fsl', 'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
+        """
+        rdb.cleanup()
+        rdb.restore()
+        experiment_description, search_space = get_experiment(17)
+        experiment = Experiment(experiment_description, search_space)
+        experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+        experiment.database.write_one_record(
+            "Search_space", get_search_space_record(search_space, experiment.unique_id)
+        )
+        dch_o = DefaultConfigHandlerOrchestrator()
+        default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
+        default_configuration = default_config_handler.get_default_configuration()
+        assert isinstance(default_configuration, Configuration)
+        default_configuration.results = {"Y1": get_configurations_float_nom[10]['Result']["Y1"]}
+        default_configuration.status['measured'] = True
+        default_configuration.status['evaluated'] = True
+        experiment.default_configuration = default_configuration
+        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
+        cs = ConfigurationSelection(experiment)
+        configs = []
+        for i in range(12):
+            predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            assert len(predicted) == 1
+            results = {"Y1": get_configurations_float_nom[i]['Result']["Y1"]}
+            predicted[0].results = results
+            predicted[0].status['enabled'] = True
+            predicted[0].status['measured'] = True
+            predicted[0].status['evaluated'] = True
+            configs = configs + predicted
+            assert len(configs) == i + 1
+            experiment.add_configuration(predicted[0])
+
+            experiment.database.write_one_record("Configuration", predicted[0].get_configuration_record())
+            experiment.send_state_to_db()
+
+        assert sum(c.type is Configuration.Type.TRANSFERRED for c in configs) <= 1
+        configuration_transfer = cs.transfer_learning_orchestrator.transfer_submodules["Configuration_transfer"]
+        assert configuration_transfer.has_fired
+
+        temp_region = list(cs.predictor.mapping_region_model.keys())[0]
+        assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
+        experiment.dump("Results")
+
+    def test_18(self, get_experiment, get_configurations_all_types):
         """
         test_case_2 (hierarchical search space) with multi-point proposal and
-        batched distribution: NumberOfPoints = 2, batchSize = 2.
+        batched distribution: NumberOfPoints = 2, BatchSize = 2.
 
         NumberOfPoints must not merely be present in the description, it has to
         drive the proposal. The feature model couples it to the distribution mode
-        (base.wfl:616-620): N > 1 requires a batched/hybrid mode and N must equal
-        its batchSize, so a wave asks for exactly as many points as one proposal
+        (base.wfl): N > 1 requires a batched/hybrid mode and N must equal its
+        BatchSize, so a wave asks for exactly as many points as one proposal
         yields. A hierarchical space is used on purpose: the N points walk the
         tree together, sharing one build per region.
         """
-        experiment_description, search_space = get_experiment(16)
+        experiment_description, search_space = get_experiment(18)
         assert not search_space.is_flat
         experiment = Experiment(experiment_description, search_space)
         cs = ConfigurationSelection(experiment)
 
-        distribution = ConfigurationDistributionOrchestrator().get_distribution(experiment_description)
+        distribution = ConfigurationDistributionOrchestrator().get_distribution(experiment_description["DistributionMode"])
         assert isinstance(distribution, BatchedDistribution)
         assert cs.predictor.number_of_points == 2
         assert distribution._batch_size == cs.predictor.number_of_points

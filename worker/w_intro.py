@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import threading
+import time
 
 import pika
 import pika.exceptions
@@ -77,6 +78,7 @@ class WorkerMainThread(threading.Thread):
                 w_method = self.worker_methods[task["task_name"]]
 
                 # Execute task
+                task_started_at = time.perf_counter()
                 try:
                     result_from_worker = w_method(task)
                     if result_from_worker is None:
@@ -85,6 +87,7 @@ class WorkerMainThread(threading.Thread):
                 except Exception as e:
                     self.logger.error(f"Task execution failed with: {e}", exc_info=True)
                     result_from_worker = {}
+                evaluation_time = (time.perf_counter() - task_started_at) * 1000
                 # format a result according to result structure
                 for key in task["result_structure"]:
                     if key not in result_from_worker:
@@ -94,6 +97,7 @@ class WorkerMainThread(threading.Thread):
                     'task_result': {
                         'task id': task["task_id"],
                         'worker': f"{os.uname()[1]}",
+                        'evaluation_time': evaluation_time,
                         'result': result_from_worker
                     }
                 }

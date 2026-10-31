@@ -28,3 +28,11 @@ class TransferExpediencyAnalyser(ABC):
         :return: list of similar experiments
         """
         pass
+
+    @abstractmethod
+    def ban_experiments(self, experiment_ids: List[str]) -> None:
+        """
+        Excludes the given source experiments from all subsequent similarity analyses.
+        :param experiment_ids: Exp_unique_ID values of the experiments to exclude
+        """
+        pass

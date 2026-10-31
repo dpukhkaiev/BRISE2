@@ -9,5 +9,6 @@ dependencies:
   - pymongo
   - openml
   - conda-forge::pygmo
+  - debugpy
   - pip:
       - git+https://github.com/dpukhkaiev/jMetalPy.git@diploma_aggregate

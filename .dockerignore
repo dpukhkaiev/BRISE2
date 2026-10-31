@@ -1,5 +1,4 @@
 .git/
 dist/
 docker-compose.yml
-front_end
 worker_service

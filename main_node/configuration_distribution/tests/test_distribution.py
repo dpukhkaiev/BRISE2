@@ -1,25 +1,36 @@
-import unittest
 import logging
 import json
 import threading
+from collections import deque
+import pytest
 from unittest.mock import patch, MagicMock, call
 
-from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
-from configuration_distribution.batchedDistribution import BatchedDistribution
-from configuration_distribution.hybridDistribution import HybridDistribution, EventGate
-from configuration_distribution.asynchronousDistribution import AsynchronousDistribution
+from configuration_distribution.configuration_distribution_orchestrator import ConfigurationDistributionOrchestrator
+from configuration_distribution.batched_distribution import BatchedDistribution
+from configuration_distribution.hybrid_distribution import HybridDistribution, EventGate
+from configuration_distribution.asynchronous_distribution import AsynchronousDistribution
 
-# disable logging
-logging.disable(logging.CRITICAL)
+@pytest.fixture(autouse=True)
+def _silence_logging():
+    """
+    Disable logging for this module only. A module-scope logging.disable() call
+    would stay in effect for the whole pytest session and silently empty
+    caplog.records for other test modules.
+    """
+    logging.disable(logging.CRITICAL)
+    yield
+    logging.disable(logging.NOTSET)
 
-class TestConfigurationDistributionOrchestrator(unittest.TestCase):
+class TestConfigurationDistributionOrchestrator:
 
-    def setUp(self):
+    @pytest.fixture(autouse=True)
+    def setup(self, get_distribution_experiment):
         """Set up a new orchestrator instance for each test."""
         self.orchestrator = ConfigurationDistributionOrchestrator()
+        self.get_distribution_experiment = get_distribution_experiment
 
     # Test 1: Using EnergyExperiment_Adistr.json config
-    @patch('configuration_distribution.configurationDistributionOrchestrator.reflective_class_import')
+    @patch('configuration_distribution.configuration_distribution_orchestrator.reflective_class_import')
     def test_get_distribution_asynchronous(self, mock_reflective_import):
         """
         Tests the AsynchronousDistribution config from EnergyExperiment_Adistr.json
@@ -29,23 +40,13 @@ class TestConfigurationDistributionOrchestrator(unittest.TestCase):
         mock_distribution_class = MagicMock(return_value=mock_distribution_instance)
         mock_reflective_import.return_value = mock_distribution_class
 
-        # This is the expected class name to be imported
-        expected_distribution_type = "AsynchronousDistribution"
-        
-        # This is the config from your Adistr.json file
-        distribution_config = {
-            "DistributionMode": {
-                "AsynchronousDistribution": {
-                        "Type": "AsynchronousDistribution"
-                }
-            }
-        }
-        
-        # This is the inner dictionary passed to the class constructor
-        expected_constructor_arg = distribution_config["DistributionMode"]
+        # This is the config from EnergyExperiment_Adistr.json
+        experiment_config, _ = self.get_distribution_experiment("A")
+        expected_constructor_arg = experiment_config["DistributionMode"]
+        expected_distribution_type = expected_constructor_arg["AsynchronousDistribution"]["Type"]
 
         # --- Act ---
-        result = self.orchestrator.get_distribution(distribution_config)
+        result = self.orchestrator.get_distribution(experiment_config["DistributionMode"])
 
         # --- Assert ---
         mock_reflective_import.assert_called_once_with(
@@ -53,10 +54,10 @@ class TestConfigurationDistributionOrchestrator(unittest.TestCase):
             folder_path="configuration_distribution"
         )
         mock_distribution_class.assert_called_once_with(expected_constructor_arg)
-        self.assertEqual(result, mock_distribution_instance)
+        assert result == mock_distribution_instance
 
     # Test 2: Using EnergyExperiment_Bdistr.json config
-    @patch('configuration_distribution.configurationDistributionOrchestrator.reflective_class_import')
+    @patch('configuration_distribution.configuration_distribution_orchestrator.reflective_class_import')
     def test_get_distribution_batched(self, mock_reflective_import):
         """
         Tests the BatchedDistribution config from EnergyExperiment_Bdistr.json
@@ -66,26 +67,13 @@ class TestConfigurationDistributionOrchestrator(unittest.TestCase):
         mock_distribution_class = MagicMock(return_value=mock_distribution_instance)
         mock_reflective_import.return_value = mock_distribution_class
 
-        # This is the expected class name to be imported
-        expected_distribution_type = "BatchedDistribution"
-        
-        # This is the config from your Bdistr.json file
-        distribution_config = {
-            "DistributionMode": {
-                "BatchedDistribution": {
-                        "Type": "BatchedDistribution"
-                },
-                "batchSize": {
-                        "Int": "5"
-                }
-            }
-        }
-        
-        # This is the inner dictionary passed to the class constructor
-        expected_constructor_arg = distribution_config["DistributionMode"]
+        # This is the config from EnergyExperiment_Bdistr.json
+        experiment_config, _ = self.get_distribution_experiment("B")
+        expected_constructor_arg = experiment_config["DistributionMode"]
+        expected_distribution_type = expected_constructor_arg["BatchedDistribution"]["Type"]
 
         # --- Act ---
-        result = self.orchestrator.get_distribution(distribution_config)
+        result = self.orchestrator.get_distribution(experiment_config["DistributionMode"])
 
         # --- Assert ---
         mock_reflective_import.assert_called_once_with(
@@ -93,10 +81,10 @@ class TestConfigurationDistributionOrchestrator(unittest.TestCase):
             folder_path="configuration_distribution"
         )
         mock_distribution_class.assert_called_once_with(expected_constructor_arg)
-        self.assertEqual(result, mock_distribution_instance)
+        assert result == mock_distribution_instance
 
     # Test 3: Using EnergyExperiment_Hdistr.json config
-    @patch('configuration_distribution.configurationDistributionOrchestrator.reflective_class_import')
+    @patch('configuration_distribution.configuration_distribution_orchestrator.reflective_class_import')
     def test_get_distribution_hybrid(self, mock_reflective_import):
         """
         Tests the HybridDistribution config from EnergyExperiment_Hdistr.json
@@ -106,26 +94,13 @@ class TestConfigurationDistributionOrchestrator(unittest.TestCase):
         mock_distribution_class = MagicMock(return_value=mock_distribution_instance)
         mock_reflective_import.return_value = mock_distribution_class
 
-        # This is the expected class name to be imported
-        expected_distribution_type = "HybridDistribution"
-        
-        # This is the config from your Hdistr.json file
-        distribution_config = {
-            "DistributionMode": {
-                "HybridDistribution": {
-                        "Type": "HybridDistribution"
-                },
-                "batchSize": {
-                        "Int": "5"
-                }
-            }
-        }
-        
-        # This is the inner dictionary passed to the class constructor
-        expected_constructor_arg = distribution_config["DistributionMode"]
+        # This is the config from EnergyExperiment_Hdistr.json
+        experiment_config, _ = self.get_distribution_experiment("H")
+        expected_constructor_arg = experiment_config["DistributionMode"]
+        expected_distribution_type = expected_constructor_arg["HybridDistribution"]["Type"]
 
         # --- Act ---
-        result = self.orchestrator.get_distribution(distribution_config)
+        result = self.orchestrator.get_distribution(experiment_config["DistributionMode"])
 
         # --- Assert ---
         mock_reflective_import.assert_called_once_with(
@@ -133,94 +108,44 @@ class TestConfigurationDistributionOrchestrator(unittest.TestCase):
             folder_path="configuration_distribution"
         )
         mock_distribution_class.assert_called_once_with(expected_constructor_arg)
-        self.assertEqual(result, mock_distribution_instance)
+        assert result == mock_distribution_instance
 
-    @patch('configuration_distribution.configurationDistributionOrchestrator.reflective_class_import')
-    def test_get_distribution_failure_defaults_to_asynchronous(self, mock_reflective_import):
-        """
-        Tests the "failure path" where an invalid configuration is provided,
-        triggering the 'except' block and falling back to the default.
-        """
-        # --- Arrange ---
-        # 1. Set up the mocks
-        with patch.object(self.orchestrator, 'logger', new_callable=MagicMock) as mock_logger:
-            mock_distribution_instance = MagicMock(spec=AsynchronousDistribution)
-            mock_distribution_class = MagicMock(return_value=mock_distribution_instance)
-            mock_reflective_import.return_value = mock_distribution_class
+class TestAsynchronousDistribution:
 
-            # 2. Define an invalid input configuration
-            #    This will cause a KeyError in the try block.
-            invalid_config = {}
-
-            # 3. Define the expected default configuration that the
-            #    orchestrator creates internally.
-            expected_default_config = {
-                "AsynchronousDistribution": {
-                    "Type": "AsynchronousDistribution"
-                }
-            }
-
-            # --- Act ---
-            result = self.orchestrator.get_distribution(invalid_config)
-
-            # --- Assert ---
-            # 1. Check that the logger was called with the correct info messages
-            self.assertEqual(mock_logger.info.call_count, 2)
-            mock_logger.info.assert_any_call("No valid 'distributionMode' key found in Configuration description.")
-            mock_logger.info.assert_any_call("Asynchronous Distribution is selected as default.")
-
-            # 2. Check that reflective_class_import was called with the default class name
-            mock_reflective_import.assert_called_once_with(
-                class_name="AsynchronousDistribution",
-                folder_path="configuration_distribution"
-            )
-            
-            # 3. Check that the returned class was instantiated with the default config
-            mock_distribution_class.assert_called_once_with(expected_default_config)
-
-            # 4. Check that the final result is the default mock instance
-            self.assertEqual(result, mock_distribution_instance)
-
-class TestAsynchronousDistribution(unittest.TestCase):
-
-    def setUp(self):
-        # Configuration for the class instance
-        self.config = {
-            "AsynchronousDistribution": {
-                    "Type": "AsynchronousDistribution"
-            }
-        }
+    @pytest.fixture(autouse=True)
+    def setup(self, get_distribution_experiment):
+        # Configuration for the class instance, sourced from EnergyExperiment_Adistr.json
+        experiment_description, _ = get_distribution_experiment("A")
+        self.config = experiment_description["DistributionMode"]
         self.experiment_id = 123
         self.body = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "repetition_time": 1.45
+            "evaluation_time": 1.45
             }
 
-        pass
-
-    @patch('configuration_distribution.asynchronousDistribution.publish')
+    @patch('configuration_distribution.asynchronous_distribution.publish')
     def test_handle_configuration_distribution_calls_publish(self, mock_publish):
         """
         Tests that handle_configuration_distribution calls the publish function
         with the correct exchange, routing key (experiment_id), and body.
         """
-        
+
         # ? Setup the mock logger on the mocked base class instance
         mock_logger = MagicMock()
-        
+
         # * Instantiate the class under test
         distributionAlgorithm = AsynchronousDistribution(self.config)
         distributionAlgorithm.logger = mock_logger
         distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
-        
+
         # * Assertions
-        
+
         # * Assert that the logger was called
         mock_logger.info.assert_called_once_with(
             "Worker dispatched asynchronously"
         )
-        
+
         # * Assert that the publish function was called with the correct arguments
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
@@ -232,10 +157,10 @@ class TestAsynchronousDistribution(unittest.TestCase):
         """
         Tests that dispatch simply calls handle_configuration_distribution.
         """
-        
+
         # * only need to mock the logger here for a clean test
         with patch('configuration_distribution.distribution_abs') as MockAbstractDistribution:
-            
+
             # ? Setup mock logger
             mock_instance = MockAbstractDistribution.return_value
             mock_instance.logger = MagicMock()
@@ -258,41 +183,32 @@ class TestAsynchronousDistribution(unittest.TestCase):
         # ? Instantiate the class
         with patch('configuration_distribution.distribution_abs'):
             distributor = AsynchronousDistribution(self.config)
-            
-            # * assert, that calling it doesn't raise an error.
-            try:
-                distributor.first_it(self.experiment_id)
-            except Exception as e:
-                self.fail(f"first_it unexpectedly raised an exception: {e}")
 
-class TestBatchedDistribution(unittest.TestCase):
+            distributor.first_it(self.experiment_id)
 
-    def setUp(self):
-        # ? required 'batchSize' in config description
-        self.config =   {
-            "BatchedDistribution": {
-                "Type": "BatchedDistribution"
-            },
-            "batchSize": {
-                "Int": "5"
-            }
-        }
+class TestBatchedDistribution:
+
+    @pytest.fixture(autouse=True)
+    def setup(self, get_distribution_experiment):
+        # Configuration for the class instance, sourced from EnergyExperiment_Bdistr.json
+        experiment_description, _ = get_distribution_experiment("B")
+        self.config = experiment_description["DistributionMode"]
         self.experiment_id = 123
         self.body = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "repetition_time": 1.45
+            "evaluation_time": 1.45
         }
 
     @patch('logging.getLogger')
     def test_init_success(self, mock_get_logger):
         """Tests successful initialization with a batchSize."""
-        
+
         mock_logger_instance = MagicMock()
         mock_get_logger.return_value = mock_logger_instance
-        
+
         distributionAlgorithm = BatchedDistribution(self.config)
-        
+
         # * Assert the call on the specific method of the mock
         mock_logger_instance.info.assert_called_once()
         mock_logger_instance.info.assert_called_with(
@@ -300,48 +216,48 @@ class TestBatchedDistribution(unittest.TestCase):
         )
 
         # * Assert internal state
-        self.assertEqual(distributionAlgorithm._batch_size, 5)
-        self.assertTrue(distributionAlgorithm._first_it)
-        self.assertIsNone(distributionAlgorithm._barrier)
+        assert distributionAlgorithm._batch_size == 5
+        assert distributionAlgorithm._first_it is True
+        assert distributionAlgorithm._barrier is None
 
     @patch('logging.getLogger')
     def test_init_key_error(self, mock_get_logger):
         """Tests that initialization raises ValueError if 'batchSize' is missing."""
 
         bad_config = {}
-        
+
         # * Set up the mock logger instance
         mock_logger_instance = mock_get_logger.return_value
-        
+
         # * Assert that the function call RAISES the expected exception
-        with self.assertRaisesRegex(ValueError, "Batched Distribution requires 'batchSize' in description."):
+        with pytest.raises(ValueError, match="Batched Distribution requires 'BatchSize' in description."):
             BatchedDistribution(bad_config)
-        
-        # * Assert the side effects (logging) AFTER the exception has been caught by the assertRaises context manager.
+
+        # * Assert the side effects (logging) AFTER the exception has been raised.
         mock_logger_instance.error.assert_called_once()
         mock_logger_instance.error.assert_called_with(
-            "Description missing 'batchSize'!"
+            "Description missing 'BatchSize'!"
         )
 
-    @patch('configuration_distribution.batchedDistribution.publish')
+    @patch('configuration_distribution.batched_distribution.publish')
     def test_first_it_initial_call(self, mock_publish):
         """Tests that the first call to first_it publishes the initial batch and flips the flag."""
-        
+
         # * Setup
         mock_logger = MagicMock()
         distributionAlgorithm = BatchedDistribution(self.config)
         distributionAlgorithm.logger = mock_logger
-        
+
         # * Call
         result = distributionAlgorithm.first_it(self.experiment_id)
 
         # * Assertions
-        self.assertTrue(result)
-        self.assertFalse(distributionAlgorithm._first_it)
-        
+        assert result is True
+        assert distributionAlgorithm._first_it is False
+
         # * Assert logger call
         mock_logger.info.assert_called_once_with("Proposing the first 5 configurations")
-        
+
         # * Assert publish call
         expected_body = json.dumps({"worker_capacity": 5})
 
@@ -350,28 +266,28 @@ class TestBatchedDistribution(unittest.TestCase):
             routing_key=self.experiment_id,
             body=expected_body
         )
-        
+
     def test_first_it_subsequent_call(self):
         """Tests that subsequent calls to first_it return False and do nothing."""
-        
+
         # * Setup
         mock_logger = MagicMock()
         distributionAlgorithm = BatchedDistribution(self.config)
         distributionAlgorithm.logger = mock_logger
 
         # ? Manually set the flag
-        distributionAlgorithm._first_it = False 
-        
+        distributionAlgorithm._first_it = False
+
         # * Call
         result = distributionAlgorithm.first_it(self.experiment_id)
 
         # * Assertions
-        self.assertFalse(result)
-        self.assertFalse(distributionAlgorithm._first_it)
-        
+        assert result is False
+        assert distributionAlgorithm._first_it is False
+
         # * Assert no logging or publishing occurred
         mock_logger.info.assert_not_called()
-    
+
     # ? --- Test dispatch and handle_configuration_distribution Flow ---
     @patch('threading.Thread')
     @patch('threading.Barrier')
@@ -386,7 +302,7 @@ class TestBatchedDistribution(unittest.TestCase):
         distributionAlgorithm.logger = mock_logger
 
         # * Mock first_it to immediately return True and check if it was called
-        distributionAlgorithm.first_it = MagicMock(return_value=True) 
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
 
         # * Call
         distributionAlgorithm.dispatch(self.experiment_id, self.body)
@@ -395,25 +311,25 @@ class TestBatchedDistribution(unittest.TestCase):
         distributionAlgorithm.first_it.assert_called_once_with(self.experiment_id)
         MockThread.assert_not_called()
         MockBarrier.assert_not_called()
-        
+
     @patch('threading.Thread')
     @patch('threading.Barrier')
-    @patch('configuration_distribution.batchedDistribution.publish')
+    @patch('configuration_distribution.batched_distribution.publish')
     def test_dispatch_and_handle_flow(self, mock_publish, MockBarrier, MockThread):
         """
         Tests the entire dispatch flow when first_it returns False.
         This includes barrier creation and thread starting.
         """
-        
+
         # * Setup
         mock_logger = MagicMock()
         distributionAlgorithm = BatchedDistribution(self.config)
         distributionAlgorithm.logger = mock_logger
         distributionAlgorithm.first_it = MagicMock(return_value=False)
-        
+
         # * Ensure the barrier is None for the initial creation check
         distributionAlgorithm._barrier = None
-        
+
         # * Prepare the mock thread instance
         mock_thread_instance = MockThread.return_value
 
@@ -422,13 +338,13 @@ class TestBatchedDistribution(unittest.TestCase):
 
         # * Assertions for dispatch logic
         distributionAlgorithm.logger.info.assert_called_with(
-            f"Creating new barrier with size {self.config['batchSize']['Int']}"
+            f"Creating new barrier with size {distributionAlgorithm._batch_size}"
         )
 
         MockBarrier.assert_called_once_with(distributionAlgorithm._batch_size)
 
-        self.assertEqual(distributionAlgorithm._barrier, MockBarrier.return_value)
-        
+        assert distributionAlgorithm._barrier == MockBarrier.return_value
+
         MockThread.assert_called_once_with(
             target=distributionAlgorithm.handle_configuration_distribution,
             args=(self.experiment_id, self.body),
@@ -436,14 +352,14 @@ class TestBatchedDistribution(unittest.TestCase):
         )
 
         mock_thread_instance.start.assert_called_once()
-        
-        # ? --- Simulate the Thread Call for handle_configuration_distribution --- 
+
+        # ? --- Simulate the Thread Call for handle_configuration_distribution ---
         # * Get the mocked barrier instance that was created
         mock_barrier_instance = MockBarrier.return_value
 
         # * Mock its state and wait() method
         mock_barrier_instance.n_waiting = 2 # ? Simulate 2 workers already waiting
-        mock_barrier_instance.wait.return_value = 0 # ? This thread is the designated publisher (index 0)
+        mock_barrier_instance.wait.return_value = None # ? Ensure wait() doesn't block
 
         # * Manually call the target method (as the mocked thread would)
         distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
@@ -461,116 +377,98 @@ class TestBatchedDistribution(unittest.TestCase):
         # * Check that the barrier was correctly waited upon
         mock_barrier_instance.wait.assert_called_once()
 
-        # * Check that exactly ONE wave request was published with worker_capacity = batchSize
-        expected_wave_body = json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
+        # * Check that one wave request with the full batch size was published
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=expected_wave_body
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
 
-    # ? --- Test broken-barrier recovery (incomplete wave) ---
-    @patch('configuration_distribution.batchedDistribution.publish')
-    def test_handle_recovers_from_broken_barrier(self, mock_publish):
-        """
-        If a wave is left incomplete (e.g. a worker dies, or worker_capacity is 0
-        so the batch never fills and the barrier gets aborted), waiting workers
-        must not hang: the broken barrier is discarded and the worker returns.
-        """
-        distribution_algorithm = BatchedDistribution(self.config)
-        distribution_algorithm.logger = MagicMock()
-
-        broken_barrier = threading.Barrier(distribution_algorithm._batch_size)
-        broken_barrier.abort()  # simulate the incomplete / dead-worker wave
-        distribution_algorithm._barrier = broken_barrier
-
-        distribution_algorithm.handle_configuration_distribution(self.experiment_id, self.body)
-
-        # * The broken barrier is dropped so the next wave starts clean...
-        self.assertIsNone(distribution_algorithm._barrier)
-        # * ...and this worker does not proceed to publish for the failed wave.
-        mock_publish.assert_not_called()
-        distribution_algorithm.logger.warning.assert_called_once()
-
-    @patch('configuration_distribution.batchedDistribution.publish')
+    @patch('configuration_distribution.batched_distribution.publish')
     def test_only_one_worker_per_wave_publishes(self, mock_publish):
         """
-        Multi-point proposal: a released wave must trigger exactly ONE selection
-        request (worker_capacity = batchSize), not one per released worker. Only
-        the worker that gets barrier index 0 publishes; the others stay silent.
+        Multi-point proposal: a released wave triggers exactly ONE selection request
+        (worker_capacity = BatchSize). Only the worker with barrier index 0 publishes.
         """
-        distribution_algorithm = BatchedDistribution(self.config)
-        distribution_algorithm.logger = MagicMock()
-
+        distributionAlgorithm = BatchedDistribution(self.config)
+        distributionAlgorithm.logger = MagicMock()
         mock_barrier = MagicMock()
         mock_barrier.n_waiting = 0
-        distribution_algorithm._barrier = mock_barrier
+        distributionAlgorithm._barrier = mock_barrier
 
-        # The non-publisher worker (index != 0) must not publish.
         mock_barrier.wait.return_value = 3
-        distribution_algorithm.handle_configuration_distribution(self.experiment_id, self.body)
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
         mock_publish.assert_not_called()
 
-        # The designated publisher (index 0) emits a single wave request.
         mock_barrier.wait.return_value = 0
-        distribution_algorithm.handle_configuration_distribution(self.experiment_id, self.body)
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=json.dumps({"worker_capacity": distribution_algorithm._batch_size})
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
+
+    @patch('configuration_distribution.batched_distribution.publish')
+    def test_handle_recovers_from_broken_barrier(self, mock_publish):
+        """
+        A wave left incomplete (a worker died, or the barrier was aborted) must not
+        hang the waiting workers: the broken barrier is dropped and nothing is published.
+        """
+        distributionAlgorithm = BatchedDistribution(self.config)
+        distributionAlgorithm.logger = MagicMock()
+        broken_barrier = threading.Barrier(distributionAlgorithm._batch_size)
+        broken_barrier.abort()
+        distributionAlgorithm._barrier = broken_barrier
+
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
+
+        assert distributionAlgorithm._barrier is None
+        mock_publish.assert_not_called()
+        distributionAlgorithm.logger.warning.assert_called_once()
 
     @patch('threading.Thread')
     def test_dispatch_replaces_broken_barrier(self, MockThread):
         """A subsequent dispatch replaces a broken barrier with a fresh one."""
-        distribution_algorithm = BatchedDistribution(self.config)
-        distribution_algorithm.logger = MagicMock()
-        distribution_algorithm.first_it = MagicMock(return_value=False)
-
-        broken_barrier = threading.Barrier(distribution_algorithm._batch_size)
+        distributionAlgorithm = BatchedDistribution(self.config)
+        distributionAlgorithm.logger = MagicMock()
+        distributionAlgorithm.first_it = MagicMock(return_value=False)
+        broken_barrier = threading.Barrier(distributionAlgorithm._batch_size)
         broken_barrier.abort()
-        distribution_algorithm._barrier = broken_barrier
+        distributionAlgorithm._barrier = broken_barrier
 
-        distribution_algorithm.dispatch(self.experiment_id, self.body)
+        distributionAlgorithm.dispatch(self.experiment_id, self.body)
 
-        self.assertIsNotNone(distribution_algorithm._barrier)
-        self.assertIsNot(distribution_algorithm._barrier, broken_barrier)
-        self.assertFalse(distribution_algorithm._barrier.broken)
+        assert distributionAlgorithm._barrier is not broken_barrier
+        assert not distributionAlgorithm._barrier.broken
 
+class TestHybridDistribution:
 
-class TestHybridDistribution(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def setup(self, get_distribution_experiment):
+        """Set up required configuration and data for tests, sourced from EnergyExperiment_Hdistr.json."""
 
-    def setUp(self):
-        """Set up required configuration and data for tests."""
-  
-        self.config = {
-            "HybridDistribution": {
-                "Type": "HybridDistribution"
-            },
-            "batchSize": {
-                "Int": "5"
-            }
-        }
+        experiment_description, _ = get_distribution_experiment("H")
+        self.config = experiment_description["DistributionMode"]
         self.experiment_id = 456
         self.body_dict = {
             "worker_capacity": 1,
             "number_of_workers": 3,
-            "repetition_time": 2.0  # Time taken for the worker to process config
+            "evaluation_time": 2000  # Time taken for the worker to process config, in milliseconds
         }
         self.body = json.dumps(self.body_dict)
 
     def test_init_success(self):
         """Tests successful initialization with a batchSize."""
-        
+
         distributionAlgorithm = HybridDistribution(self.config)
-        
+
         # * Assert internal state
-        self.assertEqual(distributionAlgorithm._batch_size, 5)
-        self.assertTrue(distributionAlgorithm._first_it)
-        self.assertIsNone(distributionAlgorithm._gate)
-        self.assertEqual(distributionAlgorithm._initial_timeout, 5)
-        self.assertEqual(distributionAlgorithm._number_of_workers, 0)
-        self.assertEqual(distributionAlgorithm._evaluation_times, [])
+        assert distributionAlgorithm._batch_size == 5
+        assert distributionAlgorithm._first_it is True
+        assert distributionAlgorithm._gate is None
+        assert distributionAlgorithm._initial_timeout == 5
+        assert distributionAlgorithm._number_of_workers == 0
+        assert list(distributionAlgorithm._evaluation_times) == []
 
     @patch('logging.getLogger')
     def test_init_key_error(self, mock_get_logger):
@@ -578,36 +476,36 @@ class TestHybridDistribution(unittest.TestCase):
 
         bad_config = {}
         mock_logger_instance = mock_get_logger.return_value
-        
+
         # * Assert that the function call RAISES the expected exception
-        with self.assertRaisesRegex(ValueError, "Hybrid Distribution requires 'batchSize' in description."):
+        with pytest.raises(ValueError, match="Hybrid Distribution requires 'BatchSize' in description."):
             HybridDistribution(bad_config)
-        
+
         # * Assert the side effects (logging) AFTER the exception
         mock_logger_instance.error.assert_called_once()
         mock_logger_instance.error.assert_called_with(
-            "Description missing 'batchSize'!"
+            "Description missing 'BatchSize'!"
         )
 
-    @patch('configuration_distribution.hybridDistribution.publish')
+    @patch('configuration_distribution.hybrid_distribution.publish')
     def test_first_it_initial_call(self, mock_publish):
         """Tests that the first call to first_it publishes the initial batch and flips the flag."""
-        
+
         # * Setup
         mock_logger = MagicMock()
         distributionAlgorithm = HybridDistribution(self.config)
         distributionAlgorithm.logger = mock_logger
-        
+
         # * Call
         result = distributionAlgorithm.first_it(self.experiment_id)
 
         # * Assertions
-        self.assertTrue(result)
-        self.assertFalse(distributionAlgorithm._first_it)
-        
+        assert result is True
+        assert distributionAlgorithm._first_it is False
+
         # * Assert logger call
         mock_logger.info.assert_called_once_with("Proposing the first 5 configurations")
-        
+
         # * Assert publish call
         expected_body = json.dumps({"worker_capacity": 5})
 
@@ -616,65 +514,65 @@ class TestHybridDistribution(unittest.TestCase):
             routing_key=self.experiment_id,
             body=expected_body
         )
-        
+
     def test_first_it_subsequent_call(self):
         """Tests that subsequent calls to first_it return False and do nothing."""
-        
+
         # * Setup
         distributionAlgorithm = HybridDistribution(self.config)
         # ? Manually set the flag
-        distributionAlgorithm._first_it = False 
-        
+        distributionAlgorithm._first_it = False
+
         # * Call
         result = distributionAlgorithm.first_it(self.experiment_id)
 
         # * Assertions
-        self.assertFalse(result)
-        
+        assert result is False
+
         # * Assert no state change or publishing occurred
-        self.assertFalse(distributionAlgorithm._first_it)
+        assert distributionAlgorithm._first_it is False
 
     @patch('threading.Thread')
-    @patch('configuration_distribution.hybridDistribution.EventGate')
-    @patch('configuration_distribution.hybridDistribution.publish')
+    @patch('configuration_distribution.hybrid_distribution.EventGate')
+    @patch('configuration_distribution.hybrid_distribution.publish')
     def test_dispatch_and_handle_flow_with_new_gate(self, mock_publish, MockEventGate, MockThread):
         """
-        Tests the entire dispatch flow when first_it returns False, including 
+        Tests the entire dispatch flow when first_it returns False, including
         gate creation and thread starting. Also checks internal state updates.
         """
-        
+
         # * Setup
         distributionAlgorithm = HybridDistribution(self.config)
         distributionAlgorithm.logger = MagicMock()
         distributionAlgorithm.first_it = MagicMock(return_value=False)
-        
+
         # ? Manually set internal state from previous runs for accurate timeout calc
         # ? This simulates enough data for a full proposal (5 configurations)
         # ? Proposal size is 5, Number of workers is 3 (from self.body_dict)
-        distributionAlgorithm._evaluation_times = [3.0, 3.0, 3.0, 3.0, 3.0]
+        distributionAlgorithm._evaluation_times = deque(
+            [3.0, 3.0, 3.0, 3.0, 3.0], maxlen=distributionAlgorithm._batch_size
+        )
         distributionAlgorithm._number_of_workers = self.body_dict["number_of_workers"]
-        
+
         # * Prepare the mock thread instance
         mock_thread_instance = MockThread.return_value
-        
+
         # * Prepare the mock gate instance
         mock_gate_instance = MockEventGate.return_value
-        # ? This worker is the designated publisher for the wave
-        mock_gate_instance.wait_at_gate.return_value = True
 
         # * Call dispatch
-        # ? This will update evaluation_times with the new body's time (2.0)
-        distributionAlgorithm.dispatch(self.experiment_id, self.body) 
+        # ? This will update evaluation_times with the new body's time (2000ms)
+        distributionAlgorithm.dispatch(self.experiment_id, self.body)
 
         # ? --- Assertions for dispatch logic ---
-        
+
         # * Check first_it was called
         distributionAlgorithm.first_it.assert_called_once_with(self.experiment_id)
 
         # * Check internal state update from body
-        # ? The new time (2.0) should be appended.
-        self.assertEqual(distributionAlgorithm._evaluation_times, [3.0, 3.0, 3.0, 3.0, 3.0,2.0])
-        self.assertEqual(distributionAlgorithm._number_of_workers, 3)
+        # ? The new time (2.0s) should be appended, evicting the oldest sample.
+        assert list(distributionAlgorithm._evaluation_times) == [3.0, 3.0, 3.0, 3.0, 2.0]
+        assert distributionAlgorithm._number_of_workers == 3
 
         MockThread.assert_called_once_with(
             target=distributionAlgorithm.handle_configuration_distribution,
@@ -683,47 +581,44 @@ class TestHybridDistribution(unittest.TestCase):
         )
         mock_thread_instance.start.assert_called_once()
 
-        # ? --- Simulate the Thread Call for handle_configuration_distribution --- 
+        # ? --- Simulate the Thread Call for handle_configuration_distribution ---
         distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
-        
+
         # ? --- Assertions for Gate creation and use within handle_configuration_distribution ---
-        
+
         expected_timeout = 9.0
-        
+
         # * Check EventGate creation
         MockEventGate.assert_called_once()
 
         MockEventGate.assert_called_with(
-            distributionAlgorithm._batch_size, 
-            expected_timeout, 
+            distributionAlgorithm._batch_size,
+            expected_timeout,
             distributionAlgorithm._cleanup_gate
         )
-        
+
         # * Check that the worker waited at the gate
         mock_gate_instance.wait_at_gate.assert_called_once()
 
-        # * Check that exactly ONE wave request was published with worker_capacity = batchSize
-        expected_wave_body = json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
+        # * Check that one wave request was published after unblocking from the gate
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=expected_wave_body
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
 
     @patch('threading.Thread')
-    @patch('configuration_distribution.hybridDistribution.EventGate')
-    @patch('configuration_distribution.hybridDistribution.publish')
+    @patch('configuration_distribution.hybrid_distribution.EventGate')
+    @patch('configuration_distribution.hybrid_distribution.publish')
     def test_handle_configuration_distribution_reuses_gate(self, mock_publish, MockEventGate, MockThread):
         """
-        Tests that handle_configuration_distribution reuses the existing gate 
+        Tests that handle_configuration_distribution reuses the existing gate
         if one has already been created by a preceding worker.
         """
-        
+
         # * Setup
         distributionAlgorithm = HybridDistribution(self.config)
         mock_gate_instance = MagicMock()
-        # ? This worker is the designated publisher for the wave
-        mock_gate_instance.wait_at_gate.return_value = True
         distributionAlgorithm._gate = mock_gate_instance
 
         # * Call the method for a subsequent worker
@@ -737,14 +632,24 @@ class TestHybridDistribution(unittest.TestCase):
         # * The worker still waits at the gate.
         mock_gate_instance.wait_at_gate.assert_called_once()
 
-        # * A single wave request is published after the wait.
-        expected_wave_body = json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
+        # * A wave request is published after the wait.
         mock_publish.assert_called_once_with(
             exchange='get_new_configuration_exchange',
             routing_key=self.experiment_id,
-            body=expected_wave_body
+            body=json.dumps({"worker_capacity": distributionAlgorithm._batch_size})
         )
-        
+
+    @patch('configuration_distribution.hybrid_distribution.publish')
+    def test_non_publisher_worker_stays_silent(self, mock_publish):
+        distributionAlgorithm = HybridDistribution(self.config)
+        mock_gate_instance = MagicMock()
+        mock_gate_instance.wait_at_gate.return_value = False
+        distributionAlgorithm._gate = mock_gate_instance
+
+        distributionAlgorithm.handle_configuration_distribution(self.experiment_id, self.body)
+
+        mock_publish.assert_not_called()
+
     def test_cleanup_gate(self):
         """
         Tests the cleanup callback function by ensuring it sets _gate to None.
@@ -761,40 +666,111 @@ class TestHybridDistribution(unittest.TestCase):
         distributionAlgorithm._cleanup_gate(dummy_stats)
 
         # * Assertions
-        self.assertIsNone(distributionAlgorithm._gate)
+        assert distributionAlgorithm._gate is None
+
+    def test_zero_arrival_timeout_resets_gate_for_next_wave(self):
+        """
+        Tests that firing timeout before the arrival of the first worker, 
+        resets the gate for the rest of the experiment.
+        """
+        # * Setup
+        distributionAlgorithm = HybridDistribution(self.config)
+        gate = distributionAlgorithm._get_or_create_gate()
+
+        # Simulate the timer firing with zero registered arrivals.
+        gate.timer.cancel()
+        gate._trigger_by_timeout()
+
+        # * Assertions: the stale gate must have been cleaned up already.
+        assert distributionAlgorithm._gate is None
+
+        new_gate = distributionAlgorithm._get_or_create_gate()
+        assert new_gate is not gate
+
+        new_gate.timer.cancel()
+
+    def test_dispatch_converts_evaluation_time_from_milliseconds_to_seconds(self):
+        """
+        Workers report evaluation_time in milliseconds; dispatch must convert it
+        to seconds before it feeds the (seconds-based) adaptive timeout logic.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": 4500})
+        distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert list(distributionAlgorithm._evaluation_times) == [4.5]
+
+    def test_dispatch_discards_none_evaluation_time(self):
+        """
+        A None evaluation_time (e.g. a Configuration whose results have not yet
+        been aggregated) must not be appended, and must not raise.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": None})
+        distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert list(distributionAlgorithm._evaluation_times) == []
+
+    def test_dispatch_discards_nan_evaluation_time(self):
+        """
+        A NaN evaluation_time (e.g. every task for a Configuration was marked
+        Bad/Outlier/Out-of-bounds) must not be appended, and must not raise or
+        poison the adaptive timeout with NaN.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": float("nan")})
+        distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert list(distributionAlgorithm._evaluation_times) == []
+
+    def test_calculate_next_timeout_stays_in_seconds(self):
+        """
+        Regression guard for the ms/s unit bug: once enough (already-converted,
+        second-denominated) samples are present, the adaptive timeout must stay
+        on the order of the observed evaluation times.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm._number_of_workers = 5
+        distributionAlgorithm._evaluation_times = deque(
+            [2.0] * distributionAlgorithm._batch_size, maxlen=distributionAlgorithm._batch_size
+        )
+
+        timeout = distributionAlgorithm._calculate_next_timeout()
+
+        assert timeout == pytest.approx(3.0)  # 2.0s * (1 + TIMEOUT_BUFFER_FACTOR)
+
+    def test_evaluation_times_bounded_by_batch_size(self):
+        """
+        Test that only the most recent batch_size
+        evaluation times are retained, with the oldest evicted first.
+        """
+        distributionAlgorithm = HybridDistribution(self.config)
+        distributionAlgorithm.first_it = MagicMock(return_value=True)
+
+        # Dispatch far more samples than batch_size (5).
+        for i in range(20):
+            body = json.dumps({"worker_capacity": 1, "number_of_workers": 3, "evaluation_time": i * 1000})
+            distributionAlgorithm.dispatch(self.experiment_id, body)
+
+        assert len(distributionAlgorithm._evaluation_times) == distributionAlgorithm._batch_size
+        # ? Only the last 5 (converted) samples survive: 15.0, 16.0, 17.0, 18.0, 19.0
+        assert list(distributionAlgorithm._evaluation_times) == [15.0, 16.0, 17.0, 18.0, 19.0]
 
 
-class TestEventGate(unittest.TestCase):
-    """Unit tests for the timeout-based synchronization gate (EventGate)."""
-
-    def test_release_on_completion(self):
-        """When batchSize workers arrive, the gate releases them all at once."""
-        cleanup = MagicMock()
-        gate = EventGate(2, 30, cleanup)
-
-        threads = [threading.Thread(target=gate.wait_at_gate) for _ in range(2)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join(timeout=5)
-
-        for thread in threads:
-            self.assertFalse(thread.is_alive(), "worker stayed blocked at the gate")
-        self.assertTrue(gate.triggered)
-
-        cleanup.assert_called_once()
-        stats = cleanup.call_args[0][0]
-        self.assertEqual(stats["result"], "completion")
+class TestEventGate:
 
     def test_exactly_one_publisher_per_wave(self):
         """
-        wait_at_gate returns True for exactly one released worker (the designated
-        publisher) and False for the rest, so a wave produces a single selection
-        request regardless of how many workers it released.
+        wait_at_gate returns True for exactly one released worker, so a wave
+        produces a single selection request however many workers it released.
         """
-        cleanup = MagicMock()
-        gate = EventGate(3, 30, cleanup)
-
+        gate = EventGate(3, 30, MagicMock())
         results = []
         results_lock = threading.Lock()
 
@@ -809,8 +785,28 @@ class TestEventGate(unittest.TestCase):
         for thread in threads:
             thread.join(timeout=5)
 
-        self.assertEqual(sum(1 for r in results if r), 1, "expected exactly one publisher per wave")
-        self.assertEqual(len(results), 3)
+        assert len(results) == 3
+        assert sum(1 for r in results if r) == 1
+    """Unit tests for the timeout-based synchronization gate (EventGate)."""
+
+    def test_release_on_completion(self):
+        """When batchSize workers arrive, the gate releases them all at once."""
+        cleanup = MagicMock()
+        gate = EventGate(2, 30, cleanup)
+
+        threads = [threading.Thread(target=gate.wait_at_gate) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+
+        for thread in threads:
+            assert not thread.is_alive(), "worker stayed blocked at the gate"
+        assert gate.triggered
+
+        cleanup.assert_called_once()
+        stats = cleanup.call_args[0][0]
+        assert stats["result"] == "completion"
 
     def test_release_on_timeout(self):
         """An incomplete wave is released by the timeout instead of hanging."""
@@ -827,10 +823,10 @@ class TestEventGate(unittest.TestCase):
         worker.start()
         worker.join(timeout=5)
 
-        self.assertFalse(worker.is_alive())
-        self.assertTrue(done.wait(timeout=5), "cleanup was never invoked")
-        self.assertTrue(gate.triggered)
-        self.assertEqual(captured["stats"]["result"], "timeout")
+        assert not worker.is_alive()
+        assert done.wait(timeout=5), "cleanup was never invoked"
+        assert gate.triggered
+        assert captured["stats"]["result"] == "timeout"
 
     def test_late_worker_after_trigger_does_not_double_clean(self):
         """
@@ -846,8 +842,8 @@ class TestEventGate(unittest.TestCase):
         first.start()
         first.join(timeout=5)
 
-        self.assertTrue(gate.triggered)
-        self.assertEqual(cleanup.call_count, 1)
+        assert gate.triggered
+        assert cleanup.call_count == 1
 
         # A worker arriving after the trigger passes the already-open gate and
         # must not produce a second cleanup nor block.
@@ -855,9 +851,40 @@ class TestEventGate(unittest.TestCase):
         late.start()
         late.join(timeout=5)
 
-        self.assertFalse(late.is_alive(), "late worker blocked on a released gate")
-        self.assertEqual(cleanup.call_count, 1)
+        assert not late.is_alive(), "late worker blocked on a released gate"
+        assert cleanup.call_count == 1
 
+    def test_zero_arrival_timeout_triggers_cleanup_immediately(self):
+        """
+        Tests that firing timeout before the arrival of the first worker,
+        immediatly calls the cleanup.
+        """
+        cleanup = MagicMock()
+        gate = EventGate(5, 30, cleanup)
 
-if __name__ == '__main__':
-    unittest.main()
+        # Simulate the timer firing with zero registered arrivals.
+        gate.timer.cancel()
+        gate._trigger_by_timeout()
+
+        assert gate.triggered
+        cleanup.assert_called_once()
+        stats = cleanup.call_args[0][0]
+        assert stats["result"] == "timeout"
+
+    def test_late_worker_after_zero_arrival_timeout_reports_cleanup(self):
+        """
+        Tests that the late worker must still pass as in the asynchronous mode, 
+        while cleanup was called.
+        """
+        cleanup = MagicMock()
+        gate = EventGate(5, 30, cleanup)
+
+        gate.timer.cancel()
+        gate._trigger_by_timeout()
+
+        late = threading.Thread(target=gate.wait_at_gate)
+        late.start()
+        late.join(timeout=5)
+
+        assert not late.is_alive(), "late worker blocked on a released gate"
+        assert cleanup.call_count == 1

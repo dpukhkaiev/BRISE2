@@ -23,7 +23,7 @@ from transfer_learning.transfer_expediency_determination.sampling_landmark_based
 from transfer_learning.multi_task_learning.base_mtl import BaseMTL
 from transfer_learning.multi_task_learning.only_best import OnlyBestDecorator
 from transfer_learning.multi_task_learning.old_new_ratio import OldNewRatioDecorator
-from transfer_learning.multi_task_learning.few_shot import FewShotDecorator
+from transfer_learning.multi_task_learning.shuffle import ShuffleDecorator
 from transfer_learning.model_recommendation.dynamic_model_recommendation import DynamicModelRecommendation
 from transfer_learning.model_recommendation.few_shot import FewShotRecommendation
 
@@ -194,7 +194,7 @@ class TestInput:
     def test_4(self):
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
-        'optimizer.nsga2', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
+        'optimizer.gaco', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
         'ted.quantity', 'mr.none', 'mtl.fsl', 'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
         """
         exp_desc_file_path = './Resources/tests/test_cases_product_configurations/test_case_4.json'
@@ -382,7 +382,7 @@ class TestInput:
         """
         ['1 float 1 nom', 'flat', 'so', 'mo.none', 'mock', 'surr.vt.none', 'surr.ct.none',
         'optimizer.gaco', 'opt.vt.none', 'opt.ct',  'validator.mock', 'validator.internal.none', cs.random',
-        'ted.quantity', 'mr.fsl', 'mtl.oldnewratio-fsl', 'sc.fsl', 'rm.quality', 'dch.random', 'ss.sobol']
+        'ted.quantity', 'mr.fsl', 'mtl.oldnewratio-shuffle', 'sc.fsl', 'rm.quality', 'dch.random', 'ss.sobol']
         """
         exp_desc_file_path = './Resources/tests/test_cases_product_configurations/test_case_9.json'
         expected_experiment = "test"
@@ -417,10 +417,11 @@ class TestInput:
         tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
                                           experiment_description=experiment.description)
         assert isinstance(tl.ted_module, SamplingLandmarkBased)
-        assert tl.transfer_submodules["Configuration_transfer"].is_few_shot
-        assert isinstance(tl.transfer_submodules["Configuration_transfer"], FewShotDecorator)
+        assert not tl.transfer_submodules["Configuration_transfer"].is_few_shot
+        assert isinstance(tl.transfer_submodules["Configuration_transfer"], ShuffleDecorator)
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, OldNewRatioDecorator)
         assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl.base_mtl, BaseMTL)
+        assert isinstance(tl.transfer_submodules["Model_transfer"], FewShotRecommendation)
 
     def test_10(self):
         """
@@ -526,6 +527,7 @@ class TestInput:
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        # configuration selection
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
@@ -603,6 +605,7 @@ class TestInput:
         # repetition management
         r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
         assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        # configuration selection
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].mapping_config_transformer_parameter) == 0
@@ -622,3 +625,118 @@ class TestInput:
         assert isinstance(tl.ted_module, SamplingLandmarkBased)
         assert tl.transfer_submodules["Configuration_transfer"] is None
         assert isinstance(tl.transfer_submodules["Model_transfer"], FewShotRecommendation)
+
+    def test_15(self):
+        """
+        ['3 nom 3 float 2 int 1 ord', 'hierarchical (4 levels)', 'so', 'mo.none', 'lr-svr-gbr-brr',
+        'surr.vt.none', 'surr.ct', 'optimizer.random-moea', 'opt.vt.none', 'opt.ct', 'validator.mock', 'cs.best',
+        'ted.none', 'mr.none', 'mtl.none', 'sc.time', 'rm.quantity', 'dch.none', 'ss.sobol']
+        """
+        exp_desc_file_path = './Resources/tests/test_cases_product_configurations/test_case_15.json'
+        expected_experiment = "test"
+        experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
+        assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
+        # create experiment entity
+        experiment = Experiment(experiment_description, search_space)
+        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
+        assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
+        # launch_stop_condition_threads without threading
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        assert isinstance(activatedSCs[0], TimeBased)
+        # repetition management
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        assert isinstance(r.get_repeater(), RMQuantityBasedType)
+        # configuration selection
+        cs = ConfigurationSelection(experiment=experiment)
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
+                       0].mapping_config_transformer_parameter) == 2
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
+                       0].value_transformers) == 0
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
+                       0].mapping_config_transformer_parameter) == 4
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
+                       0].value_transformers) == 0
+        assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, MockValidator)
+        assert list(cs.predictor.mapping_region_model.values())[0].internal_validator is None
+
+        assert "DefaultConfigurationHandler" not in experiment.description.keys()
+        assert "TransferLearning" not in experiment.description.keys()
+
+    def test_16(self):
+        """
+        Tests duplication of parameter names. Where the same leaf hyperparameter name ('X') resides at two
+        different levels of the same branch (N0.N01.X, itself Nominal, has a child also named 'X').
+        """
+        exp_desc_file_path = './Resources/tests/test_cases_product_configurations/test_case_16.json'
+        expected_experiment = "test"
+        experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
+        assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
+        # create experiment entity
+        experiment = Experiment(experiment_description, search_space)
+        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
+        assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
+        # launch_stop_condition_threads without threading
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        assert isinstance(activatedSCs[0], GuaranteedType)
+        # repetition management
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        assert isinstance(r.get_repeater(), RMQuantityBasedType)
+        # configuration selection
+        cs = ConfigurationSelection(experiment=experiment)
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
+                       0].mapping_config_transformer_parameter) == 4
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
+                       0].value_transformers) == 0
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
+                       0].mapping_config_transformer_parameter) == 4
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
+                       0].value_transformers) == 0
+        assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
+        assert list(cs.predictor.mapping_region_model.values())[0].internal_validator is None
+
+        dch_o = DefaultConfigHandlerOrchestrator()
+        dch = dch_o.get_default_configuration_handler(experiment)
+        assert dch.default_configuration_handler_description['Type'] == 'random_default_config_handler'
+        assert "TransferLearning" not in experiment.description.keys()
+
+    def test_17(self):
+        """
+        ['1 float 1 nom', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
+        'optimizer.gaco', 'opt.vt.none', 'opt.ct', 'validator.quality', 'validator.internal.none', 'cs.best',
+        'ted.quantity', 'mr.dynamic', 'mtl.fsl', 'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
+        """
+        exp_desc_file_path = './Resources/tests/test_cases_product_configurations/test_case_17.json'
+        expected_experiment = "test"
+        experiment_description, search_space = load_experiment_setup(exp_desc_file_path)
+        assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
+        # create experiment entity
+        experiment = Experiment(experiment_description, search_space)
+        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
+        assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
+        # launch_stop_condition_threads without threading
+        activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
+        assert isinstance(activatedSCs[0], FewShotLearningBased)
+        # repetition management
+        r = RepeaterOrchestration(experiment_id=experiment.unique_id, experiment=experiment)
+        assert isinstance(r.get_repeater(), AcceptableErrorBasedType)
+        # configuration selection
+        cs = ConfigurationSelection(experiment=experiment)
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
+                       0].mapping_config_transformer_parameter) == 1
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
+                       0].value_transformers) == 0
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
+                       0].mapping_config_transformer_parameter) == 1
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
+                       0].value_transformers) == 0
+        assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
+        assert list(cs.predictor.mapping_region_model.values())[0].internal_validator is None
+
+        assert "DefaultConfigurationHandler" not in experiment.description.keys()
+
+        tl = TransferLearningOrchestrator(experiment_id=experiment.unique_id,
+                                          experiment_description=experiment.description)
+        assert isinstance(tl.ted_module, SamplingLandmarkBased)
+        assert tl.transfer_submodules["Configuration_transfer"].is_few_shot
+        assert isinstance(tl.transfer_submodules["Configuration_transfer"].base_mtl, BaseMTL)
+        assert isinstance(tl.transfer_submodules["Model_transfer"], DynamicModelRecommendation)

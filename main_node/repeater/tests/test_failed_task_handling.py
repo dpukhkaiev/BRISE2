@@ -83,11 +83,11 @@ class TestFailedTaskHandling(unittest.TestCase):
         self.assertEqual(configuration.results, {})
 
     def test_bad_configuration_is_counted_through_the_experiment_api(self):
-        """The Experiment API dispatches on a JSON-encoded method name."""
+        """The Experiment API dispatches on the plain method name."""
         published = self._report_failed_task(already_failed_tasks=1)
         api_calls = [call for call in published
                      if call["exchange"] == "experiment_api_exchange"]
-        self.assertEqual([json.loads(call["body"]) for call in api_calls],
+        self.assertEqual([call["body"] for call in api_calls],
                          ["increment_bad_configuration_number"])
 
 

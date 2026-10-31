@@ -13,18 +13,11 @@ class OnlyBestDecorator(MultiTaskLearningDecorator):
         self.is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][self.objective_name][
             "Minimization"]
 
-    def transfer_configurations(self, similar_experiments: List) -> List[Configuration]:
+    def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         """
         Filters configurations better than average.
         :return: Filtered configurations.
         """
-
-        base_transferred_configurations = self.base_mtl.transfer_configurations(similar_experiments)
-        transferred_configurations = self._filter_configurations(base_transferred_configurations)
-
-        return transferred_configurations
-
-    def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         avg_objective_value = sum([c.results[self.objective_name] for c in configurations]) / len(configurations)
         if self.is_minimization:
             configs_to_transfer = list(filter(lambda c: c.results[self.objective_name] <= avg_objective_value, configurations))

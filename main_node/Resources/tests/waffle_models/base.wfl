@@ -613,11 +613,11 @@ ConfigurationSelection {
           // Multi-point proposal (N > 1) only makes sense when the pipeline is
           // bounded: either a synchronizing distribution mode releases a whole
           // wave at once, or SuccessiveHalving owns the rung barrier itself.
-          [if NumberOfPoints > 1 then (DistributionMode.Mode.BatchedDistribution or DistributionMode.Mode.HybridDistribution or Racing.SuccessiveHalving)]
-          // The wave size (batchSize) must equal the number of proposed points so
+          [if NumberOfPoints > 1 then (DistributionMode.BatchedDistribution or DistributionMode.HybridDistribution or Racing.SuccessiveHalving)]
+          // The wave size (BatchSize) must equal the number of proposed points so
           // one surrogate build feeds exactly one wave of Workers.
-          [if DistributionMode.Mode.BatchedDistribution then NumberOfPoints == DistributionMode.Mode.BatchedDistribution.batchSize]
-          [if DistributionMode.Mode.HybridDistribution then NumberOfPoints == DistributionMode.Mode.HybridDistribution.batchSize]
+          [if DistributionMode.BatchedDistribution then NumberOfPoints == DistributionMode.BatchedDistribution.BatchSize]
+          [if DistributionMode.HybridDistribution then NumberOfPoints == DistributionMode.HybridDistribution.BatchSize]
           // N is the widest bracket's rung 0, so one build of N points covers the rung 0 of every bracket.
           [if Racing.SuccessiveHalving then NumberOfPoints == Racing.SuccessiveHalving.N]
           Type -> predefined
@@ -626,9 +626,9 @@ ConfigurationSelection {
         RandomMultiPointProposal {
           NumberOfPoints -> integer
           [NumberOfPoints >= 1]
-          [if NumberOfPoints > 1 then (DistributionMode.Mode.BatchedDistribution or DistributionMode.Mode.HybridDistribution or Racing.SuccessiveHalving)]
-          [if DistributionMode.Mode.BatchedDistribution then NumberOfPoints == DistributionMode.Mode.BatchedDistribution.batchSize]
-          [if DistributionMode.Mode.HybridDistribution then NumberOfPoints == DistributionMode.Mode.HybridDistribution.batchSize]
+          [if NumberOfPoints > 1 then (DistributionMode.BatchedDistribution or DistributionMode.HybridDistribution or Racing.SuccessiveHalving)]
+          [if DistributionMode.BatchedDistribution then NumberOfPoints == DistributionMode.BatchedDistribution.BatchSize]
+          [if DistributionMode.HybridDistribution then NumberOfPoints == DistributionMode.HybridDistribution.BatchSize]
           [if Racing.SuccessiveHalving then NumberOfPoints == Racing.SuccessiveHalving.N]
           Type -> predefined
           [Type = "random_multi_point"]
@@ -763,30 +763,28 @@ StopCondition {
 }
 // ------------------Configuration Distribution------------------
 // Selects how generated Configurations are dispatched to the Workers.
-DistributionMode {
-  xor Mode {
-    // Default: send each Configuration to the Workers immediately (no synchronization)
-    AsynchronousDistribution {
-      Type -> predefined
-      [Type = "AsynchronousDistribution"]
-    }
-    // Release a full wave only once BatchSize Workers have synchronized at a barrier
-    BatchedDistribution {
-      batchSize -> integer
-      [batchSize >= 1]
-      Type -> predefined
-      [Type = "BatchedDistribution"]
-    }
-    // Like Batched, but a per-wave TimeoutInSeconds also releases the wave so
-    // slow/dead Workers cannot deadlock the pipeline
-    HybridDistribution {
-      batchSize -> integer
-      [batchSize >= 1]
-      timeoutInSeconds -> float
-      [timeoutInSeconds > 0]
-      Type -> predefined
-      [Type = "HybridDistribution"]
-    }
+xor DistributionMode {
+  // Send each Configuration to the Workers immediately (no synchronization)
+  AsynchronousDistribution {
+    Type -> predefined
+    [Type = "asynchronous_distribution"]
+  }
+  // Release a full wave only once BatchSize Workers have synchronized at a barrier
+  BatchedDistribution {
+    BatchSize -> integer
+    [BatchSize >= 1]
+    Type -> predefined
+    [Type = "batched_distribution"]
+  }
+  // Like Batched, but a per-wave InitialTimeoutInSeconds also releases the wave so
+  // slow/dead Workers cannot deadlock the pipeline
+  HybridDistribution {
+    BatchSize -> integer
+    [BatchSize >= 1]
+    InitialTimeoutInSeconds -> float
+    [InitialTimeoutInSeconds > 0]
+    Type -> predefined
+    [Type = "hybrid_distribution"]
   }
 }
 // --------------------Configuration Racing----------------------
@@ -810,7 +808,7 @@ Racing ? {
 
     // A rung is a barrier, so Racing must be the only wave publisher; a
     // batched/hybrid mode would inject waves the rung never counted.
-    [self requires DistributionMode.Mode.AsynchronousDistribution]
+    [self requires DistributionMode.AsynchronousDistribution]
 
     // Ranks the rung with whatever arrived if a measurement is lost - a Task
     // terminated as a straggler never reports a result. Absent = wait forever.

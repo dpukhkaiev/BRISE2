@@ -4,7 +4,7 @@ import os
 import threading
 import uuid
 
-from configuration_distribution.configurationDistributionOrchestrator import ConfigurationDistributionOrchestrator
+from configuration_distribution.configuration_distribution_orchestrator import ConfigurationDistributionOrchestrator
 from core_entities.configuration import Configuration
 from repeater.budget_type import is_task_time_budget, scale_scenario_budget
 from tools.mongo_dao import MongoDB
@@ -46,9 +46,8 @@ class WSClient:
         self.number_of_workers_lock = threading.Lock()
         self._number_of_workers = None
         self.connection_thread = None
+        self.distributionAlgorithm = ConfigurationDistributionOrchestrator().get_distribution(experiment_description["DistributionMode"])
         self.init_connection()
-
-        self.distributionAlgorithm = ConfigurationDistributionOrchestrator().get_distribution(experiment_description)
 
     def init_connection(self):
         """
@@ -135,24 +134,13 @@ class WSClient:
         The function that returns the number of needed configurations for making balanced loading
         :return:
         """
-
-        # `evaluation_time` is reported by the worker and consumed by the
-        # HybridDistribution to adapt its release timeout. It is not part of the
-        # Experiment Description yet (pending the feature-model integration), so
-        # we default to 0 whenever it is absent or unparsable. This default also
-        # prevents the crash that occurred when `repetition_time` was referenced
-        # below while never being initialized.
-        repetition_time = 0.0
+        evaluation_time = None
         try:
             if body:
                 data = json.loads(body.decode())
                 evaluation_time = data.get("evaluation_time")
-                if evaluation_time is not None:
-                    repetition_time = float(evaluation_time)
-
-        except Exception as e:
-            self.logger.warning("Could not parse 'evaluation_time', defaulting to 0: %s" % e)
-            repetition_time = 0.0
+        except (json.JSONDecodeError, AttributeError, UnicodeDecodeError) as e:
+            self.logger.warning("Could not parse 'evaluation_time' from body: %s", e)
 
         with self.number_of_workers_lock:
             current_number_of_worker = self.get_number_of_workers()
@@ -170,7 +158,7 @@ class WSClient:
         dictionary_dump = {
             "worker_capacity": worker_capacity,
             "number_of_workers": current_number_of_worker,
-            "repetition_time": repetition_time
+            "evaluation_time": evaluation_time
             }
         body = json.dumps(dictionary_dump)
 

@@ -45,8 +45,8 @@ TIME_BASED_STOP_CONDITION = {
 # Hierarchical (tree-shaped) search spaces from the test suite that are valid
 # multi-point products: their Predictor holds one Model per level, so they
 # exercise the multi-point tree walk, and they declare NumberOfPoints together
-# with a matching DistributionMode batchSize.
-HIERARCHICAL_MULTI_POINT_TEST_CASES = ["test_case_16"]
+# with a matching DistributionMode BatchSize.
+HIERARCHICAL_MULTI_POINT_TEST_CASES = ["test_case_18"]
 
 
 class BRISEBenchmarkRunner:
@@ -430,7 +430,7 @@ class BRISEBenchmarkRunner:
             self.execute_experiment(experiment_description)
 
         return self.counter
-
+    
     @_benchmarkable
     def benchmark_distribution_modes(self):
         """
@@ -438,20 +438,25 @@ class BRISEBenchmarkRunner:
 
         1. Runs a baseline using AsynchronousDistribution.
         2. Sweeps through various batch sizes for BatchedDistribution.
+        3. Sweeps through various batch sizes for HybridDistribution.
         """
         self.logger.info('In Benchmark function ...')
 
+        self._experiment_timeout = 5 * 60
+
         self.logger.info("Load Configuration: ...")
         self._base_experiment_description, self._base_search_space = \
-            load_experiment_setup("./Resources/EnergyExperiment/EnergyExperiment_Bdistr.json")
+            load_experiment_setup("./Resources/tests/test_cases_product_configurations/EnergyExperiment_Bdistr.json")
 
         # --- Define Skeletons ---
+        # ! DistributionMode is an xor group: the parameters of a strategy belong
+        # ! inside the selected strategy, so that 'update' swaps the whole group.
 
         # Skeleton 1: Asynchronous (Baseline)
         async_skeleton = {
             "DistributionMode": {
                 "AsynchronousDistribution": {
-                    "Type": "AsynchronousDistribution"
+                    "Type": "asynchronous_distribution"
                 }
             }
         }
@@ -460,10 +465,8 @@ class BRISEBenchmarkRunner:
         batched_skeleton = {
             "DistributionMode": {
                 "BatchedDistribution": {
-                    "Type": "BatchedDistribution"
-                },
-                "batchSize": {
-                    "Int": "1"
+                    "BatchSize": 1,
+                    "Type": "batched_distribution"
                 }
             }
         }
@@ -472,49 +475,42 @@ class BRISEBenchmarkRunner:
         hybrid_skeleton = {
             "DistributionMode": {
                 "HybridDistribution": {
-                    "Type": "HybridDistribution"
-                },
-                "batchSize": {
-                    "Int": "1"
-                },
-                "timeout": {
-                        "Int": "350"
+                    "BatchSize": 1,
+                    "InitialTimeoutInSeconds": 5.0,
+                    "Type": "hybrid_distribution"
                 }
             }
         }
 
         # Get the base experiment description
-        # deepcopy to avoid polluting the 'self.base_experiment_description'
-        from copy import deepcopy
         experiment_description = self.base_experiment_description
 
         # --- 1. Run Baseline (Async) ---
-        # self.logger.info("Executing benchmark: AsynchronousDistribution")
-        # experiment_description.update(deepcopy(async_skeleton))
-        # self.execute_experiment(experiment_description)
+        self.logger.info("Executing benchmark: AsynchronousDistribution")
+        experiment_description.update(deepcopy(async_skeleton))
+        self.execute_experiment(experiment_description)
 
+        # --- 2. Run Batched Sweep ---
+        batched_sizes_to_test = [9]
+        hybrid_sizes_to_test = [6, 7, 8, 9]
 
-        # # --- 2. Run Batched Sweep ---
-        # batch_sizes_to_test = [9]
-        batch_sizes_to_test2 = [6,7,8,9]
+        for size in batched_sizes_to_test:
+            self.logger.info(f"Executing benchmark: BatchedDistribution with size {size}")
 
-        # for size in batch_sizes_to_test:
-        #     self.logger.info(f"Executing benchmark: BatchedDistribution with size {size}")
+            # Reset the config to the batched skeleton
+            experiment_description.update(deepcopy(batched_skeleton))
+            experiment_description['DistributionMode']['BatchedDistribution']['BatchSize'] = size
 
-        #     # Reset the config to the batched skeleton
-        #     experiment_description.update(deepcopy(batched_skeleton))
-        #     experiment_description['DistributionMode']['batchSize']['Int'] = str(size)
-
-        #     # Execute the run
-        #     self.execute_experiment(experiment_description)
+            # Execute the run
+            self.execute_experiment(experiment_description)
 
         # --- 3. Run Hybrid Sweep ---
-        for size in batch_sizes_to_test2:
+        for size in hybrid_sizes_to_test:
             self.logger.info(f"Executing benchmark: HybridDistribution with size {size}")
 
             # Reset the config to the hybrid skeleton
             experiment_description.update(deepcopy(hybrid_skeleton))
-            experiment_description['DistributionMode']['batchSize']['Int'] = str(size)
+            experiment_description['DistributionMode']['HybridDistribution']['BatchSize'] = size
 
             # Execute the run
             self.execute_experiment(experiment_description)
@@ -545,7 +541,7 @@ class BRISEBenchmarkRunner:
         rung never counted.
         """
         experiment_description["DistributionMode"] = {
-            "AsynchronousDistribution": {"Type": "AsynchronousDistribution"}
+            "AsynchronousDistribution": {"Type": "asynchronous_distribution"}
         }
 
     @staticmethod
@@ -553,10 +549,10 @@ class BRISEBenchmarkRunner:
         """
         Re-scale an already multi-point description to `number_of_points`.
 
-        Two things have to stay in sync (base.wfl:616-620). A hierarchical
-        Predictor holds one Model per level and all of them must propose the same
-        number of points, and a wave has to be exactly as large as a proposal
-        (batchSize == NumberOfPoints), so that a single surrogate build per level
+        Two things have to stay in sync (base.wfl). A hierarchical Predictor holds
+        one Model per level and all of them must propose the same number of
+        points, and a wave has to be exactly as large as a proposal
+        (BatchSize == NumberOfPoints), so that a single surrogate build per level
         feeds one wave of Workers.
         """
         predictor = experiment_description["ConfigurationSelection"]["Predictor"]
@@ -565,10 +561,10 @@ class BRISEBenchmarkRunner:
                 for candidate_selector in model["CandidateSelector"].values():
                     candidate_selector["NumberOfPoints"] = number_of_points
 
-        # A raced run uses AsynchronousDistribution, which has no batchSize.
-        distribution = experiment_description.get("DistributionMode", {})
-        if "batchSize" in distribution:
-            distribution["batchSize"]["Int"] = str(number_of_points)
+        # A raced run uses AsynchronousDistribution, which has no BatchSize.
+        for strategy in experiment_description.get("DistributionMode", {}).values():
+            if "BatchSize" in strategy:
+                strategy["BatchSize"] = number_of_points
 
     @_benchmarkable
     def benchmark_hierarchical_multi_point(self, number_of_points: int = None):
@@ -582,7 +578,7 @@ class BRISEBenchmarkRunner:
         The test cases are already valid multi-point products - they declare both
         NumberOfPoints and a matching DistributionMode - so a run only replaces the
         stop condition. Pass `number_of_points` to sweep other batch sizes; it
-        re-scales NumberOfPoints and batchSize together.
+        re-scales NumberOfPoints and BatchSize together.
         """
         self._experiment_timeout = 5 * 60
 
@@ -595,8 +591,9 @@ class BRISEBenchmarkRunner:
             if number_of_points is not None:
                 self._set_number_of_points(experiment_description, number_of_points)
 
-            self.logger.info(f"Executing benchmark: {test_case} with batchSize "
-                             f"{experiment_description['DistributionMode']['batchSize']['Int']}")
+            batch_sizes = [strategy.get("BatchSize")
+                           for strategy in experiment_description["DistributionMode"].values()]
+            self.logger.info(f"Executing benchmark: {test_case} with BatchSize {batch_sizes[0]}")
             self.execute_experiment(experiment_description, number_of_repetitions=1)
 
         return self.counter
@@ -622,14 +619,14 @@ class BRISEBenchmarkRunner:
         self._experiment_timeout = 10 * 60
 
         self._base_experiment_description, self._base_search_space = load_experiment_setup(
-            "./Resources/tests/test_cases_product_configurations/test_case_16.json")
+            "./Resources/tests/test_cases_product_configurations/test_case_18.json")
 
         experiment_description = self.base_experiment_description
         experiment_description.update(deepcopy(TIME_BASED_STOP_CONDITION))
         # One rung unit is one repetition Task of the same Scenario.
         self._declare_race(experiment_description, eta, n, min_budget, max_budget,
                            number_of_brackets, budget_type="repetitions")
-        # test_case_16 ships a BatchedDistribution; Racing brings its own barrier.
+        # test_case_18 ships a BatchedDistribution; Racing brings its own barrier.
         self._use_asynchronous_distribution(experiment_description)
         # The widest bracket's rung 0 is N points from one build, so NumberOfPoints
         # (and the wave size) must equal N.
@@ -1047,8 +1044,10 @@ class MainAPIClient:
             auto_ack=True)
         self.response = None
         self.corr_id = None
-        # `final_event` issues RPCs from the ConsumerThread, while the main thread
-        # issues its own. A pika connection must not be used by two threads at once.
+        # pika's BlockingConnection is not thread-safe: the main thread (via
+        # perform_experiment) and the ConsumerThread (via final_event ->
+        # download_latest_dump) both call() into this same connection, so every
+        # round-trip must be serialized. The lock exists before the thread starts.
         self._rpc_lock = Lock()
 
         self.customer_thread = self.ConsumerThread('event-service', 49153, self)

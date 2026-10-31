@@ -20,7 +20,7 @@ class TestInitialConfig:
     def test_1_load_invalid_experiment_setup(self):
         # Test #1. Try to load an Experiment setup from the invalid Experiment description file
         # Expected result: error raised
-        input_file = "./Resources/SettingsBRISE.json"
+        input_file = "./Resources/tests/invalid_experiment_description.json"
         with pytest.raises(KeyError):
             load_experiment_setup(input_file)
 

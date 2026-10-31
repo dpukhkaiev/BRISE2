@@ -37,6 +37,7 @@ class ConsumerThread(Thread):
         self.channel.basic_qos(prefetch_count=1)
         self.MAIN_THREAD: MainThread = MainThread()
         self.logger = BRISELogConfigurator().get_logger(__name__)
+       
 
     def main_process_status(self):
         """
@@ -83,8 +84,12 @@ class ConsumerThread(Thread):
                     self.MAIN_THREAD = MainThread(experiment_setup=pickle.loads(request["Data"]))
                     self.MAIN_THREAD.start()
                 else:
-                    self.MAIN_THREAD = MainThread()
-                    self.MAIN_THREAD.start()
+                    if "Description" in request:
+                        self.MAIN_THREAD = MainThread(experiment_setup=(request["Description"]))
+                        self.MAIN_THREAD.start()
+                    else:
+                        self.MAIN_THREAD = MainThread()
+                        self.MAIN_THREAD.start()
         time.sleep(0.1)
         result = self.main_process_status()
         self.channel.basic_publish(exchange='',
@@ -104,6 +109,7 @@ class ConsumerThread(Thread):
                                    properties=pika.BasicProperties(correlation_id=properties.correlation_id),
                                    body=json.dumps(result))
         self.channel.basic_ack(delivery_tag=method.delivery_tag)
+
 
     def main_stop(self, channel, method, properties, body):
         """
@@ -168,7 +174,7 @@ class ConsumerThread(Thread):
                                    on_message_callback=self.main_stop)
         self.channel.basic_consume(queue='main_download_dump_queue', auto_ack=False,
                                    on_message_callback=self.download_dump_request_queue)
-
+       
         try:
             while self.channel._consumer_infos:
                 self.channel.connection.process_data_events(time_limit=1)  # 1 second
