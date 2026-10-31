@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { ParaCoord } from '../../widgets/charts/para-coord'
 import type { PlotlyInstance } from '../../widgets/charts/model/chart.types'
+import { specsByName as fixtureSpecsByName } from './searchSpaceFixture'
 
 const { renderParaCoordMock } = vi.hoisted(() => ({
     renderParaCoordMock: vi.fn()
@@ -11,23 +12,7 @@ const { renderParaCoordMock } = vi.hoisted(() => ({
 
 const allRes = ref<any[]>([])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    Minimization: true
-                },
-                energy: {
-                    Name: 'energy',
-                    Minimization: true
-                }
-            }
-        },
-        SearchSpace: {}
-    }
-})
+const specsByName = ref(fixtureSpecsByName)
 
 const plotlyInstance = ref<PlotlyInstance | null>({ react: vi.fn(), purge: vi.fn() })
 
@@ -39,7 +24,7 @@ vi.mock('../../entities/main/model/plot.store', () => ({
 
 vi.mock('../../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
-        experiment_description,
+        specsByName,
         plotlyInstance
     }))
 }))
@@ -60,23 +45,6 @@ describe('Parallel Coordinates', () => {
         allRes.value = []
         plotlyInstance.value = { react: vi.fn(), purge: vi.fn() }
 
-        experiment_description.value = {
-            Context: {
-                TaskConfiguration: {
-                    Objectives: {
-                        runtime: {
-                            Name: 'runtime',
-                            Minimization: true
-                        },
-                        energy: {
-                            Name: 'energy',
-                            Minimization: true
-                        }
-                    }
-                },
-                SearchSpace: {}
-            }
-        }
     })
 
     // every mounted component keeps its watchers alive until it's unmounted, and they all share
@@ -169,28 +137,6 @@ describe('Parallel Coordinates', () => {
         expect(plotlyInstance.value?.purge).toHaveBeenCalledWith(element)
     })
 
-    it('does not render without an experiment description', async () => {
-        experiment_description.value = null as any
-
-        mountComponent()
-
-        await flushPromises()
-
-        allRes.value.push({
-            configurations: {
-                frequency: 60,
-                threads: 8
-            },
-            results: {
-                runtime: 100
-            }
-        })
-
-        await flushPromises()
-
-        expect(renderParaCoordMock).not.toHaveBeenCalled()
-    })
-
     it('renders once Plotly has finished loading', async () => {
         plotlyInstance.value = null
 
@@ -205,6 +151,16 @@ describe('Parallel Coordinates', () => {
         await flushPromises()
 
         expect(renderParaCoordMock).toHaveBeenCalled()
+    })
+
+    it('draws with the parameters of the search space', async () => {
+        mountComponent()
+        await flushPromises()
+
+        allRes.value = [{ configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }]
+        await flushPromises()
+
+        expect(renderParaCoordMock.mock.lastCall?.[5]).toEqual(specsByName.value)
     })
 
     it('leaves out trials in which a selected parameter is inactive', async () => {

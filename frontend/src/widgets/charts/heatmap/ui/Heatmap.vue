@@ -15,6 +15,7 @@ import { useMainEventStore } from '../../../../entities/main'
 import { cleanIdentifier, parseJsonWithInfinity, stringifyWithInfinity } from '../../../../shared/lib'
 
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
+import { axisValues } from '../../../../entities/experiment/lib/search-space'
 
 defineOptions({ name: 'HeatmapChart' })
 
@@ -26,7 +27,7 @@ interface Configuration {
 // initialize store
 const store = useMainEventStore()
 // destructure reactive value from main.event.store
-const { experiment_description, searchspace, searchspaceReady, globalConfig, experimentFinished } = storeToRefs(store)
+const { experiment_description, regions, searchspaceReady, experimentFinished } = storeToRefs(store)
 
 // experiment results
 const result = ref(new Map<string, any>())
@@ -141,20 +142,20 @@ async function render(): Promise<void> {
 }
 
 function initMainEvents() {
-    watch([experiment_description, searchspace, searchspaceReady], () => {
-        if (!experiment_description.value || !searchspace.value || !searchspaceReady.value || !globalConfig.value) {
+    watch([experiment_description, regions, searchspaceReady], () => {
+        if (!experiment_description.value || !searchspaceReady.value) {
             return
         }
         resetRes()
-        const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
-        const keys = Object.keys(boundaryObj ?? {}).filter(k => k !== 'root')
-        if (keys.length >= 2) {
-            yParamKey.value = keys[0]
-            xParamKey.value = keys[1]
-            yTitle.value = cleanIdentifier(keys[0])
-            xTitle.value = cleanIdentifier(keys[1])
-            y.value = (boundaryObj[keys[0]] ?? []).map(cleanIdentifier)
-            x.value = (boundaryObj[keys[1]] ?? []).map(cleanIdentifier)
+        // the heatmap spans the first two parameters of the top-level region, which are active in every trial
+        const [yParam, xParam] = regions.value[0]?.Parameters ?? []
+        if (yParam && xParam) {
+            yParamKey.value = yParam.Name
+            xParamKey.value = xParam.Name
+            yTitle.value = cleanIdentifier(yParam.Name)
+            xTitle.value = cleanIdentifier(xParam.Name)
+            y.value = axisValues(yParam).map(cleanIdentifier)
+            x.value = axisValues(xParam).map(cleanIdentifier)
         }
 
         const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives

@@ -38,7 +38,6 @@ const experiment_description = ref({
             },
             TimeUnit: 'seconds'
         },
-        SearchSpace: {}
     },
     PlotSelection: {
         Plot: {

@@ -1,14 +1,13 @@
 import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from '../../../entities/main/model/plot.store'
 // import { ref } from 'vue'
-import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
+import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
-import { findParameterSpec } from "../../../entities/experiment/lib/search-space";
 
 function factoryDimension(
     parameter: string,
     allRes: PointExp[],
-    experiment_description: ExperimentDescription
+    specsByName: Record<string, ParameterSpec>
 ) {
     const values = allRes.map(
         point => point.configurations[parameter]
@@ -33,17 +32,16 @@ function factoryDimension(
         ];
     }
     else {
-        const searchSpace =
-            findParameterSpec(experiment_description, parameter);
+        const spec = specsByName[parameter];
 
         let categories: string[];
 
         // Use the Categories order for ordinal parameters
         if (
-            searchSpace?.Type === "OrdinalHyperparameter" &&
-            Array.isArray(searchSpace.Categories)
+            spec?.Type === "OrdinalHyperparameter" &&
+            Array.isArray(spec.Categories)
         ) {
-            categories = searchSpace.Categories;
+            categories = spec.Categories;
         }
         else {
             // Normal categorical parameter:
@@ -87,14 +85,14 @@ function dimensionsData(
     allRes: PointExp[],
     paraCoordParams: string[],
     paraCoordObjective: string,
-    experiment_description: ExperimentDescription
+    specsByName: Record<string, ParameterSpec>
 ) {
     const dimensions = paraCoordParams.map(
         parameter =>
             factoryDimension(
                 parameter,
                 allRes,
-                experiment_description
+                specsByName
             )
     );
 
@@ -116,7 +114,7 @@ export function renderParaCoord(
     allRes: PointExp[],
     paraCoordParams: string[],
     paraCoordObjective: string,
-    experiment_description: ExperimentDescription
+    specsByName: Record<string, ParameterSpec>
 ) {
     if (
         allRes.length === 0 ||
@@ -144,7 +142,7 @@ export function renderParaCoord(
             allRes,
             paraCoordParams,
             paraCoordObjective,
-            experiment_description
+            specsByName
         )
     }];
 

@@ -20,7 +20,6 @@ const experiment_description = ref({
                 }
             }
         },
-        SearchSpace: {}
     }
 })
 
@@ -62,7 +61,6 @@ describe('EDF Plot', () => {
                         }
                     }
                 },
-                SearchSpace: {}
             }
         }
     })

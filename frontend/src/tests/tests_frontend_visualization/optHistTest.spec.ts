@@ -26,7 +26,6 @@ const experiment_description = ref({
                 }
             }
         },
-        SearchSpace: {}
     }
 })
 
@@ -74,7 +73,6 @@ describe('Optimization History', () => {
                         }
                     }
                 },
-                SearchSpace: {}
             }
         }
     })

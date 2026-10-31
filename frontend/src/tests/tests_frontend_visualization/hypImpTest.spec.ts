@@ -21,29 +21,6 @@ const { renderHypImpMock } = vi.hoisted(() => ({
 
 const allRes = ref<any[]>([])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    Minimization: true
-                },
-                energy: {
-                    Name: 'energy',
-                    Minimization: true
-                }
-            }
-        },
-        SearchSpace: {}
-    },
-    PlotSelection: {
-        Plot: {
-            HyperparameterImportances: {}
-        }
-    }
-})
-
 const plotlyInstance = ref({ react: vi.fn(), purge: vi.fn() })
 
 vi.mock('../../entities/main/model/plot.store', () => ({
@@ -54,7 +31,6 @@ vi.mock('../../entities/main/model/plot.store', () => ({
 
 vi.mock('../../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
-        experiment_description,
         plotlyInstance
     }))
 }))
@@ -80,28 +56,6 @@ describe('Hyperparameter Importances', () => {
 
         allRes.value = []
 
-        experiment_description.value = {
-            Context: {
-                TaskConfiguration: {
-                    Objectives: {
-                        runtime: {
-                            Name: 'runtime',
-                            Minimization: true
-                        },
-                        energy: {
-                            Name: 'energy',
-                            Minimization: true
-                        }
-                    }
-                },
-                SearchSpace: {}
-            },
-            PlotSelection: {
-                Plot: {
-                    HyperparameterImportances: {}
-                }
-            }
-        }
     })
 
     const mountComponent = () => {
@@ -140,7 +94,6 @@ describe('Hyperparameter Importances', () => {
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
             'hyperparameter_importances',
             {
-                experiment_description: experiment_description.value,
                 trials: allRes.value,
                 parameters: ['frequency', 'threads'],
                 objective: 'runtime'

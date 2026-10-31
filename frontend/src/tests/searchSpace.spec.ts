@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isAxisParameter } from '../entities/experiment/lib/search-space'
+import { axisValues, isAxisParameter } from '../entities/experiment/lib/search-space'
 import type { ParameterSpec } from '../entities/experiment/model/experiment.model'
 
 const numeric = (Type: string): ParameterSpec => ({
@@ -42,5 +42,15 @@ describe('isAxisParameter', () => {
     it('rejects an unknown parameter and an unknown type', () => {
         expect(isAxisParameter(undefined)).toBe(false)
         expect(isAxisParameter(numeric('Category'))).toBe(false)
+    })
+})
+
+describe('axisValues', () => {
+    it.each(['NominalHyperparameter', 'OrdinalHyperparameter'])('lists the categories of a %s in their order', (type) => {
+        expect(axisValues(categorical(type, [LOW, HIGH]))).toEqual([LOW, HIGH])
+    })
+
+    it.each(['FloatHyperparameter', 'IntegerHyperparameter'])('lists the two bounds of a %s', (type) => {
+        expect(axisValues(numeric(type))).toEqual([0, 1])
     })
 })

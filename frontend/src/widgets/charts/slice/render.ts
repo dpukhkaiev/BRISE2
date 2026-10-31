@@ -1,9 +1,8 @@
 import type { Data, Layout } from 'plotly.js'
 import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from "../../../entities/main/model/plot.store";
-import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
+import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
-import { findParameterSpec } from "../../../entities/experiment/lib/search-space";
 
 export function renderSlice(
     plotly: PlotlyInstance,
@@ -11,7 +10,7 @@ export function renderSlice(
     allRes: PointExp[],
     sliceParam: string,
     sliceObjective: string,
-    experiment_description: ExperimentDescription
+    specsByName: Record<string, ParameterSpec>
 ) {
     if (
         allRes.length === 0 ||
@@ -22,15 +21,14 @@ export function renderSlice(
         return;
     }
 
-    const parameterDescription =
-        findParameterSpec(experiment_description, sliceParam);
+    const spec = specsByName[sliceParam];
 
     const isOrdinal =
-        parameterDescription?.Type === "OrdinalHyperparameter";
+        spec?.Type === "OrdinalHyperparameter";
 
     const categories: string[] =
-        isOrdinal && Array.isArray(parameterDescription.Categories)
-            ? parameterDescription.Categories
+        isOrdinal && Array.isArray(spec.Categories)
+            ? spec.Categories
             : [];
 
     let xValues: (string | number)[];

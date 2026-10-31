@@ -34,29 +34,6 @@ const { renderParetoFrontMock } = vi.hoisted(() => ({
 
 const allRes = ref<any[]>([])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    Minimization: true
-                },
-                energy: {
-                    Name: 'energy',
-                    Minimization: true
-                }
-            }
-        },
-        SearchSpace: {}
-    },
-    PlotSelection: {
-        Plot: {
-            ParetoFront: {}
-        }
-    }
-})
-
 const plotlyInstance = ref({ react: vi.fn(), purge: vi.fn() })
 
 vi.mock('../../entities/main/model/plot.store', () => ({
@@ -67,7 +44,6 @@ vi.mock('../../entities/main/model/plot.store', () => ({
 
 vi.mock('../../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
-        experiment_description,
         plotlyInstance
     }))
 }))
@@ -93,28 +69,6 @@ describe('Pareto Front', () => {
 
         allRes.value = []
 
-        experiment_description.value = {
-            Context: {
-                TaskConfiguration: {
-                    Objectives: {
-                        runtime: {
-                            Name: 'runtime',
-                            Minimization: true
-                        },
-                        energy: {
-                            Name: 'energy',
-                            Minimization: true
-                        }
-                    }
-                },
-                SearchSpace: {}
-            },
-            PlotSelection: {
-                Plot: {
-                    ParetoFront: {}
-                }
-            }
-        }
     })
 
     const mountComponent = () => {
@@ -154,7 +108,6 @@ describe('Pareto Front', () => {
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
             'pareto_front',
             {
-                experiment_description: experiment_description.value,
                 trials: allRes.value,
                 objective1: 'energy',
                 objective2: 'runtime'

@@ -2,25 +2,28 @@
 import { computed, ref, watch } from 'vue'
 import ParaCoord from './ParaCoord.vue'
 import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'ParaCoordRegionPanel' })
 
 const props = defineProps<{
-    regionParameters: string[]
+    region: SearchSpaceRegion
     showTitle: boolean
     paraCoordObjective: string
 }>()
+
+const regionParameters = computed(() => props.region.Parameters.map(parameter => parameter.Name))
 
 const paraCoordParams = ref<string[]>([])
 const selectedParaCoordParams = computed(() => {
     return paraCoordParams.value.length
         ? paraCoordParams.value
-        : props.regionParameters.slice(0, 1)
+        : regionParameters.value.slice(0, 1)
 })
 
 // select all parameters of the region on initialization and new experiment description
 watch(
-    () => props.regionParameters,
+    regionParameters,
     (parameters) => {
         paraCoordParams.value = [...parameters]
     },
@@ -32,7 +35,7 @@ watch(
   <div>
     <RegionTitle
       v-if="showTitle"
-      :region-parameters="regionParameters"
+      :region="region"
     />
     <v-list
       density="compact"

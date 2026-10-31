@@ -139,7 +139,7 @@ describe('useMainEventStore', () => {
     it('should have no parameters before the description message', () => {
         const store = useMainEventStore()
         expect(store.regions).toEqual([])
-        expect(store.parameters).toEqual({})
+        expect(store.specsByName).toEqual({})
     })
 
     it('should map every parameter of every region by its name', () => {
@@ -148,12 +148,12 @@ describe('useMainEventStore', () => {
         const store = useMainEventStore()
         store.initEvent()
 
-        expect(Object.keys(store.parameters)).toEqual([
+        expect(Object.keys(store.specsByName)).toEqual([
             'Context.SearchSpace.Algorithm',
             'Context.SearchSpace.Algorithm.A.alpha',
             'Context.SearchSpace.Algorithm.B.gamma'
         ])
-        expect(store.parameters['Context.SearchSpace.Algorithm.A.alpha']).toEqual(mockRegions[1].Parameters[0])
+        expect(store.specsByName['Context.SearchSpace.Algorithm.A.alpha']).toEqual(mockRegions[1].Parameters[0])
     })
 
     it('should replace the description, regions and parameters when a new description arrives', () => {
@@ -168,7 +168,7 @@ describe('useMainEventStore', () => {
 
         expect(store.experiment_description).toEqual(secondDescription)
         expect(store.regions).toEqual(mockRegions.slice(0, 1))
-        expect(Object.keys(store.parameters)).toEqual(['Context.SearchSpace.Algorithm'])
+        expect(Object.keys(store.specsByName)).toEqual(['Context.SearchSpace.Algorithm'])
     })
 
     it('should leave the regions alone on a message of another subtype', () => {
@@ -197,7 +197,7 @@ describe('useMainEventStore', () => {
 
             expect(store.experiment_description).toEqual({ Context: { TaskConfiguration: {} } })
             expect(store.regions).toEqual([])
-            expect(store.parameters).toEqual({})
+            expect(store.specsByName).toEqual({})
             expect(store.searchspaceReady).toBe(false)
             expect(console.error).toHaveBeenCalled()
         })
@@ -212,7 +212,7 @@ describe('useMainEventStore', () => {
             messages.next(descriptionMessage(undefined))
 
             expect(store.regions).toEqual([])
-            expect(store.parameters).toEqual({})
+            expect(store.specsByName).toEqual({})
             expect(store.searchspaceReady).toBe(false)
         })
     })

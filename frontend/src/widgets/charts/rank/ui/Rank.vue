@@ -11,7 +11,7 @@ defineOptions({ name: 'RankChart' })
 const plotStore = usePlotStore()
 const store = useMainEventStore()
 const { allRes } = storeToRefs(plotStore)
-const { experiment_description, plotlyInstance } = storeToRefs(store)
+const { specsByName, plotlyInstance } = storeToRefs(store)
 const rank = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
@@ -26,10 +26,8 @@ async function render() {
     if (!plotlyInstance.value) return
     if (!rank.value) 
         return
-    if (!experiment_description.value) 
-        return
     const trials = trialsWithParameters(allRes.value, [props.rankParam1, props.rankParam2])
-    renderRank(plotlyInstance.value, rank.value, trials, props.rankParam1, props.rankParam2, props.rankObjective, experiment_description.value)
+    renderRank(plotlyInstance.value, rank.value, trials, props.rankParam1, props.rankParam2, props.rankObjective, specsByName.value)
 }
 
 watch(

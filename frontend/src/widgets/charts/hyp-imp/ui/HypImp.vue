@@ -10,7 +10,7 @@ import { trialsWithParameters } from '../../../../entities/experiment/lib/region
 const plotStore = usePlotStore()
 const store = useMainEventStore()
 const { allRes } = storeToRefs(plotStore)
-const { experiment_description, plotlyInstance } = storeToRefs(store)
+const { plotlyInstance } = storeToRefs(store)
 const hypimp = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
@@ -28,7 +28,6 @@ async function render() {
     const result = await MainClientApi.calculatePlot(
         "hyperparameter_importances",
         {
-            "experiment_description": experiment_description.value,
             "trials": trials,
             "parameters": props.hypImpParams,
             "objective": props.hypImpObjective

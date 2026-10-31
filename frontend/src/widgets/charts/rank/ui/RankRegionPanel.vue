@@ -1,32 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
 import Rank from './Rank.vue'
-import { useMainEventStore } from '../../../../entities/main'
 import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
-import { findParameterSpec, isAxisParameter } from '../../../../entities/experiment/lib/search-space'
+import { isAxisParameter } from '../../../../entities/experiment/lib/search-space'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'RankRegionPanel' })
 
 const props = defineProps<{
-    regionParameters: string[]
+    region: SearchSpaceRegion
     showTitle: boolean
     rankObjective: string
 }>()
 
-const store = useMainEventStore()
-const { experiment_description } = storeToRefs(store)
-
 // parameters of the region that can span a rank axis
-const rankParameterNames = computed(() => {
-    const description = experiment_description.value
-    if (!description) {
-        return []
-    }
-    return props.regionParameters.filter(param =>
-        isAxisParameter(findParameterSpec(description, param))
-    )
-})
+const rankParameterNames = computed(() =>
+    props.region.Parameters.filter(isAxisParameter).map(parameter => parameter.Name)
+)
 
 const rankParam1 = ref("")
 const rankParam2 = ref("")
@@ -50,7 +40,7 @@ watch(
   <div>
     <RegionTitle
       v-if="showTitle"
-      :region-parameters="regionParameters"
+      :region="region"
     />
     <div
       v-if="rankParameterNames.length < 2"

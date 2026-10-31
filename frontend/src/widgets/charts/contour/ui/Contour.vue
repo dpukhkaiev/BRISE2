@@ -12,7 +12,7 @@ defineOptions({ name: 'ContourChart' })
 const plotStore = usePlotStore()
 const store = useMainEventStore()
 const { allRes } = storeToRefs(plotStore)
-const { experiment_description, plotlyInstance } = storeToRefs(store)
+const { specsByName, plotlyInstance } = storeToRefs(store)
 const contour = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
@@ -27,8 +27,6 @@ async function render() {
     if (!plotlyInstance.value) return
     if (!contour.value) 
         return
-    if (!experiment_description.value) 
-        return
     // Availability of Contour Plot currently not defined correctly by feature model. Therefore checking here if 2 valid HPs are available.
     // This check can be deleted once the constraint is implemented correctly in the feature model.
     if (!props.contourParam1 || !props.contourParam2 || props.contourParam1 === "" || props.contourParam2 === "") {
@@ -38,7 +36,6 @@ async function render() {
     const result = await MainClientApi.calculatePlot(
         "contour",
         {
-            "experiment_description": experiment_description.value,
             "trials": trials,
             "param1": props.contourParam1,
             "param2": props.contourParam2,
@@ -46,7 +43,7 @@ async function render() {
         }
     )
 
-    renderContour(plotlyInstance.value, contour.value, result, experiment_description.value)
+    renderContour(plotlyInstance.value, contour.value, result, specsByName.value)
 }
 
 watch(

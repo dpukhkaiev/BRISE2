@@ -15,38 +15,6 @@ const allRes = ref<PointExp[]>([
     }
 ])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            MaxTasksPerConfiguration: 1,
-            MaxTimeToRunTask: 60,
-            RepeaterDecisionFunction: '',
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    DataType: 'float',
-                    Minimization: true,
-                    MinExpectedValue: 0,
-                    MaxExpectedValue: Infinity
-                }
-            },
-            ObjectivesDataTypes: ['float'],
-            ObjectivesPriorities: [1],
-            TaskName: 'testTask',
-            Scenario: {
-                ws_file: 'test.ws'
-            },
-            TimeUnit: 'seconds'
-        },
-        SearchSpace: {}
-    },
-    PlotSelection: {
-        Plot: {
-            OptimizationHistory: {}
-        }
-    }
-})
-
 const plotly = { react: vi.fn(), purge: vi.fn() }
 
 describe('renderParaCoord', () => {
@@ -58,7 +26,7 @@ describe('renderParaCoord', () => {
         const element = document.createElement('div')
 
         const emptyAllRes = ref<PointExp[]>([])
-        renderParaCoord(plotly, element, emptyAllRes.value, ['frequency'], 'runtime', experiment_description.value,)
+        renderParaCoord(plotly, element, emptyAllRes.value, ['frequency'], 'runtime', {})
 
         expect(plotly.purge).toHaveBeenCalledWith(element)
         expect(plotly.react).not.toHaveBeenCalled()
@@ -100,7 +68,7 @@ describe('renderParaCoord', () => {
             }
         ]
 
-        renderParaCoord(plotly, element, testData, ['frequency'], 'runtime', experiment_description.value)
+        renderParaCoord(plotly, element, testData, ['frequency'], 'runtime', {})
 
         expect(plotly.react).toHaveBeenCalledTimes(1)
 
@@ -139,7 +107,7 @@ describe('renderParaCoord', () => {
     it('sets the correct layout', () => {
         const element = document.createElement('div')
 
-        renderParaCoord(plotly, element, allRes.value, ['frequency'], 'runtime', experiment_description.value,)
+        renderParaCoord(plotly, element, allRes.value, ['frequency'], 'runtime', {})
 
         const call = plotly.react.mock.calls[0]
         const layout = call[2] as any

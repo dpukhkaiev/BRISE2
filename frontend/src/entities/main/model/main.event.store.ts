@@ -17,7 +17,7 @@ export const useMainEventStore = defineStore('mainEvent', () => {
    // the search space regions as main-node describes them, in its canonical order
    const regions = ref<SearchSpaceRegion[]>([])
    // every parameter of the search space by its full name
-   const parameters = computed(() => {
+   const specsByName = computed(() => {
       const specs: Record<string, ParameterSpec> = {}
       for (const region of regions.value) {
          for (const parameter of region.Parameters) {
@@ -109,5 +109,5 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
 
 
-   return { regions, parameters, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
+   return { regions, specsByName, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

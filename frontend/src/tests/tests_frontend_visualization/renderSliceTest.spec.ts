@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { renderSlice } from '../../widgets/charts/slice/render'
 import type { PointExp } from '../../entities/main/model/plot.store'
+import type { ParameterSpec } from '../../entities/experiment/model/experiment.model'
 
 const allRes = ref<PointExp[]>([
     {
@@ -15,38 +16,6 @@ const allRes = ref<PointExp[]>([
     }
 ])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            MaxTasksPerConfiguration: 1,
-            MaxTimeToRunTask: 60,
-            RepeaterDecisionFunction: '',
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    DataType: 'float',
-                    Minimization: true,
-                    MinExpectedValue: 0,
-                    MaxExpectedValue: Infinity
-                }
-            },
-            ObjectivesDataTypes: ['float'],
-            ObjectivesPriorities: [1],
-            TaskName: 'testTask',
-            Scenario: {
-                ws_file: 'test.ws'
-            },
-            TimeUnit: 'seconds'
-        },
-        SearchSpace: {}
-    },
-    PlotSelection: {
-        Plot: {
-            OptimizationHistory: {}
-        }
-    }
-})
-
 const plotly = { react: vi.fn(), purge: vi.fn() }
 
 describe('renderParaCoord', () => {
@@ -58,7 +27,7 @@ describe('renderParaCoord', () => {
         const element = document.createElement('div')
 
         const emptyAllRes = ref<PointExp[]>([])
-        renderSlice(plotly, element, emptyAllRes.value, 'frequency', 'runtime', experiment_description.value,)
+        renderSlice(plotly, element, emptyAllRes.value, 'frequency', 'runtime', {})
 
         expect(plotly.purge).toHaveBeenCalledWith(element)
         expect(plotly.react).not.toHaveBeenCalled()
@@ -100,7 +69,7 @@ describe('renderParaCoord', () => {
             }
         ]
 
-        renderSlice(plotly, element, testData, 'frequency', 'runtime', experiment_description.value)
+        renderSlice(plotly, element, testData, 'frequency', 'runtime', {})
 
         expect(plotly.react).toHaveBeenCalledTimes(1)
 
@@ -153,7 +122,7 @@ describe('renderParaCoord', () => {
     it('sets the correct layout', () => {
         const element = document.createElement('div')
 
-        renderSlice(plotly, element, allRes.value, 'frequency', 'runtime', experiment_description.value,)
+        renderSlice(plotly, element, allRes.value, 'frequency', 'runtime', {})
 
         const call = plotly.react.mock.calls[0]
         const layout = call[2] as any
@@ -184,28 +153,13 @@ describe('renderParaCoord', () => {
     it('orders a nested ordinal parameter by its categories', () => {
         const element = document.createElement('div')
         const level = 'Context.SearchSpace.Algorithm.A.level'
-        const hierarchicalDescription = {
-            ...experiment_description.value,
-            Context: {
-                ...experiment_description.value.Context,
-                SearchSpace: {
-                    Algorithm: {
-                        Type: 'NominalHyperparameter',
-                        Level: 0,
-                        Categories: ['Context.SearchSpace.Algorithm.A'],
-                        A: {
-                            Type: 'Category',
-                            level: {
-                                Type: 'OrdinalHyperparameter',
-                                Level: 1,
-                                Categories: [`${level}.low`, `${level}.high`],
-                                low: { Type: 'Category' },
-                                high: { Type: 'Category' }
-                            }
-                        }
-                    },
-                    Structure: { Hierarchical: {} }
-                }
+        const specsByName: Record<string, ParameterSpec> = {
+            [level]: {
+                Name: level,
+                Type: 'OrdinalHyperparameter',
+                Level: 1,
+                Categories: [`${level}.low`, `${level}.high`],
+                Inactive: 'inactive'
             }
         }
         const trials: PointExp[] = [
@@ -213,7 +167,7 @@ describe('renderParaCoord', () => {
             { configurations: { [level]: `${level}.low` }, results: { runtime: 20 }, time: '2m 0s', 'measured points': 2 }
         ]
 
-        renderSlice(plotly, element, trials, level, 'runtime', hierarchicalDescription)
+        renderSlice(plotly, element, trials, level, 'runtime', specsByName)
 
         const [, data, layout] = plotly.react.mock.calls[0]
         expect(data[0].x).toEqual([1, 0])

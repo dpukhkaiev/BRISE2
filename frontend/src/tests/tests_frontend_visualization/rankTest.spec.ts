@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { Rank } from '../../widgets/charts/rank'
+import { specsByName as fixtureSpecsByName } from './searchSpaceFixture'
 
 const { renderRankMock } = vi.hoisted(() => ({
     renderRankMock: vi.fn()
@@ -10,23 +11,7 @@ const { renderRankMock } = vi.hoisted(() => ({
 
 const allRes = ref<any[]>([])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    Minimization: true
-                },
-                energy: {
-                    Name: 'energy',
-                    Minimization: true
-                }
-            }
-        },
-        SearchSpace: {}
-    }
-})
+const specsByName = ref(fixtureSpecsByName)
 
 const plotlyInstance = ref({ react: vi.fn(), purge: vi.fn() })
 
@@ -38,7 +23,7 @@ vi.mock('../../entities/main/model/plot.store', () => ({
 
 vi.mock('../../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
-        experiment_description,
+        specsByName,
         plotlyInstance
     }))
 }))
@@ -56,23 +41,6 @@ describe('Rank Plot', () => {
 
         allRes.value = []
 
-        experiment_description.value = {
-            Context: {
-                TaskConfiguration: {
-                    Objectives: {
-                        runtime: {
-                            Name: 'runtime',
-                            Minimization: true
-                        },
-                        energy: {
-                            Name: 'energy',
-                            Minimization: true
-                        }
-                    }
-                },
-                SearchSpace: {}
-            }
-        }
     })
 
    const mountComponent = () => {
@@ -160,6 +128,16 @@ describe('Rank Plot', () => {
 
         expect(renderRankMock.mock.calls.length)
             .toBeGreaterThan(callsBeforeChange)
+    })
+
+    it('draws with the parameters of the search space', async () => {
+        mountComponent()
+        await flushPromises()
+
+        allRes.value = [{ configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }]
+        await flushPromises()
+
+        expect(renderRankMock.mock.lastCall?.[6]).toEqual(specsByName.value)
     })
 
     it('leaves out trials in which a selected parameter is inactive', async () => {

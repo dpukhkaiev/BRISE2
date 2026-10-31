@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { Contour } from '../../widgets/charts/contour'
+import { specsByName as fixtureSpecsByName } from './searchSpaceFixture'
 
 const result = {
     contour: {
@@ -25,28 +26,7 @@ const { renderContourMock } = vi.hoisted(() => ({
 
 const allRes = ref<any[]>([])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    Minimization: true
-                },
-                energy: {
-                    Name: 'energy',
-                    Minimization: true
-                }
-            }
-        },
-        SearchSpace: {}
-    },
-    PlotSelection: {
-        Plot: {
-            ContourPlot: {}
-        }
-    }
-})
+const specsByName = ref(fixtureSpecsByName)
 
 const plotlyInstance = ref({ react: vi.fn(), purge: vi.fn() })
 
@@ -58,7 +38,7 @@ vi.mock('../../entities/main/model/plot.store', () => ({
 
 vi.mock('../../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
-        experiment_description,
+        specsByName,
         plotlyInstance
     }))
 }))
@@ -84,28 +64,6 @@ describe('Contour Plot', () => {
 
         allRes.value = []
 
-        experiment_description.value = {
-            Context: {
-                TaskConfiguration: {
-                    Objectives: {
-                        runtime: {
-                            Name: 'runtime',
-                            Minimization: true
-                        },
-                        energy: {
-                            Name: 'energy',
-                            Minimization: true
-                        }
-                    }
-                },
-                SearchSpace: {}
-            },
-            PlotSelection: {
-                Plot: {
-                    ContourPlot: {}
-                }
-            }
-        }
     })
 
     const mountComponent = () => {
@@ -154,7 +112,6 @@ describe('Contour Plot', () => {
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
             "contour",
             {
-                "experiment_description": experiment_description.value,
                 "trials": allRes.value,
                 "param1": 'frequency',
                 "param2": 'threads',
@@ -189,7 +146,7 @@ describe('Contour Plot', () => {
             plotlyInstance.value,
             wrapper.find('div').element,
             result,
-            experiment_description.value
+            specsByName.value
         )
     })
 
@@ -233,7 +190,6 @@ describe('Contour Plot', () => {
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
             "contour",
             {
-                "experiment_description": experiment_description.value,
                 "trials": allRes.value,
                 "param1": 'threads',
                 "param2": 'threads',
@@ -261,7 +217,6 @@ describe('Contour Plot', () => {
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
             "contour",
             {
-                "experiment_description": experiment_description.value,
                 "trials": allRes.value,
                 "param1": 'frequency',
                 "param2": 'frequency',
@@ -289,7 +244,6 @@ describe('Contour Plot', () => {
         expect(calculatePlotMock).toHaveBeenLastCalledWith(
             "contour",
             {
-                "experiment_description": experiment_description.value,
                 "trials": allRes.value,
                 "param1": 'frequency',
                 "param2": 'threads',
@@ -323,7 +277,7 @@ describe('Contour Plot', () => {
             plotlyInstance.value,
             wrapper.find('div').element,
             emptyResult,
-            experiment_description.value
+            specsByName.value
         )
     })
 

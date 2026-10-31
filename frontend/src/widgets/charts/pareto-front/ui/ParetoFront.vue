@@ -9,7 +9,7 @@ import { useMainEventStore } from '../../../../entities/main'
 const plotStore = usePlotStore()
 const store = useMainEventStore()
 const { allRes } = storeToRefs(plotStore)
-const { experiment_description, plotlyInstance } = storeToRefs(store)
+const { plotlyInstance } = storeToRefs(store)
 const paretofront = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
@@ -26,7 +26,6 @@ async function render() {
     const result = await MainClientApi.calculatePlot(
         "pareto_front",
         {
-            "experiment_description": experiment_description.value,
             "trials": allRes.value,
             "objective1": props.paretoObjective1,
             "objective2": props.paretoObjective2

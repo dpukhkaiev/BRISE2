@@ -11,7 +11,7 @@ defineOptions({ name: 'SliceChart' })
 const plotStore = usePlotStore()
 const store = useMainEventStore()
 const { allRes } = storeToRefs(plotStore)
-const { experiment_description, plotlyInstance } = storeToRefs(store)
+const { specsByName, plotlyInstance } = storeToRefs(store)
 const slice = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
@@ -24,10 +24,8 @@ async function render() {
 
     if (!plotlyInstance.value) return
     if (!slice.value) return
-    if (!experiment_description.value) 
-        return
     const trials = trialsWithParameters(allRes.value, [props.sliceParam])
-    renderSlice(plotlyInstance.value, slice.value, trials, props.sliceParam, props.sliceObjective, experiment_description.value)
+    renderSlice(plotlyInstance.value, slice.value, trials, props.sliceParam, props.sliceObjective, specsByName.value)
 }
 
 watch(

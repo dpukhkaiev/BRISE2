@@ -8,7 +8,7 @@ import { trialsWithParameters } from '../../../../entities/experiment/lib/region
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
-const { experiment_description, plotlyInstance } = storeToRefs(store)
+const { specsByName, plotlyInstance } = storeToRefs(store)
 const { allRes } = storeToRefs(plotStore)
 const paraCoord = ref<HTMLElement | null>(null)
 const props = defineProps<{
@@ -21,10 +21,8 @@ async function render() {
 
     if (!plotlyInstance.value) return
     if (!paraCoord.value) return
-    if (!experiment_description.value) 
-        return
     const trials = trialsWithParameters(allRes.value, props.paraCoordParams)
-    renderParaCoord(plotlyInstance.value, paraCoord.value, trials, props.paraCoordParams, props.paraCoordObjective, experiment_description.value)
+    renderParaCoord(plotlyInstance.value, paraCoord.value, trials, props.paraCoordParams, props.paraCoordObjective, specsByName.value)
 }
 
 watch(

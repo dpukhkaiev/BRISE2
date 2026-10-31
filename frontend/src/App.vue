@@ -375,9 +375,9 @@ watch(
                     class="user-input"
                   />
                   <ParaCoordRegionPanel
-                    v-for="(regionParameters, index) in regions"
+                    v-for="(region, index) in regions"
                     :key="index"
-                    :region-parameters="regionParameters"
+                    :region="region"
                     :show-title="regions.length > 1"
                     :para-coord-objective="selectedParaCoordObjective"
                   />
@@ -402,9 +402,9 @@ watch(
                     class="user-input"
                   />
                   <RankRegionPanel
-                    v-for="(regionParameters, index) in regions"
+                    v-for="(region, index) in regions"
                     :key="index"
-                    :region-parameters="regionParameters"
+                    :region="region"
                     :show-title="regions.length > 1"
                     :rank-objective="selectedRankObjective"
                   />
@@ -429,9 +429,9 @@ watch(
                     class="user-input"
                   />
                   <HypImpRegionPanel
-                    v-for="(regionParameters, index) in regions"
+                    v-for="(region, index) in regions"
                     :key="index"
-                    :region-parameters="regionParameters"
+                    :region="region"
                     :show-title="regions.length > 1"
                     :hyp-imp-objective="selectedHypImpObjective"
                   />
@@ -456,9 +456,9 @@ watch(
                     class="user-input"
                   />
                   <SliceRegionPanel
-                    v-for="(regionParameters, index) in regions"
+                    v-for="(region, index) in regions"
                     :key="index"
-                    :region-parameters="regionParameters"
+                    :region="region"
                     :show-title="regions.length > 1"
                     :slice-objective="selectedSliceObjective"
                   />
@@ -483,9 +483,9 @@ watch(
                     class="user-input"
                   />
                   <ContourRegionPanel
-                    v-for="(regionParameters, index) in regions"
+                    v-for="(region, index) in regions"
                     :key="index"
-                    :region-parameters="regionParameters"
+                    :region="region"
                     :show-title="regions.length > 1"
                     :contour-objective="selectedContourObjective"
                   />

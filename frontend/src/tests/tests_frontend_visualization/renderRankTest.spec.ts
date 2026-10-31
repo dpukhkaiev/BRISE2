@@ -15,38 +15,6 @@ const allRes = ref<PointExp[]>([
     }
 ])
 
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {
-            MaxTasksPerConfiguration: 1,
-            MaxTimeToRunTask: 60,
-            RepeaterDecisionFunction: '',
-            Objectives: {
-                runtime: {
-                    Name: 'runtime',
-                    DataType: 'float',
-                    Minimization: true,
-                    MinExpectedValue: 0,
-                    MaxExpectedValue: Infinity
-                }
-            },
-            ObjectivesDataTypes: ['float'],
-            ObjectivesPriorities: [1],
-            TaskName: 'testTask',
-            Scenario: {
-                ws_file: 'test.ws'
-            },
-            TimeUnit: 'seconds'
-        },
-        SearchSpace: {}
-    },
-    PlotSelection: {
-        Plot: {
-            OptimizationHistory: {}
-        }
-    }
-})
-
 const plotly = { react: vi.fn(), purge: vi.fn() }
 
 describe('renderRank', () => {
@@ -58,7 +26,7 @@ describe('renderRank', () => {
         const element = document.createElement('div')
 
         const emptyAllRes = ref<PointExp[]>([])
-        renderRank(plotly, element, emptyAllRes.value, 'frequency', 'threads', 'runtime', experiment_description.value,)
+        renderRank(plotly, element, emptyAllRes.value, 'frequency', 'threads', 'runtime', {})
 
         expect(plotly.purge).toHaveBeenCalledWith(element)
         expect(plotly.react).not.toHaveBeenCalled()
@@ -103,7 +71,7 @@ describe('renderRank', () => {
             }
         ]
 
-        renderRank(plotly, element, testData, 'frequency', 'threads', 'runtime', experiment_description.value)
+        renderRank(plotly, element, testData, 'frequency', 'threads', 'runtime', {})
 
         expect(plotly.react).toHaveBeenCalledTimes(1)
 
@@ -156,7 +124,7 @@ describe('renderRank', () => {
     it('sets the correct layout', () => {
         const element = document.createElement('div')
 
-        renderRank(plotly, element, allRes.value, 'frequency', 'threads', 'runtime', experiment_description.value,)
+        renderRank(plotly, element, allRes.value, 'frequency', 'threads', 'runtime', {})
 
         const call = plotly.react.mock.calls[0]
         const layout = call[2] as any

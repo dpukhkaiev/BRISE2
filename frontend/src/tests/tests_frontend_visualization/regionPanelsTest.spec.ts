@@ -1,7 +1,6 @@
 import { mount, shallowMount } from '@vue/test-utils'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createPinia } from 'pinia'
-import { ref } from 'vue'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
@@ -12,49 +11,11 @@ import { Slice, SliceRegionPanel } from '../../widgets/charts/slice'
 import { Contour, ContourRegionPanel } from '../../widgets/charts/contour'
 import { ParaCoord, ParaCoordRegionPanel } from '../../widgets/charts/para-coord'
 import { HypImp, HypImpRegionPanel } from '../../widgets/charts/hyp-imp'
+import { ALPHA, BETA, FLAG, GAMMA, regionA, regionB } from './searchSpaceFixture'
+import type { SearchSpaceRegion } from '../../entities/experiment/model/experiment.model'
 
 const vuetify = createVuetify({ components, directives })
 
-const ALPHA = 'Context.SearchSpace.Algorithm.A.alpha'
-const FLAG = 'Context.SearchSpace.Algorithm.A.flag'
-const BETA = 'Context.SearchSpace.Algorithm.A.beta'
-const GAMMA = 'Context.SearchSpace.Algorithm.B.gamma'
-
-// region A holds a float, a single-category nominal and an integer parameter, region B a single integer
-const experiment_description = ref({
-    Context: {
-        TaskConfiguration: {},
-        SearchSpace: {
-            Algorithm: {
-                Type: 'NominalHyperparameter',
-                Level: 0,
-                Categories: ['Context.SearchSpace.Algorithm.A', 'Context.SearchSpace.Algorithm.B'],
-                A: {
-                    Type: 'Category',
-                    alpha: { Type: 'FloatHyperparameter', Level: 1, Lower: 0, Upper: 1 },
-                    flag: {
-                        Type: 'NominalHyperparameter',
-                        Level: 1,
-                        Categories: [`${FLAG}.on`],
-                        on: { Type: 'Category' }
-                    },
-                    beta: { Type: 'IntegerHyperparameter', Level: 1, Lower: 1, Upper: 10 }
-                },
-                B: {
-                    Type: 'Category',
-                    gamma: { Type: 'IntegerHyperparameter', Level: 1, Lower: 1, Upper: 5 }
-                }
-            },
-            Structure: { Hierarchical: {} }
-        }
-    }
-})
-
-vi.mock('../../entities/main', () => ({
-    useMainEventStore: vi.fn(() => ({
-        experiment_description
-    }))
-}))
 
 const mountPanel = (panel: any, props: Record<string, unknown>) => shallowMount(panel, {
     props,
@@ -63,10 +24,16 @@ const mountPanel = (panel: any, props: Record<string, unknown>) => shallowMount(
     }
 })
 
+// a region without the single-category parameter
+const regionAB: SearchSpaceRegion = {
+    ActivationCategory: regionA.ActivationCategory,
+    Parameters: regionA.Parameters.filter(parameter => parameter.Name !== FLAG)
+}
+
 describe('Region panels', () => {
     it('slice panel selects the first parameter of its region', () => {
         const wrapper = mountPanel(SliceRegionPanel, {
-            regionParameters: [ALPHA, BETA],
+            region: regionAB,
             showTitle: false,
             sliceObjective: 'runtime'
         })
@@ -76,24 +43,24 @@ describe('Region panels', () => {
 
     it('slice panel selects the first parameter of a new region', async () => {
         const wrapper = mountPanel(SliceRegionPanel, {
-            regionParameters: [ALPHA, BETA],
+            region: regionAB,
             showTitle: false,
             sliceObjective: 'runtime'
         })
 
-        await wrapper.setProps({ regionParameters: [GAMMA] })
+        await wrapper.setProps({ region: regionB })
 
         expect(wrapper.findComponent(Slice).props('sliceParam')).toBe(GAMMA)
     })
 
     it('shows the region title only when asked to', async () => {
         const wrapper = mountPanel(SliceRegionPanel, {
-            regionParameters: [ALPHA, BETA],
+            region: regionAB,
             showTitle: true,
             sliceObjective: 'runtime'
         })
 
-        expect(wrapper.findComponent(RegionTitle).props('regionParameters')).toEqual([ALPHA, BETA])
+        expect(wrapper.findComponent(RegionTitle).props('region')).toEqual(regionAB)
 
         await wrapper.setProps({ showTitle: false })
 
@@ -102,7 +69,7 @@ describe('Region panels', () => {
 
     it('contour panel selects the first two parameters of its region that can span an axis', () => {
         const wrapper = mountPanel(ContourRegionPanel, {
-            regionParameters: [ALPHA, FLAG, BETA],
+            region: regionA,
             showTitle: false,
             contourObjective: 'runtime'
         })
@@ -114,7 +81,7 @@ describe('Region panels', () => {
 
     it('contour panel explains instead of plotting a region with fewer than two parameters', () => {
         const wrapper = mountPanel(ContourRegionPanel, {
-            regionParameters: [GAMMA],
+            region: regionB,
             showTitle: false,
             contourObjective: 'runtime'
         })
@@ -125,7 +92,7 @@ describe('Region panels', () => {
 
     it('parallel coordinates panel selects all parameters of its region', () => {
         const wrapper = mountPanel(ParaCoordRegionPanel, {
-            regionParameters: [ALPHA, FLAG, BETA],
+            region: regionA,
             showTitle: false,
             paraCoordObjective: 'runtime'
         })
@@ -135,7 +102,7 @@ describe('Region panels', () => {
 
     it('hyperparameter importances panel selects all parameters of its region', () => {
         const wrapper = mountPanel(HypImpRegionPanel, {
-            regionParameters: [ALPHA, FLAG, BETA],
+            region: regionA,
             showTitle: false,
             hypImpObjective: 'runtime'
         })
@@ -145,7 +112,7 @@ describe('Region panels', () => {
 
     it('rank panel selects the first two parameters of its region that can span an axis', () => {
         const wrapper = mountPanel(RankRegionPanel, {
-            regionParameters: [ALPHA, FLAG, BETA],
+            region: regionA,
             showTitle: false,
             rankObjective: 'runtime'
         })
@@ -157,7 +124,7 @@ describe('Region panels', () => {
 
     it('rank panel never offers the parameter chosen for one axis on the other axis', () => {
         const wrapper = mountPanel(RankRegionPanel, {
-            regionParameters: [ALPHA, FLAG, BETA],
+            region: regionA,
             showTitle: false,
             rankObjective: 'runtime'
         })
@@ -169,7 +136,7 @@ describe('Region panels', () => {
 
     it('rank panel explains instead of plotting a region with fewer than two parameters', () => {
         const wrapper = mountPanel(RankRegionPanel, {
-            regionParameters: [GAMMA],
+            region: regionB,
             showTitle: false,
             rankObjective: 'runtime'
         })
@@ -182,7 +149,7 @@ describe('Region panels', () => {
         // full mount, so that the checkboxes inside the list items are rendered; only the chart is stubbed
         const wrapper = mount(HypImpRegionPanel, {
             props: {
-                regionParameters: [ALPHA, BETA],
+                region: regionAB,
                 showTitle: false,
                 hypImpObjective: 'runtime'
             },

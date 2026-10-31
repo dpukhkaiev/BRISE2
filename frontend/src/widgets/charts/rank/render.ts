@@ -1,28 +1,26 @@
 import type { Data, Layout } from 'plotly.js'
 import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from "../../../entities/main/model/plot.store";
-import type { ExperimentDescription } from "../../../entities/experiment/model/experiment.model";
+import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
-import { findParameterSpec } from "../../../entities/experiment/lib/search-space";
 
 function getParameterValues(
     parameter: string,
     allRes: PointExp[],
-    experiment_description: ExperimentDescription
+    specsByName: Record<string, ParameterSpec>
 ) {
     const values = allRes.map(
         point => point.configurations[parameter]
     );
 
-    const searchSpace =
-        findParameterSpec(experiment_description, parameter);
+    const spec = specsByName[parameter];
 
     // Ordinal parameter
     if (
-        searchSpace?.Type === "OrdinalHyperparameter" &&
-        Array.isArray(searchSpace.Categories)
+        spec?.Type === "OrdinalHyperparameter" &&
+        Array.isArray(spec.Categories)
     ) {
-        const categories = searchSpace.Categories;
+        const categories = spec.Categories;
 
         return {
             values: values.map(value => categories.indexOf(value)),
@@ -66,7 +64,7 @@ export function renderRank(
     rankParam1: string,
     rankParam2: string,
     rankObjective: string,
-    experiment_description: ExperimentDescription
+    specsByName: Record<string, ParameterSpec>
 ) {
     if (allRes.length === 0) {
         plotly.purge(element);
@@ -76,13 +74,13 @@ export function renderRank(
     const param1 = getParameterValues(
         rankParam1,
         allRes,
-        experiment_description
+        specsByName
     );
 
     const param2 = getParameterValues(
         rankParam2,
         allRes,
-        experiment_description
+        specsByName
     );
 
     const trace: Data = {

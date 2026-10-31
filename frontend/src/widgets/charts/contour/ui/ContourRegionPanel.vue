@@ -1,32 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
 import Contour from './Contour.vue'
-import { useMainEventStore } from '../../../../entities/main'
 import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
-import { findParameterSpec, isAxisParameter } from '../../../../entities/experiment/lib/search-space'
+import { isAxisParameter } from '../../../../entities/experiment/lib/search-space'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'ContourRegionPanel' })
 
 const props = defineProps<{
-    regionParameters: string[]
+    region: SearchSpaceRegion
     showTitle: boolean
     contourObjective: string
 }>()
 
-const store = useMainEventStore()
-const { experiment_description } = storeToRefs(store)
-
 // parameters of the region that can span a contour axis
-const contourParameterNames = computed(() => {
-    const description = experiment_description.value
-    if (!description) {
-        return []
-    }
-    return props.regionParameters.filter(param =>
-        isAxisParameter(findParameterSpec(description, param))
-    )
-})
+const contourParameterNames = computed(() =>
+    props.region.Parameters.filter(isAxisParameter).map(parameter => parameter.Name)
+)
 
 const contourParam1 = ref("")
 const contourParam2 = ref("")
@@ -46,7 +36,7 @@ watch(
   <div>
     <RegionTitle
       v-if="showTitle"
-      :region-parameters="regionParameters"
+      :region="region"
     />
     <div
       v-if="contourParameterNames.length < 2"

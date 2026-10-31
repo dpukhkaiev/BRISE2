@@ -32,7 +32,6 @@ const defaultExperimentDescription: ExperimentDescription = {
             },
             TimeUnit: 'seconds'
         },
-        SearchSpace: {}
     },
 
     PlotSelection: {
@@ -48,7 +47,6 @@ const defaultExperimentDescription: ExperimentDescription = {
 const mockStore = {
     experiment_description: ref(defaultExperimentDescription),
 
-    globalConfig: ref({}),
 
     experimentFinished: ref(false),
 
@@ -314,7 +312,6 @@ describe('Skeleton.vue', () => {
                     },
                     TimeUnit: 'seconds'
                 },
-                SearchSpace: {}
             },
             PlotSelection: {
                 Plot: {

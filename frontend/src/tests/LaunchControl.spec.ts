@@ -25,8 +25,6 @@ vi.mock('../entities/main', () => ({
                 },
             },
         }),
-        searchspace: [],
-        globalConfig: {},
         isConnected: ref(true),
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {

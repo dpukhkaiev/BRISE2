@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Slice from './Slice.vue'
 import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'SliceRegionPanel' })
 
 const props = defineProps<{
-    regionParameters: string[]
+    region: SearchSpaceRegion
     showTitle: boolean
     sliceObjective: string
 }>()
+
+const regionParameters = computed(() => props.region.Parameters.map(parameter => parameter.Name))
 
 const sliceParam = ref("")
 
 // select the first parameter of the region on initialization and new experiment description
 watch(
-    () => props.regionParameters,
+    regionParameters,
     (parameters) => {
         sliceParam.value = parameters[0] ?? ""
     },
@@ -27,7 +30,7 @@ watch(
   <div>
     <RegionTitle
       v-if="showTitle"
-      :region-parameters="regionParameters"
+      :region="region"
     />
     <v-select
       v-model="sliceParam"

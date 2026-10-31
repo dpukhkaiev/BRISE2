@@ -7,9 +7,10 @@ import { theme } from '../../model/heatmap-theme'
 import { useMainEventStore, MainEvent } from '../../../../entities/main'
 import type { Solution } from '../../../../entities/task/model/task-data.model'
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
+import { axisValues } from '../../../../entities/experiment/lib/search-space'
 import { cleanIdentifier, parseJsonWithInfinity } from '../../../../shared/lib'
 const store = useMainEventStore()
-const { experiment_description, searchspace, searchspaceReady, globalConfig, experimentFinished } = storeToRefs(store)
+const { experiment_description, regions, searchspaceReady, experimentFinished } = storeToRefs(store)
 
 const solution = ref<Solution | null>(null)
 const result = ref(new Map<string, any>())
@@ -194,30 +195,20 @@ function initMainEvents() {
     }))
 
 
-    watch([experiment_description, searchspace, searchspaceReady], () => {
-        console.log('[Heatmap-Reg] searchspace RAW', JSON.stringify(searchspace.value))
-        if (!experiment_description.value || !searchspace.value || !searchspaceReady.value || !globalConfig.value) return
+    watch([experiment_description, regions, searchspaceReady], () => {
+        if (!experiment_description.value || !searchspaceReady.value) return
         resetRes()
 
-        const boundaryObj = searchspace.value?.boundaries?.[0]?.Boundaries
-        console.log('[Heatmap-Reg] boundaryObj FULL', JSON.stringify(boundaryObj, null, 2))
-        console.log('[Heatmap-Reg] boundaryObj KEYS', Object.keys(boundaryObj ?? {}))
-        if (!boundaryObj) return
+        // the first two parameters of the top-level region, which are active in every trial
+        const [xParam, yParam] = regions.value[0]?.Parameters ?? []
+        if (xParam && yParam) {
+            xParamKey.value = xParam.Name
+            yParamKey.value = yParam.Name
+            xTitle.value = cleanIdentifier(xParam.Name)
+            yTitle.value = cleanIdentifier(yParam.Name)
 
-        const keys = Object.keys(boundaryObj).filter(k => k !== 'root')
-        if (keys.length >= 2) {
-            xParamKey.value = keys[0]
-            yParamKey.value = keys[1]
-            xTitle.value = cleanIdentifier(keys[0])
-            yTitle.value = cleanIdentifier(keys[1])
-
-
-            const rawX = boundaryObj[keys[0]] ?? []
-            const rawY = boundaryObj[keys[1]] ?? []
-
-
-            y.value = rawY.map((item: any) => cleanIdentifier(item))
-            x.value = rawX.map((item: any) => cleanIdentifier(item))
+            x.value = axisValues(xParam).map(item => cleanIdentifier(item))
+            y.value = axisValues(yParam).map(item => cleanIdentifier(item))
         }
 
         const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives

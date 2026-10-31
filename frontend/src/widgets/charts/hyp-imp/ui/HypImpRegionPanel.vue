@@ -2,25 +2,28 @@
 import { computed, ref, watch } from 'vue'
 import HypImp from './HypImp.vue'
 import RegionTitle from '../../../../entities/experiment/ui/RegionTitle.vue'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'HypImpRegionPanel' })
 
 const props = defineProps<{
-    regionParameters: string[]
+    region: SearchSpaceRegion
     showTitle: boolean
     hypImpObjective: string
 }>()
+
+const regionParameters = computed(() => props.region.Parameters.map(parameter => parameter.Name))
 
 const hypImpParams = ref<string[]>([])
 const selectedHypImpParams = computed(() => {
     return hypImpParams.value.length
         ? hypImpParams.value
-        : props.regionParameters.slice(0, 1)
+        : regionParameters.value.slice(0, 1)
 })
 
 // select all parameters of the region on initialization and new experiment description
 watch(
-    () => props.regionParameters,
+    regionParameters,
     (parameters) => {
         hypImpParams.value = [...parameters]
     },
@@ -32,7 +35,7 @@ watch(
   <div>
     <RegionTitle
       v-if="showTitle"
-      :region-parameters="regionParameters"
+      :region="region"
     />
     <v-list
       density="compact"
