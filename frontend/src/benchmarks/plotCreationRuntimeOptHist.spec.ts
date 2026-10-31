@@ -110,6 +110,7 @@ describe("Optimization History - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes
@@ -218,6 +219,7 @@ describe("Optimization History - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes
@@ -326,6 +328,7 @@ describe("Optimization History - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes

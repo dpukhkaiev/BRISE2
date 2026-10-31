@@ -101,6 +101,7 @@ describe("Slice Plot - Plot Creation Runtime Benchmark", () => {
                             plugins: [pinia]
                         },
                         props: {
+                            region: experiment.regions[0],
                             sliceParam: "parameter1",
                             sliceObjective: "objective1"
                         }
@@ -110,6 +111,7 @@ describe("Slice Plot - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes
@@ -210,6 +212,7 @@ describe("Slice Plot - Plot Creation Runtime Benchmark", () => {
                             plugins: [pinia]
                         },
                         props: {
+                            region: experiment.regions[0],
                             sliceParam: "parameter1",
                             sliceObjective: "objective1"
                         }
@@ -219,6 +222,7 @@ describe("Slice Plot - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes
@@ -319,6 +323,7 @@ describe("Slice Plot - Plot Creation Runtime Benchmark", () => {
                             plugins: [pinia]
                         },
                         props: {
+                            region: experiment.regions[0],
                             sliceParam: "parameter1",
                             sliceObjective: "objective1"
                         }
@@ -328,6 +333,7 @@ describe("Slice Plot - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes

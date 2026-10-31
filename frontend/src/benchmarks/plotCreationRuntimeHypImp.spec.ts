@@ -88,7 +88,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
             const allParams = []
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 allParams.push(param)
             }
 
@@ -111,6 +111,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
                             plugins: [pinia]
                         },
                         props: {
+                            region: experiment.regions[0],
                             hypImpParams: allParams,
                             hypImpObjective: "objective1"
                         }
@@ -120,6 +121,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes
@@ -214,7 +216,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
             const allParams = []
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 allParams.push(param)
             }
 
@@ -237,6 +239,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
                             plugins: [pinia]
                         },
                         props: {
+                            region: experiment.regions[0],
                             hypImpParams: allParams,
                             hypImpObjective: "objective1"
                         }
@@ -246,6 +249,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes
@@ -340,7 +344,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
             const allParams = []
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 allParams.push(param)
             }
 
@@ -363,6 +367,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
                             plugins: [pinia]
                         },
                         props: {
+                            region: experiment.regions[0],
                             hypImpParams: allParams,
                             hypImpObjective: "objective1"
                         }
@@ -372,6 +377,7 @@ describe("Hyperparameter Importances - Plot Creation Runtime Benchmark", () => {
 
                 const start = performance.now()
 
+                mainStore.regions = experiment.regions
                 mainStore.experiment_description = experiment.experimentDescription
 
                 plotStore.allRes = experiment.allRes

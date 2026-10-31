@@ -3,27 +3,20 @@ import { generateExperiment } from "./generateExperiment"
 import { loadBenchmarkPlotly } from "./loadBenchmarkPlotly"
 import type { PlotlyInstance } from "../widgets/charts/model/chart.types"
 import { renderContour } from "../widgets/charts/contour/render.ts"
-import type { ExperimentDescription } from "../entities/experiment/model/experiment.model.ts"
+import type { ParameterSpec } from "../entities/experiment/model/experiment.model.ts"
 
 import { server } from "vitest/browser"
 
 const { writeFile } = server.commands
 
 function generateContourResult(
-    experimentDescription: ExperimentDescription,
+    specsByName: Record<string, ParameterSpec>,
     param1: string,
     param2: string,
     objective = "objective1"
 ) {
-    const searchSpace =
-        experimentDescription.Context?.SearchSpace as Record<string, any> | undefined
-
-    if (!searchSpace) {
-        throw new Error("SearchSpace is missing")
-    }
-
-    const xParameter = searchSpace[param1]
-    const yParameter = searchSpace[param2]
+    const xParameter = specsByName[param1]
+    const yParameter = specsByName[param2]
 
     if (!xParameter || !yParameter) {
         throw new Error("Parameter not found")
@@ -152,7 +145,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
             })
 
             const result = generateContourResult(
-                experiment.experimentDescription,
+                experiment.specsByName,
                 "parameter1",
                 "parameter2",
                 "objective1"
@@ -169,7 +162,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
                     plotly,
                     element,
                     result,
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -220,7 +213,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
             })
 
             const result = generateContourResult(
-                experiment.experimentDescription,
+                experiment.specsByName,
                 "parameter1",
                 "parameter2",
                 "objective1"
@@ -237,7 +230,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
                     plotly,
                     element,
                     result,
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -288,7 +281,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
             })
 
             const result = generateContourResult(
-                experiment.experimentDescription,
+                experiment.specsByName,
                 "parameter1",
                 "parameter2",
                 "objective1"
@@ -305,7 +298,7 @@ describe("Contour Plot - Rendering Runtime Benchmark", () => {
                     plotly,
                     element,
                     result,
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()

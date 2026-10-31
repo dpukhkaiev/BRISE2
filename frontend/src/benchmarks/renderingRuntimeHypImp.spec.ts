@@ -64,7 +64,7 @@ describe("Hyperparameter Importances - Rendering Runtime Benchmark", () => {
 
             const result = {importances: {} as Record<string, number>}
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 result.importances[param] = 1/params
             }
 
@@ -130,7 +130,7 @@ describe("Hyperparameter Importances - Rendering Runtime Benchmark", () => {
 
             const result = {importances: {} as Record<string, number>}
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 result.importances[param] = 1/numParams
             }
 
@@ -196,7 +196,7 @@ describe("Hyperparameter Importances - Rendering Runtime Benchmark", () => {
 
             const result = {importances: {} as Record<string, number>}
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 result.importances[param] = 1/params
             }
 

@@ -116,11 +116,34 @@ describe('Heatmap.vue', () => {
         expect(surface.x).toEqual(['f1', 'f2'])
     })
 
-    it('should leave the axes empty when the top-level region has fewer than two parameters', async () => {
-        const surface = await mountWith([{ ActivationCategory: 'root', Parameters: [threads] }, defaultRegions[1]])
+    it('should say so instead of drawing when the top-level region has fewer than two parameters', async () => {
+        const { useMainEventStore } = await import('../entities/main')
+        vi.mocked(useMainEventStore).mockReturnValueOnce(buildMockStore(true, [{ ActivationCategory: 'root', Parameters: [threads] }, defaultRegions[1]]) as any)
+        const wrapper = mountComponent()
+        await flushPromises()
+        eventCallbacks['NEW']({ body: JSON.stringify([{ configurations: { threads: 't1' }, results: { performance: 0.85 } }]) })
+        await flushPromises()
 
-        expect(surface.y).toEqual([])
-        expect(surface.x).toEqual([])
+        expect(wrapper.text()).toContain('Not enough parameters in the top-level region for a heatmap.')
+        expect(PlotlyMock.react).not.toHaveBeenCalled()
+    })
+
+    it('should not say so while a heatmap can be drawn', async () => {
+        const { useMainEventStore } = await import('../entities/main')
+        vi.mocked(useMainEventStore).mockReturnValueOnce(buildMockStore(true, defaultRegions) as any)
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        expect(wrapper.text()).not.toContain('Not enough parameters')
+    })
+
+    it('should not say so before main-node has described the search space', async () => {
+        const { useMainEventStore } = await import('../entities/main')
+        vi.mocked(useMainEventStore).mockReturnValueOnce(buildMockStore(false, []) as any)
+        const wrapper = mountComponent()
+        await flushPromises()
+
+        expect(wrapper.text()).not.toContain('Not enough parameters')
     })
 
     it('should draw a configuration without the horizontal parameter in an inactive column', async () => {
@@ -136,6 +159,32 @@ describe('Heatmap.vue', () => {
 
         expect(surface.y).toEqual(['t1', 't2', 'inactive'])
         expect(surface.z).toEqual([[null, null], [null, null], [null, 0.85]])
+    })
+
+    it('should draw nothing of the previous experiment when the new one has fewer than two top-level parameters', async () => {
+        const { useMainEventStore } = await import('../entities/main')
+        const store = buildMockStore(true, defaultRegions)
+        vi.mocked(useMainEventStore).mockReturnValueOnce(store as any)
+        const wrapper = mountComponent()
+        await flushPromises()
+        eventCallbacks['NEW']({ body: JSON.stringify([{ configurations: { frequency: 'f1', threads: 't1' }, results: { performance: 0.85 } }]) })
+        await flushPromises()
+        PlotlyMock.react.mockClear()
+
+        // the next experiment has a single top-level parameter
+        store.regions.value = [{ ActivationCategory: 'root', Parameters: [threads] }, defaultRegions[1]]
+        await flushPromises()
+        eventCallbacks['NEW']({ body: JSON.stringify([{ configurations: { LLH: 'a' }, results: { performance: 0.85 } }]) })
+        eventCallbacks['FINAL']({
+            headers: { message_subtype: 'configuration' },
+            body: JSON.stringify([{ configurations: { LLH: 'a' }, results: { performance: 0.85 } }])
+        })
+        await flushPromises()
+
+        // Plotly adds a category to an axis for every value it is given, so nothing may be drawn, not even at 'inactive'
+        expect(PlotlyMock.react).not.toHaveBeenCalled()
+        expect(PlotlyMock.purge).toHaveBeenCalled()
+        expect(wrapper.text()).toContain('Not enough parameters in the top-level region for a heatmap.')
     })
 
     it('should add no inactive row or column when every configuration has both parameters', async () => {

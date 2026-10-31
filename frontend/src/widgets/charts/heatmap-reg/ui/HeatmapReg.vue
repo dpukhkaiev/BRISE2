@@ -209,6 +209,14 @@ function initMainEvents() {
 
             x.value = axisValues(xParam).map(item => cleanIdentifier(item))
             y.value = axisValues(yParam).map(item => cleanIdentifier(item))
+        } else {
+            // fewer than two parameters are active in every trial: keep no axes of the previous experiment
+            xParamKey.value = ''
+            yParamKey.value = ''
+            xTitle.value = ''
+            yTitle.value = ''
+            x.value = []
+            y.value = []
         }
 
         const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives

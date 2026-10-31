@@ -64,7 +64,7 @@ describe("Parallel Coordinates - Rendering Runtime Benchmark", () => {
 
             const allParams = []
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 allParams.push(param)
             }
 
@@ -81,7 +81,7 @@ describe("Parallel Coordinates - Rendering Runtime Benchmark", () => {
                     experiment.allRes,
                     allParams,
                     "objective 1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -133,7 +133,7 @@ describe("Parallel Coordinates - Rendering Runtime Benchmark", () => {
 
             const allParams = []
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 allParams.push(param)
             }
 
@@ -150,7 +150,7 @@ describe("Parallel Coordinates - Rendering Runtime Benchmark", () => {
                     experiment.allRes,
                     allParams,
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -202,7 +202,7 @@ describe("Parallel Coordinates - Rendering Runtime Benchmark", () => {
 
             const allParams = []
 
-            for (const param of Object.keys(experiment.experimentDescription.Context.SearchSpace as Record<string, any>)) {
+            for (const param of Object.keys(experiment.specsByName)) {
                 allParams.push(param)
             }
 
@@ -219,7 +219,7 @@ describe("Parallel Coordinates - Rendering Runtime Benchmark", () => {
                     experiment.allRes,
                     allParams,
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()

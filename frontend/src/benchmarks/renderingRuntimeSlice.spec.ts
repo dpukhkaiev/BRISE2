@@ -75,7 +75,7 @@ describe("Slice Plot - Rendering Runtime Benchmark", () => {
                     experiment.allRes,
                     "parameter1",
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -138,7 +138,7 @@ describe("Slice Plot - Rendering Runtime Benchmark", () => {
                     experiment.allRes,
                     "parameter1",
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -201,7 +201,7 @@ describe("Slice Plot - Rendering Runtime Benchmark", () => {
                     experiment.allRes,
                     "parameter1",
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()

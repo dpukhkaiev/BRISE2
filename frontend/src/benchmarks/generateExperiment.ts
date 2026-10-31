@@ -1,5 +1,5 @@
 import type { PointExp } from "../entities/main/model/plot.store"
-import type { ExperimentDescription } from "../entities/experiment/model/experiment.model"
+import type { ExperimentDescription, ParameterSpec, SearchSpaceRegion } from "../entities/experiment/model/experiment.model"
 
 export type ParameterType =
     | "FloatHyperparameter"
@@ -22,31 +22,20 @@ export interface BenchmarkTrial {
 export interface BenchmarkParameter {
     Name: string
     Type: ParameterType
-    Categories?: Array<string | number>
+    Level: number
+    Categories?: string[]
     Lower?: number
     Upper?: number
-}
-
-export interface BenchmarkExperimentDescription {
-    Context: {
-        SearchSpace: Record<string, BenchmarkParameter>
-
-        TaskConfiguration: {
-            TaskName: string
-            Objectives: Record<
-                string,
-                {
-                    Name: string
-                    DataType: "float"
-                    Minimization: boolean
-                }
-            >
-        }
-    }
+    Inactive: string | number
 }
 
 export interface GeneratedExperiment {
+    // the description of the running experiment, as the frontend gets it: without its search space
     experimentDescription: ExperimentDescription
+    // the search space as main-node describes it: the benchmark's parameters are all active in every trial, so one region
+    regions: SearchSpaceRegion[]
+    // every parameter of the search space by its name
+    specsByName: Record<string, ParameterSpec>
     allRes: PointExp[]
 }
 
@@ -63,13 +52,10 @@ export interface GeneratedExperiment {
 // }
 
 function createExperimentDescription(
-    searchSpace: Record<string, any>,
     objectives: Record<string, any>
 ): ExperimentDescription {
     return {
         Context: {
-            SearchSpace: searchSpace,
-
             TaskConfiguration: {
                 TaskName: "benchmark",
                 Objectives: objectives
@@ -196,7 +182,7 @@ export function generateExperiment(
 
     const random = createSeededRandom(seed)
 
-    const searchSpace: Record<string, any> = {};
+    const searchSpace: Record<string, BenchmarkParameter> = {};
     const objectives: Record<string, any> = {};
 
     for (let i = 0; i < numParameters; i++) {
@@ -207,40 +193,49 @@ export function generateExperiment(
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "FloatHyperparameter",
+                Level: 0,
                 Lower: 0,
-                Upper: 100
+                Upper: 100,
+                Inactive: -100
             }
         } else if (type === 1) {
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "IntegerHyperparameter",
+                Level: 0,
                 Lower: 0,
-                Upper: 100
+                Upper: 100,
+                Inactive: -100
             }
         }
         else if (type === 2) {
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "OrdinalHyperparameter",
+                Level: 0,
+                // strings, as in a real search space (main-node's categories are always strings)
                 Categories: [
-                    1,
-                    2,
-                    4,
-                    8,
-                    16,
-                    32
-                ]
+                    "1",
+                    "2",
+                    "4",
+                    "8",
+                    "16",
+                    "32"
+                ],
+                Inactive: "inactive"
             }
         } else {
             searchSpace[parameterName] = {
                 Name: parameterName,
                 Type: "NominalHyperparameter",
+                Level: 0,
                 Categories: [
                     "value1",
                     "value2",
                     "value3",
                     "value4"
-                ]
+                ],
+                Inactive: "inactive"
             }
         }
     }
@@ -286,12 +281,18 @@ export function generateExperiment(
 
     const experimentDescription =
         createExperimentDescription(
-            searchSpace,
             objectives
         )
 
+    const specsByName: Record<string, ParameterSpec> = searchSpace
+
     return {
         experimentDescription,
+        regions: [{
+            ActivationCategory: "root",
+            Parameters: Object.values(specsByName)
+        }],
+        specsByName,
         allRes
     }
 }

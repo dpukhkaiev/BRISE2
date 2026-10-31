@@ -67,14 +67,27 @@ function axisLabel(value: string | number | null | undefined): string {
     return value === undefined ? INACTIVE_LABEL : cleanIdentifier(value)
 }
 
-// the label of a configuration's value on an axis, which gets an inactive row or column on first need; an axis
-// without values belongs to no parameter, so there is nothing to be inactive in
+// the label of a configuration's value on an axis, which gets an inactive row or column on first need
 function labelOnAxis(value: string | number | null | undefined, axis: { value: Array<any> }): string {
     const label = axisLabel(value)
-    if (label === INACTIVE_LABEL && axis.value.length > 0 && !axis.value.includes(INACTIVE_LABEL)) {
+    if (label === INACTIVE_LABEL && !axis.value.includes(INACTIVE_LABEL)) {
         axis.value.push(INACTIVE_LABEL)
     }
     return label
+}
+
+// the heatmap has axes only if two parameters are active in every trial
+const hasAxes = computed(() => xParamKey.value !== '' && yParamKey.value !== '')
+
+// remembers a measured configuration at its place on the heatmap. Without axes every configuration would sit at
+// 'inactive' on both, and Plotly adds a category to an axis for every value it is given.
+function recordPoint(configuration: any) {
+    if (!hasAxes.value) return
+    const conf = configuration['configurations'];
+    const yVal = labelOnAxis(conf[yParamKey.value], y);
+    const xVal = labelOnAxis(conf[xParamKey.value], x);
+    result.value.set(String([yVal, xVal]), configuration['results']);
+    measPoints.value.push([yVal, xVal]);
 }
 
 const subs = new Subscription()
@@ -100,6 +113,11 @@ async function render(): Promise<void> {
     const Plotly = store.plotlyInstance
 
     if (!Plotly) return
+    if (!hasAxes.value) {
+        // Plotly adds a category to an axis for every value it is given, so there is nothing to draw
+        if (map.value) Plotly.purge(map.value)
+        return
+    }
     const zData = DataTransformer.buildZMatrix(x.value.map(String), y.value.map(String), resultLookup.value)
     const element = map.value
     const data: any[] = [
@@ -124,8 +142,8 @@ async function render(): Promise<void> {
             hoverinfo: 'none' as const,
             showlegend: false as const,
             marker: { color: 'Gold', size: 16, symbol: 'star' },
-            x: solution && [axisLabel((solution.configurations as any)[xParamKey.value])],
-            y: solution && [axisLabel((solution.configurations as any)[yParamKey.value])]
+            x: solution && hasAxes.value ? [axisLabel((solution.configurations as any)[xParamKey.value])] : [],
+            y: solution && hasAxes.value ? [axisLabel((solution.configurations as any)[yParamKey.value])] : []
         }
     ];
 
@@ -172,6 +190,14 @@ function initMainEvents() {
             xTitle.value = cleanIdentifier(xParam.Name)
             y.value = axisValues(yParam).map(cleanIdentifier)
             x.value = axisValues(xParam).map(cleanIdentifier)
+        } else {
+            // fewer than two parameters are active in every trial: keep no axes of the previous experiment
+            yParamKey.value = ''
+            xParamKey.value = ''
+            yTitle.value = ''
+            xTitle.value = ''
+            y.value = []
+            x.value = []
         }
 
         const priorities = (experiment_description.value as any)?.Context?.TaskConfiguration?.Objectives
@@ -190,11 +216,7 @@ function initMainEvents() {
         let count = 0;
         for (const configuration of configs) {
             if (configuration) {
-                const conf = configuration['configurations'];
-                const yVal = labelOnAxis(conf[yParamKey.value], y);
-                const xVal = labelOnAxis(conf[xParamKey.value], x);
-                result.value.set(String([yVal, xVal]), configuration['results']);
-                measPoints.value.push([yVal, xVal]);
+                recordPoint(configuration);
             }
             count++;
             if (count % 50 === 0 && 'scheduler' in window && typeof scheduler.yield === 'function') {
@@ -217,11 +239,7 @@ function initMainEvents() {
                     configWithNones.value = stringifyWithInfinity(solution.configurations, '\t');
                     configWithNones.value = configWithNones.value.replace(',,', ',None,');
                     results.value = stringifyWithInfinity(solution.results)
-                    const conf = configuration['configurations'];
-                    const yVal = labelOnAxis(conf[yParamKey.value], y);
-                    const xVal = labelOnAxis(conf[xParamKey.value], x);
-                    result.value.set(String([yVal, xVal]), configuration['results']);
-                    measPoints.value.push([yVal, xVal]);
+                    recordPoint(configuration);
                     sol.value = Object.values(solution.results)
                     dc.value = Object.values(defaultConfiguration.results)
 
@@ -241,11 +259,7 @@ function initMainEvents() {
             configs.forEach((configuration: any) => {
                 if (configuration) {
                     defaultConfiguration = configuration; // In case if only one point default
-                    const conf = configuration['configurations'];
-                    const yVal = labelOnAxis(conf[yParamKey.value], y);
-                    const xVal = labelOnAxis(conf[xParamKey.value], x);
-                    result.value.set(String([yVal, xVal]), configuration['results']);
-                    measPoints.value.push([yVal, xVal]);
+                    recordPoint(configuration);
                 } else {
                     console.log('Empty default');
                 }
@@ -269,8 +283,19 @@ onUnmounted(() => {
 </script>
 <template>
   <div>
-    <div ref="map" />
+    <div
+      v-if="searchspaceReady && !hasAxes"
+      class="text-body-2 text-medium-emphasis"
+      style="margin: 10px"
+    >
+      Not enough parameters in the top-level region for a heatmap.
+    </div>
+    <div
+      v-show="hasAxes"
+      ref="map"
+    />
     <select
+      v-show="hasAxes"
       v-model="theme.color"
       @change="render"
     >

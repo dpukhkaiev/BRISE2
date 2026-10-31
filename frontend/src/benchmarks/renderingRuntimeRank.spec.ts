@@ -76,7 +76,7 @@ describe("Rank Plot - Rendering Runtime Benchmark", () => {
                     "parameter1",
                     "parameter2",
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -140,7 +140,7 @@ describe("Rank Plot - Rendering Runtime Benchmark", () => {
                     "parameter1",
                     "parameter2",
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
@@ -204,7 +204,7 @@ describe("Rank Plot - Rendering Runtime Benchmark", () => {
                     "parameter1",
                     "parameter2",
                     "objective1",
-                    experiment.experimentDescription,
+                    experiment.specsByName,
                 )
 
                 const end = performance.now()
