@@ -10,6 +10,9 @@ import pandas as pd
 _CATEGORY = Union[str, int, float, bool]
 
 SEARCH_SPACE_PREFIX = "Context.SearchSpace"
+# the category that stands for an inactive categorical parameter; real categories are absolute paths that start
+# with SEARCH_SPACE_PREFIX, so it cannot collide with one
+INACTIVE_CATEGORY = "inactive"
 
 
 class Hyperparameter(ABC):
@@ -89,6 +92,15 @@ class Hyperparameter(ABC):
     def transform(self, value):
         """
         Transform a value between 0 and 1 to a corresponding Hyperparameter value.
+        """
+        pass
+
+    @abstractmethod
+    def inactive_value(self) -> _CATEGORY:
+        """
+        Get the value that stands for this Hyperparameter when it is inactive, i.e. missing from a configuration.
+        It lies outside the legal values: a value that is none of the categories of a categorical Hyperparameter,
+        a value below the lower boundary of a numeric one. It is never stored in a configuration.
         """
         pass
 
@@ -197,6 +209,11 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
     def remove_children(self):
         for category in self._categories:
             self._categories[category] = []
+
+    def inactive_value(self) -> _CATEGORY:
+        if INACTIVE_CATEGORY in self._categories:
+            raise ValueError(f"{self.name}: category {INACTIVE_CATEGORY} is reserved for an inactive parameter.")
+        return INACTIVE_CATEGORY
 
     def get_size(self) -> Union[int, np.inf]:
         accumulated_size = 0
@@ -310,6 +327,13 @@ class NumericHyperparameter(Hyperparameter, ABC):
 
     def get_default(self) -> MutableMapping:
         return OrderedDict({self.name: self._default_value})
+
+    def inactive_value(self) -> Union[int, float]:
+        # one range below the lower boundary: a scaler fitted on the boundaries maps it to -1
+        value_range = self._upper - self._lower
+        if value_range == 0:
+            value_range = 1
+        return self._lower - value_range
 
     def get_upper(self):
         return self._upper
@@ -516,6 +540,29 @@ class SearchSpace:
             regions.add(region)
 
         return regions
+
+    def describe_regions(self) -> List[Dict]:
+        """
+        Describe the regions of the Search Space, in the order of self.regions, for clients of main-node.
+        A flat Search Space is a single region.
+        :return: list of {"ActivationCategory": str, "Parameters": [...]}, where a parameter is a mapping with "Name",
+        "Type" (as in the product configuration), "Level", "Inactive" and either "Categories" or "Lower" and "Upper".
+        """
+        described_regions = []
+        for region in self.regions:
+            parameters = []
+            for hp in region:
+                parameter = {"Name": hp.name, "Type": f"{hp.get_type()}Hyperparameter", "Level": hp.level}
+                if isinstance(hp, CategoricalHyperparameter):
+                    parameter["Categories"] = list(hp.categories)
+                else:
+                    parameter["Lower"] = hp.get_lower()
+                    parameter["Upper"] = hp.get_upper()
+                parameter["Inactive"] = hp.inactive_value()
+                parameters.append(parameter)
+            described_regions.append({"ActivationCategory": str(region[0].activation_category),
+                                      "Parameters": parameters})
+        return described_regions
 
     def activate_regions(self, parent: pd.DataFrame) -> Set[Tuple[Hyperparameter]]:
         parent = parent.drop(columns=parent.columns.difference(self.hp_names))
