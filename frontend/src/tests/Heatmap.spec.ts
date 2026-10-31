@@ -34,6 +34,7 @@ function buildMockStore(searchspaceReady = true, regions: SearchSpaceRegion[] = 
     return {
         plotlyInstance: PlotlyMock,
         experiment_description: ref({
+            Context: { TaskConfiguration: { Objectives: { performance: {} } } },
             ConfigurationSelection: {
                 Predictor: {
                     Model: {
@@ -88,14 +89,14 @@ describe('Heatmap.vue', () => {
     })
 
 
-    const mountWith = async (regions: SearchSpaceRegion[]) => {
+    const mountWith = async (regions: SearchSpaceRegion[], configurations: Record<string, string> = { frequency: 'f1', threads: 't1' }) => {
         const { useMainEventStore } = await import('../entities/main')
         vi.mocked(useMainEventStore).mockReturnValueOnce(buildMockStore(true, regions) as any)
         mountComponent()
         await flushPromises()
-        eventCallbacks['NEW']({ body: JSON.stringify([{ configurations: { frequency: 'f1', threads: 't1' }, results: [0.85] }]) })
+        eventCallbacks['NEW']({ body: JSON.stringify([{ configurations, results: { performance: 0.85 } }]) })
         await flushPromises()
-        return PlotlyMock.react.mock.calls.at(-1)![1][0] as { x: string[], y: string[] }
+        return PlotlyMock.react.mock.calls.at(-1)![1][0] as { x: string[], y: string[], z: (number | null)[][] }
     }
 
     it('should span the heatmap by the first two parameters of the top-level region', async () => {
@@ -120,6 +121,28 @@ describe('Heatmap.vue', () => {
 
         expect(surface.y).toEqual([])
         expect(surface.x).toEqual([])
+    })
+
+    it('should draw a configuration without the horizontal parameter in an inactive column', async () => {
+        const surface = await mountWith(defaultRegions, { threads: 't1' })
+
+        expect(surface.x).toEqual(['f1', 'f2', 'inactive'])
+        expect(surface.y).toEqual(['t1', 't2'])
+        expect(surface.z).toEqual([[null, null, 0.85], [null, null, null]])
+    })
+
+    it('should draw a configuration without the vertical parameter in an inactive row', async () => {
+        const surface = await mountWith(defaultRegions, { frequency: 'f2' })
+
+        expect(surface.y).toEqual(['t1', 't2', 'inactive'])
+        expect(surface.z).toEqual([[null, null], [null, null], [null, 0.85]])
+    })
+
+    it('should add no inactive row or column when every configuration has both parameters', async () => {
+        const surface = await mountWith(defaultRegions)
+
+        expect(surface.x).toEqual(['f1', 'f2'])
+        expect(surface.y).toEqual(['t1', 't2'])
     })
 
     it('should process the FINAL event and render the solution star trace', async () => {

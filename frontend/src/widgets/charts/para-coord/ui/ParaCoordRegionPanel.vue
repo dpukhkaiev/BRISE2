@@ -59,6 +59,7 @@ watch(
       </v-list-item>
     </v-list>
     <ParaCoord
+      :region="region"
       :para-coord-params="selectedParaCoordParams"
       :para-coord-objective="paraCoordObjective"
     />

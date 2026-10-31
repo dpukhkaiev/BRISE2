@@ -59,6 +59,7 @@ watch(
       </v-list-item>
     </v-list>
     <HypImp
+      :region="region"
       :hyp-imp-params="selectedHypImpParams"
       :hyp-imp-objective="hypImpObjective"
     />

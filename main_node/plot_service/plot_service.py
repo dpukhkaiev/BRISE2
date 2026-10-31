@@ -25,16 +25,21 @@ def parameter_specs(search_space):
             for region in search_space.describe_regions() for parameter in region["Parameters"]}
 
 
-def build_distributions(specs):
+def build_distributions(specs, inactive_parameters=()):
+    """
+    The distribution of every parameter. The distribution of an inactive parameter also covers the parameter's
+    inactive value: a range extended down to it, or one more choice.
+    """
     distributions = {}
 
     for param_name, param_data in specs.items():
         hp_type = param_data.get("Type")
-        
+        inactive = param_name in inactive_parameters
+
         # FLOAT
         if hp_type == "FloatHyperparameter":
             distributions[param_name] = FloatDistribution(
-                low=param_data["Lower"],
+                low=param_data["Inactive"] if inactive else param_data["Lower"],
                 high=param_data["Upper"]
             )
 
@@ -42,7 +47,7 @@ def build_distributions(specs):
         elif hp_type == "IntegerHyperparameter":
 
             distributions[param_name] = IntDistribution(
-                low=param_data["Lower"],
+                low=param_data["Inactive"] if inactive else param_data["Lower"],
                 high=param_data["Upper"]
             )
 
@@ -53,7 +58,7 @@ def build_distributions(specs):
         ]:
             distributions[param_name] = (
                 CategoricalDistribution(
-                    choices=param_data["Categories"]
+                    choices=param_data["Categories"] + [param_data["Inactive"]] if inactive else param_data["Categories"]
                 )
             )
 
@@ -77,12 +82,21 @@ def extract_objective_values(objectives_dict):
     return list(objectives_dict.values())
 
 
-def reconstruct_study(payload, search_space, objectives):
+def reconstruct_study(payload, search_space, objectives, requested_parameters=()):
+    """
+    The study of the trials of the payload. A requested parameter that some trial lacks is inactive in that trial: the
+    trial gets the parameter's inactive value, and the parameter's distribution covers it in every trial.
+    """
     directions = build_directions(objectives)
 
-    distributions = build_distributions(
-        parameter_specs(search_space)
-    )
+    specs = parameter_specs(search_space)
+
+    inactive_parameters = [
+        name for name in requested_parameters
+        if any(name not in t["configurations"] for t in payload["trials"])
+    ]
+
+    distributions = build_distributions(specs, inactive_parameters)
 
     # CREATE STUDY
     if len(directions) == 1:
@@ -96,7 +110,9 @@ def reconstruct_study(payload, search_space, objectives):
 
     # ADD TRIALS
     for t in payload["trials"]:
-        params = t["configurations"]
+        params = dict(t["configurations"])
+        for name in inactive_parameters:
+            params.setdefault(name, specs[name]["Inactive"])
 
         objective_values = [
             float(t["results"][name])
@@ -251,9 +267,10 @@ def calculate_importances(payload, search_space, objectives):
     if len(allRes) < 2:
         return {}
 
-    study = reconstruct_study(payload, search_space, objectives)
-
     parameters = payload.get("parameters", [])
+
+    study = reconstruct_study(payload, search_space, objectives, parameters)
+
     objective = payload.get("objective")
 
     objective_names = list(objectives.keys())

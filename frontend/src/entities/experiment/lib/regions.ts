@@ -18,3 +18,15 @@ export function trialsWithParameters<T extends { configurations: Record<string, 
         parameters.every(parameter => trial.configurations[parameter] !== undefined)
     )
 }
+
+// keeps the trials that belong to the region: those in which at least one of its parameters is active. The
+// parameters of a region of a hierarchical space are active together, so the trials of other regions have none of
+// them; in a flat space every trial has the parameters that are always active.
+export function trialsOfRegion<T extends { configurations: Record<string, unknown> }>(
+    trials: T[],
+    region: SearchSpaceRegion
+): T[] {
+    return trials.filter(trial =>
+        region.Parameters.some(parameter => trial.configurations[parameter.Name] !== undefined)
+    )
+}

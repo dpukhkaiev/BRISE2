@@ -3,6 +3,12 @@ import type { PointExp } from '../../../entities/main/model/plot.store'
 // import { ref } from 'vue'
 import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
+import {
+    INACTIVE_INDEX,
+    INACTIVE_LABEL,
+    inactivePosition,
+    numericTicksWithInactive
+} from "../../../entities/experiment/lib/inactive";
 
 function factoryDimension(
     parameter: string,
@@ -19,21 +25,35 @@ function factoryDimension(
 
     const firstValue = values.find(v => v !== undefined);
 
-    if (typeof firstValue === "number") {
-        dimension.values = values;
+    const spec = specsByName[parameter];
 
-        const numericValues = values.filter(
-            (value): value is number => typeof value === "number"
+    // a trial without the parameter is one in which it is inactive
+    const hasInactive = values.some(value => value === undefined);
+
+    const isNumeric = spec
+        ? spec.Type === "FloatHyperparameter" || spec.Type === "IntegerHyperparameter"
+        : typeof firstValue === "number";
+
+    if (isNumeric) {
+        // without a description of the parameter there is no inactive position to draw at
+        dimension.values = spec
+            ? values.map(value => value ?? inactivePosition(spec))
+            : values;
+
+        const numericValues = dimension.values.filter(
+            (value: unknown): value is number => typeof value === "number"
         );
 
         dimension.range = [
             Math.min(...numericValues),
             Math.max(...numericValues)
         ];
+
+        if (spec && hasInactive) {
+            Object.assign(dimension, numericTicksWithInactive(spec));
+        }
     }
     else {
-        const spec = specsByName[parameter];
-
         let categories: string[];
 
         // Use the Categories order for ordinal parameters
@@ -60,22 +80,28 @@ function factoryDimension(
             value => categories.indexOf(value)
         );
 
-        dimension.tickvals = categories.map(
-            (_, index) => index
-        );
+        dimension.tickvals = [
+            ...(hasInactive ? [INACTIVE_INDEX] : []),
+            ...categories.map(
+                (_, index) => index
+            )
+        ];
 
-        dimension.ticktext = categories.map(
-            category => {
-                // Make the labels more readable:
-                // Context.SearchSpace.frequency.fourteen_hundred_hertz
-                // -> fourteen hundred hertz
-                const lastPart = category.split(".").pop() ?? category;
+        dimension.ticktext = [
+            ...(hasInactive ? [INACTIVE_LABEL] : []),
+            ...categories.map(
+                category => {
+                    // Make the labels more readable:
+                    // Context.SearchSpace.frequency.fourteen_hundred_hertz
+                    // -> fourteen hundred hertz
+                    const lastPart = category.split(".").pop() ?? category;
 
-                return lastPart.replace(/_/g, " ");
-            }
-        );
+                    return lastPart.replace(/_/g, " ");
+                }
+            )
+        ];
 
-        dimension.range = [0, categories.length - 1];
+        dimension.range = [hasInactive ? INACTIVE_INDEX : 0, categories.length - 1];
     }
 
     return dimension;

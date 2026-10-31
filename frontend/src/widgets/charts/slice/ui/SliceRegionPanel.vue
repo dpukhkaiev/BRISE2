@@ -42,6 +42,7 @@ watch(
       class="user-input"
     />
     <Slice
+      :region="region"
       :slice-param="sliceParam"
       :slice-objective="sliceObjective"
     />

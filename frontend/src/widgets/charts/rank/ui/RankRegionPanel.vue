@@ -68,6 +68,7 @@ watch(
         class="user-input"
       />
       <Rank
+        :region="region"
         :rank-param1="rankParam1"
         :rank-param2="rankParam2"
         :rank-objective="rankObjective"

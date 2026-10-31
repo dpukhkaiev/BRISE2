@@ -192,6 +192,72 @@ class TestPlotCalculation:
 
         assert max(importances, key=importances.get) == most_important
 
+    def test_trial_without_a_requested_parameter_gets_its_inactive_value(self):
+        # region A has alpha, region B has gamma: each parameter is inactive in the trials of the other region
+        search_space, objectives = search_space_and_objectives()
+        payload = {"trials": region_a_trials()[:1] + region_b_trials()[:1]}
+
+        study = plot_service.reconstruct_study(payload, search_space, objectives, requested_parameters=[ALPHA, GAMMA])
+
+        region_a_trial, region_b_trial = study.trials
+        assert region_a_trial.params[GAMMA] == -5.0
+        assert region_b_trial.params[ALPHA] == -1.0
+        assert region_a_trial.params[ALPHA] == 0.0 and region_b_trial.params[GAMMA] == 0.0
+
+    def test_inactive_value_extends_the_distribution_of_every_trial(self):
+        search_space, objectives = search_space_and_objectives()
+        payload = {"trials": region_a_trials()[:1] + region_b_trials()[:1]}
+
+        study = plot_service.reconstruct_study(payload, search_space, objectives, requested_parameters=[ALPHA, BETA, GAMMA])
+
+        for trial in study.trials:
+            assert trial.distributions[ALPHA] == FloatDistribution(-1.0, 1.0)
+            assert trial.distributions[BETA] == IntDistribution(-8, 10)
+            assert trial.distributions[GAMMA] == FloatDistribution(-5.0, 5.0)
+
+    def test_inactive_value_is_a_further_choice_of_a_categorical_parameter(self):
+        search_space, objectives = search_space_and_objectives()
+        payload = {"trials": [{"configurations": {ALPHA: 0.5}, "results": {"Y1": 1.0}}]}
+
+        study = plot_service.reconstruct_study(payload, search_space, objectives, requested_parameters=[ALGORITHM])
+
+        assert study.trials[0].params[ALGORITHM] == "inactive"
+        assert study.trials[0].distributions[ALGORITHM] == CategoricalDistribution([f"{ALGORITHM}.A", f"{ALGORITHM}.B", "inactive"])
+
+    def test_distribution_is_not_extended_for_a_parameter_that_is_active_in_every_trial(self):
+        # the trials of one region of a hierarchical space activate its parameters together
+        search_space, objectives = search_space_and_objectives()
+        payload = {"trials": region_a_trials()}
+
+        study = plot_service.reconstruct_study(payload, search_space, objectives, requested_parameters=[ALPHA, BETA])
+
+        for trial in study.trials:
+            assert trial.distributions[ALPHA] == FloatDistribution(0.0, 1.0)
+            assert trial.distributions[BETA] == IntDistribution(1, 10)
+
+    def test_trials_are_left_as_measured_when_no_parameter_is_requested(self):
+        search_space, objectives = search_space_and_objectives()
+        payload = {"trials": region_a_trials()[:1] + region_b_trials()[:1]}
+
+        study = plot_service.reconstruct_study(payload, search_space, objectives)
+
+        assert set(study.trials[0].params) == {ALGORITHM, ALPHA, BETA}
+        assert set(study.trials[1].params) == {ALGORITHM, GAMMA}
+
+    def test_importances_count_the_activation_of_a_parameter_as_part_of_its_effect(self):
+        # the best trials are the ones of region B, in which alpha is inactive, so alpha matters as well as gamma
+        search_space, objectives = search_space_and_objectives()
+        payload = {
+            "trials": [{"configurations": {ALGORITHM: f"{ALGORITHM}.A", ALPHA: i / 10}, "results": {"Y1": 10.0 + i}} for i in range(8)]
+                      + [{"configurations": {ALGORITHM: f"{ALGORITHM}.B", GAMMA: i / 2}, "results": {"Y1": float(i)}} for i in range(8)],
+            "parameters": [ALPHA, GAMMA],
+            "objective": "Y1"
+        }
+
+        importances = plot_service.calculate_importances(payload, search_space, objectives)["importances"]
+
+        assert importances[ALPHA] > 0 and importances[GAMMA] > 0
+
     @pytest.mark.parametrize("calculate, payload", [
         (plot_service.calculate_importances, {"parameters": [ALPHA], "objective": "Y1"}),
         (plot_service.calculate_contour, {"param1": ALPHA, "param2": BETA, "objective": "Y1"}),

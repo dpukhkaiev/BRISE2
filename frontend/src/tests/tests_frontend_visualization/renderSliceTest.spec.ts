@@ -174,4 +174,52 @@ describe('renderParaCoord', () => {
         expect(layout.xaxis.tickvals).toEqual([0, 1])
         expect(layout.xaxis.ticktext).toEqual(['low', 'high'])
     })
+
+    describe('a trial in which the parameter is inactive', () => {
+        const trial = (configurations: Record<string, unknown>, runtime: number): PointExp =>
+            ({ configurations, results: { runtime }, time: '1m 0s', 'measured points': 1 })
+
+        const level = 'Context.SearchSpace.Algorithm.A.level'
+        const ordinal: ParameterSpec = {
+            Name: level, Type: 'OrdinalHyperparameter', Level: 1, Categories: [`${level}.low`, `${level}.high`], Inactive: 'inactive'
+        }
+        const nominal: ParameterSpec = { ...ordinal, Type: 'NominalHyperparameter' }
+        const numeric: ParameterSpec = { Name: level, Type: 'FloatHyperparameter', Level: 1, Lower: 0, Upper: 10, Inactive: -10 }
+
+        const render = (spec: ParameterSpec, trials: PointExp[]) => {
+            renderSlice(plotly, document.createElement('div'), trials, level, 'runtime', { [level]: spec })
+            const [, data, layout] = plotly.react.mock.calls[0]
+            return { trace: data[0], xaxis: layout.xaxis }
+        }
+
+        it('is drawn at the position next to the first category of an ordinal parameter', () => {
+            const { trace, xaxis } = render(ordinal, [trial({ [level]: `${level}.high` }, 10), trial({}, 20)])
+
+            expect(trace.x).toEqual([1, -1])
+            expect(xaxis.tickvals).toEqual([-1, 0, 1])
+            expect(xaxis.ticktext).toEqual(['inactive', 'low', 'high'])
+            expect(trace.customdata).toEqual([`${level}.high`, 'inactive'])
+        })
+
+        it('is drawn at the inactive category of a nominal parameter', () => {
+            const { trace } = render(nominal, [trial({ [level]: `${level}.high` }, 10), trial({}, 20)])
+
+            expect(trace.x).toEqual([`${level}.high`, 'inactive'])
+        })
+
+        it('is drawn below the lower bound of a numeric parameter, on a labelled tick', () => {
+            const { trace, xaxis } = render(numeric, [trial({ [level]: 4 }, 10), trial({}, 20)])
+
+            expect(trace.x[0]).toBe(4)
+            expect(trace.x[1]).toBeLessThan(0)
+            expect(xaxis.tickvals[0]).toBe(trace.x[1])
+            expect(xaxis.ticktext[0]).toBe('inactive')
+        })
+
+        it('adds no inactive mark when the parameter is active in every trial', () => {
+            const trials = [trial({ [level]: 4 }, 10), trial({ [level]: 5 }, 20)]
+
+            expect(render(numeric, trials).xaxis.ticktext).toBeUndefined()
+        })
+    })
 })

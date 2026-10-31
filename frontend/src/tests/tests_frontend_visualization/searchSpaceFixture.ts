@@ -40,3 +40,9 @@ export const regions: SearchSpaceRegion[] = [rootRegion, regionA, regionB]
 export const specsByName: Record<string, ParameterSpec> = Object.fromEntries(
     regions.flatMap(region => region.Parameters).map(parameter => [parameter.Name, parameter])
 )
+
+// a region of integer parameters with the given names, for specs that use short names
+export const regionOf = (...names: string[]): SearchSpaceRegion => ({
+    ActivationCategory: 'root',
+    Parameters: names.map(Name => ({ Name, Type: 'IntegerHyperparameter', Level: 0, Lower: 1, Upper: 64, Inactive: -62 }))
+})

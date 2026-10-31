@@ -4,7 +4,8 @@ import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderRank } from '../render'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from '../../../../entities/main'
-import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
+import { trialsOfRegion } from '../../../../entities/experiment/lib/regions'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'RankChart' })
 
@@ -15,6 +16,7 @@ const { specsByName, plotlyInstance } = storeToRefs(store)
 const rank = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
+    region: SearchSpaceRegion
     rankParam1: string
     rankParam2: string
     rankObjective: string
@@ -26,7 +28,8 @@ async function render() {
     if (!plotlyInstance.value) return
     if (!rank.value) 
         return
-    const trials = trialsWithParameters(allRes.value, [props.rankParam1, props.rankParam2])
+    // a trial of the region without a selected parameter is drawn as inactive in it
+    const trials = trialsOfRegion(allRes.value, props.region)
     renderRank(plotlyInstance.value, rank.value, trials, props.rankParam1, props.rankParam2, props.rankObjective, specsByName.value)
 }
 

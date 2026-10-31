@@ -4,7 +4,8 @@ import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderParaCoord } from '../render'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from '../../../../entities/main'
-import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
+import { trialsOfRegion } from '../../../../entities/experiment/lib/regions'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 const store = useMainEventStore()
 const plotStore = usePlotStore()
@@ -12,6 +13,7 @@ const { specsByName, plotlyInstance } = storeToRefs(store)
 const { allRes } = storeToRefs(plotStore)
 const paraCoord = ref<HTMLElement | null>(null)
 const props = defineProps<{
+    region: SearchSpaceRegion
     paraCoordParams: string[]
     paraCoordObjective: string
 }>()
@@ -21,7 +23,8 @@ async function render() {
 
     if (!plotlyInstance.value) return
     if (!paraCoord.value) return
-    const trials = trialsWithParameters(allRes.value, props.paraCoordParams)
+    // a trial of the region without a selected parameter is drawn as inactive in it
+    const trials = trialsOfRegion(allRes.value, props.region)
     renderParaCoord(plotlyInstance.value, paraCoord.value, trials, props.paraCoordParams, props.paraCoordObjective, specsByName.value)
 }
 

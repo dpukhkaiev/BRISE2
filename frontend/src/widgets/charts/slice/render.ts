@@ -3,6 +3,12 @@ import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from "../../../entities/main/model/plot.store";
 import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
+import {
+    INACTIVE_INDEX,
+    INACTIVE_LABEL,
+    inactivePosition,
+    numericTicksWithInactive
+} from "../../../entities/experiment/lib/inactive";
 
 export function renderSlice(
     plotly: PlotlyInstance,
@@ -26,6 +32,15 @@ export function renderSlice(
     const isOrdinal =
         spec?.Type === "OrdinalHyperparameter";
 
+    const isNumeric =
+        spec?.Type === "FloatHyperparameter" ||
+        spec?.Type === "IntegerHyperparameter";
+
+    // a trial without the parameter is one in which it is inactive
+    const hasInactive = allRes.some(
+        point => point.configurations[sliceParam] === undefined
+    );
+
     const categories: string[] =
         isOrdinal && Array.isArray(spec.Categories)
             ? spec.Categories
@@ -45,11 +60,15 @@ export function renderSlice(
         xValues = allRes.map(point =>
             categoryIndex.get(
                 String(point.configurations[sliceParam])
-            ) ?? -1
+            ) ?? INACTIVE_INDEX
+        );
+    } else if (isNumeric) {
+        xValues = allRes.map(
+            point => point.configurations[sliceParam] ?? inactivePosition(spec)
         );
     } else {
         xValues = allRes.map(
-            point => point.configurations[sliceParam]
+            point => point.configurations[sliceParam] ?? spec?.Inactive
         );
     }
 
@@ -73,7 +92,7 @@ export function renderSlice(
             "Run: %{text}<extra></extra>",
 
         customdata: allRes.map(
-            point => point.configurations[sliceParam]
+            point => point.configurations[sliceParam] ?? INACTIVE_LABEL
         ),
 
         marker: {
@@ -106,18 +125,29 @@ export function renderSlice(
             ...(isOrdinal
                 ? {
                     tickmode: "array" as const,
-                    tickvals: categories.map(
-                        (_: string, index: number) => index
-                    ),
-                    ticktext: categories.map(
-                        (category: string) =>
-                            category
-                                .split(".")
-                                .pop()
-                                ?.replace(/_/g, " ") ?? category
-                    )
+                    tickvals: [
+                        ...(hasInactive ? [INACTIVE_INDEX] : []),
+                        ...categories.map(
+                            (_: string, index: number) => index
+                        )
+                    ],
+                    ticktext: [
+                        ...(hasInactive ? [INACTIVE_LABEL] : []),
+                        ...categories.map(
+                            (category: string) =>
+                                category
+                                    .split(".")
+                                    .pop()
+                                    ?.replace(/_/g, " ") ?? category
+                        )
+                    ]
                 }
-                : {})
+                : isNumeric && hasInactive
+                    ? {
+                        tickmode: "array" as const,
+                        ...numericTicksWithInactive(spec)
+                    }
+                    : {})
         },
 
         yaxis: {

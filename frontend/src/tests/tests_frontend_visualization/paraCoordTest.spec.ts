@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { ParaCoord } from '../../widgets/charts/para-coord'
 import type { PlotlyInstance } from '../../widgets/charts/model/chart.types'
-import { specsByName as fixtureSpecsByName } from './searchSpaceFixture'
+import { regionOf, specsByName as fixtureSpecsByName } from './searchSpaceFixture'
 
 const { renderParaCoordMock } = vi.hoisted(() => ({
     renderParaCoordMock: vi.fn()
@@ -58,6 +58,7 @@ describe('Parallel Coordinates', () => {
    const mountComponent = () => {
         wrapper = mount(ParaCoord, {
             props: {
+                region: regionOf('frequency', 'threads'),
                 paraCoordObjective: 'runtime',
                 paraCoordParams: ['frequency, threads']
             },
@@ -163,7 +164,7 @@ describe('Parallel Coordinates', () => {
         expect(renderParaCoordMock.mock.lastCall?.[5]).toEqual(specsByName.value)
     })
 
-    it('leaves out trials in which a selected parameter is inactive', async () => {
+    it('draws the trials of its region, also those in which a selected parameter is inactive', async () => {
         const wrapper = mountComponent()
 
         await wrapper.setProps({
@@ -177,6 +178,20 @@ describe('Parallel Coordinates', () => {
 
         await flushPromises()
 
-        expect(renderParaCoordMock.mock.lastCall?.[2]).toEqual([active])
+        expect(renderParaCoordMock.mock.lastCall?.[2]).toEqual([active, inactive])
+    })
+
+    it('leaves out the trials of other regions', async () => {
+        mountComponent()
+
+        await flushPromises()
+
+        const own = { configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }
+        const other = { configurations: { elsewhere: 1 }, results: { runtime: 90 } }
+        allRes.value = [own, other]
+
+        await flushPromises()
+
+        expect(renderParaCoordMock.mock.lastCall?.[2]).toEqual([own])
     })
 })

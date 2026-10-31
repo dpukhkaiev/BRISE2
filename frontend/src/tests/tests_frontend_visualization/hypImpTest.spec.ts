@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { HypImp } from '../../widgets/charts/hyp-imp'
+import { regionOf } from './searchSpaceFixture'
 
 const result = {
     importances: {
@@ -61,6 +62,7 @@ describe('Hyperparameter Importances', () => {
     const mountComponent = () => {
         return mount(HypImp, {
             props: {
+                region: regionOf('frequency', 'threads'),
                 hypImpParams: ['frequency', 'threads'],
                 hypImpObjective: 'runtime'
             },
@@ -227,7 +229,7 @@ describe('Hyperparameter Importances', () => {
         )
     })
 
-    it('leaves out trials in which a selected parameter is inactive', async () => {
+    it('sends the trials of its region, also those in which a selected parameter is inactive', async () => {
         mountComponent()
 
         await flushPromises()
@@ -238,6 +240,20 @@ describe('Hyperparameter Importances', () => {
 
         await flushPromises()
 
-        expect(calculatePlotMock.mock.lastCall?.[1].trials).toEqual([active])
+        expect(calculatePlotMock.mock.lastCall?.[1].trials).toEqual([active, inactive])
+    })
+
+    it('leaves out the trials of other regions', async () => {
+        mountComponent()
+
+        await flushPromises()
+
+        const own = { configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }
+        const other = { configurations: { elsewhere: 1 }, results: { runtime: 90 } }
+        allRes.value = [own, other]
+
+        await flushPromises()
+
+        expect(calculatePlotMock.mock.lastCall?.[1].trials).toEqual([own])
     })
 })

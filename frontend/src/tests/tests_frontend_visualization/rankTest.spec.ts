@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import { Rank } from '../../widgets/charts/rank'
-import { specsByName as fixtureSpecsByName } from './searchSpaceFixture'
+import { regionOf, specsByName as fixtureSpecsByName } from './searchSpaceFixture'
 
 const { renderRankMock } = vi.hoisted(() => ({
     renderRankMock: vi.fn()
@@ -46,6 +46,7 @@ describe('Rank Plot', () => {
    const mountComponent = () => {
         return mount(Rank, {
             props: {
+                region: regionOf('frequency', 'threads'),
                 rankParam1: 'threads',
                 rankParam2: 'frequency',
                 rankObjective: 'runtime'
@@ -140,7 +141,7 @@ describe('Rank Plot', () => {
         expect(renderRankMock.mock.lastCall?.[6]).toEqual(specsByName.value)
     })
 
-    it('leaves out trials in which a selected parameter is inactive', async () => {
+    it('draws the trials of its region, also those in which a selected parameter is inactive', async () => {
         mountComponent()
 
         await flushPromises()
@@ -151,6 +152,20 @@ describe('Rank Plot', () => {
 
         await flushPromises()
 
-        expect(renderRankMock.mock.lastCall?.[2]).toEqual([active])
+        expect(renderRankMock.mock.lastCall?.[2]).toEqual([active, inactive])
+    })
+
+    it('leaves out the trials of other regions', async () => {
+        mountComponent()
+
+        await flushPromises()
+
+        const own = { configurations: { frequency: 60, threads: 8 }, results: { runtime: 100 } }
+        const other = { configurations: { elsewhere: 1 }, results: { runtime: 90 } }
+        allRes.value = [own, other]
+
+        await flushPromises()
+
+        expect(renderRankMock.mock.lastCall?.[2]).toEqual([own])
     })
 })

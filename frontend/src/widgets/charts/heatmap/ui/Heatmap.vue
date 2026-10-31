@@ -16,6 +16,7 @@ import { cleanIdentifier, parseJsonWithInfinity, stringifyWithInfinity } from '.
 
 import { DataTransformer } from '../../../../entities/experiment/lib/data.transformer'
 import { axisValues } from '../../../../entities/experiment/lib/search-space'
+import { INACTIVE_LABEL } from '../../../../entities/experiment/lib/inactive'
 
 defineOptions({ name: 'HeatmapChart' })
 
@@ -60,6 +61,21 @@ const colors = Color
 
 
 const map = ref<HTMLElement | null>(null)
+
+// the label of a value on an axis; a configuration without the parameter is drawn at the inactive label
+function axisLabel(value: string | number | null | undefined): string {
+    return value === undefined ? INACTIVE_LABEL : cleanIdentifier(value)
+}
+
+// the label of a configuration's value on an axis, which gets an inactive row or column on first need; an axis
+// without values belongs to no parameter, so there is nothing to be inactive in
+function labelOnAxis(value: string | number | null | undefined, axis: { value: Array<any> }): string {
+    const label = axisLabel(value)
+    if (label === INACTIVE_LABEL && axis.value.length > 0 && !axis.value.includes(INACTIVE_LABEL)) {
+        axis.value.push(INACTIVE_LABEL)
+    }
+    return label
+}
 
 const subs = new Subscription()
 
@@ -108,8 +124,8 @@ async function render(): Promise<void> {
             hoverinfo: 'none' as const,
             showlegend: false as const,
             marker: { color: 'Gold', size: 16, symbol: 'star' },
-            x: solution && [cleanIdentifier((solution.configurations as any)[xParamKey.value])],
-            y: solution && [cleanIdentifier((solution.configurations as any)[yParamKey.value])]
+            x: solution && [axisLabel((solution.configurations as any)[xParamKey.value])],
+            y: solution && [axisLabel((solution.configurations as any)[yParamKey.value])]
         }
     ];
 
@@ -175,8 +191,8 @@ function initMainEvents() {
         for (const configuration of configs) {
             if (configuration) {
                 const conf = configuration['configurations'];
-                const yVal = cleanIdentifier(conf[yParamKey.value]);
-                const xVal = cleanIdentifier(conf[xParamKey.value]);
+                const yVal = labelOnAxis(conf[yParamKey.value], y);
+                const xVal = labelOnAxis(conf[xParamKey.value], x);
                 result.value.set(String([yVal, xVal]), configuration['results']);
                 measPoints.value.push([yVal, xVal]);
             }
@@ -202,8 +218,8 @@ function initMainEvents() {
                     configWithNones.value = configWithNones.value.replace(',,', ',None,');
                     results.value = stringifyWithInfinity(solution.results)
                     const conf = configuration['configurations'];
-                    const yVal = cleanIdentifier(conf[yParamKey.value]);
-                    const xVal = cleanIdentifier(conf[xParamKey.value]);
+                    const yVal = labelOnAxis(conf[yParamKey.value], y);
+                    const xVal = labelOnAxis(conf[xParamKey.value], x);
                     result.value.set(String([yVal, xVal]), configuration['results']);
                     measPoints.value.push([yVal, xVal]);
                     sol.value = Object.values(solution.results)
@@ -226,8 +242,8 @@ function initMainEvents() {
                 if (configuration) {
                     defaultConfiguration = configuration; // In case if only one point default
                     const conf = configuration['configurations'];
-                    const yVal = cleanIdentifier(conf[yParamKey.value]);
-                    const xVal = cleanIdentifier(conf[xParamKey.value]);
+                    const yVal = labelOnAxis(conf[yParamKey.value], y);
+                    const xVal = labelOnAxis(conf[xParamKey.value], x);
                     result.value.set(String([yVal, xVal]), configuration['results']);
                     measPoints.value.push([yVal, xVal]);
                 } else {

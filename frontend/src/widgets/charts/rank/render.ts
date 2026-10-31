@@ -3,6 +3,12 @@ import type { PlotlyInstance } from '../model/chart.types'
 import type { PointExp } from "../../../entities/main/model/plot.store";
 import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
 import { cleanIdentifier } from "../../../shared/lib";
+import {
+    INACTIVE_INDEX,
+    INACTIVE_LABEL,
+    inactivePosition,
+    numericTicksWithInactive
+} from "../../../entities/experiment/lib/inactive";
 
 function getParameterValues(
     parameter: string,
@@ -15,6 +21,11 @@ function getParameterValues(
 
     const spec = specsByName[parameter];
 
+    // a trial without the parameter is one in which it is inactive; its category index is INACTIVE_INDEX
+    const hasInactive = values.some(value => value === undefined);
+    const inactiveTickvals = hasInactive ? [INACTIVE_INDEX] : [];
+    const inactiveTicktext = hasInactive ? [INACTIVE_LABEL] : [];
+
     // Ordinal parameter
     if (
         spec?.Type === "OrdinalHyperparameter" &&
@@ -24,15 +35,31 @@ function getParameterValues(
 
         return {
             values: values.map(value => categories.indexOf(value)),
-            tickvals: categories.map((_: string, index: number) => index),
-            ticktext: categories.map((category: string) => {
-                const name = category.split(".").pop() ?? category;
-                return name.replace(/_/g, " ");
-            })
+            tickvals: [
+                ...inactiveTickvals,
+                ...categories.map((_: string, index: number) => index)
+            ],
+            ticktext: [
+                ...inactiveTicktext,
+                ...categories.map((category: string) => {
+                    const name = category.split(".").pop() ?? category;
+                    return name.replace(/_/g, " ");
+                })
+            ]
         };
     }
 
     // Numeric parameter
+    if (
+        spec?.Type === "FloatHyperparameter" ||
+        spec?.Type === "IntegerHyperparameter"
+    ) {
+        return {
+            values: values.map(value => value ?? inactivePosition(spec)),
+            ...(hasInactive ? numericTicksWithInactive(spec) : {})
+        };
+    }
+
     if (values.every(value => typeof value === "number")) {
         return {
             values
@@ -50,10 +77,16 @@ function getParameterValues(
 
     return {
         values: values.map(value => categories.indexOf(value)),
-        tickvals: categories.map((_, index) => index),
-        ticktext: categories.map(category =>
-            String(category).replace(/_/g, " ")
-        )
+        tickvals: [
+            ...inactiveTickvals,
+            ...categories.map((_, index) => index)
+        ],
+        ticktext: [
+            ...inactiveTicktext,
+            ...categories.map(category =>
+                String(category).replace(/_/g, " ")
+            )
+        ]
     };
 }
 
@@ -113,8 +146,8 @@ export function renderRank(
             `${rankObjective}: %{marker.color}<extra></extra>`,
 
         customdata: allRes.map(point => [
-            point.configurations[rankParam1],
-            point.configurations[rankParam2]
+            point.configurations[rankParam1] ?? INACTIVE_LABEL,
+            point.configurations[rankParam2] ?? INACTIVE_LABEL
         ])
     };
 

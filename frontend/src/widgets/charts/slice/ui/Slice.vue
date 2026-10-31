@@ -4,7 +4,8 @@ import { usePlotStore } from '../../../../entities/main/model/plot.store'
 import { renderSlice } from '../render'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore } from '../../../../entities/main'
-import { trialsWithParameters } from '../../../../entities/experiment/lib/regions'
+import { trialsOfRegion } from '../../../../entities/experiment/lib/regions'
+import type { SearchSpaceRegion } from '../../../../entities/experiment/model/experiment.model'
 
 defineOptions({ name: 'SliceChart' })
 
@@ -15,6 +16,7 @@ const { specsByName, plotlyInstance } = storeToRefs(store)
 const slice = ref<HTMLElement | null>(null)
 
 const props = defineProps<{
+    region: SearchSpaceRegion
     sliceParam: string
     sliceObjective: string
 }>()
@@ -24,7 +26,8 @@ async function render() {
 
     if (!plotlyInstance.value) return
     if (!slice.value) return
-    const trials = trialsWithParameters(allRes.value, [props.sliceParam])
+    // a trial of the region without the selected parameter is drawn as inactive in it
+    const trials = trialsOfRegion(allRes.value, props.region)
     renderSlice(plotlyInstance.value, slice.value, trials, props.sliceParam, props.sliceObjective, specsByName.value)
 }
 
