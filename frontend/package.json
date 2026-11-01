@@ -14,8 +14,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest --project unit",
-    "test:run": "vitest run --project unit",
-    "bench": "vitest run --project benchmark --reporter=verbose"
+    "test:run": "vitest run --project unit"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -39,8 +38,6 @@
     "@types/plotly.js": "^3.0.10",
     "@typescript-eslint/parser": "^8.62.0",
     "@vitejs/plugin-vue": "^6.0.5",
-    "@vitest/browser": "^4.1.11",
-    "@vitest/browser-playwright": "^4.1.11",
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/test-utils": "^2.4.10",
     "@vue/tsconfig": "^0.9.1",
@@ -49,7 +46,6 @@
     "eslint-plugin-vue": "^10.9.2",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
-    "playwright": "^1.62.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.4",
