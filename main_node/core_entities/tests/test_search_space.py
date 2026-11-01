@@ -6,7 +6,7 @@ import pytest
 
 from core_entities.search_space import (
     INACTIVE_CATEGORY, SEARCH_SPACE_PREFIX, FloatHyperparameter, IntegerHyperparameter, NominalHyperparameter,
-    OrdinalHyperparameter
+    OrdinalHyperparameter, SearchSpace
 )
 
 
@@ -194,3 +194,75 @@ class TestDescribeRegions:
             _, search_space = get_experiment(test_case)
 
             assert json.loads(json.dumps(search_space.describe_regions())) == search_space.describe_regions()
+
+
+class TestRegionActivation:
+    """
+    A region is active when its parent was chosen with exactly the region's activation category. The search space
+    below has sibling categories whose names extend each other (A and AB), so a substring match of the category in
+    the chosen values activates both branches when AB is chosen.
+    """
+
+    PARENT = "Context.SearchSpace.N0"
+    CATEGORY_A = "Context.SearchSpace.N0.A"
+    CATEGORY_AB = "Context.SearchSpace.N0.AB"
+    CHILD_OF_A = "Context.SearchSpace.N0.A.F1"
+    CHILD_OF_AB = "Context.SearchSpace.N0.AB.F2"
+
+    @staticmethod
+    def _search_space(structure: str) -> SearchSpace:
+        def child(lower, upper, default):
+            return {"Lower": lower, "Upper": upper, "Default": default, "Type": "FloatHyperparameter", "Level": 1}
+
+        return SearchSpace({
+            "N0": {
+                "A": {"F1": child(0.0, 1.0, 0.5), "Type": "Category"},
+                "AB": {"F2": child(0.0, 2.0, 1.0), "Type": "Category"},
+                "Categories": [TestRegionActivation.CATEGORY_A, TestRegionActivation.CATEGORY_AB],
+                "Default": TestRegionActivation.CATEGORY_A,
+                "Type": "NominalHyperparameter",
+                "Level": 0
+            },
+            "Structure": {structure: {}}
+        })
+
+    @staticmethod
+    def _activated_categories(search_space: SearchSpace, chosen: dict) -> set:
+        search_space.next_level()  # from the region of N0 to the regions of its categories
+        try:
+            activated = search_space.activate_regions(pd.DataFrame([chosen]))
+        finally:
+            search_space.reset_level()
+        return {region[0].activation_category for region in activated}
+
+    def test_category_whose_name_extends_a_sibling_activates_only_its_own_region(self):
+        search_space = self._search_space("Hierarchical")
+
+        assert self._activated_categories(search_space, {self.PARENT: self.CATEGORY_AB}) == {self.CATEGORY_AB}
+
+    def test_category_that_is_the_start_of_a_sibling_activates_only_its_own_region(self):
+        search_space = self._search_space("Hierarchical")
+
+        assert self._activated_categories(search_space, {self.PARENT: self.CATEGORY_A}) == {self.CATEGORY_A}
+
+    def test_no_region_is_activated_while_its_parent_is_missing(self):
+        search_space = self._search_space("Hierarchical")
+
+        assert self._activated_categories(search_space, {self.CHILD_OF_A: 0.5}) == set()
+
+    def test_value_of_another_parameter_does_not_activate_a_region(self):
+        # the string of a category inside the value of another parameter is not a choice of the parent
+        search_space = self._search_space("Hierarchical")
+
+        chosen = {self.PARENT: self.CATEGORY_A, "unrelated": self.CATEGORY_AB}
+
+        assert self._activated_categories(search_space, chosen) == {self.CATEGORY_A}
+
+    def test_flat_configuration_keeps_only_the_parameters_of_the_chosen_category(self):
+        search_space = self._search_space("Flat")
+
+        reduced = search_space.transform_flat_parameters_to_hierarchic(
+            {self.PARENT: self.CATEGORY_AB, self.CHILD_OF_A: 0.5, self.CHILD_OF_AB: 1.5}
+        )
+
+        assert reduced == {self.PARENT: self.CATEGORY_AB, self.CHILD_OF_AB: 1.5}

@@ -511,15 +511,16 @@ class SearchSpace:
         return described_regions
 
     def activate_regions(self, parent: pd.DataFrame) -> Set[Tuple[Hyperparameter]]:
-        parent = parent.drop(columns=parent.columns.difference(self.hp_names))
-        available_regions = self.get_regions_on_current_level()
+        """
+        Get the regions on the current level, whose parent was chosen with the activation category of the region.
+        :param parent: Configurations (one per row) with the values of the Hyperparameters chosen so far.
+        :return: set of the activated regions
+        """
         activated_regions = set()
-        for r in available_regions:
-            for hp in r:
-                for p in parent.to_numpy().flatten():
-                    if type(p) is str:
-                        if hp.activation_category in p:
-                            activated_regions.add(r)
+        for r in self.get_regions_on_current_level():
+            parent_name = r[0].parent.name
+            if parent_name in parent.columns and (parent[parent_name] == r[0].activation_category).any():
+                activated_regions.add(r)
         return activated_regions
 
     def flatten(self, h: Hyperparameter):
