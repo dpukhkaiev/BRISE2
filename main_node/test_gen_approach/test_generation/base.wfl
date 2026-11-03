@@ -24,7 +24,7 @@ abstract NominalHyperparameter: CategoricalHyperparameter {
 }
 abstract OrdinalHyperparameter: CategoricalHyperparameter {
   [Type = "OrdinalHyperparameter"]
-  [self requires ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.OrdinalTransformer]
+  [self requires ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.OrdinalTransformer or ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit or ConfigurationSelection.Predictor.Model.Surrogate.Instance.ModelMock]
 }
 
 abstract NumericHyperparameter: Hyperparameter
@@ -53,7 +53,6 @@ abstract Objective {
     Minimization -> predefined
     MinExpectedValue -> predefined
     MaxExpectedValue -> predefined
-    [if Minimization == True then self excludes ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit]
 }
 abstract SC {
   Type -> predefined
@@ -101,7 +100,9 @@ Context {
     X1 : FloatHyperparameter
     X2 : IntegerHyperparameter
     xor Structure {
-      Flat
+      Flat {
+        [self excludes ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit]
+      }
       Hierarchical
     }
     [fcard.ConfigurationSelection.Predictor.Model = size unique Level at self]
@@ -163,6 +164,17 @@ ConfigurationSelection {
             [fcard.parent.parent.parent.Surrogate = 1]
             [fcard.parent.parent.parent.Optimizer = 1]
             [fcard.parent.parent.parent.Validator.InternalValidator = 0]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.GACO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.GWO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.BEE_COLONY]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.DE]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.SEA]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.SGA]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.SADE]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.DE1220]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.CMAES]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.PSO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.PSO_GEN]
           }
           Compositional {
             [fcard.parent.parent.parent.Surrogate = size childs.Context.TaskConfiguration.Objectives]
@@ -325,6 +337,7 @@ ConfigurationSelection {
             [self requires parent.parent.parent.Validator.ExternalValidator.MockValidator]
             [self excludes parent.parent.parent.Validator.InternalValidator]
             [fcard.parent.parent.ConfigurationTransformers == 0]
+            [size (filter childs.Context.TaskConfiguration.Objectives where Minimization == True) == 0]
             Type -> predefined
             [Type = "multi_armed_bandit"]
           }
@@ -558,6 +571,8 @@ ConfigurationSelection {
                 [parent.parent.PopulationSize >= 2]
               }
             }
+            [self requires parent.parent.ConfigurationTransformers.NominalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.OrdinalTransformer]
             Type -> predefined
             [Type = "moea"]
           }

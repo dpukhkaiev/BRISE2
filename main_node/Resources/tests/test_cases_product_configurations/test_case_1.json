@@ -100,6 +100,12 @@
                 },
                 "Optimizer": {
                     "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
                         "NominalTransformer": {
                             "BinaryEncoder": {
                                 "Type": "binary_transformer",

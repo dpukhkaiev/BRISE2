@@ -182,6 +182,12 @@
                 },
                 "Optimizer": {
                     "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
                         "NominalTransformer": {
                             "BinaryEncoder": {
                                 "Type": "binary_transformer",
@@ -246,6 +252,20 @@
                     }
                 },
                 "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        }
+                    },
                     "Instance": {
                         "MOEA": {
                             "Generations": 10,

@@ -20,9 +20,11 @@ abstract CategoricalHyperparameter : Hyperparameter {
 
 abstract NominalHyperparameter: CategoricalHyperparameter {
   [Type = "NominalHyperparameter"]
+  [self requires ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.NominalTransformer or ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit or ConfigurationSelection.Predictor.Model.Surrogate.Instance.ModelMock]
 }
 abstract OrdinalHyperparameter: CategoricalHyperparameter {
   [Type = "OrdinalHyperparameter"]
+  [self requires ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.OrdinalTransformer or ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit or ConfigurationSelection.Predictor.Model.Surrogate.Instance.ModelMock]
 }
 
 abstract NumericHyperparameter: Hyperparameter
@@ -136,7 +138,9 @@ Context {
     }
 
     xor Structure {
-      Flat
+      Flat {
+        [self excludes ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit]
+      }
       Hierarchical
     }
     [fcard.ConfigurationSelection.Predictor.Model = size unique Level at self]
@@ -371,6 +375,7 @@ ConfigurationSelection {
             [self requires parent.parent.parent.Validator.ExternalValidator.MockValidator]
             [self excludes parent.parent.parent.Validator.InternalValidator]
             [fcard.parent.parent.ConfigurationTransformers == 0]
+            [size (filter childs.Context.TaskConfiguration.Objectives where Minimization == True) == 0]
             Type -> predefined
             [Type = "multi_armed_bandit"]
           }
@@ -573,7 +578,7 @@ ConfigurationSelection {
                 [MultiObjective = False]
                 [parent.parent.PopulationSize >= 7]
               }
-              DE1220 { // Self-adaptive Differential Evolution, pygmo flavour (pDE). FROM HERE SO only tested
+              DE1220 { // Self-adaptive Differential Evolution, pygmo flavour (pDE).
                 MultiObjective -> predefined
                 [MultiObjective = False]
                 [parent.parent.PopulationSize >= 7]
@@ -604,6 +609,8 @@ ConfigurationSelection {
                 [parent.parent.PopulationSize >= 2]
               }
             }
+            [self requires parent.parent.ConfigurationTransformers.NominalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.OrdinalTransformer]
             Type -> predefined
             [Type = "moea"]
           }

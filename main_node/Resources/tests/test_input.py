@@ -58,7 +58,7 @@ class TestInput:
         cs = ConfigurationSelection(experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
-        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 1
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 3
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].value_transformers) == 1
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, MockValidator)
         assert list(cs.predictor.mapping_region_model.values())[0].internal_validator is None
@@ -102,7 +102,7 @@ class TestInput:
         cs = ConfigurationSelection(experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 1
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 1
-        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 1
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
         assert list(cs.predictor.mapping_region_model.values())[0].internal_validator is None
@@ -217,7 +217,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 1
+                       0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
@@ -254,7 +254,7 @@ class TestInput:
         cs = ConfigurationSelection(experiment=experiment)
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].mapping_config_transformer_parameter) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[0].value_transformers) == 0
-        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 1
+        assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].internal_validator, QualityValidator)
@@ -329,7 +329,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 1
+                       0].mapping_config_transformer_parameter) == 3
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
@@ -404,7 +404,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 1
+                       0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, MockValidator)
@@ -489,7 +489,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 1
+                       0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, MockValidator)
@@ -534,7 +534,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 1
+                       0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, MockValidator)
@@ -612,7 +612,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 0
+                       0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, MockValidator)
@@ -726,7 +726,7 @@ class TestInput:
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                        0].value_transformers) == 0
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
-                       0].mapping_config_transformer_parameter) == 1
+                       0].mapping_config_transformer_parameter) == 2
         assert len(list(list(cs.predictor.mapping_region_model.values())[0].mapping_optimizer_objective.keys())[
                        0].value_transformers) == 0
         assert isinstance(list(cs.predictor.mapping_region_model.values())[0].external_validator, QualityValidator)
