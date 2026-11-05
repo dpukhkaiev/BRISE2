@@ -16,6 +16,9 @@ class DefaultConfigurationHandler(ABC):
 
     def get_default_configuration(self) -> Configuration:
         default_configuration = self._build_default_configuration()
+        # the default is a measured configuration, so it holds the active parameters only
+        default_configuration.parameters = self.experiment.search_space.keep_active_parameters(
+            default_configuration.parameters)
         if default_configuration.prediction_info is None:
             # ensure uniformity with sampled/predicted configurations in DB; only include the regions
             # activated by this configuration's parameter values

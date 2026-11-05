@@ -686,7 +686,7 @@ class TestConfigurationSelection:
 
         assert rounds_after_first_prediction == 3, "no PREDICTED configuration was proposed within the fixture's results"
         assert all(set(c.parameters) == self.BRANCH_PARAMETERS[c.parameters["Context.SearchSpace.N0"]]
-                   for c in experiment.evaluated_configurations if c is not experiment.default_configuration)
+                   for c in experiment.evaluated_configurations)
 
     def test_prediction_that_differs_from_an_evaluated_configuration_only_in_inactive_values_is_replaced_by_a_sample(
             self, get_experiment, get_workers, get_configurations_all_types):

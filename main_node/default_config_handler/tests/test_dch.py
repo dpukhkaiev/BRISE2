@@ -1,3 +1,5 @@
+import pytest
+
 from core_entities.experiment import Experiment
 from core_entities.configuration import Configuration
 from default_config_handler.default_configuration_handler_orchestrator import DefaultConfigHandlerOrchestrator
@@ -66,3 +68,30 @@ class TestDefaultConfigHandler():
         assert len(experiment.search_space.regions) == 6
         assert len(default_configuration.prediction_info) == 5
         assert all(v == {"Model": [], "time_to_build": 0} for v in default_configuration.prediction_info.values())
+
+
+class TestDefaultOfAFlatSpace:
+    """
+    'test_case_13' is flat and has the branches N01 {F1, N1} and N02 {I1, O1} below N0. The default is a measured
+    configuration, so it holds the parameters of its branch only.
+    """
+
+    N0 = "Context.SearchSpace.N0"
+    BRANCH_PARAMETERS = {
+        f"{N0}.N01": {N0, f"{N0}.N01.F1", f"{N0}.N01.N1"},
+        f"{N0}.N02": {N0, f"{N0}.N02.I1", f"{N0}.N02.O1"},
+    }
+
+    @pytest.mark.parametrize("handler_class, number_of_defaults", [
+        (BasicDefaultConfigurationHandler, 1),  
+        (RandomDefaultConfigurationHandler, 10),  
+    ])
+    def test_default_holds_the_parameters_of_its_branch(self, get_experiment, handler_class, number_of_defaults):
+        experiment_description, search_space = get_experiment(13)
+        experiment = Experiment(experiment_description, search_space)
+        default_config_handler = handler_class({}, experiment)
+
+        defaults = [default_config_handler.get_default_configuration() for _ in range(number_of_defaults)]
+
+        assert all(set(d.parameters) == self.BRANCH_PARAMETERS[d.parameters[self.N0]] for d in defaults)
+        assert all(set(d.prediction_info) == {"0"} for d in defaults)  # the flat space has one region
