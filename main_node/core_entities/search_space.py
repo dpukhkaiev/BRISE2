@@ -3,7 +3,7 @@ from __future__ import annotations
 import pickle
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Dict, Iterable, List, Set, MutableMapping, Union, Tuple
+from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, MutableMapping, Union, Tuple
 import numpy as np
 import pandas as pd
 
@@ -56,6 +56,10 @@ class Hyperparameter(ABC):
             composition logic into a separate class. Currently Categorical Hyperparameters and composition logic are
             bounded.
     """
+
+    # The condition that activates the Hyperparameter; None for a top-level one. Unlike parent and activation_category,
+    # which the flat view replaces by the root, it stays with the Hyperparameter.
+    activation_condition: Optional[ActivationCondition] = None
 
     def __init__(self,
                  name: str,
@@ -430,10 +434,22 @@ class NominalHyperparameter(CategoricalHyperparameter):
         return super.__hash__(self)
 
 
+class ActivationCondition(NamedTuple):
+    """
+    A Hyperparameter is active when its parent was chosen with the category that activates it. A Hyperparameter
+    without an ActivationCondition (a top-level one) is always active.
+    """
+    parameter: str  # name of the Hyperparameter
+    parent: str  # name of its parent Hyperparameter
+    activation_category: _CATEGORY  # category of the parent, which activates the Hyperparameter
+
+
 class SearchSpace:
     def __init__(self, h: dict):
         self.is_flat = False
         self.hierarchical_view = self.initialize_hierarchical_view(h)
+        self._activation_conditions = [hp.activation_condition for hp in self.flatten(self.hierarchical_view)
+                                       if hp.activation_condition is not None]
         self.flat_view = self.initialize_flat_view()
         self.number_of_levels = self.__get_number_of_levels()
 
@@ -519,7 +535,7 @@ class SearchSpace:
         activated_regions = set()
         for r in self.get_regions_on_current_level():
             parent_name = r[0].parent.name
-            if parent_name in parent.columns and (parent[parent_name] == r[0].activation_category).any():
+            if parent_name in parent.columns and is_activated(parent[parent_name], r[0].activation_category).any():
                 activated_regions.add(r)
         return activated_regions
 
@@ -651,38 +667,18 @@ class SearchSpace:
             import logging
             logging.debug(f"{hyperparameter_description}")
             raise TypeError(f"Hyperparameter {h_name} has unknown type: {h_type}.")
+        if parent.name != "root":
+            h.activation_condition = ActivationCondition(h_name, parent.name, activation_category)
         return h
 
-    def transform_flat_parameters_to_hierarchic(self, parameters: MutableMapping) -> MutableMapping:
+    def keep_active_parameters(self, parameters: Mapping) -> MutableMapping:
         """
-        Constructs a valid hierarchic configuration from a flattened configuration.
+        Reduce a configuration to its active parameters.
+        :param parameters: parameters of a configuration.
+        :return: the active parameters with their values.
         """
-        self.search_space_description = self.hierarchical_view
-        self.reset_level()
-
-        valid_parameters = {}
-
-        activated_regions = self.get_regions_on_current_level()
-        while len(activated_regions) > 0:
-            self.next_level()
-            next_activated_regions: Set[Tuple[Hyperparameter]] = set()
-            for region in activated_regions:
-                for hp in region:
-                    valid_parameters[hp.name] = parameters[hp.name]
-
-                    valid_parameters_series = pd.Series(valid_parameters.values(), valid_parameters.keys())
-                    valid_parameters_df = pd.DataFrame(columns=valid_parameters_series.index)
-                    valid_parameters_df.loc[0] = valid_parameters_series.values
-
-                    if len(next_activated_regions) == 0:
-                        next_activated_regions = self.activate_regions(valid_parameters_df)
-                    else:
-                        next_activated_regions.update(self.activate_regions(valid_parameters_df))
-                activated_regions = next_activated_regions
-
-        self.search_space_description = self.flat_view
-        self.reset_level()
-        return valid_parameters
+        mask = active_mask(pd.DataFrame([parameters]), self._activation_conditions)
+        return {name: value for name, value in parameters.items() if mask.at[0, name]}
 
 ################
 # Auxiliary methods
@@ -696,3 +692,37 @@ def get_search_space_record(search_space: SearchSpace, experiment_id: str) -> Di
         "SearchspaceObject": pickle.dumps(search_space)
     }
     return record
+
+def is_activated(parent_values: pd.Series, activation_category: _CATEGORY) -> pd.Series:
+    """
+    The rule of activation: a parent activates its child when it was chosen with exactly the activation category.
+    :param parent_values: the values of the parent, one per configuration.
+    :param activation_category: the category of the parent that activates the child.
+    :return: one boolean per configuration; a missing value of the parent activates nothing.
+    """
+    return parent_values == activation_category
+
+
+def active_mask(candidates: pd.DataFrame, activation_conditions: Iterable[ActivationCondition]) -> pd.DataFrame:
+    """
+    Decide for every value of every candidate, whether its Hyperparameter is active.
+    A Hyperparameter is active iff its parent is active and it is activated by the value of the parent(is_activated); 
+    top-level parameters are always active. If the parent is not a column of candidates, the parameter counts as active.
+    :param candidates: configurations, one per row, with a column per Hyperparameter.
+    :param activation_conditions: the ActivationConditions of the Search Space.
+    :return: a table of the same shape as candidates: True where the parameter is active in that candidate, False where not.
+    """
+    condition_of = {c.parameter: c for c in activation_conditions}
+    masks = {}
+
+    def resolve(parameter_name: str) -> pd.Series:
+        if parameter_name not in masks:
+            condition = condition_of.get(parameter_name)
+            if condition is None or condition.parent not in candidates.columns:
+                masks[parameter_name] = pd.Series(True, index=candidates.index)
+            else:
+                masks[parameter_name] = resolve(condition.parent) & is_activated(candidates[condition.parent],
+                                                                       condition.activation_category)
+        return masks[parameter_name]
+
+    return pd.DataFrame({candidate: resolve(candidate) for candidate in candidates.columns}, index=candidates.index)

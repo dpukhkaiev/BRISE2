@@ -180,7 +180,7 @@ class ConfigurationSelection:
             self.logger.info(temp_msg)
             c_to_send = deepcopy(c)
             if self.experiment.search_space.is_flat:
-                c_to_send.parameters = self.experiment.search_space.transform_flat_parameters_to_hierarchic(
+                c_to_send.parameters = self.experiment.search_space.keep_active_parameters(
                     c.parameters)
             hierarchical_configs.append(c_to_send)
             self.sub.send('log', 'info', message=temp_msg)

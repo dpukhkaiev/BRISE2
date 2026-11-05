@@ -1,3 +1,4 @@
+import copy
 import json
 
 import numpy as np
@@ -5,8 +6,8 @@ import pandas as pd
 import pytest
 
 from core_entities.search_space import (
-    INACTIVE_CATEGORY, SEARCH_SPACE_PREFIX, FloatHyperparameter, IntegerHyperparameter, NominalHyperparameter,
-    OrdinalHyperparameter, SearchSpace
+    INACTIVE_CATEGORY, SEARCH_SPACE_PREFIX, ActivationCondition, FloatHyperparameter, IntegerHyperparameter,
+    NominalHyperparameter, OrdinalHyperparameter, SearchSpace, active_mask
 )
 
 
@@ -261,8 +262,116 @@ class TestRegionActivation:
     def test_flat_configuration_keeps_only_the_parameters_of_the_chosen_category(self):
         search_space = self._search_space("Flat")
 
-        reduced = search_space.transform_flat_parameters_to_hierarchic(
+        reduced = search_space.keep_active_parameters(
             {self.PARENT: self.CATEGORY_AB, self.CHILD_OF_A: 0.5, self.CHILD_OF_AB: 1.5}
         )
 
         assert reduced == {self.PARENT: self.CATEGORY_AB, self.CHILD_OF_AB: 1.5}
+
+
+class TestActiveParameters:
+    """
+    Which parameters of a configuration are active is decided by one rule: the parent is active and was chosen with
+    the activation category of the parameter. test_case_13 is flat and has two branches below N0.
+    """
+
+    N0 = "Context.SearchSpace.N0"
+    N01 = "Context.SearchSpace.N0.N01"
+    N02 = "Context.SearchSpace.N0.N02"
+    F1, N1 = "Context.SearchSpace.N0.N01.F1", "Context.SearchSpace.N0.N01.N1"
+    I1, O1 = "Context.SearchSpace.N0.N02.I1", "Context.SearchSpace.N0.N02.O1"
+
+    def _full_configuration(self, chosen_branch: str) -> dict:
+        return {self.N0: chosen_branch, self.F1: 12.5, self.N1: "Context.SearchSpace.N0.N01.N1.N11",
+                self.I1: 500, self.O1: "Context.SearchSpace.N0.N02.O1.O11"}
+
+    def test_children_of_an_inactive_parameter_are_inactive_whatever_their_own_parent_value(self, get_experiment):
+        # test_case_15 has three levels: N0 -> N1 -> N2 -> F3. With N0 choosing the other branch, N1 is inactive,
+        # so N2 and F3 are inactive although N1 and N2 hold the categories that would activate them
+        description, _ = get_experiment(15)
+        flat_description = copy.deepcopy(description["Context"]["SearchSpace"])
+        flat_description["Structure"] = {"Flat": {}}
+        search_space = SearchSpace(flat_description)
+        prefix = "Context.SearchSpace.N0"
+        configuration = {
+            prefix: f"{prefix}.N01", f"{prefix}.N01.F1": 5.0, f"{prefix}.N01.I1": 20,
+            f"{prefix}.N02.N1": f"{prefix}.N02.N1.N11", f"{prefix}.N02.N1.N11.F2": 1.0,
+            f"{prefix}.N02.N1.N11.N2": f"{prefix}.N02.N1.N11.N2.N21", f"{prefix}.N02.N1.N11.N2.N21.F3": 2.0,
+        }
+
+        reduced = search_space.keep_active_parameters(configuration)
+
+        assert set(reduced) == {prefix, f"{prefix}.N01.F1", f"{prefix}.N01.I1"}
+
+    def test_grandchildren_are_active_when_every_ancestor_chose_their_category(self, get_experiment):
+        description, _ = get_experiment(15)
+        flat_description = copy.deepcopy(description["Context"]["SearchSpace"])
+        flat_description["Structure"] = {"Flat": {}}
+        search_space = SearchSpace(flat_description)
+        prefix = "Context.SearchSpace.N0"
+        configuration = {
+            prefix: f"{prefix}.N02", f"{prefix}.N01.F1": 5.0,
+            f"{prefix}.N02.N1": f"{prefix}.N02.N1.N11", f"{prefix}.N02.N1.N11.F2": 1.0,
+            f"{prefix}.N02.N1.N11.N2": f"{prefix}.N02.N1.N11.N2.N21", f"{prefix}.N02.N1.N11.N2.N21.F3": 2.0,
+        }
+
+        reduced = search_space.keep_active_parameters(configuration)
+
+        assert set(reduced) == {prefix, f"{prefix}.N02.N1", f"{prefix}.N02.N1.N11.F2",
+                                f"{prefix}.N02.N1.N11.N2", f"{prefix}.N02.N1.N11.N2.N21.F3"}
+
+    def test_hierarchical_configuration_is_returned_unchanged(self, get_experiment):
+        # a configuration of a hierarchical space holds active parameters only, down to the third level
+        _, search_space = get_experiment(15)
+        prefix = "Context.SearchSpace.N0"
+        configuration = {
+            prefix: f"{prefix}.N02",
+            f"{prefix}.N02.N1": f"{prefix}.N02.N1.N11", f"{prefix}.N02.N1.N11.F2": 1.0,
+            f"{prefix}.N02.N1.N11.N2": f"{prefix}.N02.N1.N11.N2.N21", f"{prefix}.N02.N1.N11.N2.N21.F3": 2.0,
+        }
+
+        assert search_space.keep_active_parameters(configuration) == configuration
+
+    @staticmethod
+    def _conditions_of_the_flat_region(search_space):
+        return [hp.activation_condition for hp in search_space.regions[0] if hp.activation_condition is not None]
+
+    def test_active_mask_agrees_with_active_parameters_row_by_row(self, get_experiment):
+        _, search_space = get_experiment(13)
+        candidates = pd.DataFrame([self._full_configuration(self.N01), self._full_configuration(self.N02)])
+
+        mask = active_mask(candidates, self._conditions_of_the_flat_region(search_space))
+
+        for row, candidate in candidates.iterrows():
+            assert {name for name in mask.columns if mask.at[row, name]} == set(
+                search_space.keep_active_parameters(candidate.to_dict()))
+
+    def test_missing_parent_value_makes_the_children_inactive_in_the_mask(self, get_experiment):
+        _, search_space = get_experiment(13)
+        candidates = pd.DataFrame([self._full_configuration(self.N01)])
+        candidates[self.N0] = np.nan
+
+        mask = active_mask(candidates, self._conditions_of_the_flat_region(search_space))
+
+        assert list(mask.loc[0]) == [True, False, False, False, False]
+
+    def test_parameters_with_a_parent_missing_from_the_candidates_are_treated_as_active(self, get_experiment):
+        _, search_space = get_experiment(13)
+        candidates = pd.DataFrame([{self.F1: 1.0, self.I1: 10}])
+
+        mask = active_mask(candidates, self._conditions_of_the_flat_region(search_space))
+
+        assert mask.loc[0].all()
+
+    def test_parameter_keeps_its_activation_condition_in_the_flat_view(self, get_experiment):
+        _, search_space = get_experiment(13)
+
+        flat_region = search_space.regions[0]
+
+        assert {hp.name: hp.activation_condition for hp in flat_region} == {
+            self.N0: None,
+            self.F1: ActivationCondition(self.F1, self.N0, self.N01),
+            self.N1: ActivationCondition(self.N1, self.N0, self.N01),
+            self.I1: ActivationCondition(self.I1, self.N0, self.N02),
+            self.O1: ActivationCondition(self.O1, self.N0, self.N02),
+        }

@@ -1,3 +1,4 @@
+import pytest
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -623,6 +624,59 @@ class TestConfigurationSelection:
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
         experiment.dump("Results")
+
+    @pytest.mark.xfail(raises=KeyError, strict=True,
+                       reason="plan 05b, step 3: reduced measured configurations break the next prediction")
+    def test_flat_space_with_conditional_parameters_proposes_model_predictions(
+            self, get_experiment, get_workers, get_configurations_all_types):
+        """
+        'test_case_13': flat search space with the conditional parameters N01 {F1, N1} and N02 {I1, O1}.
+        A configuration is measured with its active parameters only (the second list returned by
+        send_new_configurations_to_measure), as in a real run, and that is what gets fed back. Once model
+        proposals start, they come from measurements of both branches, each lacking the other branch's parameters.
+        """
+        rdb.cleanup()
+        rdb.restore()
+        experiment_description, search_space = get_experiment(13)
+        del experiment_description["TransferLearning"]  # the model is asked from the first proposal
+        experiment = Experiment(experiment_description, search_space)
+        experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+        experiment.database.write_one_record(
+            "Search_space", get_search_space_record(search_space, experiment.unique_id)
+        )
+        default_config_handler = DefaultConfigHandlerOrchestrator().get_default_configuration_handler(experiment=experiment)
+        default_configuration = default_config_handler.get_default_configuration()
+        default_configuration.results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
+        default_configuration.status['measured'] = True
+        default_configuration.status['evaluated'] = True
+        experiment.default_configuration = default_configuration
+        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
+        cs = ConfigurationSelection(experiment)
+
+        branch_parameters = {
+            "Context.SearchSpace.N0.N01": {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N01.F1",
+                                           "Context.SearchSpace.N0.N01.N1"},
+            "Context.SearchSpace.N0.N02": {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N02.I1",
+                                           "Context.SearchSpace.N0.N02.O1"},
+        }
+        rounds_after_first_prediction = 0
+        for i in range(len(get_configurations_all_types)):
+            _, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            configuration = measured[0]
+            assert set(configuration.parameters) == branch_parameters[configuration.parameters["Context.SearchSpace.N0"]]
+            configuration.results = {"Y1": get_configurations_all_types[i]['Result']["Y1"]}
+            configuration.status['enabled'] = True
+            configuration.status['measured'] = True
+            configuration.status['evaluated'] = True
+            experiment.add_configuration(configuration)
+            if rounds_after_first_prediction > 0:
+                rounds_after_first_prediction += 1
+            elif configuration.type is Configuration.Type.PREDICTED:
+                rounds_after_first_prediction = 1
+            if rounds_after_first_prediction == 3:
+                break
+
+        assert rounds_after_first_prediction == 3, "no PREDICTED configuration was proposed within the fixture's results"
 
     def test_14(self, get_experiment, get_workers, get_configurations_2_float):
         """
