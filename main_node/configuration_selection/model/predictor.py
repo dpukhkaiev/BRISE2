@@ -152,7 +152,9 @@ class Predictor:
             else:
                 parameters = f.to_dict()
                 predicted_values = {}
-            configuration = Configuration(parameters, configuration_type, self.experiment_id, prediction_info=prediction_info)
+            # a configuration is created for active parameters only
+            configuration = Configuration(self.search_space.keep_active_parameters(parameters), configuration_type,
+                                          self.experiment_id, prediction_info=prediction_info)
             configuration.predicted_result = list(predicted_values.values())
             predicted_configurations.append(configuration)
 
