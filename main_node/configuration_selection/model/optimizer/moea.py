@@ -29,8 +29,10 @@ class MOEA(Optimizer):
         self.masked_params: Dict[str: Tuple[float, int]] = {}  # if lower bound == upper bound nsga2 and moead don't work
         # which surrogate a categorical hyperparameter's transformer was borrowed from is only known per optimize()
         # call, so bounds/params/masked_params/_borrowed_config_transformer_parameter are (re)built there
+        # TOBEDROPPED
         self._borrowed_config_transformer_parameter: Dict[ConfigurationTransformer, Tuple] = {}
 
+    # TOBEDROPPED
     def _resolve_categorical_transform(self, hp, surrogate: Surrogate, borrowed: Dict):
         """
         A MOEA optimizer needs numeric bounds even for a categorical hyperparameter its own
@@ -40,6 +42,11 @@ class MOEA(Optimizer):
             return self._transform_configuration
         for ct, params in surrogate.mapping_config_transformer_parameter.items():
             if hp in params:
+                if hp in surrogate.parameters_activated_within_region:
+                    # the surrogate's transformer knows the inactive value as a category, which MOEA would search
+                    raise ValueError(
+                        f"MOEA cannot borrow the transformer of categorical hyperparameter '{hp.name}': it can be "
+                        f"inactive, so the paired Surrogate's transformer holds the inactive value.")
                 borrowed[ct] = params
                 return surrogate._transform_configuration
         raise ValueError(
@@ -117,6 +124,7 @@ class MOEA(Optimizer):
         result = optimized_features.join(optimized_labels)
         return self._rank_candidates(result, label_columns)
 
+    # TOBEDROPPED
     def _inverse_transform_configuration(self, optimized_features: pd.DataFrame) -> pd.DataFrame:
         result = super()._inverse_transform_configuration(optimized_features)
         for ct, _ in self._borrowed_config_transformer_parameter.items():

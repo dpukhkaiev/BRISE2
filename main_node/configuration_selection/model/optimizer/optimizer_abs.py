@@ -8,7 +8,7 @@ from configuration_selection.model.configuration_transformer.configuration_trans
 from configuration_selection.model.value_transformer.value_transformer_orchestrator import ValueTransformerOrchestrator
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
-from core_entities.search_space import Hyperparameter
+from core_entities.search_space import Hyperparameter, find_parameters_activated_within_region
 
 
 class Optimizer(ABC):
@@ -88,7 +88,11 @@ class Optimizer(ABC):
         inverse_transform_optimizer = False
         transform_surrogate = False
 
-        if (len(surrogate.mapping_config_transformer_parameter.keys()) == 0 and len(
+        if find_parameters_activated_within_region(self.region):
+            # in case inactive parameters are present in the region, surrogate must transform them.
+            transform_surrogate = True
+            inverse_transform_optimizer = len(self.mapping_config_transformer_parameter) > 0
+        elif (len(surrogate.mapping_config_transformer_parameter.keys()) == 0 and len(
                 self.mapping_config_transformer_parameter.keys()) > 0):
             inverse_transform_optimizer = True
         elif (len(surrogate.mapping_config_transformer_parameter.keys()) > 0 and len(

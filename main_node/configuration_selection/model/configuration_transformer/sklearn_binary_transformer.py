@@ -8,8 +8,9 @@ from sklearn.preprocessing import OrdinalEncoder
 
 
 class SklearnBinaryTransformer(BinaryTransformer):
-    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple):
-        super().__init__(configuration_transformer_description, relevant_parameters)
+    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
+        super().__init__(configuration_transformer_description, relevant_parameters, parameters_with_inactive_value)
         self.mapping_old_feature_pipeline = {}
 
     def transform(self, features: pd.DataFrame) -> pd.DataFrame:
@@ -91,8 +92,8 @@ class SklearnBinaryTransformer(BinaryTransformer):
             return self.mapping_old_feature_pipeline[feature_name]
 
         hyperparameter = list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0]
-        categories = [hyperparameter.categories]
-        reference_data = pd.DataFrame({feature_name: hyperparameter.categories})
+        categories = [self._categories_of(hyperparameter)]
+        reference_data = pd.DataFrame({feature_name: categories[0]})
 
         encoder = OrdinalEncoder(categories=categories)
         encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])

@@ -1,4 +1,3 @@
-import pytest
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -625,8 +624,6 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
         experiment.dump("Results")
 
-    @pytest.mark.xfail(raises=KeyError, strict=True,
-                       reason="plan 05b, step 3: reduced measured configurations break the next prediction")
     def test_flat_space_with_conditional_parameters_proposes_model_predictions(
             self, get_experiment, get_workers, get_configurations_all_types):
         """

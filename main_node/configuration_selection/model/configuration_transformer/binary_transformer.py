@@ -8,8 +8,9 @@ from configuration_selection.model.configuration_transformer.sklearn_column_enco
 
 
 class BinaryTransformer(NominalTransformer):
-    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple):
-        super().__init__(configuration_transformer_description, relevant_parameters)
+    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
+        super().__init__(configuration_transformer_description, relevant_parameters, parameters_with_inactive_value)
         self.mapping_old_feature_pipeline = {}
 
     def transform(self, features: pd.DataFrame) -> pd.DataFrame:
@@ -35,7 +36,8 @@ class BinaryTransformer(NominalTransformer):
         transformed_features = pd.DataFrame()
 
         for feature_name in relevant_features.columns:
-            categories = [list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0].categories]
+            hyperparameter = list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0]
+            categories = [self._categories_of(hyperparameter)]
 
             # create encoder object
             encoder = BinaryEncoder(categories)

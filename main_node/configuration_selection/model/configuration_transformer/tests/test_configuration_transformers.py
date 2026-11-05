@@ -167,6 +167,16 @@ class TestBinaryCode:
     BinaryTransformer encodes a nominal parameter as the binary code of its category's index, one column per bit.
     """
 
+    @pytest.mark.parametrize("number_of_categories, bits", [(2, 1), (3, 2), (4, 2), (5, 3), (8, 3), (9, 4)])
+    def test_the_code_has_the_fewest_bits_that_hold_the_highest_index(self, number_of_categories, bits):
+        hyperparameter = NominalHyperparameter("n", 0, [f"c{i}" for i in range(number_of_categories)])
+        transformer = _transformer(BinaryTransformer, hyperparameter)
+
+        codes = transformer.transform(pd.DataFrame({"n": list(hyperparameter.categories)}))
+
+        assert codes.shape[1] == bits
+        assert len({tuple(code) for code in codes.values.tolist()}) == number_of_categories
+
     def test_a_category_encodes_to_the_binary_code_of_its_index_in_any_batch(self):
         transformer = _transformer(BinaryTransformer, BIT_CODED)
 

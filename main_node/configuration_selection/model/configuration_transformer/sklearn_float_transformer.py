@@ -8,8 +8,9 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 class SklearnFloatTransformer(FloatTransformer):
-    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple):
-        super().__init__(configuration_transformer_description, relevant_parameters)
+    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
+        super().__init__(configuration_transformer_description, relevant_parameters, parameters_with_inactive_value)
         self.mapping_old_feature_pipeline = {}
 
     def transform(self, features: pd.DataFrame) -> pd.DataFrame:

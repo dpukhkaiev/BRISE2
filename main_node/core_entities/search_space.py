@@ -726,3 +726,11 @@ def active_mask(candidates: pd.DataFrame, activation_conditions: Iterable[Activa
         return masks[parameter_name]
 
     return pd.DataFrame({candidate: resolve(candidate) for candidate in candidates.columns}, index=candidates.index)
+
+
+def find_parameters_activated_within_region(region: Iterable[Hyperparameter]) -> List[Hyperparameter]:
+    """
+    The Hyperparameters of a region that are activated based on the region alone.
+    """
+    names = {hp.name for hp in region}
+    return [hp for hp in region if hp.activation_condition is not None and hp.activation_condition.parent in names]

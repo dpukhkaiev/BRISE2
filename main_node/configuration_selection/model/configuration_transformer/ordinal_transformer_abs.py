@@ -6,8 +6,9 @@ from configuration_selection.model.configuration_transformer.configuration_trans
 
 
 class OrdinalTransformer(ConfigurationTransformer, ABC):
-    def __init__(self, ordinal_transformer_description: Dict, relevant_parameters: Tuple):
-        super().__init__(ordinal_transformer_description, relevant_parameters)
+    def __init__(self, ordinal_transformer_description: Dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
+        super().__init__(ordinal_transformer_description, relevant_parameters, parameters_with_inactive_value)
         self.ordinal_transformer_description = ordinal_transformer_description
 
     @abstractmethod

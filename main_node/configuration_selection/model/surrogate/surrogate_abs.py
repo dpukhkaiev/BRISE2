@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from configuration_selection.model.configuration_transformer.configuration_transformer_orchestrator import ConfigurationTransformerOrchestrator
 from configuration_selection.model.value_transformer.value_transformer_orchestrator import ValueTransformerOrchestrator
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
-from core_entities.search_space import Hyperparameter
+from core_entities.search_space import Hyperparameter, active_mask, find_parameters_activated_within_region
 
 
 class Surrogate(ABC):
@@ -23,13 +23,14 @@ class Surrogate(ABC):
 
         # Configuration Transformers
         self.configuration_transformer_orchestrator = ConfigurationTransformerOrchestrator()
+        self.parameters_activated_within_region = find_parameters_activated_within_region(region)
         self.mapping_config_transformer_parameter: Mapping[ConfigurationTransformer, Tuple[Hyperparameter]] = {}
         for i in surrogate_description.items():
             if "ConfigurationTransformer" in i[0]:
                 for ct in i[1].items():
                     relevant_parameters = tuple(filter(lambda r: r.type in ct[0], region))
-                    configuration_transformer = (self.configuration_transformer_orchestrator.
-                                                 get_configuration_transformer(ct, relevant_parameters))
+                    configuration_transformer = self.configuration_transformer_orchestrator.get_configuration_transformer(
+                        ct, relevant_parameters, frozenset(hp.name for hp in self.parameters_activated_within_region))
                     self.mapping_config_transformer_parameter[configuration_transformer] = relevant_parameters
 
         # Value Transformers
@@ -73,8 +74,26 @@ class Surrogate(ABC):
         """
         pass
 
+    def _write_inactive_values(self, features: pd.DataFrame) -> pd.DataFrame:
+        """
+        Write the inactive value into the cells of inactive parameters, if the region has any.
+        :param features: configurations, one per row, with a column per parameter; a missing parameter holds NaN.
+        :return: features with the inactive value in the cells of inactive parameters.
+        """
+        if not self.parameters_activated_within_region:
+            return features
+        mask = active_mask(features, [hp.activation_condition for hp in self.parameters_activated_within_region])
+        features = features.copy()
+        for hp in self.parameters_activated_within_region:
+            if hp.name in features.columns:
+                inactive = ~mask[hp.name]
+                if inactive.any():
+                    features[hp.name] = features[hp.name].astype(object)
+                    features.loc[inactive, hp.name] = hp.inactive_value()
+        return features
+
     def _transform_configuration(self, features: pd.DataFrame) -> pd.DataFrame:
-        features = features.reset_index(drop=True)
+        features = self._write_inactive_values(features.reset_index(drop=True))
         if len(self.mapping_config_transformer_parameter) > 0:
             transformed_names = sum([[hp.name for hp in p] for p in self.mapping_config_transformer_parameter.values()], [])
             transformed_features = pd.DataFrame()

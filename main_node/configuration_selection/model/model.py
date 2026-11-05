@@ -108,8 +108,9 @@ class Model:
         # handle multiple objectives
         names_of_parameters = [p.name for p in parameters]
 
+        # a configuration holds only its active parameters; in a flat region the cells of the inactive ones stay empty(NaN) 
         data = pd.DataFrame(
-            [cfg.to_series()[names_of_parameters + list(self.objectives.keys())] for cfg in configurations])
+            [cfg.to_series().reindex(names_of_parameters + list(self.objectives.keys())) for cfg in configurations])
 
         if data.empty:
             return pd.DataFrame()
