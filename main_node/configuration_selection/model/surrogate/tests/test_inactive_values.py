@@ -38,11 +38,12 @@ def flat_setup(get_experiment):
 @pytest.fixture
 def hierarchical_setup(get_experiment):
     """
-    'test_case_11' is hierarchical; its second model serves the regions of the first level and gives its surrogate
-    and its optimizer the same transformers.
+    'test_case_11' is hierarchical; its second model serves the regions of the first level. Its optimizer gets the
+    surrogate's transformers, so that both have the same ones.
     """
     description, search_space = get_experiment(11)
-    model = description["ConfigurationSelection"]["Predictor"]["Model_1"]
+    model = copy.deepcopy(description["ConfigurationSelection"]["Predictor"]["Model_1"])
+    model["Optimizer"]["ConfigurationTransformers"] = copy.deepcopy(model["Surrogate"]["ConfigurationTransformers"])
     objectives = description["Context"]["TaskConfiguration"]["Objectives"]
     region = search_space.regions[1]
     return SklearnWrapper(model["Surrogate"], region, objectives), MOEA(model["Optimizer"], region, objectives), region

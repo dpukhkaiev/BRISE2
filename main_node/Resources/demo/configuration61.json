@@ -70,6 +70,12 @@
                                 "Type": "binary_transformer",
                                 "Class": "brise.BinaryEncoder"
                             }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
                         }
                     },
                     "Instance": {

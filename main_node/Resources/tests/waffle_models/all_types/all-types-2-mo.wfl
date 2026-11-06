@@ -589,6 +589,7 @@ ConfigurationSelection {
             }
             [self requires parent.parent.ConfigurationTransformers.NominalTransformer]
             [self requires parent.parent.ConfigurationTransformers.OrdinalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.IntegerTransformer]
             Type -> predefined
             [Type = "moea"]
           }

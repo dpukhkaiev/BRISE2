@@ -80,6 +80,12 @@
                                 "Class": "brise.BinaryEncoder"
                             }
                         },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        },
                         "FloatTransformer": {
                             "SklearnFloatMinMaxScaler": {
                                 "Type": "sklearn_float_transformer",

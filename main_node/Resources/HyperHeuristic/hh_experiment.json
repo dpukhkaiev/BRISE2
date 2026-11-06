@@ -275,6 +275,12 @@
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
                             }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
                         }
                     },
                     "ValueTransformers": {
@@ -364,6 +370,12 @@
                             "SklearnBinaryEncoder": {
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
                             }
                         }
                     },
