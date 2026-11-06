@@ -32,6 +32,7 @@ This feature unites all available parameters, their types and boundaries.
 Moreover, it comprises the `Structure` sub-feature, responsible for modeling dependencies between parameters.
 
 _Flat search space_ creates a single vector for all parameters within the search space, which is then fed into the optimizer.
+A configuration still holds only its active parameters; in the vector a surrogate receives, an inactive parameter takes the inactive value outside its domain.
 _Hierarchical search space_ considers dependencies between parameters, creating multiple regions of the search space, each treated by a dedicated optimizer.
 
 Each parameter is exposed to your [worker method](../../worker/worker.py) via `task['parameters']` under its full name (e.g. `Context.SearchSpace.frequency`), while a parameter nested under an activated branch is prefixed by its parent's name (e.g. `Context.SearchSpace.criterion.gini.max_depth`).
@@ -53,7 +54,7 @@ Provided variants are: `SobolSequence`, `MersenneTwister`.
 component offers a cheap-to-evaluate approximation of the objective function utilized to decrease the number of evaluated configurations. 
 In our framework we provide the following surrogates:
 * `Tree-structured Parzen Estimator`, 
-* `Fittness-rate-average-based multiarmed bandit`, 
+* `Fittness-rate-average-based multiarmed bandit`, not available for a flat search space or a minimized objective,
 * `Model mock` for surrogate-less approach 
 * External models from [scikit-learn-library](https://scikit-learn.org/stable/):
   * [Ordinary least squares Linear Regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html)
@@ -68,6 +69,7 @@ component encapsulates an algorithm utilized to optimize the surrogate model. Th
 * `Random Search`, which applies the sampling strategy, specified in the product configuration,
 to the surrogate model until the `SamplingSize` budget is depleted.
 * `MOEA`, which serves as a wrapper for external  evolutionary algorithms provided by the [pygmo framework for optimization](https://esa.github.io/pygmo2/).
+It requires its own `Integer Transformer`, `Nominal Transformer` and `Ordinal Transformer`: MOEA searches every parameter as a real number, and these turn the numbers into integers and categories.
 [Supported algorithms](https://esa.github.io/pygmo2/algorithms.html#algorithms-exposed-from-c):
   * Extended Ant Colony Optimization algorithm (gaco), Multi-objective Ant Colony Optimizer (MACO), Grey Wolf Optimizer (gwo), Artificial Bee Colony, Differential Evolution, (N+1)-ES simple evolutionary algorithm, A Simple Genetic Algorithm, Self-adaptive Differential Evolution,Self-adaptive Differential Evolution, pygmo flavour (pDE), Covariance Matrix Evolutionary Strategy,  Multi Objective Evolutionary Algorithms by Decomposition (the DE variant), Particle Swarm Optimization, generational PSO, Non dominated Sorting Particle Swarm Optimization and Non dominated Sorting Genetic Algorithm (NSGA-II).    
 
@@ -92,6 +94,7 @@ Configuration transformers are utilized to adapt parameter types to the requirem
 
 BRISE supports four parameter types. Numerical, which can be 1) integer and 2) float; and categorical: 3) nominal and 4) ordinal.
 For each parameter type we offer a dedicated configuration transformer entity: `Integer Transformer`,  `Float Transformer`,  `Nominal Transformer `and  `Ordinal Transformer`.
+A surrogate requires a `Nominal Transformer` for nominal parameters and an `Ordinal Transformer` for ordinal ones, unless it is the multiarmed bandit or the model mock, which read categorical values as they are.
 
 ##### Value Transformer
 Value transformers perform adaptation of the objective function  to the requirements of the respective variant. 
