@@ -168,8 +168,9 @@ class TreeParzenEstimator(Surrogate):
         good_pdf = self.model['good'].pdf
         bad_pdf = self.model['bad'].pdf
 
-        predicted_probability_good = np.maximum(good_pdf(transformed_configurations), 1e-32)
-        predicted_probability_bad = np.maximum(bad_pdf(transformed_configurations), 1e-32)
+        # a single row gives a scalar, not an array of one density
+        predicted_probability_good = np.maximum(np.atleast_1d(good_pdf(transformed_configurations)), 1e-32)
+        predicted_probability_bad = np.maximum(np.atleast_1d(bad_pdf(transformed_configurations)), 1e-32)
 
         result = pd.DataFrame({
             self.objective["Name"] + "_probability_good": predicted_probability_good,

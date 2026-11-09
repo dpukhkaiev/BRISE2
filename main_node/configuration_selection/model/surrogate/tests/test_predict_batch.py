@@ -65,6 +65,15 @@ class TestTreeParzenEstimatorPrediction:
 
         pd.testing.assert_frame_equal(batch, one_by_one)
 
+    def test_a_batch_of_one_candidate_is_scored_as_when_predicted_alone(self):
+        surrogate = _tree_parzen_estimator()
+        assert surrogate.create(*_training_data())
+        candidate = pd.DataFrame({"x": [2.5]})
+
+        batch = surrogate.predict_batch(candidate)
+
+        pd.testing.assert_frame_equal(batch, surrogate.predict(candidate.iloc[0]))
+
     def test_batch_prediction_without_a_model_is_empty(self):
         surrogate = _tree_parzen_estimator()
 

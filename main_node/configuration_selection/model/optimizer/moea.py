@@ -103,13 +103,15 @@ class MOEA(Optimizer):
     def optimize(self, surrogate: Surrogate) -> pd.DataFrame:
         self._build_bounds_params_masked(surrogate)
         problem = self._PygmoProblem(optimizer=self, surrogate=surrogate)
-        population = pg.population(problem, self.pop_size)
+        population = pg.population(problem, self.pop_size, b=pg.default_bfe())  # the initial population in one batch
         for algo_name in self.algorithms:
             algo_parameters = {"gen": self.generations}
             if algo_name in FORCE_BOUNDS_ALGORITHMS:
                 algo_parameters["force_bounds"] = True
-            algo = pg.algorithm(getattr(pg, algo_name)(**algo_parameters))
-            population = algo.evolve(population)
+            algorithm = getattr(pg, algo_name)(**algo_parameters)
+            if hasattr(algorithm, "set_bfe"):  # not every algorithm can evaluate a population in one batch
+                algorithm.set_bfe(pg.bfe())
+            population = pg.algorithm(algorithm).evolve(population)
 
         optimized_features = pd.DataFrame(population.get_x(), columns=self.params)
         label_columns = ["Y"] if surrogate.scalarized else list(self.objectives.keys())
@@ -154,25 +156,24 @@ class MOEA(Optimizer):
                 self._optimizer._resolve_configuration_transformers(surrogate))
 
         def fitness(self, x):
-            temp_params = self._params.copy()
-            temp_x = x
-            for p, val_ind in self._optimizer.masked_params.items():
-                temp_params.insert(val_ind[1], p)
-                temp_x = np.insert(temp_x, val_ind[1], val_ind[0])
-            x = dict(map(lambda i, j: (i, j), temp_params, temp_x))
+            return self.batch_fitness(np.asarray(x)).tolist()
 
-            x = pd.Series(x)
+        def batch_fitness(self, dvs):
+            """
+            :param dvs: the decision vectors of a population, one after another.
+            :return: the fitness of every individual of the population, one after another.
+            """
+            configurations = pd.DataFrame(np.asarray(dvs).reshape(-1, len(self._params)), columns=self._params)
+            for p, val_ind in self._optimizer.masked_params.items():
+                configurations.insert(loc=val_ind[1], column=p, value=val_ind[0])
 
             if self._inverse_transform_optimizer:
-                x_df = pd.DataFrame(columns=x.index)
-                x_df.loc[0] = x.values
-                x_df = self._optimizer._inverse_transform_configuration(x_df)
-                x = x_df.loc[0]
+                configurations = self._optimizer._inverse_transform_configuration(configurations)
 
-            result = self._surrogate.predict(x, self._transform_surrogate)
+            result = self._surrogate.predict_batch(configurations, self._transform_surrogate)
 
             transformed_result = self._optimizer._transform_values(result)
-            return (transformed_result.values.flatten() * self.signs).tolist()
+            return (transformed_result.values * self.signs).flatten()
 
         def get_nobj(self):
             return len(self._objectives) if not self._surrogate.scalarized else 1
