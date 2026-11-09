@@ -26,6 +26,13 @@ NOMINAL = NominalHyperparameter("n", 0, ["a", "b", "c", "d"])
 BIT_CODED = NominalHyperparameter("b", 0, ["a", "b", "c", "d", "e"])
 
 
+# a transformer class, the hyperparameter it serves and three of its values
+ONE_PARAMETER = ((SklearnFloatTransformer, FLOAT, [2.0, 3.0, 6.0]), (SklearnIntegerTransformer, INTEGER, [1, 5, 10]),
+                      (SklearnOrdinalTransformer, ORDINAL, ["a", "b", "d"]), (SklearnBinaryTransformer, NOMINAL, ["a", "b", "d"]),
+                      (BinaryTransformer, BIT_CODED, ["a", "c", "e"]))
+ONE_PARAMETER_NAMES = [case[0].__name__ for case in ONE_PARAMETER]
+
+
 def _transformer(transformer_class, hyperparameter):
     return transformer_class({"Transformer": {"Type": "test"}}, (hyperparameter,))
 
@@ -48,15 +55,6 @@ class TestDomainFitting:
             assert single_row.iloc[0, 0] == 0.0
             assert other_single_row.iloc[0, 0] == 1.0
             assert batch.iloc[:, 0].tolist() == [0.0, 1.0]
-
-    def test_transforming_a_batch_gives_the_same_encoding_as_transforming_each_row_alone(self):
-        values = [2.0, 3.1, 4.7, 6.0]
-        transformer = _transformer(SklearnFloatTransformer, FLOAT)
-
-        batch = transformer.transform(pd.DataFrame({"f": values})).iloc[:, 0].tolist()
-        rows = [transformer.transform(pd.DataFrame({"f": [v]})).iloc[0, 0] for v in values]
-
-        assert batch == rows
 
     def test_a_category_encodes_to_its_index_in_any_batch(self):
         for transformer_class, hyperparameter in ((SklearnOrdinalTransformer, ORDINAL), (SklearnBinaryTransformer, NOMINAL)):
@@ -81,18 +79,47 @@ class TestFittedState:
 
         check_is_fitted(adapter)
 
-    def test_every_pipeline_a_transformer_builds_is_fitted(self):
-        cases = ((SklearnFloatTransformer, FLOAT, 3.0), (SklearnIntegerTransformer, INTEGER, 5),
-                 (SklearnOrdinalTransformer, ORDINAL, "b"), (SklearnBinaryTransformer, NOMINAL, "b"),
-                 (BinaryTransformer, BIT_CODED, "b"))
-        for transformer_class, hyperparameter, value in cases:
-            transformer = _transformer(transformer_class, hyperparameter)
+    @pytest.mark.parametrize("transformer_class, hyperparameter, values", ONE_PARAMETER, ids=ONE_PARAMETER_NAMES)
+    def test_every_pipeline_a_transformer_builds_is_fitted(self, transformer_class, hyperparameter, values):
+        transformer = _transformer(transformer_class, hyperparameter)
 
+        transformer.transform(pd.DataFrame({hyperparameter.name: [values[0]]}))
+
+        assert len(transformer.mapping_old_feature_pipeline) == 1
+        for pipeline in transformer.mapping_old_feature_pipeline.values():
+            check_is_fitted(pipeline)
+
+    @pytest.mark.parametrize("transformer_class, hyperparameter, values", ONE_PARAMETER, ids=ONE_PARAMETER_NAMES)
+    def test_a_transformer_fits_the_pipeline_of_a_parameter_only_once(self, monkeypatch, transformer_class,
+                                                                      hyperparameter, values):
+        fits = []
+        fit = SklearnColumnTransformer.fit
+
+        def counting_fit(adapter, *args, **kwargs):
+            fits.append(adapter.input_column_names)
+            return fit(adapter, *args, **kwargs)
+
+        monkeypatch.setattr(SklearnColumnTransformer, "fit", counting_fit)
+        transformer = _transformer(transformer_class, hyperparameter)
+
+        for value in values:
             transformer.transform(pd.DataFrame({hyperparameter.name: [value]}))
 
-            assert len(transformer.mapping_old_feature_pipeline) == 1
-            for pipeline in transformer.mapping_old_feature_pipeline.values():
-                check_is_fitted(pipeline)
+        assert fits == [[hyperparameter.name]]
+
+
+class TestRowAlignment:
+
+    @pytest.mark.parametrize("transformer_class, hyperparameter, values", ONE_PARAMETER, ids=ONE_PARAMETER_NAMES)
+    def test_rows_are_transformed_by_position_whatever_their_index(self, transformer_class, hyperparameter, values):
+        transformer = _transformer(transformer_class, hyperparameter)
+        one_row_each = [transformer.transform(pd.DataFrame({hyperparameter.name: [value]})) for value in values]
+        features = pd.DataFrame({hyperparameter.name: values, "other": [10, 20, 30]}, index=[7, 2, 5])
+
+        transformed = transformer.transform(features)
+
+        pd.testing.assert_frame_equal(transformed.drop(columns="other"), pd.concat(one_row_each, ignore_index=True))
+        assert transformed["other"].tolist() == [10, 20, 30]
 
 
 class TestEqualWidthDecoding:
@@ -186,14 +213,6 @@ class TestBinaryCode:
         assert alone.values.tolist() == [[0, 1, 0]]
         assert batch.values.tolist() == [[0, 0, 0], [0, 1, 0], [1, 0, 0]]
 
-    def test_transforming_a_batch_gives_the_same_encoding_as_transforming_each_row_alone(self):
-        transformer = _transformer(BinaryTransformer, BIT_CODED)
-
-        batch = transformer.transform(pd.DataFrame({"b": BIT_CODED.categories})).values.tolist()
-        rows = [transformer.transform(pd.DataFrame({"b": [c]})).values.tolist()[0] for c in BIT_CODED.categories]
-
-        assert batch == rows
-
     def test_decoding_an_exact_code_returns_its_category(self):
         transformer = _transformer(BinaryTransformer, BIT_CODED)
         encoded = transformer.transform(pd.DataFrame({"b": BIT_CODED.categories})).astype(float)
@@ -225,10 +244,11 @@ TWO_PARAMETERS = [
     (BinaryTransformer, NominalHyperparameter("n1", 0, ["a", "b", "c", "d", "e"]),
      NominalHyperparameter("n2", 0, ["x", "y", "z"]), ["a", "c", "e"], ["z", "y", "x"]),
 ]
+TWO_PARAMETERS_NAMES = [case[0].__name__ for case in TWO_PARAMETERS]
 
 
 @pytest.mark.parametrize("transformer_class, first, second, first_values, second_values", TWO_PARAMETERS,
-                         ids=lambda value: value.__name__ if isinstance(value, type) else None)
+                         ids=TWO_PARAMETERS_NAMES)
 class TestSeveralParameters:
     """
     A transformer can be responsible for several parameters, which it must handle side by side in one frame.

@@ -22,11 +22,11 @@ class SklearnOrdinalTransformer(OrdinalTransformer):
         if len(relevant_features) == 0:
             return pd.DataFrame()
 
-        intact_features = features.drop(columns=relevant_features.columns)
+        # the rows are joined by position, whatever the index of the features
+        intact_features = features.drop(columns=relevant_features.columns).reset_index(drop=True)
         if not intact_features.empty:
             self.mapping_old_new_features = dict(
                 map(lambda i, j: (i, j), intact_features.columns.tolist(), intact_features.columns.tolist()))
-        intact_features['temp_index'] = range(1, len(intact_features) + 1)
 
         transformed_features = pd.DataFrame()
 
@@ -41,10 +41,7 @@ class SklearnOrdinalTransformer(OrdinalTransformer):
                 transformed_features = pd.concat([transformed_features, transformed_feature], axis=1)
             self.mapping_old_new_features[feature_name] = transformed_feature.columns.tolist()
 
-        transformed_features['temp_index'] = range(1, len(transformed_features) + 1)
-
-        merged_features = transformed_features.merge(intact_features, on='temp_index')
-        merged_features = merged_features.drop(columns="temp_index")
+        merged_features = pd.concat([transformed_features, intact_features], axis=1)
 
         # sort
         sorted_transformed = []
