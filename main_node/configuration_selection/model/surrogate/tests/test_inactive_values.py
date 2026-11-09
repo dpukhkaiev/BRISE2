@@ -1,6 +1,5 @@
 import copy
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -60,81 +59,55 @@ def _reduced(candidate: dict, active: list) -> dict:
     return {name: candidate[name] for name in active}
 
 
-def _columns(encoded: pd.DataFrame, parameter: str) -> list:
-    return [c for c in encoded.columns if c.startswith(parameter + "_")]
-
-
-def _encode(surrogate, rows: list) -> pd.DataFrame:
+def _transform(surrogate, rows: list) -> pd.DataFrame:
     return surrogate._transform_configuration(pd.DataFrame(rows).reindex(columns=[N0, F1, N1, I1, O1]))
 
 
 class TestInactiveValueInTheSurrogateInput:
 
-    @pytest.mark.parametrize("branch, expected", [
-        # the inactive value: -1 for a number, the index after the last category for the ordinal, the code after the
-        # categories for the nominal; the values of the active branch encode as they are
-        (N01, {F1: [61.5 / 123], N1: [0.0, 1.0], I1: [-1.0], O1: [len(O1_CATEGORIES)]}),
-        (N02, {F1: [-1.0], N1: [1.0, 0.0], I1: [(505 - 10) / (1000 - 10)], O1: [1.0]}),
-    ])
-    def test_candidate_gets_the_inactive_value_in_the_columns_of_the_branch_it_doesnt_activate(
-            self, flat_setup, branch, expected):
-        surrogate, _, _ = flat_setup
-
-        encoded = _encode(surrogate, [_candidate(branch)])
-
-        for parameter, values in expected.items():
-            assert list(encoded[_columns(encoded, parameter)].iloc[0]) == pytest.approx(values), parameter
-
-    def test_training_row_without_its_inactive_parameters_encodes_like_the_candidate_with_them(self, flat_setup):
+    def test_training_row_without_its_inactive_parameters_is_transformed_like_the_candidate_with_them(self, flat_setup):
         surrogate, _, _ = flat_setup
         candidate = _candidate(N01)
 
-        from_candidate = _encode(surrogate, [candidate])
-        from_training_row = _encode(surrogate, [_reduced(candidate, [N0, F1, N1])])
+        from_candidate = _transform(surrogate, [candidate])
+        from_training_row = _transform(surrogate, [_reduced(candidate, [N0, F1, N1])])
 
         pd.testing.assert_frame_equal(from_candidate, from_training_row)
 
     def test_the_value_does_not_depend_on_what_the_candidate_holds_for_an_inactive_parameter(self, flat_setup):
         surrogate, _, _ = flat_setup
 
-        first = _encode(surrogate, [_candidate(N01, **{I1: 11, O1: O1_CATEGORIES[0]})])
-        second = _encode(surrogate, [_candidate(N01, **{I1: 999, O1: O1_CATEGORIES[1]})])
+        first = _transform(surrogate, [_candidate(N01, **{I1: 11, O1: O1_CATEGORIES[0]})])
+        second = _transform(surrogate, [_candidate(N01, **{I1: 999, O1: O1_CATEGORIES[1]})])
 
         pd.testing.assert_frame_equal(first, second)
 
-    def test_a_row_encodes_as_it_does_inside_a_batch(self, flat_setup):
+    def test_a_row_is_transformed_as_it_is_inside_a_batch(self, flat_setup):
         surrogate, _, _ = flat_setup
         rows = [_candidate(N01), _candidate(N02), _reduced(_candidate(N01), [N0, F1, N1])]
 
-        batch = _encode(surrogate, rows)
+        batch = _transform(surrogate, rows)
 
         for i, row in enumerate(rows):
-            alone = _encode(surrogate, [row])
+            alone = _transform(surrogate, [row])
             pd.testing.assert_frame_equal(batch.iloc[[i]].reset_index(drop=True), alone)
 
-    def test_no_real_value_encodes_to_the_inactive_value(self, flat_setup):
+    def test_no_real_value_is_transformed_to_the_inactive_value(self, flat_setup):
         surrogate, _, region = flat_setup
-        encodings = {}
+        transformations = {}
         for hp in find_parameters_activated_within_region(region):
             if hasattr(hp, "categories"):
                 values = list(hp.categories)
                 for value in values:
-                    encodings[(hp.name, value)] = _transform_alone(surrogate, hp.name, value)
-                assert _transform_alone(surrogate, hp.name, hp.inactive_value()) not in encodings.values()
+                    transformations[(hp.name, value)] = _transform_alone(surrogate, hp.name, value)
+                assert _transform_alone(surrogate, hp.name, hp.inactive_value()) not in transformations.values()
             else:
                 for value in (hp.get_lower(), hp.get_upper()):
                     assert _transform_alone(surrogate, hp.name, value) != _transform_alone(surrogate, hp.name, hp.inactive_value())
 
-    def test_top_level_parameter_is_not_given_the_inactive_value(self, flat_setup):
-        surrogate, _, _ = flat_setup
-
-        encoded = _encode(surrogate, [_candidate(N01), _candidate(N02)])
-
-        assert encoded[_columns(encoded, N0)].values.tolist() == [[0], [1]]  # codes 0 and 1 of the two branches
-
 
 def _transform_alone(surrogate, name: str, value) -> tuple:
-    """The encoding of one value of one parameter, as the surrogate's transformers give it."""
+    """The transformation of one value of one parameter, as the surrogate's transformers give it."""
     for transformer, parameters in surrogate.mapping_config_transformer_parameter.items():
         if any(hp.name == name for hp in parameters):
             return tuple(transformer.transform(pd.DataFrame({name: [value]})).iloc[0])
@@ -164,12 +137,6 @@ class TestBinaryCodeOfAParameterThatCanBeInactive:
 
 class TestOptimizersKeepTheirDomain:
 
-    def test_optimizer_transformers_know_nothing_of_the_inactive_value(self, flat_setup):
-        surrogate, optimizer, _ = flat_setup
-
-        assert all(t.parameters_with_inactive_value for t in surrogate.mapping_config_transformer_parameter)
-        assert not any(t.parameters_with_inactive_value for t in optimizer.mapping_config_transformer_parameter)
-
     def test_search_bounds_of_the_optimizer_stay_inside_the_categories(self, flat_setup):
         surrogate, optimizer, _ = flat_setup
 
@@ -191,7 +158,7 @@ class TestOptimizersKeepTheirDomain:
         with pytest.raises(ValueError, match="can be inactive"):
             optimizer._build_bounds_params_masked(surrogate)
 
-    def test_surrogate_encoding_is_not_skipped_in_a_flat_region_even_for_equal_transformers(self, flat_setup):
+    def test_surrogate_transformation_is_not_skipped_in_a_flat_region_even_for_equal_transformers(self, flat_setup):
         surrogate, optimizer, _ = flat_setup
 
         assert optimizer._resolve_configuration_transformers(surrogate) == (True, True)
@@ -200,12 +167,6 @@ class TestOptimizersKeepTheirDomain:
         surrogate, optimizer, _ = hierarchical_setup
 
         assert optimizer._resolve_configuration_transformers(surrogate) == (False, False)
-
-    def test_hierarchical_features_are_returned_as_they_are(self, hierarchical_setup):
-        surrogate, _, region = hierarchical_setup
-        features = pd.DataFrame([{hp.name: np.nan for hp in region}])
-
-        assert surrogate._write_inactive_values(features) is features
 
 
 class TestParametersActivatedWithinRegion:

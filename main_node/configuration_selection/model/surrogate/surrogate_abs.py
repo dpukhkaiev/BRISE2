@@ -2,10 +2,10 @@ import pandas as pd
 from typing import Dict, Tuple, Mapping
 from abc import ABC, abstractmethod
 
-from configuration_selection.model.configuration_transformer.configuration_transformer_orchestrator import ConfigurationTransformerOrchestrator
 from configuration_selection.model.value_transformer.value_transformer_orchestrator import ValueTransformerOrchestrator
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
-from core_entities.search_space import Hyperparameter, active_mask, find_parameters_activated_within_region
+from configuration_selection.model import configuration_transformation
+from core_entities.search_space import Hyperparameter, find_parameters_activated_within_region
 
 
 class Surrogate(ABC):
@@ -22,16 +22,10 @@ class Surrogate(ABC):
             self.feature_name = keys[0]
 
         # Configuration Transformers
-        self.configuration_transformer_orchestrator = ConfigurationTransformerOrchestrator()
         self.parameters_activated_within_region = find_parameters_activated_within_region(region)
-        self.mapping_config_transformer_parameter: Mapping[ConfigurationTransformer, Tuple[Hyperparameter]] = {}
-        for i in surrogate_description.items():
-            if "ConfigurationTransformer" in i[0]:
-                for ct in i[1].items():
-                    relevant_parameters = tuple(filter(lambda r: r.type in ct[0], region))
-                    configuration_transformer = self.configuration_transformer_orchestrator.get_configuration_transformer(
-                        ct, relevant_parameters, frozenset(hp.name for hp in self.parameters_activated_within_region))
-                    self.mapping_config_transformer_parameter[configuration_transformer] = relevant_parameters
+        self.mapping_config_transformer_parameter: Mapping[ConfigurationTransformer, Tuple[Hyperparameter]] = (
+            configuration_transformation.build_transformers(
+                surrogate_description, region, frozenset(hp.name for hp in self.parameters_activated_within_region)))
 
         # Value Transformers
         self.value_transformers = []
@@ -74,47 +68,9 @@ class Surrogate(ABC):
         """
         pass
 
-    def _write_inactive_values(self, features: pd.DataFrame) -> pd.DataFrame:
-        """
-        Write the inactive value into the cells of inactive parameters, if the region has any.
-        :param features: configurations, one per row, with a column per parameter; a missing parameter holds NaN.
-        :return: features with the inactive value in the cells of inactive parameters.
-        """
-        if not self.parameters_activated_within_region:
-            return features
-        mask = active_mask(features, [hp.activation_condition for hp in self.parameters_activated_within_region])
-        features = features.copy()
-        for hp in self.parameters_activated_within_region:
-            if hp.name in features.columns:
-                inactive = ~mask[hp.name]
-                if inactive.any():
-                    features[hp.name] = features[hp.name].astype(object)
-                    features.loc[inactive, hp.name] = hp.inactive_value()
-        return features
-
     def _transform_configuration(self, features: pd.DataFrame) -> pd.DataFrame:
-        features = self._write_inactive_values(features.reset_index(drop=True))
-        if len(self.mapping_config_transformer_parameter) > 0:
-            transformed_names = sum([[hp.name for hp in p] for p in self.mapping_config_transformer_parameter.values()], [])
-            transformed_features = pd.DataFrame()
-            for f_name in features.columns:
-                if f_name in transformed_names:
-                    for ct, p in self.mapping_config_transformer_parameter.items():
-                        for hp in p:
-                            if hp.name == f_name:
-                                transformed_relevant_features = ct.transform(pd.DataFrame(features.loc[:, hp.name]))
-                                if transformed_features.empty:
-                                    transformed_features = transformed_relevant_features
-                                else:
-                                    transformed_features = transformed_features.join(transformed_relevant_features)
-                else:
-                    if transformed_features.empty:
-                        transformed_features = pd.DataFrame(features.loc[:, f_name])
-                    else:
-                        transformed_features = transformed_features.join(pd.DataFrame(features.loc[:, f_name]))
-        else:
-            transformed_features = features
-        return transformed_features
+        return configuration_transformation.transform(
+            features, self.mapping_config_transformer_parameter, self.parameters_activated_within_region)
 
     def _transform_values(self, labels: pd.DataFrame) -> pd.DataFrame:
         transformed_labels = pd.DataFrame()
