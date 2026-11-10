@@ -27,13 +27,7 @@ class QualityValidator(Validator):
     def validate(self, surrogate: Surrogate, features: pd.DataFrame, labels: pd.DataFrame) -> Tuple[bool, float]:
         if len(features) <= 2:  # not enough configurations for validation
             return False, float(-np.inf)
-        predicted = pd.DataFrame()
-        for i, f in features.iterrows():
-            p = surrogate.predict(f)
-            if predicted.empty:
-                predicted = p
-            else:
-                predicted = pd.concat([predicted, p])
+        predicted = surrogate.predict_batch(features)
         if not surrogate.scalarized:
             score = r2_score(labels.values, predicted.values)
         else:
