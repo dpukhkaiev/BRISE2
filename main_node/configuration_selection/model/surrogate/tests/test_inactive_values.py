@@ -34,20 +34,6 @@ def flat_setup(get_experiment):
     return surrogate, optimizer, region
 
 
-@pytest.fixture
-def hierarchical_setup(get_experiment):
-    """
-    'test_case_11' is hierarchical; its second model serves the regions of the first level. Its optimizer gets the
-    surrogate's transformers, so that both have the same ones.
-    """
-    description, search_space = get_experiment(11)
-    model = copy.deepcopy(description["ConfigurationSelection"]["Predictor"]["Model_1"])
-    model["Optimizer"]["ConfigurationTransformers"] = copy.deepcopy(model["Surrogate"]["ConfigurationTransformers"])
-    objectives = description["Context"]["TaskConfiguration"]["Objectives"]
-    region = search_space.regions[1]
-    return SklearnWrapper(model["Surrogate"], region, objectives), MOEA(model["Optimizer"], region, objectives), region
-
-
 def _candidate(branch: str, **overrides) -> dict:
     """A candidate carries a value for every parameter, also for the ones its branch doesn't activate."""
     candidate = {N0: branch, F1: 61.5, N1: N1_CATEGORIES[1], I1: 505, O1: O1_CATEGORIES[1]}
@@ -157,16 +143,6 @@ class TestOptimizersKeepTheirDomain:
 
         with pytest.raises(ValueError, match="can be inactive"):
             optimizer._build_bounds_params_masked(surrogate)
-
-    def test_surrogate_transformation_is_not_skipped_in_a_flat_region_even_for_equal_transformers(self, flat_setup):
-        surrogate, optimizer, _ = flat_setup
-
-        assert optimizer._resolve_configuration_transformers(surrogate) == (True, True)
-
-    def test_equal_transformers_skip_the_double_transformation_in_a_hierarchical_region(self, hierarchical_setup):
-        surrogate, optimizer, _ = hierarchical_setup
-
-        assert optimizer._resolve_configuration_transformers(surrogate) == (False, False)
 
 
 class TestParametersActivatedWithinRegion:

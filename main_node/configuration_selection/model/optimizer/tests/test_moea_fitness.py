@@ -16,9 +16,10 @@ from core_entities.search_space import FloatHyperparameter, NominalHyperparamete
 CASES = {
     "flat_one_objective": (13, 0, "Model", "Surrogate", "Optimizer", 1),
     "hierarchical_maximized_objective": (11, 1, "Model_1", "Surrogate", "Optimizer", 1),
-    "flat_five_objectives": (7, 0, "Model", "Surrogate", "Optimizer", 5),
     "flat_scalarized_objectives": (1, 0, "Model", "Surrogate", "Optimizer", 2),
     "flat_acquisition_function": (3, 0, "Model", "Surrogate_0", "Optimizer_0", 1),
+    # 5 objectives, NSGA2, the transformers of the optimizer and of the surrogate are equal
+    "hierarchical_equal_transformers": (2, 1, "Model_0", "Surrogate", "Optimizer", 5),
 }
 MASKED_PARAMETER = "masked_parameter"  # a region built in the test, not taken from a test case
 NUMBER_OF_INDIVIDUALS = 6
@@ -92,20 +93,15 @@ def setup(request, get_experiment) -> Setup:
 
 def _fitness_of_an_individual(setup: Setup, x: np.ndarray) -> list:
     """
-    The fitness of an individual by the steps MOEA took, one individual at a time: put back the parameters left out of
-    the search, transform the individual back into a configuration unless the surrogate can take it as it is, predict
-    it, transform the values and apply the signs.
+    The fitness of an individual step by step: put back the parameters left out of the search, transform the individual
+    back into the configuration it stands for, predict that configuration, transform the values and apply the signs.
     """
-    transform_surrogate, inverse_transform_optimizer = setup.optimizer._resolve_configuration_transformers(
-        setup.surrogate)
     params = list(setup.optimizer.params)
     for param, (value, position) in setup.optimizer.masked_params.items():
         params.insert(position, param)
         x = np.insert(x, position, value)
-    configuration = pd.DataFrame([x], columns=params)
-    if inverse_transform_optimizer:
-        configuration = setup.optimizer._inverse_transform_configuration(configuration)
-    prediction = setup.surrogate.predict(configuration.loc[0], transform_surrogate)
+    configuration = setup.optimizer._inverse_transform_configuration(pd.DataFrame([x], columns=params))
+    prediction = setup.surrogate.predict(configuration.loc[0])
     return (setup.optimizer._transform_values(prediction).values.flatten() * setup.problem.signs).tolist()
 
 
@@ -149,7 +145,7 @@ class TestAlgorithmsEvaluateInBatches:
         setup.optimizer.optimize(setup.surrogate)
         return calls
 
-    @pytest.mark.parametrize("case", ["flat_scalarized_objectives", "flat_five_objectives"])  # GACO, NSGA2
+    @pytest.mark.parametrize("case", ["flat_scalarized_objectives", "hierarchical_equal_transformers"])  # GACO, NSGA2
     def test_an_algorithm_with_a_batch_evaluator_evaluates_every_population_in_one_batch(
             self, monkeypatch, get_experiment, case):
         setup = _setup_of_case(get_experiment, case)
@@ -162,8 +158,25 @@ class TestAlgorithmsEvaluateInBatches:
     def test_an_algorithm_without_a_batch_evaluator_evaluates_its_initial_population_in_one_batch_and_then_one_by_one(
             self, monkeypatch, get_experiment):
         setup = _setup_of_case(get_experiment, "flat_one_objective")  # SADE
+        setup.optimizer.pop_size = 10
 
         calls = self._count_evaluations(monkeypatch, setup)
 
         assert calls["batch_fitness"][0] == setup.optimizer.pop_size
         assert calls["fitness"] > 0
+
+
+class TestReportedPredictions:
+    """
+    optimize() puts the parameters left out of the search back, undoes the signs and ranks the candidates itself. The
+    tests of the fitness call the problem directly and never reach this.
+    """
+
+    def test_the_predictions_moea_reports_are_those_of_the_configurations_it_proposes(self, setup):
+        setup.optimizer.generations = 2
+
+        result = setup.optimizer.optimize(setup.surrogate)
+
+        labels = ["Y"] if setup.surrogate.scalarized else list(setup.optimizer.objectives)
+        predicted = setup.surrogate.predict_batch(result.drop(columns=labels))
+        np.testing.assert_allclose(result[labels].values, setup.optimizer._transform_values(predicted).values)

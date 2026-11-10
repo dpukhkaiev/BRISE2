@@ -8,7 +8,7 @@ from configuration_selection.model.value_transformer.value_transformer_orchestra
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 from configuration_selection.model import configuration_transformation
-from core_entities.search_space import Hyperparameter, find_parameters_activated_within_region
+from core_entities.search_space import Hyperparameter
 
 
 class Optimizer(ABC):
@@ -71,31 +71,6 @@ class Optimizer(ABC):
         else:
             order = pg.sort_population_mo(values_to_minimize.tolist())
         return candidates.iloc[order].reset_index(drop=True)
-
-    def _resolve_configuration_transformers(self, surrogate: Surrogate) -> Tuple[bool, bool]:
-        """
-        :param surrogate: surrogate used for evaluation.
-        :return: True if surrogate needs to transform a configuration on its own; and
-        True if optimizer needs to inverse transform a configuration before passing it to surrogate.
-        """
-        inverse_transform_optimizer = False
-        transform_surrogate = False
-
-        if find_parameters_activated_within_region(self.region):
-            # in case inactive parameters are present in the region, surrogate must transform them.
-            transform_surrogate = True
-            inverse_transform_optimizer = len(self.mapping_config_transformer_parameter) > 0
-        elif (len(surrogate.mapping_config_transformer_parameter.keys()) == 0 and len(
-                self.mapping_config_transformer_parameter.keys()) > 0):
-            inverse_transform_optimizer = True
-        elif (len(surrogate.mapping_config_transformer_parameter.keys()) > 0 and len(
-                self.mapping_config_transformer_parameter.keys()) == 0):
-            transform_surrogate = True
-        elif not self.mapping_config_transformer_parameter.__eq__(surrogate.mapping_config_transformer_parameter):
-            inverse_transform_optimizer = True
-            transform_surrogate = True
-
-        return transform_surrogate, inverse_transform_optimizer
 
     def _transform_configuration(self, features: pd.DataFrame) -> pd.DataFrame:
         return configuration_transformation.transform(features, self.mapping_config_transformer_parameter)

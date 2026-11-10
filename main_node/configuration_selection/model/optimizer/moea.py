@@ -152,8 +152,6 @@ class MOEA(Optimizer):
             label_columns = ["Y"] if surrogate.scalarized else list(self._objectives.keys())
             self.signs = self._optimizer._get_direction_signs(label_columns)
             self._params = self._optimizer.params
-            self._transform_surrogate, self._inverse_transform_optimizer = (
-                self._optimizer._resolve_configuration_transformers(surrogate))
 
         def fitness(self, x):
             return self.batch_fitness(np.asarray(x)).tolist()
@@ -167,10 +165,10 @@ class MOEA(Optimizer):
             for p, val_ind in self._optimizer.masked_params.items():
                 configurations.insert(loc=val_ind[1], column=p, value=val_ind[0])
 
-            if self._inverse_transform_optimizer:
-                configurations = self._optimizer._inverse_transform_configuration(configurations)
+            # the surrogate scores the configurations the individuals stand for, which are the ones that get measured
+            configurations = self._optimizer._inverse_transform_configuration(configurations)
 
-            result = self._surrogate.predict_batch(configurations, self._transform_surrogate)
+            result = self._surrogate.predict_batch(configurations)
 
             transformed_result = self._optimizer._transform_values(result)
             return (transformed_result.values * self.signs).flatten()

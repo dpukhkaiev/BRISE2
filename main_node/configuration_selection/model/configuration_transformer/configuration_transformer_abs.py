@@ -4,9 +4,6 @@ from typing import Tuple, Dict
 
 
 class ConfigurationTransformer(ABC):
-    # TOBEDROPPED
-    parameters_with_inactive_value = frozenset()
-
     def __init__(self, configuration_transformer_description: Dict, relevant_parameters: Tuple,
                  parameters_with_inactive_value: frozenset = frozenset()):
         self.configuration_transformer_description = configuration_transformer_description
