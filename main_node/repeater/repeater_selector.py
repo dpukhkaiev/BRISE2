@@ -51,19 +51,6 @@ class RepeaterOrchestration:
         self.repeater_parameters = {**self.experiment_description["RepetitionManager"]["Instance"][feature_name], **self.experiment_description["RepetitionManager"]}
 
         self.objectives = Objectives.from_description(self.experiment_description["Context"]["TaskConfiguration"]["Objectives"])
-        objectives = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["Name"]
-                 for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-        self._objectives = objectives
-        data_types = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["DataType"]
-                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-
-        self._objectives_data_types = data_types
-        minimal_values = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["MinExpectedValue"]
-                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-        maximal_values = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["MaxExpectedValue"]
-                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-        expected_value_ranges = [(min, max) for min in minimal_values for max in maximal_values]
-        self._expected_values_range = expected_value_ranges
 
         self.logger.info("Outliers detection module is disabled")
 
@@ -118,6 +105,17 @@ class RepeaterOrchestration:
             else:
                 return 0
 
+    def _check_tasks_results(self, tasks_results: list) -> list:
+        """
+        Marks each task with the result of the check of its results against the data type and the expected range
+        of every objective.
+        :param tasks_results: the tasks measured by workers
+        :return: the tasks with ResultValidityCheckMark
+        """
+        for objective in self.objectives:
+            tasks_results = error_check(tasks_results, objective.name, objective.expected_range, objective.data_type)
+        return tasks_results
+
     def measure_configurations(self, channel, method, properties, body):
         """
         Callback function for the result of measuring
@@ -134,11 +132,7 @@ class RepeaterOrchestration:
         if configuration.status['evaluated'] and os.environ.get('TEST_MODE') != 'UNIT_TEST':
             tasks_to_send = result["tasks_to_send"]
             tasks_results = result["tasks_results"]
-            for index, objective in enumerate(self._objectives):
-                tasks_results = error_check(tasks_results,
-                                            objective,
-                                            self._expected_values_range[index],
-                                            self._objectives_data_types[index])
+            tasks_results = self._check_tasks_results(tasks_results)
 
             # Sending data to API and adding Tasks to Configuration
             for parameters, task in zip(tasks_to_send, tasks_results):

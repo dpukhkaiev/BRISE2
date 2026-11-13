@@ -2,6 +2,7 @@ import os
 from math import exp, sqrt
 
 from core_entities.configuration import Configuration
+from core_entities.objectives import Objectives
 from repeater.repeater import Repeater
 from scipy.stats import t
 
@@ -19,13 +20,8 @@ class AcceptableErrorBasedType(Repeater):
         :param experiment: Experiment class instance, (!)used only in tests
         """
         super().__init__(experiment_description, experiment_id)
-        # self.objectives_minimization = metric_description["TaskConfiguration"]["ObjectivesMinimization"]
-        self.objectives = experiment_description["Context"]["TaskConfiguration"]["Objectives"]
-
-        minimizations = []
-        for k in self.objectives:
-            minimizations.append(self.objectives[k]["Minimization"])
-        self.objectives_minimization = minimizations
+        self.objectives = Objectives.from_description(experiment_description["Context"]["TaskConfiguration"]["Objectives"])
+        self.objectives_minimization = [objective.minimization for objective in self.objectives]
 
         self.max_tasks_per_configuration = self.repeater_configuration["Instance"]["AcceptableErrorBased"]["MaxTasksPerConfiguration"]
 
@@ -71,7 +67,7 @@ class AcceptableErrorBasedType(Repeater):
         c_c_results = current_configuration.results
         c_c_results_l = []
         c_s_results_l = []
-        for key in self.objectives:
+        for key in self.objectives.names:
             c_c_results_l.append(c_c_results[key])
             c_s_results_l.append(c_s_results[key])
 

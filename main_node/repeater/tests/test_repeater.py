@@ -151,6 +151,22 @@ def test_unpromising_maximization_configuration_stops_early(get_experiment):
     assert needed_tasks_count == 0
 
 
+def test_each_objective_is_checked_against_its_own_expected_range(get_experiment):
+    experiment_description, search_space = get_experiment(1)
+    objectives = experiment_description["Context"]["TaskConfiguration"]["Objectives"]
+    objectives["Y1"].update({"MinExpectedValue": 0, "MaxExpectedValue": 10})
+    objectives["Y2"].update({"MinExpectedValue": 100, "MaxExpectedValue": 200})
+    experiment = Experiment(experiment_description, search_space)
+    orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
+    tasks = [{"result": {"Y1": 5, "Y2": 150}},  # inside both ranges
+             {"result": {"Y1": 5, "Y2": 50}},  # Y2 below its range
+             {"result": {"Y1": 50, "Y2": 150}}]  # Y1 above its range
+
+    checked = orchestrator._check_tasks_results(tasks)
+
+    assert [task["ResultValidityCheckMark"] for task in checked] == ["OK", "Out of bounds", "Out of bounds"]
+
+
 def measure_task(configurations_sample: list, tasks_sample: list, experiment_description: dict,
                  search_space: SearchSpace, measured_tasks: int,
                  config_type: Configuration.Type, config_status: dict,
