@@ -1,4 +1,8 @@
+import random
+
+import numpy as np
 import pandas as pd
+import pygmo as pg
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -805,6 +809,12 @@ class TestConfigurationSelection:
         Tests duplication of parameter names. Where the same leaf hyperparameter name ('X') resides at two different levels
         of the same branch (N0.N01.X, itself Nominal, has a child also named 'X').
         """
+        # The model proposes only if every region on the path of a configuration validates its surrogate, and the
+        # child regions hold 6-10 rows of their branch: they are validated on 2-4 held-out rows, whose split (and the
+        # surrogates, and the optimizer) are random. Unseeded, about one run in ten has no proposal at all.
+        random.seed(0)
+        np.random.seed(0)
+        pg.set_global_rng_seed(0)
         experiment_description, search_space = get_experiment(16)
         experiment = Experiment(experiment_description, search_space)
         cs = ConfigurationSelection(experiment)
