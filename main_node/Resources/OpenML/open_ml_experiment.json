@@ -16,7 +16,7 @@
                     "MaxExpectedValue": Infinity
                 },
                 "test_f1_macro": {
-                    "Name": "test_f1_weighted",
+                    "Name": "test_f1_macro",
                     "DataType": "float",
                     "Minimization": false,
                     "MinExpectedValue": 0,
