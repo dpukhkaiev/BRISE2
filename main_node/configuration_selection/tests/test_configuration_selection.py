@@ -30,7 +30,6 @@ class TestConfigurationSelection:
         experiment.database.write_one_record(
             "Search_space", get_search_space_record(search_space, experiment.unique_id)
         )
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
@@ -175,7 +174,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -371,7 +369,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(12):
@@ -417,7 +414,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0].surrogate_instance, GradientBoostingRegressor)
@@ -478,7 +474,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -535,7 +530,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -591,7 +585,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -646,7 +639,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         return experiment, ConfigurationSelection(experiment)
 
     BRANCH_PARAMETERS = {
@@ -728,7 +720,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0].surrogate_instance, LinearRegression)
@@ -859,7 +850,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(12):

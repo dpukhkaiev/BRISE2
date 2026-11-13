@@ -32,7 +32,6 @@ from test_gen_approach.integration_tests.helpers.experiment_utils import (
     get_objective_count,
     get_parameter_types,
     has_transfer_learning,
-    setup_task_configuration,
     write_experiment_to_db,
 )
 
@@ -55,9 +54,6 @@ def _load_experiment(test_id, get_experiment):
         if exp_desc is None or search_space is None:
             return None, None
         experiment = Experiment(exp_desc, search_space)
-        Configuration.set_task_config(
-            experiment.description["Context"]["TaskConfiguration"]
-        )
         return experiment, search_space
     else:
         experiment, _, search_space = create_experiment_from_test_case(
@@ -143,7 +139,6 @@ class TestTransferLearning:
             pytest.skip(f"Config {test_id} is not a TL experiment")
 
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         fixture_name = get_configuration_fixture_name(parameter_types)
@@ -214,7 +209,6 @@ class TestTransferLearning:
             pytest.skip(f"Config {test_id} does not use MTL + Few-Shot")
 
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         fixture_name = get_configuration_fixture_name(parameter_types)
@@ -277,7 +271,6 @@ class TestTransferLearningUnit:
             desc = deepcopy(desc)
             desc.update(deepcopy(skeleton))
         experiment = Experiment(desc, ss)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         return experiment, ss
 
     def _write_to_db(self, experiment, search_space):

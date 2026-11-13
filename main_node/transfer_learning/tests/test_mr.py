@@ -228,7 +228,6 @@ class TestMR:
             modified_description.update(deepcopy(skeleton))
 
         experiment = Experiment(modified_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         return experiment, search_space
 
 

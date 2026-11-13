@@ -175,12 +175,11 @@ def measure_task(configurations_sample: list, tasks_sample: list, experiment_des
     :return: list of configuration status and number of tasks to measure.
     """
     experiment = Experiment(experiment_description, search_space)
-    Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
     configuration = Configuration(configurations_sample[1]["Params"], config_type, experiment.unique_id)
     configuration.status = config_status
     configuration.number_of_failed_tasks = number_of_failed_tasks
     for i in range(0, measured_tasks):
-        configuration.add_task(tasks_sample[i])
+        configuration.add_task(tasks_sample[i], experiment.objectives)
     orchestrator = RepeaterOrchestration(experiment.unique_id, experiment)
     if config_type == Configuration.Type.DEFAULT:
         orchestrator._type = orchestrator.get_repeater(True)

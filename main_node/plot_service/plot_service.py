@@ -66,20 +66,7 @@ def build_distributions(specs, inactive_parameters=()):
 
 
 def build_directions(objectives):
-    directions = []
-
-    for _, objective in objectives.items():
-        if objective["Minimization"] is True:
-            directions.append("minimize")
-        else:
-            directions.append("maximize")
-
-    return directions
-
-
-def extract_objective_values(objectives_dict):
-
-    return list(objectives_dict.values())
+    return ["minimize" if objective.minimization else "maximize" for objective in objectives]
 
 
 def reconstruct_study(payload, search_space, objectives, requested_parameters=()):
@@ -116,7 +103,7 @@ def reconstruct_study(payload, search_space, objectives, requested_parameters=()
 
         objective_values = [
             float(t["results"][name])
-            for name in objectives
+            for name in objectives.names
         ]
 
         # in a hierarchical search space a trial holds only the parameters of its activated regions
@@ -273,12 +260,12 @@ def calculate_importances(payload, search_space, objectives):
 
     objective = payload.get("objective")
 
-    objective_names = list(objectives.keys())
+    objective_names = objectives.names
 
     objective_index = objective_names.index(objective)
 
     # with a custom target, Optuna's default evaluator measures what leads to low values
-    sign = 1 if objectives[objective]["Minimization"] else -1
+    sign = objectives.by_name(objective).sign
 
     importances = optuna.importance.get_param_importances(
         study,
@@ -293,7 +280,7 @@ def calculate_importances(payload, search_space, objectives):
 def calculate_pareto(payload, search_space, objectives):
     study = reconstruct_study(payload, search_space, objectives)
 
-    objective_names = list(objectives.keys())
+    objective_names = objectives.names
 
     objective1 = payload["objective1"]
     objective2 = payload["objective2"]
@@ -340,7 +327,7 @@ def calculate_contour(payload, search_space, objectives):
     param2 = payload["param2"]
     objective = payload["objective"]
 
-    objective_names = list(objectives.keys())
+    objective_names = objectives.names
 
     objective_index = objective_names.index(objective)
 
@@ -467,10 +454,10 @@ class PlotService:
     """
 
     def calculate_importances(self, payload, experiment: Experiment):
-        return calculate_importances(payload, experiment.search_space, experiment.get_objectives())
+        return calculate_importances(payload, experiment.search_space, experiment.objectives)
 
     def calculate_pareto(self, payload, experiment: Experiment):
-        return calculate_pareto(payload, experiment.search_space, experiment.get_objectives())
+        return calculate_pareto(payload, experiment.search_space, experiment.objectives)
 
     def calculate_contour(self, payload, experiment: Experiment):
-        return calculate_contour(payload, experiment.search_space, experiment.get_objectives())
+        return calculate_contour(payload, experiment.search_space, experiment.objectives)

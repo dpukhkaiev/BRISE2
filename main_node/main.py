@@ -96,7 +96,6 @@ class MainThread(threading.Thread):
         self.experiment = Experiment(experiment_description, search_space)
         # self.experiment_id = self.experiment.unique_id
         # search_space.experiment_id = self.experiment_id
-        Configuration.set_task_config(self.experiment.description["Context"]["TaskConfiguration"])
 
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(

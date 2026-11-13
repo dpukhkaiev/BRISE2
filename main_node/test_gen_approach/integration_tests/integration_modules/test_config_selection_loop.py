@@ -28,7 +28,6 @@ from test_gen_approach.integration_tests.helpers.experiment_utils import (
     has_transfer_learning,
     load_phase1_config,
     PHASE1_OUTPUT_DIR,
-    setup_task_configuration,
     write_experiment_to_db,
 )
 
@@ -46,9 +45,6 @@ def _load_experiment(test_id, get_experiment):
         if exp_desc is None or search_space is None:
             return None, None
         experiment = Experiment(exp_desc, search_space)
-        Configuration.set_task_config(
-            experiment.description["Context"]["TaskConfiguration"]
-        )
         return experiment, search_space
     else:
         experiment, _, search_space = create_experiment_from_test_case(
@@ -78,7 +74,6 @@ class TestConfigSelectionLoop:
 
         if is_tl:
             write_experiment_to_db(experiment, search_space)
-            setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         fixture_name = get_configuration_fixture_name(parameter_types)
@@ -122,7 +117,6 @@ class TestConfigSelectionLoop:
 
         if is_tl:
             write_experiment_to_db(experiment, search_space)
-            setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         fixture_name = get_configuration_fixture_name(parameter_types)
@@ -164,7 +158,6 @@ class TestConfigSelectionLoop:
 
         if is_tl:
             write_experiment_to_db(experiment, search_space)
-            setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         fixture_name = get_configuration_fixture_name(parameter_types)

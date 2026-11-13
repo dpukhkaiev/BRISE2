@@ -2,6 +2,7 @@ import pytest
 from optuna.distributions import CategoricalDistribution, FloatDistribution, IntDistribution
 
 from core_entities.experiment import Experiment
+from core_entities.objectives import Objectives
 from core_entities.search_space import SearchSpace
 from plot_service import plot_service
 from plot_service.plot_service import PlotService
@@ -15,13 +16,22 @@ N0 = "Context.SearchSpace.N0"
 F1 = "Context.SearchSpace.N0.N02.F1"
 
 
+def objectives_of(**minimization: bool) -> Objectives:
+    """Objectives named after the keywords, in their order, minimized or maximized as given."""
+    return Objectives.from_description({
+        name: {"Name": name, "DataType": "float", "Minimization": minimized,
+               "MinExpectedValue": 0, "MaxExpectedValue": float("inf")}
+        for name, minimized in minimization.items()})
+
+
 def hierarchical_experiment_description():
     # Algorithm activates either region A (alpha, beta) or region B (gamma)
     return {
         "Context": {
             "TaskConfiguration": {
                 "Objectives": {
-                    "Y1": {"Name": "Y1", "DataType": "float", "Minimization": True}
+                    "Y1": {"Name": "Y1", "DataType": "float", "Minimization": True,
+                           "MinExpectedValue": 0, "MaxExpectedValue": float("inf")}
                 }
             },
             "SearchSpace": {
@@ -72,7 +82,7 @@ def region_b_trials():
 def search_space_and_objectives():
     description = hierarchical_experiment_description()
     return (SearchSpace(description["Context"]["SearchSpace"]),
-            description["Context"]["TaskConfiguration"]["Objectives"])
+            Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"]))
 
 
 class TestPlotCalculation:
@@ -110,7 +120,7 @@ class TestPlotCalculation:
 
     def test_results_are_matched_to_the_objectives_by_name(self):
         search_space, _ = search_space_and_objectives()
-        objectives = {"Y1": {"Minimization": True}, "Y2": {"Minimization": True}}
+        objectives = objectives_of(Y1=True, Y2=True)
         # the results of a trial are not necessarily listed in the order of the objectives
         payload = {"trials": [{"configurations": {ALGORITHM: f"{ALGORITHM}.B", GAMMA: 1.0}, "results": {"Y2": 20.0, "Y1": 10.0}}]}
 
@@ -182,7 +192,7 @@ class TestPlotCalculation:
         # Y1 is 100 for the largest alpha and follows beta otherwise, so the smallest values are reached through
         # beta and the largest ones through alpha
         search_space, _ = search_space_and_objectives()
-        objectives = {"Y1": {"Minimization": minimization}}
+        objectives = objectives_of(Y1=minimization)
         trials = [{"configurations": {ALGORITHM: f"{ALGORITHM}.A", ALPHA: alpha / 10, BETA: beta},
                    "results": {"Y1": 100.0 if alpha == 9 else float(beta)}}
                   for alpha in range(10) for beta in range(1, 6)]
@@ -288,7 +298,7 @@ class TestPlotCalculation:
 
     def test_pareto_front_of_a_maximized_objective_prefers_larger_values(self):
         search_space, _ = search_space_and_objectives()
-        objectives = {"Y1": {"Minimization": True}, "Y2": {"Minimization": False}}
+        objectives = objectives_of(Y1=True, Y2=False)
         # Y1 is minimized and Y2 maximized: the first trial has the smallest Y1 and the largest Y2, so it dominates the rest
         payload = {"trials": self._pareto_trials(), "objective1": "Y1", "objective2": "Y2"}
 
@@ -299,7 +309,7 @@ class TestPlotCalculation:
     @staticmethod
     def _two_objectives():
         search_space, _ = search_space_and_objectives()
-        return search_space, {"Y1": {"Minimization": True}, "Y2": {"Minimization": True}}
+        return search_space, objectives_of(Y1=True, Y2=True)
 
     @staticmethod
     def _pareto_trials():
@@ -331,7 +341,7 @@ class TestPlotService:
     def test_every_plot_is_computed_from_the_search_space_and_objectives_of_the_experiment(
             self, get_experiment, calculate, plot_specific_payload, result_key):
         experiment = Experiment(*get_experiment(16))
-        objectives = list(experiment.get_objectives())
+        objectives = experiment.objectives.names
         payload = {"trials": self._trials(objectives), "objective": objectives[0],
                    "objective1": objectives[0], "objective2": objectives[1], **plot_specific_payload}
 
@@ -341,8 +351,8 @@ class TestPlotService:
 
     def test_importances_are_reported_for_the_requested_parameters(self, get_experiment):
         experiment = Experiment(*get_experiment(16))
-        objectives = experiment.get_objectives()
-        payload = {"trials": self._trials(objectives), "parameters": [F1], "objective": list(objectives)[0]}
+        objectives = experiment.objectives.names
+        payload = {"trials": self._trials(objectives), "parameters": [F1], "objective": objectives[0]}
 
         result = PlotService().calculate_importances(payload, experiment)
 

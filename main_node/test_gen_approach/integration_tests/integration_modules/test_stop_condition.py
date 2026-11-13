@@ -22,7 +22,6 @@ from test_gen_approach.integration_tests.helpers.experiment_utils import (
     get_parameter_types,
     instantiate_all_scs,
     load_phase1_config,
-    setup_task_configuration,
     write_experiment_to_db,
 )
 from test_gen_approach.integration_tests.helpers.config_simulation import (
@@ -93,7 +92,6 @@ class TestStopConditionIntegration:
         assert experiment is not None
 
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         config_fixture = request.getfixturevalue(
@@ -130,7 +128,6 @@ class TestStopConditionIntegration:
         assert experiment is not None
 
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         parameter_types = get_parameter_types(experiment)
         config_fixture = request.getfixturevalue(
@@ -171,7 +168,6 @@ class TestStopConditionTypes:
             0, get_experiment
         )
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         objective_count = get_objective_count(experiment)
         setup_default_configuration(
@@ -268,11 +264,7 @@ class TestStopConditionPhase1:
         assert search_space is not None
 
         experiment = Experiment(exp_desc, search_space)
-        Configuration.set_task_config(
-            experiment.description["Context"]["TaskConfiguration"]
-        )
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         objective_count = get_objective_count(experiment)
         from test_gen_approach.integration_tests.helpers.config_simulation import setup_default_configuration
@@ -295,11 +287,7 @@ class TestStopConditionPhase1:
         assert search_space is not None
 
         experiment = Experiment(exp_desc, search_space)
-        Configuration.set_task_config(
-            experiment.description["Context"]["TaskConfiguration"]
-        )
         write_experiment_to_db(experiment, search_space)
-        setup_task_configuration(experiment)
 
         objective_count = get_objective_count(experiment)
         from test_gen_approach.integration_tests.helpers.config_simulation import setup_default_configuration

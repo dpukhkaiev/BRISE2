@@ -46,7 +46,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -90,7 +89,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -129,7 +127,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -167,7 +164,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -203,7 +199,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -243,7 +238,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -279,7 +273,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -315,7 +308,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -355,7 +347,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -390,7 +381,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -435,7 +425,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -474,7 +463,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -519,7 +507,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -560,7 +547,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id,experiment=experiment)
@@ -597,7 +583,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -638,7 +623,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -673,7 +657,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
@@ -711,7 +694,6 @@ class TestInput:
         assert experiment_description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # create experiment entity
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         assert experiment.description["Context"]["TaskConfiguration"]["TaskName"] == expected_experiment
         # launch_stop_condition_threads without threading
         activatedSCs = launch_stop_condition_threads(experiment_id=experiment.unique_id, experiment=experiment)
