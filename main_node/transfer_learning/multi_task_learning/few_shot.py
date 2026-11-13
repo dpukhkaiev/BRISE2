@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from core_entities.configuration import Configuration
+from core_entities.objectives import Objectives
 from transfer_learning.multi_task_learning.multi_task_learning_abs import MultiTaskLearning
 from transfer_learning.multi_task_learning.mtl_decorator import MultiTaskLearningDecorator
 
@@ -8,8 +9,8 @@ from transfer_learning.multi_task_learning.mtl_decorator import MultiTaskLearnin
 class FewShotDecorator(MultiTaskLearningDecorator):
     def __init__(self, experiment_description: Dict, experiment_id, base_mtl: MultiTaskLearning):
         super().__init__(experiment_description, experiment_id, base_mtl)
-        objective_name = list(experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys())[0]  # SO only
-        self.is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][objective_name]["Minimization"]
+        # single objective only, required by the feature model
+        self.objective = next(iter(Objectives.from_description(experiment_description["Context"]["TaskConfiguration"]["Objectives"])))
         self.has_fired = False
         self.is_few_shot = True
 
@@ -24,12 +25,6 @@ class FewShotDecorator(MultiTaskLearningDecorator):
         to be directly measured in the target experiment
         :return: Configuration to be directly transferred
         """
-        configs_to_transfer: List[Configuration] = []
-
-        if self.is_minimization:
-            best_configuration = min(configurations)
-        else:
-            best_configuration = max(configurations)
-        configs_to_transfer.append(best_configuration)
+        best_configuration = min(configurations, key=lambda c: self.objective.sign * c.results[self.objective.name])
         self.has_fired = True
-        return configs_to_transfer
+        return [best_configuration]

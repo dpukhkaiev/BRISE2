@@ -211,37 +211,6 @@ class Configuration:
             return False
         return self.unique_id == other.unique_id or self.parameters == other.parameters
 
-    def __lt__(self, other: Configuration) -> bool:
-        """
-        Returns True, if 'self' < 'compared_configuration'. Otherwise - False
-        :param other: instance of Configuration class
-        :return: bool
-        """
-        assert self.results.keys() == other.results.keys(), f"Unable to compare Configurations since objectives do not match: {self}, {other}"
-
-        # compare all metrics
-        objectives_comparison = dict()
-        for objective, result in self.results.items():
-            objectives_comparison[objective] = result < other.results[objective]
-
-        # all comparisons are True for the same priority == dominating solution
-        if all(obj_comp is True for obj_comp in objectives_comparison.values()):
-            return True
-        elif all(obj_comp is False for obj_comp in objectives_comparison.values()):
-            return False
-        else:
-            self.logger.warning(f"Got non-dominating Configuration comparison: "
-                                f"{self} VS {other} -> {objectives_comparison}")
-            return False
-
-    def __gt__(self, other: Configuration) -> bool:
-        """
-        Returns True, if 'self' > 'compared_configuration'. Otherwise - False
-        :param other: instance of Configuration class
-        :return: bool
-        """
-        return other.__lt__(self)
-
     def _assemble_tasks_results(self, objectives: Objectives) -> None:
         """
         Updates the results of the Configuration measurement by aggregating the results from all available Tasks.

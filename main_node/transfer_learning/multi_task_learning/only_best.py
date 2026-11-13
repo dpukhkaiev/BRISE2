@@ -2,6 +2,7 @@ from typing import Dict, List
 
 
 from core_entities.configuration import Configuration
+from core_entities.objectives import Objectives
 from transfer_learning.multi_task_learning.multi_task_learning_abs import MultiTaskLearning
 from transfer_learning.multi_task_learning.mtl_decorator import MultiTaskLearningDecorator
 
@@ -9,18 +10,18 @@ from transfer_learning.multi_task_learning.mtl_decorator import MultiTaskLearnin
 class OnlyBestDecorator(MultiTaskLearningDecorator):
     def __init__(self, experiment_description: Dict, experiment_id, base_mtl: MultiTaskLearning):
         super().__init__(experiment_description, experiment_id, base_mtl)
-        self.objective_name = list(experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys())[0]  # SO only
-        self.is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][self.objective_name][
-            "Minimization"]
+        # single objective only, required by the feature model
+        self.objective = next(iter(Objectives.from_description(experiment_description["Context"]["TaskConfiguration"]["Objectives"])))
 
     def _filter_configurations(self, configurations: List[Configuration]) -> List[Configuration]:
         """
         Filters configurations better than average.
         :return: Filtered configurations.
         """
-        avg_objective_value = sum([c.results[self.objective_name] for c in configurations]) / len(configurations)
-        if self.is_minimization:
-            configs_to_transfer = list(filter(lambda c: c.results[self.objective_name] <= avg_objective_value, configurations))
+        name = self.objective.name
+        avg_objective_value = sum([c.results[name] for c in configurations]) / len(configurations)
+        if self.objective.minimization:
+            configs_to_transfer = list(filter(lambda c: c.results[name] <= avg_objective_value, configurations))
         else:
-            configs_to_transfer = list(filter(lambda c: c.results[self.objective_name] >= avg_objective_value, configurations))
+            configs_to_transfer = list(filter(lambda c: c.results[name] >= avg_objective_value, configurations))
         return configs_to_transfer
