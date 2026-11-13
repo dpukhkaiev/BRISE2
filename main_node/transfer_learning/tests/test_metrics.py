@@ -1,3 +1,5 @@
+import pytest
+
 from transfer_learning.model_recommendation.metrics.average_relative_improvement import \
     AverageRelativeImprovementMetric
 
@@ -52,3 +54,63 @@ class TestAverageRelativeImprovement:
         result = metric.compute(improvement_curve, prediction_infos, 0, 2, multi_model=True)
 
         assert result["Model_combination"] == prediction_infos[1]
+
+
+class TestImprovementByDirection:
+    """The improvement is the progress of the best result towards the better direction, relative to the value it started from."""
+
+    @staticmethod
+    def _improvement(curve: list, minimization: bool, models: list, multi_model: bool) -> dict:
+        # each model predicts one sample, and the curve starts with the best result before the first of them;
+        # the interval runs from its start to its last value
+        prediction_infos = [_prediction_info({"0": [model]}) for model in models]
+        metric = AverageRelativeImprovementMetric(is_minimization_experiment=minimization)
+        return metric.compute(curve, prediction_infos, 0, len(curve) - 1, multi_model=multi_model)
+
+    def test_a_falling_minimized_result_is_an_improvement_over_one_sample(self):
+        result = self._improvement([10.0, 5.0], minimization=True, models=["A"], multi_model=False)
+
+        assert result["average_relative_improvement"] == 0.5
+
+    def test_a_rising_maximized_result_is_an_improvement_over_one_sample(self):
+        result = self._improvement([10.0, 15.0], minimization=False, models=["A"], multi_model=False)
+
+        assert result["average_relative_improvement"] == 0.5
+
+    def test_a_falling_negative_minimized_result_is_an_improvement_over_one_sample(self):
+        result = self._improvement([-5.0, -10.0], minimization=True, models=["A"], multi_model=False)
+
+        assert result["average_relative_improvement"] == 1.0
+
+    def test_a_maximized_result_rising_across_zero_is_an_improvement_over_one_sample(self):
+        # -5 -> 5 is progress of 10, relative to the 5 it started from
+        result = self._improvement([-5.0, 5.0], minimization=False, models=["A"], multi_model=False)
+
+        assert result["average_relative_improvement"] == 2.0
+
+    def test_a_rising_maximized_result_of_a_combination_followed_by_another_is_relative_to_its_start(self):
+        # A holds the sample for one step, 10 -> 15: 0.5 of its start. B holds it for the next, 15 -> 20: a third of its start
+        result = self._improvement([10.0, 15.0, 20.0], minimization=False, models=["A", "B"], multi_model=True)
+
+        assert result["Model_combination"] == _prediction_info({"0": ["A"]})
+        assert result["average_relative_improvement"] == 0.5
+
+    def test_a_falling_negative_minimized_result_of_a_combination_followed_by_another_is_an_improvement(self):
+        # A: -5 -> -10, 1.0 of its start; B: -10 -> -11, a tenth of its start
+        result = self._improvement([-5.0, -10.0, -11.0], minimization=True, models=["A", "B"], multi_model=True)
+
+        assert result["Model_combination"] == _prediction_info({"0": ["A"]})
+        assert result["average_relative_improvement"] == 1.0
+
+    def test_a_rising_maximized_result_of_a_combination_held_to_the_end_is_relative_to_its_start(self):
+        # A holds the samples for both steps, 10 -> 20: 1.0 of its start, spread over the 2 steps
+        result = self._improvement([10.0, 15.0, 20.0], minimization=False, models=["A", "A"], multi_model=True)
+
+        assert result["average_relative_improvement"] == 0.5
+
+    def test_a_falling_negative_minimized_result_of_a_combination_held_to_the_end_is_an_improvement(self):
+        # A: -5 -> -6, a fifth of its start; B, held to the end: -6 -> -10, two thirds of its start
+        result = self._improvement([-5.0, -6.0, -10.0], minimization=True, models=["A", "B"], multi_model=True)
+
+        assert result["Model_combination"] == _prediction_info({"0": ["B"]})
+        assert result["average_relative_improvement"] == pytest.approx(2 / 3)
