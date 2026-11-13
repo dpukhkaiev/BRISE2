@@ -2,13 +2,16 @@ import pandas as pd
 import pytest
 
 from configuration_selection.model.value_transformer.tpe_ei import TpeEi
+from core_entities.objectives import Objectives
 
 # rows of (probability_good, probability_bad); the last one has no finite ratio when minimizing
 PROBABILITIES = pd.DataFrame({"Y1_probability_good": [0.5, 0.2, 0.0], "Y1_probability_bad": [0.1, 0.4, 0.3]})
 
 
 def _acquisition_function(minimization):
-    return TpeEi({"TPE_EI": {"Type": "tpe_ei"}}, {"Y1": {"Name": "Y1", "Minimization": minimization}})
+    objectives = Objectives.from_description({"Y1": {"Name": "Y1", "DataType": "float", "Minimization": minimization,
+                                                      "MinExpectedValue": 0, "MaxExpectedValue": float("inf")}})
+    return TpeEi({"TPE_EI": {"Type": "tpe_ei"}}, objectives)
 
 
 class TestTpeEi:

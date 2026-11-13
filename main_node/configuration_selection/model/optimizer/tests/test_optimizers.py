@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 
+from core_entities.objectives import Objectives
 from core_entities.search_space import FloatHyperparameter
 from configuration_selection.model.optimizer.moea import MOEA
 from configuration_selection.model.optimizer.random_search import RandomSearch
@@ -23,13 +24,15 @@ class FunctionSurrogate(Surrogate):
     def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
         x = configurations["x"].reset_index(drop=True)
         predicted = pd.DataFrame({"Y1": x})
-        if "Y2" in self.objectives:
+        if "Y2" in self.objectives.names:
             predicted["Y2"] = 1.0 - x
         return predicted
 
 
 def _objectives(*minimizations):
-    return {f"Y{i + 1}": {"Name": f"Y{i + 1}", "Minimization": m} for i, m in enumerate(minimizations)}
+    return Objectives.from_description({
+        f"Y{i + 1}": {"Name": f"Y{i + 1}", "DataType": "float", "Minimization": m,
+                      "MinExpectedValue": 0, "MaxExpectedValue": float("inf")} for i, m in enumerate(minimizations)})
 
 
 def _random_search(objectives, sampling_size=60, value_transformers=None) -> RandomSearch:

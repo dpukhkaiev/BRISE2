@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
 
+from core_entities.objectives import Objectives
 from core_entities.search_space import FloatHyperparameter
 from configuration_selection.model.surrogate.sklearn_wrapper import SklearnWrapper
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 
 X = FloatHyperparameter("x", 0, 0.0, 10.0)
-OBJECTIVES = {"Y1": {"Name": "Y1", "Minimization": True}}
+OBJECTIVES = Objectives.from_description({"Y1": {"Name": "Y1", "DataType": "float", "Minimization": True,
+                                                  "MinExpectedValue": 0, "MaxExpectedValue": float("inf")}})
 FLOAT_TRANSFORMER = {"FloatTransformer": {"SklearnFloatMinMaxScaler": {"Type": "sklearn_float_transformer"}}}
 
 

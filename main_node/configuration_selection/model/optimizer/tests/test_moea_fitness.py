@@ -8,6 +8,7 @@ import pytest
 from configuration_selection.model.optimizer.moea import MOEA
 from configuration_selection.model.optimizer.optimizer_orchestrator import OptimizerOrchestrator
 from configuration_selection.model.surrogate.surrogate_orchestrator import SurrogateOrchestrator
+from core_entities.objectives import Objectives
 from core_entities.search_space import FloatHyperparameter, NominalHyperparameter, active_mask, \
     find_parameters_activated_within_region
 
@@ -55,7 +56,7 @@ def _setup(model, surrogate_key, optimizer_key, region, objectives) -> Setup:
 
     rng = np.random.default_rng(0)
     features = _configurations(region, 60, rng)
-    labels = pd.DataFrame({name: rng.uniform(0, 1, 60) for name in objectives})
+    labels = pd.DataFrame({name: rng.uniform(0, 1, 60) for name in objectives.names})
     assert surrogate.create(features, labels)
 
     optimizer._build_bounds_params_masked(surrogate)
@@ -68,7 +69,7 @@ def _setup_with_a_masked_parameter(get_experiment) -> Setup:
     region = (FloatHyperparameter("f", 0, 0.0, 1.0), NominalHyperparameter("only", 0, ["only"]),
               NominalHyperparameter("c", 0, ["a", "b", "c"]))
     description, _ = get_experiment(13)
-    objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+    objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
     setup = _setup(description["ConfigurationSelection"]["Predictor"]["Model"], "Surrogate", "Optimizer", region,
                    objectives)
     assert list(setup.optimizer.masked_params)
@@ -81,7 +82,8 @@ def _setup_of_case(get_experiment, case: str) -> Setup:
         return _setup_with_a_masked_parameter(get_experiment)
     test_case, region_index, model_key, surrogate_key, optimizer_key, number_of_objectives = CASES[case]
     description, search_space = get_experiment(test_case)
-    objectives = dict(list(description["Context"]["TaskConfiguration"]["Objectives"].items())[:number_of_objectives])
+    all_objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
+    objectives = Objectives(tuple(all_objectives)[:number_of_objectives])
     model = description["ConfigurationSelection"]["Predictor"][model_key]
     return _setup(model, surrogate_key, optimizer_key, search_space.regions[region_index], objectives)
 
@@ -177,6 +179,6 @@ class TestReportedPredictions:
 
         result = setup.optimizer.optimize(setup.surrogate)
 
-        labels = ["Y"] if setup.surrogate.scalarized else list(setup.optimizer.objectives)
+        labels = ["Y"] if setup.surrogate.scalarized else setup.optimizer.objectives.names
         predicted = setup.surrogate.predict_batch(result.drop(columns=labels))
         np.testing.assert_allclose(result[labels].values, setup.optimizer._transform_values(predicted).values)

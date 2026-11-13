@@ -33,13 +33,14 @@ import numpy as np
 from typing import Dict
 
 from configuration_selection.model.value_transformer.acquisition_function_abs import AcquisitionFunction
+from core_entities.objectives import Objectives
 
 
 class TpeEi(AcquisitionFunction):
-    def __init__(self, value_transformer_description: Dict, objectives: Dict):
+    def __init__(self, value_transformer_description: Dict, objectives: Objectives):
         super().__init__(value_transformer_description, objectives)
-        self.objective = self.objectives[list(objectives.keys())[0]]
-        self.is_minimization = self.objective["Minimization"]
+        self.objective = next(iter(self.objectives))
+        self.is_minimization = self.objective.minimization
 
     def transform(self, objective_function_values: pd.DataFrame) -> pd.DataFrame:
         names = objective_function_values.columns.tolist()

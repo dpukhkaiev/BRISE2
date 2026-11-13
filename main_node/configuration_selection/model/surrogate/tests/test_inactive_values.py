@@ -6,6 +6,7 @@ import pytest
 from configuration_selection.model.configuration_transformer.binary_transformer import BinaryTransformer
 from configuration_selection.model.optimizer.moea import MOEA
 from configuration_selection.model.surrogate.sklearn_wrapper import SklearnWrapper
+from core_entities.objectives import Objectives
 from core_entities.search_space import NominalHyperparameter, find_parameters_activated_within_region
 
 N0 = "Context.SearchSpace.N0"
@@ -27,7 +28,7 @@ def flat_setup(get_experiment):
     """
     description, search_space = get_experiment(13)
     model = description["ConfigurationSelection"]["Predictor"]["Model"]
-    objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+    objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
     region = search_space.regions[0]
     surrogate = SklearnWrapper(model["Surrogate"], region, objectives)
     optimizer = MOEA(model["Optimizer"], region, objectives)
@@ -139,7 +140,8 @@ class TestOptimizersKeepTheirDomain:
         description, _ = get_experiment(13)
         model = copy.deepcopy(description["ConfigurationSelection"]["Predictor"]["Model"])
         del model["Optimizer"]["ConfigurationTransformers"]
-        optimizer = MOEA(model["Optimizer"], region, description["Context"]["TaskConfiguration"]["Objectives"])
+        objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
+        optimizer = MOEA(model["Optimizer"], region, objectives)
 
         with pytest.raises(ValueError, match="can be inactive"):
             optimizer._build_bounds_params_masked(surrogate)

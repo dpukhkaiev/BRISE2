@@ -5,6 +5,7 @@ import pickle
 from transfer_learning.model_recommendation.model_recommendation_abs import ModelRecommendation
 from transfer_learning.model_recommendation.metrics.metric_orchestrator import MetricOrchestrator
 from configuration_selection.model.model import Model
+from core_entities.objectives import Objectives
 from core_entities.search_space import Hyperparameter
 from core_entities.search_space import SearchSpace
 
@@ -160,7 +161,7 @@ class DynamicModelRecommendation(ModelRecommendation):
             region = search_space.regions[int(region_index)]
             # a single model description is shared by all regions on the same level
             model = Model(models_types[region[0].level], region,
-                          self.experiment_description["Context"]["TaskConfiguration"]["Objectives"])
+                          Objectives.from_description(self.experiment_description["Context"]["TaskConfiguration"]["Objectives"]))
             model.update_surrogates_and_optimizers(model_description["Model"])
             mapping_region_model[region] = model
         return mapping_region_model

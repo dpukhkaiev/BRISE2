@@ -13,10 +13,11 @@ from configuration_selection.model.optimizer.optimizer_abs import Optimizer
 from configuration_selection.model.validator.validator_orchestrator import ValidatorOrchestrator
 from configuration_selection.model.candidate_selector.candidate_selector_orchestrator import CandidateSelectorOrchestrator
 from configuration_selection.model.surrogate.composite_surrogate import CompositeSurrogate
+from core_entities.objectives import Objectives
 
 
 class Model:
-    def __init__(self, model_description: Tuple, region: Tuple, objectives: Dict):
+    def __init__(self, model_description: Tuple, region: Tuple, objectives: Objectives):
         self.model_name = model_description[0]
         self.model_description = model_description
         self.region = region
@@ -35,20 +36,20 @@ class Model:
             if "Surrogate" in key:
                 surrogate_types.append(description)
 
-        self.mapping_surrogate_objective: Mapping[Surrogate, Dict] = {}
+        self.mapping_surrogate_objective: Mapping[Surrogate, Objectives] = {}
 
         if self.mo_handling_surrogate_type == "Compositional":
             i = 0
-            for key, value in objectives.items():
-                temp_o = {key: value}
+            for objective in objectives:
+                temp_o = Objectives((objective,))
                 surrogate = self.surrogate_orchestrator.get_surrogate(surrogate_types[i], region, temp_o)
                 self.mapping_surrogate_objective[surrogate] = temp_o
                 i += 1
         elif self.mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio":
-            for o_name in objectives.keys():
+            for objective in objectives:
                 for s in surrogate_types:
-                    surrogate = self.surrogate_orchestrator.get_surrogate(s, region, {o_name: objectives[o_name]})
-                    self.mapping_surrogate_objective[surrogate] = {o_name: objectives[o_name]}
+                    surrogate = self.surrogate_orchestrator.get_surrogate(s, region, Objectives((objective,)))
+                    self.mapping_surrogate_objective[surrogate] = Objectives((objective,))
             for s in surrogate_types:
                 surrogate = self.surrogate_orchestrator.get_surrogate(s, region, objectives)
                 if surrogate.multi_objective:
@@ -66,11 +67,11 @@ class Model:
             if "Optimizer" in key:
                 optimizer_types.append(description)
 
-        self.mapping_optimizer_objective: Mapping[Optimizer, dict] = {}
+        self.mapping_optimizer_objective: Mapping[Optimizer, Objectives] = {}
         if self.mo_handling_surrogate_type == "Compositional":
             i = 0
-            for key, value in objectives.items():
-                temp_o = {key: value}
+            for objective in objectives:
+                temp_o = Objectives((objective,))
                 optimizer = self.optimizer_orchestrator.get_optimizer(optimizer_types[i], region, temp_o)
                 self.mapping_optimizer_objective[optimizer] = temp_o
                 i += 1
@@ -110,13 +111,13 @@ class Model:
 
         # a configuration holds only its active parameters; in a flat region the cells of the inactive ones stay empty(NaN) 
         data = pd.DataFrame(
-            [cfg.to_series().reindex(names_of_parameters + list(self.objectives.keys())) for cfg in configurations])
+            [cfg.to_series().reindex(names_of_parameters + self.objectives.names) for cfg in configurations])
 
         if data.empty:
             return pd.DataFrame()
 
         features = pd.DataFrame(data[names_of_parameters])
-        labels = pd.DataFrame(data[list(self.objectives.keys())])
+        labels = pd.DataFrame(data[self.objectives.names])
 
         result = []
         # outer split of train and test data
@@ -125,11 +126,11 @@ class Model:
             if train_features[0].empty or train_labels[0].empty or test_features[0].empty or test_labels[0].empty:
                 return pd.DataFrame(result)
 
-        promising_surrogates: Mapping[Surrogate, Dict] = {}
+        promising_surrogates: Mapping[Surrogate, Objectives] = {}
         for k in range(len(train_features)):
             for s in self.mapping_surrogate_objective.keys():
                 considered_objectives = self.mapping_surrogate_objective[s]
-                train_labels_filtered = pd.DataFrame(train_labels[k][list(considered_objectives.keys())])
+                train_labels_filtered = pd.DataFrame(train_labels[k][considered_objectives.names])
 
                 if self.internal_validator is not None:
                     # inner split
@@ -167,16 +168,16 @@ class Model:
                 mo_handling_surrogate_type == "DynamicCompositional" or self.mo_handling_surrogate_type == "Portfolio"):
             # extract MO surrogates
             for s, o in promising_surrogates.items():
-                if len(o.keys()) > 1:
+                if len(o) > 1:
                     surrogates_for_outer_validation.append(s)
             for s in surrogates_for_outer_validation:
                 del promising_surrogates[s]
 
             # create composite surrogates
             mapping_objective_surrogate: Dict[str, List[Surrogate]] = {}
-            for o in self.objectives.keys():
+            for o in self.objectives.names:
                 for s, objective in promising_surrogates.items():
-                    if o in objective.keys():
+                    if o in objective.names:
                         if not mapping_objective_surrogate.__contains__(o):
                             mapping_objective_surrogate[o] = [s]
                         else:
@@ -236,8 +237,8 @@ class Model:
             for s in created_surrogates:
                 for optimizer, objective in self.mapping_optimizer_objective.items():  # always 1 optimizer in 2.6.0
                     self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions.append(
-                        {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives} | {
-                            "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective})
+                        {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives.to_description()} | {
+                            "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective.to_description()})
                     optimized = optimizer.optimize(s)
                     optimized_full = pd.concat([optimized_full, optimized])
         else:
@@ -246,8 +247,8 @@ class Model:
                 for optimizer, objective in self.mapping_optimizer_objective.items():
                     if s.objectives == objective:
                         self.created_surrogates_descriptions_and_objectives_and_optimizer_descriptions.append(
-                            {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives} | {
-                                "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective})
+                            {"Surrogate": s.surrogate_description} | {"Objectives_surrogate": s.objectives.to_description()} | {
+                                "Optimizer": optimizer.optimizer_description} | {"Objectives_optimizer": objective.to_description()})
                         optimized = optimizer.optimize(s)
                         optimized_full = pd.concat([optimized_full, optimized])
 
@@ -255,7 +256,7 @@ class Model:
 
         contains_scalarized_surrogate = any([s.scalarized for s in created_surrogates])
         if not contains_scalarized_surrogate:
-            names_and_objectives = [r.name for r in self.region] + [o for o in self.objectives.keys()]
+            names_and_objectives = [r.name for r in self.region] + self.objectives.names
         else:
             names_and_objectives = [r.name for r in self.region] + ["Y"]
 
@@ -271,9 +272,9 @@ class Model:
         optimizers = []
         for s_o_opt in surrogates_description_and_objectives_and_optimizers_description:
             surrogate = s_o_opt["Surrogate"]
-            objectives_surrogate = s_o_opt["Objectives_surrogate"]
+            objectives_surrogate = Objectives.from_description(s_o_opt["Objectives_surrogate"])
             optimizer = s_o_opt["Optimizer"]
-            objectives_optimizer = s_o_opt["Objectives_optimizer"]
+            objectives_optimizer = Objectives.from_description(s_o_opt["Objectives_optimizer"])
             surrogates.append(self.surrogate_orchestrator.get_surrogate(surrogate, self.region, objectives_surrogate))
             optimizers.append(self.optimizer_orchestrator.get_optimizer(optimizer, self.region, objectives_optimizer))
 

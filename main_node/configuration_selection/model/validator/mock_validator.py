@@ -3,10 +3,11 @@ from typing import List, Tuple, Dict
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 from configuration_selection.model.validator.validator_abs import Validator
+from core_entities.objectives import Objectives
 
 
 class MockValidator(Validator):
-    def __init__(self, validator_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, validator_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(validator_description, region, objectives)
         self.validator_description = validator_description
 

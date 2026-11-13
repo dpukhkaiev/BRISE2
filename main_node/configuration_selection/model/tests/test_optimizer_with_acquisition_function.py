@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from core_entities.objectives import Objectives
 from core_entities.search_space import FloatHyperparameter
 from configuration_selection.model.optimizer.random_search import RandomSearch
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
@@ -9,7 +10,8 @@ X = FloatHyperparameter("x", 0, 0.0, 1.0)
 
 
 def _objectives(minimization):
-    return {"Y1": {"Name": "Y1", "Minimization": minimization}}
+    return Objectives.from_description({"Y1": {"Name": "Y1", "DataType": "float", "Minimization": minimization,
+                                               "MinExpectedValue": 0, "MaxExpectedValue": float("inf")}})
 
 
 class TestRandomSearchWithTreeParzenEstimator:

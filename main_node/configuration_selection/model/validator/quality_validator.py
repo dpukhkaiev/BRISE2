@@ -8,11 +8,12 @@ from math import isnan
 from configuration_selection.model.validator.validator_abs import Validator
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 from configuration_selection.model.value_transformer.value_scalarizator_abs import ValueScalarizator
+from core_entities.objectives import Objectives
 
 
 class QualityValidator(Validator):
 
-    def __init__(self, validator_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, validator_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(validator_description, region, objectives)
         self.validator_description = validator_description
         self.quality_threshold = self.validator_description["QualityThreshold"]

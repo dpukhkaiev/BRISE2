@@ -3,13 +3,16 @@ import pandas as pd
 import pytest
 from sklearn.metrics import r2_score
 
+from core_entities.objectives import Objectives
 from core_entities.search_space import FloatHyperparameter
 from configuration_selection.model.surrogate.composite_surrogate import CompositeSurrogate
 from configuration_selection.model.surrogate.sklearn_wrapper import SklearnWrapper
 from configuration_selection.model.validator.quality_validator import QualityValidator
 
 X = FloatHyperparameter("x", 0, 0.0, 10.0)
-OBJECTIVES = {"Y1": {"Name": "Y1", "Minimization": True}, "Y2": {"Name": "Y2", "Minimization": True}}
+OBJECTIVES = Objectives.from_description({
+    name: {"Name": name, "DataType": "float", "Minimization": True, "MinExpectedValue": 0, "MaxExpectedValue": float("inf")}
+    for name in ("Y1", "Y2")})
 WEIGHTS = [2, 1]  # the weighted objective stays strongly dependent on x; with [1, 2] the slopes nearly cancel
 FLOAT_TRANSFORMER = {"FloatTransformer": {"SklearnFloatMinMaxScaler": {"Type": "sklearn_float_transformer"}}}
 
@@ -39,7 +42,7 @@ def _data(n=40):
 
 
 def _trained(objectives, value_transformers=None) -> SklearnWrapper:
-    surrogate = _surrogate({name: OBJECTIVES[name] for name in objectives}, value_transformers)
+    surrogate = _surrogate(Objectives(tuple(OBJECTIVES.by_name(name) for name in objectives)), value_transformers)
     features, labels = _data()
     assert surrogate.create(features.iloc[::2], labels[list(objectives)].iloc[::2])
     return surrogate

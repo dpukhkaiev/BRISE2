@@ -2,10 +2,11 @@ import pandas as pd
 from typing import Dict
 
 from configuration_selection.model.value_transformer.value_scalarizator_abs import ValueScalarizator
+from core_entities.objectives import Objectives
 
 
 class WeightedSum(ValueScalarizator):
-    def __init__(self, value_transformer_description: Dict, objectives: Dict):
+    def __init__(self, value_transformer_description: Dict, objectives: Objectives):
         super().__init__(value_transformer_description, objectives)
         self.weights = value_transformer_description[self.feature_name]["Weights"]
 

@@ -6,10 +6,11 @@ from configuration_selection.model.value_transformer.value_transformer_orchestra
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
 from configuration_selection.model import configuration_transformation
 from core_entities.search_space import Hyperparameter, find_parameters_activated_within_region
+from core_entities.objectives import Objectives
 
 
 class Surrogate(ABC):
-    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Objectives):
         self.surrogate_instance = None
         self.region = region
         self.objectives = objectives

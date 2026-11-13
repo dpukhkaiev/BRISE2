@@ -2,6 +2,7 @@ import pandas as pd
 
 from configuration_selection.model.optimizer.moea import MOEA
 from configuration_selection.model.surrogate.sklearn_wrapper import SklearnWrapper
+from core_entities.objectives import Objectives
 
 I1 = "Context.SearchSpace.N0.N02.I1"  # integer [10, 1000]
 
@@ -12,7 +13,7 @@ class TestMoeaProposesIntegers:
         # 'test_case_13': flat, MOEA with an Integer transformer
         description, search_space = get_experiment(13)
         model = description["ConfigurationSelection"]["Predictor"]["Model"]
-        objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+        objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
         region = search_space.regions[0]
         surrogate = SklearnWrapper(model["Surrogate"], region, objectives)
         optimizer = MOEA(model["Optimizer"], region, objectives)

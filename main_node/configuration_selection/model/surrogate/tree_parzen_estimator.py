@@ -39,13 +39,14 @@ from core_entities.search_space import (
     NumericHyperparameter,
     OrdinalHyperparameter
 )
+from core_entities.objectives import Objectives
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 
 
 class TreeParzenEstimator(Surrogate):
-    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(surrogate_description, region, objectives)
-        self.objective = self.objectives[list(self.objectives.keys())[0]]  # TPE is always single-objective
+        self.objective = next(iter(self.objectives))  # TPE is always single-objective
         self.min_bandwidth = surrogate_description["Instance"][self.feature_name]["Parameters"]["min_bandwidth"]
         self.random_fraction = surrogate_description["Instance"][self.feature_name]["Parameters"]["random_fraction"]
         self.top_n_percent = surrogate_description["Instance"][self.feature_name]["Parameters"]["top_n_percent"]
@@ -71,7 +72,7 @@ class TreeParzenEstimator(Surrogate):
         transformed_labels = self._transform_values(labels)
         transformed_labels.reset_index(inplace=True, drop=True)  # reindex, since transformation changes indices
 
-        sorted_labels = labels.sort_values(by=transformed_labels.keys()[0], ascending=self.objective["Minimization"])
+        sorted_labels = labels.sort_values(by=transformed_labels.keys()[0], ascending=self.objective.minimization)
 
         t_features_good = transformed_features.iloc[sorted_labels[:n_good].index]
         t_features_bad = transformed_features.iloc[sorted_labels[n_good:].index]
@@ -147,8 +148,8 @@ class TreeParzenEstimator(Surrogate):
         predicted_probability_good = max(1e-32, good_pdf(transformed_configuration))
         predicted_probability_bad = max(1e-32, bad_pdf(transformed_configuration))
 
-        result = pd.DataFrame({self.objective["Name"] + "_probability_good": predicted_probability_good,
-                               self.objective["Name"] + "_probability_bad": predicted_probability_bad}, index=[0])
+        result = pd.DataFrame({self.objective.name + "_probability_good": predicted_probability_good,
+                               self.objective.name + "_probability_bad": predicted_probability_bad}, index=[0])
 
         return result
 
@@ -173,8 +174,8 @@ class TreeParzenEstimator(Surrogate):
         predicted_probability_bad = np.maximum(np.atleast_1d(bad_pdf(transformed_configurations)), 1e-32)
 
         result = pd.DataFrame({
-            self.objective["Name"] + "_probability_good": predicted_probability_good,
-            self.objective["Name"] + "_probability_bad": predicted_probability_bad
+            self.objective.name + "_probability_good": predicted_probability_good,
+            self.objective.name + "_probability_bad": predicted_probability_bad
         })
 
         return result

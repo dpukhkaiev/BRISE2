@@ -9,10 +9,11 @@ from configuration_selection.model.configuration_transformer.configuration_trans
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 from configuration_selection.model import configuration_transformation
 from core_entities.search_space import Hyperparameter
+from core_entities.objectives import Objectives
 
 
 class Optimizer(ABC):
-    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Objectives):
         self.region = region
         self.objectives = objectives
         self.feature_name = list(optimizer_description['Instance'].keys())[0]
@@ -51,8 +52,8 @@ class Optimizer(ABC):
         sign makes it a column to be minimized. A column that is not an objective follows the direction of the first
         objective.
         """
-        first_objective = next(iter(self.objectives.values()))
-        return np.array([1.0 if self.objectives.get(column, first_objective)["Minimization"] else -1.0
+        first_objective = next(iter(self.objectives))
+        return np.array([(self.objectives.by_name(column) if column in self.objectives.names else first_objective).sign
                          for column in label_columns])
 
     def _rank_candidates(self, candidates: pd.DataFrame, label_columns: List[str]) -> pd.DataFrame:

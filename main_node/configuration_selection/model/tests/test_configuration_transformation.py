@@ -8,6 +8,7 @@ from configuration_selection.model.configuration_transformation import build_tra
 from configuration_selection.model.optimizer.moea import MOEA
 from configuration_selection.model.surrogate.model_mock import ModelMock
 from configuration_selection.model.surrogate.sklearn_wrapper import SklearnWrapper
+from core_entities.objectives import Objectives
 from core_entities.search_space import find_parameters_activated_within_region
 
 N0 = "Context.SearchSpace.N0"
@@ -38,7 +39,7 @@ def flat_setup(request, get_experiment):
     if NOMINAL_OPTIONS[request.param]:
         for role in ("Surrogate", "Optimizer"):
             model[role]["ConfigurationTransformers"]["NominalTransformer"] = NOMINAL_OPTIONS[request.param]
-    objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+    objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
     region = search_space.regions[0]
     return SklearnWrapper(model["Surrogate"], region, objectives), MOEA(model["Optimizer"], region, objectives), request.param
 
@@ -54,7 +55,7 @@ def hierarchical_setup(request, get_experiment):
     description, search_space = get_experiment(11)
     model = copy.deepcopy(description["ConfigurationSelection"]["Predictor"]["Model_1"])
     model["Optimizer"]["ConfigurationTransformers"] = copy.deepcopy(model["Surrogate"]["ConfigurationTransformers"])
-    objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+    objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
     region = search_space.regions[1]
     if request.param == "nominal_first":
         region = tuple(reversed(region))
@@ -166,7 +167,7 @@ class TestTransformationOfAFlatRegion:
             self, get_experiment):
         description, search_space = get_experiment(13)
         region = search_space.regions[0]
-        objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+        objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
         surrogate = ModelMock({"Instance": {"ModelMock": {"MultiObjective": False}}}, region, objectives)
         inactive = {hp.name: hp.inactive_value() for hp in region}
 
@@ -182,7 +183,7 @@ class TestTransformationOfAFlatRegion:
         description, search_space = get_experiment(13)
         model = copy.deepcopy(description["ConfigurationSelection"]["Predictor"]["Model"])
         del model["Optimizer"]["ConfigurationTransformers"]
-        objectives = description["Context"]["TaskConfiguration"]["Objectives"]
+        objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
         optimizer = MOEA(model["Optimizer"], search_space.regions[0], objectives)
 
         pd.testing.assert_frame_equal(optimizer._transform_configuration(_proposals()), _proposals())

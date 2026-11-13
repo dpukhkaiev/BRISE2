@@ -4,10 +4,11 @@ import pandas as pd
 from typing import Dict, Tuple
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from core_entities.objectives import Objectives
 
 
 class ModelMock(Surrogate):
-    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(surrogate_description, region, objectives)
         self.multi_objective = surrogate_description['Instance']['ModelMock']['MultiObjective']
 
@@ -16,7 +17,7 @@ class ModelMock(Surrogate):
 
     def predict(self, cfg: pd.Series, transform: bool = True) -> pd.DataFrame:
         mapping_predicted_objective: Dict[float, str] = {}
-        for o in self.objectives:
+        for o in self.objectives.names:
             mapping_predicted_objective[random.random()] = o
         transformed_prediction = self._transform(mapping_predicted_objective)
 
@@ -38,19 +39,21 @@ class ModelMock(Surrogate):
         :return: Transformed DataFrame.
         """
         transformed_values = pd.DataFrame()  # transform based on the Objective type
-        for value, objective in mapping_predicted_objective.items():
-            if self.objectives[objective]["DataType"].__eq__("float"):
-                transformed_value = self.objectives[objective]["MinExpectedValue"] + value * (self.objectives[objective]["MaxExpectedValue"] - self.objectives[objective]["MinExpectedValue"])
-            elif self.objectives[objective]["DataType"].__eq__("int"):
-                transformed_value = round(self.objectives[objective]["MinExpectedValue"] + value * (self.objectives[objective]["MaxExpectedValue"] - self.objectives[objective]["MinExpectedValue"]))
+        for value, name in mapping_predicted_objective.items():
+            objective = self.objectives.by_name(name)
+            lower, upper = objective.expected_range
+            if objective.data_type == "float":
+                transformed_value = lower + value * (upper - lower)
+            elif objective.data_type == "int":
+                transformed_value = round(lower + value * (upper - lower))
             else:
                 raise NotImplementedError  # Objective function types except of numeric are not supported!
 
             if transformed_values.empty:
-                transformed_values = pd.DataFrame(columns=[self.objectives[objective]["Name"]])
+                transformed_values = pd.DataFrame(columns=[objective.name])
                 transformed_values.loc[0] = transformed_value
             else:
-                temp = pd.DataFrame(columns=[self.objectives[objective]["Name"]])
+                temp = pd.DataFrame(columns=[objective.name])
                 temp.loc[0] = transformed_value
                 transformed_values = transformed_values.join(temp)
 

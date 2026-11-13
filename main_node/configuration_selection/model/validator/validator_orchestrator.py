@@ -2,11 +2,12 @@ from typing import Dict, Tuple
 
 from configuration_selection.model.validator.validator_abs import Validator
 from tools.reflective_class_import import reflective_class_import
+from core_entities.objectives import Objectives
 
 
 class ValidatorOrchestrator:
 
-    def get_validator(self, validator_description: Dict, region: Tuple, objectives: Dict) -> Validator:
+    def get_validator(self, validator_description: Dict, region: Tuple, objectives: Objectives) -> Validator:
         keys = list(validator_description.keys())
         assert len(keys) == 1
         feature_name = keys[0]

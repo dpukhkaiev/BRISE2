@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple, Dict
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from core_entities.objectives import Objectives
 
 
 class Validator(ABC):
-    def __init__(self, validator_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, validator_description: Dict, region: Tuple, objectives: Objectives):
         self.validator_description = validator_description
         self.region = region
         self.objectives = objectives

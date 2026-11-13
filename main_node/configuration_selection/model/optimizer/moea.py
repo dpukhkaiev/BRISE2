@@ -9,13 +9,14 @@ from core_entities.search_space import CategoricalHyperparameter
 from configuration_selection.model.optimizer.optimizer_abs import Optimizer
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from core_entities.objectives import Objectives
 
 # these algorithms may leave the bounds of the problem unless explicitly forced to respect them
 FORCE_BOUNDS_ALGORITHMS = frozenset({"cmaes", "xnes"})
 
 
 class MOEA(Optimizer):
-    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(optimizer_description, region, objectives)
         self.generations = optimizer_description["Instance"][self.feature_name]["Generations"]
         self.pop_size = optimizer_description["Instance"][self.feature_name]["PopulationSize"]
@@ -114,7 +115,7 @@ class MOEA(Optimizer):
             population = pg.algorithm(algorithm).evolve(population)
 
         optimized_features = pd.DataFrame(population.get_x(), columns=self.params)
-        label_columns = ["Y"] if surrogate.scalarized else list(self.objectives.keys())
+        label_columns = ["Y"] if surrogate.scalarized else self.objectives.names
         # pygmo minimizes, so the fitness of a maximized objective is negated; restore the predicted values
         optimized_labels = pd.DataFrame(population.get_f() * problem.signs, columns=label_columns)
 
@@ -149,7 +150,7 @@ class MOEA(Optimizer):
             self._optimizer: MOEA = optimizer
             self._bounds = self._optimizer.bounds
             self._objectives = self._optimizer.objectives
-            label_columns = ["Y"] if surrogate.scalarized else list(self._objectives.keys())
+            label_columns = ["Y"] if surrogate.scalarized else self._objectives.names
             self.signs = self._optimizer._get_direction_signs(label_columns)
             self._params = self._optimizer.params
 

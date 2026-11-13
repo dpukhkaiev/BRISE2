@@ -4,10 +4,11 @@ from typing import Dict, Tuple
 
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from core_entities.objectives import Objectives
 
 
 class SklearnWrapper(Surrogate):
-    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(surrogate_description, region, objectives)
 
         self.multi_objective = surrogate_description['Instance'][self.feature_name]['MultiObjective']
@@ -43,7 +44,7 @@ class SklearnWrapper(Surrogate):
 
         predicted = self.surrogate_instance.predict(transformed_configuration)
         if not self.scalarized:
-            result = pd.DataFrame(predicted, columns=list(self.objectives.keys()))
+            result = pd.DataFrame(predicted, columns=self.objectives.names)
         else:
             result = pd.DataFrame(predicted, columns=["Y"])
 
@@ -60,7 +61,7 @@ class SklearnWrapper(Surrogate):
 
         predicted = self.surrogate_instance.predict(transformed_configurations)
         if not self.scalarized:
-            result = pd.DataFrame(predicted, columns=list(self.objectives.keys()))
+            result = pd.DataFrame(predicted, columns=self.objectives.names)
         else:
             result = pd.DataFrame(predicted, columns=["Y"])
 
