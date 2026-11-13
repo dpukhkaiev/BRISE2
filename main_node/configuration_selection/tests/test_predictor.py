@@ -1,9 +1,13 @@
 from types import SimpleNamespace
 
 import pandas as pd
+import pytest
 
 from configuration_selection.model.predictor import Predictor
 from core_entities.configuration import Configuration
+from tools.restore_db import RestoreDB
+
+rdb = RestoreDB()
 
 
 def _make_config(parameters):
@@ -123,3 +127,54 @@ class TestAveragePredictionsPerObjective:
         averaged = Predictor._average_predictions_per_objective(None, predicted_values)
 
         assert averaged == {"Y1": 0.5}
+
+
+class TestPredictedConfigurationsHoldOnlyActiveParameters:
+    """
+    'test_case_13' is flat, 'test_case_11' is hierarchical; both have the branches N01 {F1, N1} and N02 {I1, O1}
+    below N0. A configuration leaves the predictor in its measured form: the active parameters only.
+    """
+
+    N0 = "Context.SearchSpace.N0"
+    BRANCH_PARAMETERS = {
+        f"{N0}.N01": {N0, f"{N0}.N01.F1", f"{N0}.N01.N1"},
+        f"{N0}.N02": {N0, f"{N0}.N02.I1", f"{N0}.N02.O1"},
+    }
+
+    @pytest.fixture(autouse=True)
+    def _database(self):
+        rdb.cleanup()
+        rdb.restore()
+
+    @staticmethod
+    def _predictor(get_experiment, test_case):
+        description, search_space = get_experiment(test_case)
+        return Predictor("experiment_id", description, search_space)
+
+    @pytest.mark.parametrize("test_case", [13, 11])
+    def test_sampled_configurations_hold_the_parameters_of_their_branch(self, get_experiment, test_case):
+        predictor = self._predictor(get_experiment, test_case)
+
+        configurations = [c for _ in range(20) for c in predictor.predict([], True)]
+
+        assert all(set(c.parameters) == self.BRANCH_PARAMETERS[c.parameters[self.N0]] for c in configurations)
+
+    def test_flat_predictions_hold_the_parameters_of_their_branch(self, get_experiment):
+        predictor = self._predictor(get_experiment, 13)
+        region = predictor.search_space.regions[0]
+        n1, o1 = f"{self.N0}.N01.N1.N11", f"{self.N0}.N02.O1.O11"
+        # the model proposes a value for every parameter, also for the ones the branch doesn't activate
+        proposals = pd.DataFrame([
+            {self.N0: f"{self.N0}.N01", f"{self.N0}.N01.F1": 1.0, f"{self.N0}.N01.N1": n1,
+             f"{self.N0}.N02.I1": 11, f"{self.N0}.N02.O1": o1, "Y1": 0.5},
+            {self.N0: f"{self.N0}.N02", f"{self.N0}.N01.F1": 2.0, f"{self.N0}.N01.N1": n1,
+             f"{self.N0}.N02.I1": 22, f"{self.N0}.N02.O1": o1, "Y1": 0.6},
+        ])
+        predictor.mapping_region_model[region].predict = lambda parameters, configurations: proposals
+
+        configurations = predictor.predict([_make_config({})])
+
+        assert [set(c.parameters) for c in configurations] == [
+            self.BRANCH_PARAMETERS[f"{self.N0}.N01"], self.BRANCH_PARAMETERS[f"{self.N0}.N02"]]
+        assert [c.parameters[f"{self.N0}.N01.F1"] for c in configurations[:1]] == [1.0]
+        assert [c.predicted_result for c in configurations] == [[0.5], [0.6]]

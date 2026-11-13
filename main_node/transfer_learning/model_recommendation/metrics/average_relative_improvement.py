@@ -24,6 +24,17 @@ class AverageRelativeImprovementMetric(ModelPerformanceMetric):
                 model_types.append(model_type)
         return model_types
 
+    def _relative_improvement(self, start_value: float, end_value: float) -> float:
+        """
+        The progress of the best result in the direction of the objective, relative to the value it started from.
+        :param start_value: the best result at the start of the interval
+        :param end_value: the best result at the end of the interval
+        :return: positive for an improvement, negative for a deterioration
+        :raises ZeroDivisionError: if the start value is 0
+        """
+        progress = start_value - end_value if self.is_minimization_experiment else end_value - start_value
+        return progress / abs(start_value)
+
     def compute(self, improvement_curve: List, prediction_infos: List, start_index: int, end_index: int, multi_model: bool) -> Dict:
         """
         Computes average relative improvement metric to evaluate the performance of models' combination
@@ -58,28 +69,18 @@ class AverageRelativeImprovementMetric(ModelPerformanceMetric):
                     improvements = []
                     for j, _ in enumerate(start_indices_for_combinations):
                         if j + 1 < len(start_indices_for_combinations):
-                            if self.is_minimization_experiment:
-                                relative_improvement = (abs(improvement_curve[start_indices_for_combinations[j]])
-                                                        - abs(improvement_curve[start_indices_for_combinations[j+1]])) / \
-                                    abs(improvement_curve[start_indices_for_combinations[j]])
-                            else:
-                                relative_improvement = (abs(improvement_curve[start_indices_for_combinations[j+1]])
-                                                        - abs(improvement_curve[start_indices_for_combinations[j]])) / \
-                                    abs(improvement_curve[start_indices_for_combinations[j+1]])
+                            relative_improvement = self._relative_improvement(
+                                improvement_curve[start_indices_for_combinations[j]],
+                                improvement_curve[start_indices_for_combinations[j+1]])
                             improvements.append({"Model_combination": combinations[j],
                                                  "average_relative_improvement":
                                                      relative_improvement /
                                                      (start_indices_for_combinations[j+1] - start_indices_for_combinations[j])})
                         # for the case when the same model combination was used on the whole interval
                         else:
-                            if self.is_minimization_experiment:
-                                relative_improvement = ((abs(improvement_curve[start_indices_for_combinations[j]])
-                                                        - abs(improvement_curve[end_index])) /
-                                                        abs(improvement_curve[start_indices_for_combinations[j]]))
-                            else:
-                                relative_improvement = ((abs(improvement_curve[end_index])
-                                                        - abs(improvement_curve[start_indices_for_combinations[j]])) /
-                                                        abs(improvement_curve[end_index]))
+                            relative_improvement = self._relative_improvement(
+                                improvement_curve[start_indices_for_combinations[j]],
+                                improvement_curve[end_index])
                             improvements.append({"Model_combination": combinations[j],
                                                  "average_relative_improvement":
                                                      relative_improvement /
@@ -87,9 +88,9 @@ class AverageRelativeImprovementMetric(ModelPerformanceMetric):
                     if len(improvements) > 0:
                         return max(improvements, key=lambda x: x["average_relative_improvement"])
                 else:
-                    return {"Model_combination": combinations[0], "average_relative_improvement":
-                        ((abs(improvement_curve[start_index]) - abs(improvement_curve[end_index])) / abs(
-                            improvement_curve[start_index]))}
+                    return {"Model_combination": combinations[0],
+                            "average_relative_improvement": self._relative_improvement(improvement_curve[start_index],
+                                                                                       improvement_curve[end_index])}
         except ZeroDivisionError:
             self.logger.debug("Couldn't calculate average relative improvement for considered similar experiment (division by zero)!")
         return {"Model_combination": None, "average_relative_improvement": None}

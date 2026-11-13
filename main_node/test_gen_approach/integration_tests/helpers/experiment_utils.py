@@ -105,17 +105,6 @@ def write_experiment_to_db(experiment: Experiment, search_space: SearchSpace):
         return False
 
 
-def setup_task_configuration(experiment: Experiment):
-    try:
-        Configuration.set_task_config(
-            experiment.description["Context"]["TaskConfiguration"]
-        )
-        return True
-    except (KeyError, TypeError, AttributeError) as e:
-        print(f"Failed to setup task configuration: {e}")
-        return False
-
-
 def get_configuration_fixture_name(parameter_types: str):
     return f"get_configurations_{parameter_types}"
 

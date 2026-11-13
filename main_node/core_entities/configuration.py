@@ -10,6 +10,8 @@ from enum import Enum
 from typing import Any, Dict, List, Mapping, MutableMapping, Tuple
 
 import pandas as pd
+
+from core_entities.objectives import Objectives
 from tools.front_API import API
 
 
@@ -20,12 +22,6 @@ class Configuration:
         FROM_SELECTOR = 2
         TEST = 3
         TRANSFERRED = 4
-
-    TaskConfiguration = {}
-
-    @classmethod
-    def set_task_config(cls, task_configuration):
-        cls.TaskConfiguration = task_configuration
 
     def __init__(self, parameters: Mapping, config_type: Type, experiment_id: str, prediction_info: Dict = None):
         """
@@ -141,26 +137,27 @@ class Configuration:
         # TPE prediction is probability
         raise NotImplementedError
 
-    def add_task(self, task: Mapping) -> None:
+    def add_task(self, task: Mapping, objectives: Objectives) -> None:
         """
         Add new measurements of concrete parameters
         :param task: mapping of task results
+        :param objectives: the objectives of the experiment, whose results the task carries
         """
         task_id = task["task id"]
         self.parameter_control_info = task["result"].pop("parameter_control_info", {})
         self._tasks[str(task_id)] = task
-        self._assemble_tasks_results()
+        self._assemble_tasks_results(objectives)
 
     def get_tasks(self) -> Mapping:
         return self._tasks.copy()
 
-    def get_required_results_with_marks_from_all_tasks(self) -> Tuple[List[OrderedDict], List[float], List[str]]:
+    def get_required_results_with_marks_from_all_tasks(self, objectives: Objectives) -> Tuple[List[OrderedDict], List[float], List[str]]:
         from_all_tasks = []
         evaluation_times = []
         marks = []
         for task in self._tasks.values():
             from_one_task = OrderedDict()
-            for domain in self.__class__.TaskConfiguration["Objectives"]:
+            for domain in objectives.names:
                 from_one_task[domain] = (task['result'][domain])
             from_all_tasks.append(from_one_task)
             evaluation_times.append(task.get('evaluation_time'))
@@ -209,74 +206,19 @@ class Configuration:
         conf.parameter_control_info = dictionary_dump["parameter_control_info"]
         return conf
 
-    def is_better(self, o_minimize: List[bool], other: Configuration) -> bool:
-        """
-        Comparison of Configurations on their Objective values.
-
-        :param o_minimize: list of boolean values. Indicates the direction of optimization for each objective.
-        :param other: configuration instance, against which the comparison is performed.
-        :return: bool True - this configuration is better than other, otherwise False.
-        """
-
-        if self.results and other.results:
-            for o in o_minimize:
-                if o is True:
-                    if self > other or self == other:
-                        return False
-                elif o is False:
-                    if self < other or self == other:
-                        return False
-            return True
-        else:
-            self.logger.error(f"One (or both) of Configurations doesn't (don't) have the results: {self}, {other}.")
-
     def __eq__(self, other: Configuration) -> bool:
         if not isinstance(other, Configuration):
             return False
         return self.unique_id == other.unique_id or self.parameters == other.parameters
 
-    def __lt__(self, other: Configuration) -> bool:
-        """
-        Returns True, if 'self' < 'compared_configuration'. Otherwise - False
-        :param other: instance of Configuration class
-        :return: bool
-        """
-        objectives = self.__class__.TaskConfiguration["Objectives"]
-        assert all((objective in self.results.keys() for objective in objectives)), f"{self} does not contain all {objectives}."
-        assert all((objective in other.results.keys() for objective in objectives)), f"{other} does not contain all {objectives}."
-        assert self.results.keys() == other.results.keys(), f"Unable to compare Configurations since objectives do not match: {self}, {other}"
-
-        # compare all metrics
-        objectives_comparison = dict()
-        for objective, result in self.results.items():
-            objectives_comparison[objective] = result < other.results[objective]
-
-        # all comparisons are True for the same priority == dominating solution
-        if all(obj_comp is True for obj_comp in objectives_comparison.values()):
-            return True
-        elif all(obj_comp is False for obj_comp in objectives_comparison.values()):
-            return False
-        else:
-            self.logger.warning(f"Got non-dominating Configuration comparison: "
-                                f"{self} VS {other} -> {objectives_comparison}")
-            return False
-
-    def __gt__(self, other: Configuration) -> bool:
-        """
-        Returns True, if 'self' > 'compared_configuration'. Otherwise - False
-        :param other: instance of Configuration class
-        :return: bool
-        """
-        return other.__lt__(self)
-
-    def _assemble_tasks_results(self) -> None:
+    def _assemble_tasks_results(self, objectives: Objectives) -> None:
         """
         Updates the results of the Configuration measurement by aggregating the results from all available Tasks.
         The average results of the Configuration and the BaseMTL Deviation between Tasks are calculated.
         The average Task evaluation time is calculated the same way.
         """
         # list of a result list from all tasks
-        results_tuples, evaluation_times, marks = self.get_required_results_with_marks_from_all_tasks()
+        results_tuples, evaluation_times, marks = self.get_required_results_with_marks_from_all_tasks(objectives)
         task_index_size = len(results_tuples) - 1
         # delete marked bad/outliers values before average is calculated
         for task_index in range(task_index_size, -1, -1):
@@ -286,7 +228,7 @@ class Configuration:
                 del (results_tuples[task_index])
                 del (evaluation_times[task_index])
         # calculating the average over all result items
-        ok_tasks_results = pd.DataFrame(results_tuples, columns=self.TaskConfiguration["Objectives"])
+        ok_tasks_results = pd.DataFrame(results_tuples, columns=objectives.names)
         self.results = OrderedDict(ok_tasks_results.mean())
         self._standard_deviation = ok_tasks_results.std().to_list()
         # calculating the average evaluation time over all valid tasks, ignoring tasks without a recorded time
@@ -321,10 +263,11 @@ class Configuration:
         """
         self.number_of_failed_tasks = self.number_of_failed_tasks + 1
 
-    def is_valid_task(self, task: dict):
+    def is_valid_task(self, task: dict, objectives: Objectives):
         """
         Check error_check function output and return an appropriate flag
         :param task: dictionary object, that represents one Task
+        :param objectives: the objectives of the experiment, whose results the task must carry
         :return: boolean, should we include task to configuration or not
         """
         try:
@@ -333,9 +276,9 @@ class Configuration:
                 return False
             assert type(task["task id"]) in [int, float, str], "Task IDs are not hashable: %s" % type(task["task id"])
             assert task['worker'], "Worker is not specified: %s" % task
-            assert set(self.TaskConfiguration['Objectives']) <= set(task['result'].keys()), \
+            assert set(objectives.names) <= set(task['result'].keys()), \
                 f"All required result fields are not obtained. " \
-                f"Expected: {self.TaskConfiguration['Objectives']}. Got: {task['result'].keys()}."
+                f"Expected: {objectives.names}. Got: {task['result'].keys()}."
             return True
         except AssertionError as error:
             logging.getLogger(__name__).error("Unable to add Task (%s) to Configuration. Reason: %s" % (task, error))

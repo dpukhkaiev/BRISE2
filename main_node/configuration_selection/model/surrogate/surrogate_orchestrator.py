@@ -2,11 +2,12 @@ from typing import Tuple, Dict
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 from tools.reflective_class_import import reflective_class_import
+from core_entities.objectives import Objectives
 
 
 class SurrogateOrchestrator:
 
-    def get_surrogate(self, surrogate_description: Dict, region: Tuple, objectives: Dict) -> Surrogate:
+    def get_surrogate(self, surrogate_description: Dict, region: Tuple, objectives: Objectives) -> Surrogate:
         keys = list(surrogate_description['Instance'].keys())
         assert len(keys) == 1
         feature_name = keys[0]

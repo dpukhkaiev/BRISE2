@@ -20,9 +20,11 @@ abstract CategoricalHyperparameter : Hyperparameter {
 
 abstract NominalHyperparameter: CategoricalHyperparameter {
   [Type = "NominalHyperparameter"]
+  [self requires ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.NominalTransformer or ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit or ConfigurationSelection.Predictor.Model.Surrogate.Instance.ModelMock]
 }
 abstract OrdinalHyperparameter: CategoricalHyperparameter {
   [Type = "OrdinalHyperparameter"]
+  [self requires ConfigurationSelection.Predictor.Model.Surrogate.ConfigurationTransformers.OrdinalTransformer or ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit or ConfigurationSelection.Predictor.Model.Surrogate.Instance.ModelMock]
 }
 
 abstract NumericHyperparameter: Hyperparameter
@@ -81,6 +83,7 @@ Context {
       [if size childs.self > 1 and fcard.TransferLearning > 0 then self excludes TransferLearning.MultiTaskLearning.Filters.OnlyBestConfigurations]
     }
     [if size childs.self.Objectives > 1 then fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 1 else fcard.ConfigurationSelection.Predictor.Model.MultiObjectiveHandling = 0]
+    [if size childs.self.Objectives < 2 then fcard.PlotSelection.Plot.ParetoFront = 0]
   }
 
   SearchSpace {
@@ -117,10 +120,17 @@ Context {
     }
 
     xor Structure {
-      Flat
+      Flat {
+        [self excludes ConfigurationSelection.Predictor.Model.Surrogate.Instance.MultiArmedBandit]
+      }
       Hierarchical
     }
     [fcard.ConfigurationSelection.Predictor.Model = size unique Level at self]
+    // Note: Rank and ContourPlot are to be excluded, when there are less then 2 params
+    // and if there are 2 params, but a categorical param has only 1 Category.
+    // Cannot be modeled by Waffle now. Disabled.
+    // [if size childs.self < 3 then fcard.PlotSelection.Plot.RankPlot = 0]
+    // [if size childs.self < 3 then fcard.PlotSelection.Plot.ContourPlot = 0]
   }
 }
 
@@ -156,6 +166,11 @@ ConfigurationSelection {
             [fcard.parent.parent.parent.Surrogate.ValueTransformers = 1]
             [fcard.parent.parent.parent.Optimizer = 1]
             [fcard.parent.parent.parent.Validator.InternalValidator = 0]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.MOEAD]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.NSGA2]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.MACO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.MOEAD_GEN]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.NSPSO]
           }
           Pure {
             [self excludes parent.parent.parent.Surrogate.ValueTransformers.ValueScalarizator]
@@ -169,6 +184,17 @@ ConfigurationSelection {
             [fcard.parent.parent.parent.Surrogate = 1]
             [fcard.parent.parent.parent.Optimizer = 1]
             [fcard.parent.parent.parent.Validator.InternalValidator = 0]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.GACO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.GWO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.BEE_COLONY]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.DE]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.SEA]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.SGA]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.SADE]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.DE1220]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.CMAES]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.PSO]
+            [self excludes parent.parent.parent.Optimizer.Instance.MOEA.Algorithms.PSO_GEN]
           }
           Compositional {
             [fcard.parent.parent.parent.Surrogate = size childs.Context.TaskConfiguration.Objectives]
@@ -331,6 +357,7 @@ ConfigurationSelection {
             [self requires parent.parent.parent.Validator.ExternalValidator.MockValidator]
             [self excludes parent.parent.parent.Validator.InternalValidator]
             [fcard.parent.parent.ConfigurationTransformers == 0]
+            [size (filter childs.Context.TaskConfiguration.Objectives where Minimization == True) == 0]
             Type -> predefined
             [Type = "multi_armed_bandit"]
           }
@@ -533,7 +560,7 @@ ConfigurationSelection {
                 [MultiObjective = False]
                 [parent.parent.PopulationSize >= 7]
               }
-              DE1220 { // Self-adaptive Differential Evolution, pygmo flavour (pDE). FROM HERE SO only tested
+              DE1220 { // Self-adaptive Differential Evolution, pygmo flavour (pDE).
                 MultiObjective -> predefined
                 [MultiObjective = False]
                 [parent.parent.PopulationSize >= 7]
@@ -564,6 +591,9 @@ ConfigurationSelection {
                 [parent.parent.PopulationSize >= 2]
               }
             }
+            [self requires parent.parent.ConfigurationTransformers.NominalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.OrdinalTransformer]
+            [self requires parent.parent.ConfigurationTransformers.IntegerTransformer]
             Type -> predefined
             [Type = "moea"]
           }
@@ -886,5 +916,20 @@ DefaultConfigurationHandler ? {
   RandomDCH {
     Type -> predefined
     [Type = "random_default_config_handler"]
+  }
+}
+
+
+PlotSelection ? {
+  or Plot {
+    OptimizationHistory
+    ParallelCoordinates
+    RankPlot
+    HyperparameterImportances
+    SlicePlot
+    ContourPlot
+    ParetoFront
+    EDFPlot
+    Heatmap
   }
 }

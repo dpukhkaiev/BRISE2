@@ -6,6 +6,7 @@ from core_entities.configuration import Configuration
 from repeater.results_check.outliers_detection.outliers_detector_selector import (
     get_outlier_detectors
 )
+from core_entities.objectives import Objectives
 from repeater.results_check.task_errors_check import error_check
 from tools.front_API import API
 from tools.mongo_dao import MongoDB
@@ -49,19 +50,7 @@ class RepeaterOrchestration:
         feature_name = keys[0]
         self.repeater_parameters = {**self.experiment_description["RepetitionManager"]["Instance"][feature_name], **self.experiment_description["RepetitionManager"]}
 
-        objectives = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["Name"]
-                 for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-        self._objectives = objectives
-        data_types = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["DataType"]
-                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-
-        self._objectives_data_types = data_types
-        minimal_values = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["MinExpectedValue"]
-                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-        maximal_values = [self.experiment_description["Context"]["TaskConfiguration"]["Objectives"][key]["MaxExpectedValue"]
-                      for key in self.experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys()]
-        expected_value_ranges = [(min, max) for min in minimal_values for max in maximal_values]
-        self._expected_values_range = expected_value_ranges
+        self.objectives = Objectives.from_description(self.experiment_description["Context"]["TaskConfiguration"]["Objectives"])
 
         self.logger.info("Outliers detection module is disabled")
 
@@ -116,6 +105,17 @@ class RepeaterOrchestration:
             else:
                 return 0
 
+    def _check_tasks_results(self, tasks_results: list) -> list:
+        """
+        Marks each task with the result of the check of its results against the data type and the expected range
+        of every objective.
+        :param tasks_results: the tasks measured by workers
+        :return: the tasks with ResultValidityCheckMark
+        """
+        for objective in self.objectives:
+            tasks_results = error_check(tasks_results, objective.name, objective.expected_range, objective.data_type)
+        return tasks_results
+
     def measure_configurations(self, channel, method, properties, body):
         """
         Callback function for the result of measuring
@@ -132,17 +132,13 @@ class RepeaterOrchestration:
         if configuration.status['evaluated'] and os.environ.get('TEST_MODE') != 'UNIT_TEST':
             tasks_to_send = result["tasks_to_send"]
             tasks_results = result["tasks_results"]
-            for index, objective in enumerate(self._objectives):
-                tasks_results = error_check(tasks_results,
-                                            objective,
-                                            self._expected_values_range[index],
-                                            self._objectives_data_types[index])
+            tasks_results = self._check_tasks_results(tasks_results)
 
             # Sending data to API and adding Tasks to Configuration
             for parameters, task in zip(tasks_to_send, tasks_results):
                 if configuration.parameters == parameters:
-                    if configuration.is_valid_task(task):
-                        configuration.add_task(task)
+                    if configuration.is_valid_task(task, self.objectives):
+                        configuration.add_task(task, self.objectives)
                         self.database.write_one_record("Task", configuration.get_task_record(task))
                     else:
                         configuration.increase_failed_tasks_number()

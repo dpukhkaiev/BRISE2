@@ -4,7 +4,13 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
-const vuetify = createVuetify()
+import { briseTheme } from './shared/config/vuetify.theme'
+const vuetify = createVuetify({
+  theme: {
+    defaultTheme: 'light',
+    themes: { light: briseTheme }
+  }
+})
 
 const app = createApp(App)
 

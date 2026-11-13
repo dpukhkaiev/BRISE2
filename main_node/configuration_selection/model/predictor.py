@@ -7,6 +7,7 @@ import pandas as pd
 
 from configuration_selection.sampling.sampling_strategy_orchestrator import SamplingStrategyOrchestrator
 from core_entities.configuration import Configuration
+from core_entities.objectives import Objectives
 from core_entities.search_space import Hyperparameter
 from core_entities.search_space import SearchSpace
 from tools.mongo_dao import MongoDB
@@ -32,7 +33,7 @@ class Predictor:
                  search_space: SearchSpace):
         self.experiment_id = experiment_id
         self.predictor_config = experiment_description["ConfigurationSelection"]["Predictor"]
-        self.task_config = experiment_description["Context"]["TaskConfiguration"]
+        self.objectives = Objectives.from_description(experiment_description["Context"]["TaskConfiguration"]["Objectives"])
         self.search_space = search_space
         self.window_size = self.predictor_config["WindowSize"]
         self.sampling_strategy_orchestrator = SamplingStrategyOrchestrator()
@@ -48,7 +49,7 @@ class Predictor:
         for r in self.search_space.regions:
             level = r[0].level
             type = models_types[level]
-            model = Model(model_description=type, region=r, objectives=self.task_config["Objectives"])
+            model = Model(model_description=type, region=r, objectives=self.objectives)
             self.mapping_region_model[r] = model
 
         self.mapping_region_sampling_strategy = {}
@@ -152,7 +153,9 @@ class Predictor:
             else:
                 parameters = f.to_dict()
                 predicted_values = {}
-            configuration = Configuration(parameters, configuration_type, self.experiment_id, prediction_info=prediction_info)
+            # a configuration is created for active parameters only
+            configuration = Configuration(self.search_space.keep_active_parameters(parameters), configuration_type,
+                                          self.experiment_id, prediction_info=prediction_info)
             configuration.predicted_result = list(predicted_values.values())
             predicted_configurations.append(configuration)
 

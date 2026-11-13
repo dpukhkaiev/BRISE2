@@ -43,12 +43,20 @@ export default defineConfig({
     }
   },
   test: {
-    environment: 'jsdom',
     globals: true,
     server: {
       deps: {
         inline: ['vuetify']
       }
-    }
+    },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'jsdom'
+        }
+      }
+    ]
   }
 })

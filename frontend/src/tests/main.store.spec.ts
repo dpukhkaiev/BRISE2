@@ -1,7 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { of, BehaviorSubject } from 'rxjs'
+import { of, BehaviorSubject, Subject } from 'rxjs'
 import { MainEvent } from '../entities/main/model/main.types'
+import type { RawProductConfiguration, SearchSpaceRegion } from '../entities/experiment/model/experiment.model'
+
+const mockRegions: SearchSpaceRegion[] = [
+    {
+        ActivationCategory: 'root',
+        Parameters: [{
+            Name: 'Context.SearchSpace.Algorithm',
+            Type: 'NominalHyperparameter',
+            Level: 0,
+            Categories: ['Context.SearchSpace.Algorithm.A', 'Context.SearchSpace.Algorithm.B'],
+            Inactive: 'inactive'
+        }]
+    },
+    {
+        ActivationCategory: 'Context.SearchSpace.Algorithm.A',
+        Parameters: [{
+            Name: 'Context.SearchSpace.Algorithm.A.alpha',
+            Type: 'FloatHyperparameter',
+            Level: 1,
+            Lower: 0,
+            Upper: 1,
+            Inactive: -1
+        }]
+    },
+    {
+        ActivationCategory: 'Context.SearchSpace.Algorithm.B',
+        Parameters: [{
+            Name: 'Context.SearchSpace.Algorithm.B.gamma',
+            Type: 'IntegerHyperparameter',
+            Level: 1,
+            Lower: 1,
+            Upper: 5,
+            Inactive: -3
+        }]
+    }
+]
+
+const descriptionMessage = (regions: SearchSpaceRegion[] | undefined, description: object = { Context: { TaskConfiguration: {} } }) => ({
+    headers: { message_subtype: 'description' },
+    body: JSON.stringify({ experiment_description: description, regions })
+})
 
 const mockWatch = vi.fn();
 const connectionState$ = new BehaviorSubject<number>(0);
@@ -80,28 +121,134 @@ describe('useMainEventStore', () => {
         )
     })
 
-    it('should set experiment_description, searchspace and globalConfig on description message', () => {
+    it('should set experiment_description and regions on description message', () => {
         const mockDescription = {
             TaskName: 'TestTask',
             Context: { TaskConfiguration: { TaskName: 'TestTask' } }
         }
-        const mockMessage = {
-            headers: { message_subtype: 'description' },
-            body: JSON.stringify({
-                experiment_description: mockDescription,
-                searchspace_description: { param: 'value' },
-                global_configuration: { config: 'value' }
-            })
-        }
-        mockWatch.mockReturnValue(of(mockMessage))
+        mockWatch.mockReturnValue(of(descriptionMessage(mockRegions, mockDescription)))
 
         const store = useMainEventStore()
         store.initEvent()
 
         expect(store.experiment_description).toEqual(mockDescription)
-        expect(store.searchspace).toEqual({ param: 'value' })
-        expect(store.globalConfig).toEqual({ config: 'value' })
+        expect(store.regions).toEqual(mockRegions)
         expect(store.searchspaceReady).toBe(true)
+    })
+
+    it('should have no parameters before the description message', () => {
+        const store = useMainEventStore()
+        expect(store.regions).toEqual([])
+        expect(store.specsByName).toEqual({})
+    })
+
+    it('should map every parameter of every region by its name', () => {
+        mockWatch.mockReturnValue(of(descriptionMessage(mockRegions)))
+
+        const store = useMainEventStore()
+        store.initEvent()
+
+        expect(Object.keys(store.specsByName)).toEqual([
+            'Context.SearchSpace.Algorithm',
+            'Context.SearchSpace.Algorithm.A.alpha',
+            'Context.SearchSpace.Algorithm.B.gamma'
+        ])
+        expect(store.specsByName['Context.SearchSpace.Algorithm.A.alpha']).toEqual(mockRegions[1].Parameters[0])
+    })
+
+    it('should replace the description, regions and parameters when a new description arrives', () => {
+        const messages = new Subject<any>()
+        mockWatch.mockReturnValue(messages)
+        const secondDescription = { Context: { TaskConfiguration: { TaskName: 'Second' } } }
+
+        const store = useMainEventStore()
+        store.initEvent()
+        messages.next(descriptionMessage(mockRegions))
+        messages.next(descriptionMessage(mockRegions.slice(0, 1), secondDescription))
+
+        expect(store.experiment_description).toEqual(secondDescription)
+        expect(store.regions).toEqual(mockRegions.slice(0, 1))
+        expect(Object.keys(store.specsByName)).toEqual(['Context.SearchSpace.Algorithm'])
+    })
+
+    it('should leave the regions alone on a message of another subtype', () => {
+        const messages = new Subject<any>()
+        mockWatch.mockReturnValue(messages)
+
+        const store = useMainEventStore()
+        store.initEvent()
+        messages.next(descriptionMessage(mockRegions))
+        messages.next({ headers: { message_subtype: 'other_subtype' }, body: '{}' })
+
+        expect(store.regions).toEqual(mockRegions)
+        expect(store.searchspaceReady).toBe(true)
+    })
+
+    describe('a description without regions', () => {
+        beforeEach(() => {
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+        })
+
+        it('should keep the description, report the problem and leave the search space not ready', () => {
+            mockWatch.mockReturnValue(of(descriptionMessage(undefined)))
+
+            const store = useMainEventStore()
+            store.initEvent()
+
+            expect(store.experiment_description).toEqual({ Context: { TaskConfiguration: {} } })
+            expect(store.regions).toEqual([])
+            expect(store.specsByName).toEqual({})
+            expect(store.searchspaceReady).toBe(false)
+            expect(console.error).toHaveBeenCalled()
+        })
+
+        it('should clear the regions of the previous description', () => {
+            const messages = new Subject<any>()
+            mockWatch.mockReturnValue(messages)
+
+            const store = useMainEventStore()
+            store.initEvent()
+            messages.next(descriptionMessage(mockRegions))
+            messages.next(descriptionMessage(undefined))
+
+            expect(store.regions).toEqual([])
+            expect(store.specsByName).toEqual({})
+            expect(store.searchspaceReady).toBe(false)
+        })
+    })
+
+    it('should mark the experiment as finished by the final message and as running again by a description', () => {
+        const messages = new Subject<any>()
+        mockWatch.mockReturnValue(messages)
+
+        const store = useMainEventStore()
+        store.initEvent()
+        expect(store.experimentFinished).toBe(false)
+
+        messages.next({ headers: { message_subtype: 'configuration' }, body: '{}' })
+        expect(store.experimentFinished).toBe(true)
+
+        messages.next(descriptionMessage(mockRegions))
+        expect(store.experimentFinished).toBe(false)
+    })
+
+    it('should have no raw product configuration until a file is uploaded', () => {
+        const store = useMainEventStore()
+        expect(store.raw_product_configuration).toBeNull()
+    })
+
+    it('should keep the raw product configuration apart from the description of the running experiment', () => {
+        const messages = new Subject<any>()
+        mockWatch.mockReturnValue(messages)
+        const uploaded = { Context: { TaskConfiguration: {}, SearchSpace: { N0: {} } } } as unknown as RawProductConfiguration
+
+        const store = useMainEventStore()
+        store.initEvent()
+        store.raw_product_configuration = uploaded
+        messages.next(descriptionMessage(mockRegions))
+
+        expect(store.raw_product_configuration).toEqual(uploaded)
+        expect(store.experiment_description).not.toEqual(uploaded)
     })
 
     it('should default searchspaceReady to false', () => {
@@ -109,13 +256,16 @@ describe('useMainEventStore', () => {
         expect(store.searchspaceReady).toBe(false)
     })
 
-    it('should preserve Infinity values in message body', () => {
+    it.each([
+        ['Infinity', Infinity],
+        ['-Infinity', -Infinity],
+        ['NaN', NaN]
+    ])('should preserve %s in message body', (token, value) => {
         const mockMessage = {
             headers: { message_subtype: 'description' },
             body: `{
-                "experiment_description": {"value": Infinity},
-                "searchspace_description": {},
-                "global_configuration": {}
+                "experiment_description": {"value": ${token}},
+                "regions": []
             }`
         }
         mockWatch.mockReturnValue(of(mockMessage))
@@ -123,40 +273,6 @@ describe('useMainEventStore', () => {
         const store = useMainEventStore()
         store.initEvent()
 
-        expect(store.experiment_description).toEqual({ value: Infinity })
-    })
-
-    it('should preserve -Infinity values in message body', () => {
-        const mockMessage = {
-            headers: { message_subtype: 'description' },
-            body: `{
-                "experiment_description": {"value": -Infinity},
-                "searchspace_description": {},
-                "global_configuration": {}
-            }`
-        }
-        mockWatch.mockReturnValue(of(mockMessage))
-
-        const store = useMainEventStore()
-        store.initEvent()
-
-        expect(store.experiment_description).toEqual({ value: -Infinity })
-    })
-
-    it('should preserve NaN values in message body', () => {
-        const mockMessage = {
-            headers: { message_subtype: 'description' },
-            body: `{
-                "experiment_description": {"value": NaN},
-                "searchspace_description": {},
-                "global_configuration": {}
-            }`
-        }
-        mockWatch.mockReturnValue(of(mockMessage))
-
-        const store = useMainEventStore()
-        store.initEvent()
-
-        expect(store.experiment_description).toEqual({ value: NaN })
+        expect(store.experiment_description).toEqual({ value })
     })
 })

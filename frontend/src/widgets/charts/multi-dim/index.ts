@@ -1,1 +1,0 @@
-export { default as MultiDim } from './ui/MultiDim.vue'

@@ -1,0 +1,188 @@
+import type { Data, Layout } from 'plotly.js'
+import type { PlotlyInstance } from '../model/chart.types'
+import type { PointExp } from "../../../entities/main/model/plot.store";
+import type { ParameterSpec } from "../../../entities/experiment/model/experiment.model";
+import { cleanIdentifier } from "../../../shared/lib";
+import {
+    INACTIVE_INDEX,
+    INACTIVE_LABEL,
+    inactivePosition,
+    numericTicksWithInactive
+} from "../../../entities/experiment/lib/inactive";
+
+function getParameterValues(
+    parameter: string,
+    allRes: PointExp[],
+    specsByName: Record<string, ParameterSpec>
+) {
+    const values = allRes.map(
+        point => point.configurations[parameter]
+    );
+
+    const spec = specsByName[parameter];
+
+    // a trial without the parameter is one in which it is inactive; its category index is INACTIVE_INDEX
+    const hasInactive = values.some(value => value === undefined);
+    const inactiveTickvals = hasInactive ? [INACTIVE_INDEX] : [];
+    const inactiveTicktext = hasInactive ? [INACTIVE_LABEL] : [];
+
+    // Ordinal parameter
+    if (
+        spec?.Type === "OrdinalHyperparameter" &&
+        Array.isArray(spec.Categories)
+    ) {
+        const categories = spec.Categories;
+
+        return {
+            values: values.map(value => categories.indexOf(value)),
+            tickvals: [
+                ...inactiveTickvals,
+                ...categories.map((_: string, index: number) => index)
+            ],
+            ticktext: [
+                ...inactiveTicktext,
+                ...categories.map((category: string) => {
+                    const name = category.split(".").pop() ?? category;
+                    return name.replace(/_/g, " ");
+                })
+            ]
+        };
+    }
+
+    // Numeric parameter
+    if (
+        spec?.Type === "FloatHyperparameter" ||
+        spec?.Type === "IntegerHyperparameter"
+    ) {
+        return {
+            values: values.map(value => value ?? inactivePosition(spec)),
+            ...(hasInactive ? numericTicksWithInactive(spec) : {})
+        };
+    }
+
+    if (values.every(value => typeof value === "number")) {
+        return {
+            values
+        };
+    }
+
+    // Non-ordinal categorical parameter
+    const categories = Array.from(
+        new Set(
+            values.filter(
+                (value): value is string => value !== undefined
+            )
+        )
+    );
+
+    return {
+        values: values.map(value => categories.indexOf(value)),
+        tickvals: [
+            ...inactiveTickvals,
+            ...categories.map((_, index) => index)
+        ],
+        ticktext: [
+            ...inactiveTicktext,
+            ...categories.map(category =>
+                String(category).replace(/_/g, " ")
+            )
+        ]
+    };
+}
+
+export function renderRank(
+    plotly: PlotlyInstance,
+    element: HTMLElement,
+    allRes: PointExp[],
+    rankParam1: string,
+    rankParam2: string,
+    rankObjective: string,
+    specsByName: Record<string, ParameterSpec>
+) {
+    if (allRes.length === 0) {
+        plotly.purge(element);
+        return;
+    }
+
+    const param1 = getParameterValues(
+        rankParam1,
+        allRes,
+        specsByName
+    );
+
+    const param2 = getParameterValues(
+        rankParam2,
+        allRes,
+        specsByName
+    );
+
+    const trace: Data = {
+        type: "scatter",
+        mode: "markers",
+
+        x: param1.values,
+        y: param2.values,
+
+        marker: {
+            size: 10,
+            color: allRes.map(
+                p => Number(p.results[rankObjective])
+            ),
+            colorscale: "Portland",
+            colorbar: {
+                title: {
+                    text: rankObjective
+                }
+            }
+        },
+
+        text: allRes.map(
+            (_, i) => `Trial ${i + 1}`
+        ),
+
+        hovertemplate:
+            `${cleanIdentifier(rankParam1)}: %{customdata[0]}<br>` +
+            `${cleanIdentifier(rankParam2)}: %{customdata[1]}<br>` +
+            `${rankObjective}: %{marker.color}<extra></extra>`,
+
+        customdata: allRes.map(point => [
+            point.configurations[rankParam1] ?? INACTIVE_LABEL,
+            point.configurations[rankParam2] ?? INACTIVE_LABEL
+        ])
+    };
+
+    const layout: Partial<Layout> = {
+        autosize: true,
+        title: {
+            text: "Rank Plot"
+        },
+
+        xaxis: {
+            title: {
+                text: cleanIdentifier(rankParam1)
+            },
+
+            ...(param1.tickvals && {
+                tickmode: "array" as const,
+                tickvals: param1.tickvals,
+                ticktext: param1.ticktext
+            })
+        },
+
+        yaxis: {
+            title: {
+                text: cleanIdentifier(rankParam2)
+            },
+
+            ...(param2.tickvals && {
+                tickmode: "array" as const,
+                tickvals: param2.tickvals,
+                ticktext: param2.ticktext
+            })
+        },
+
+        hovermode: "closest"
+    };
+
+    plotly.react(element, [trace], layout);
+}

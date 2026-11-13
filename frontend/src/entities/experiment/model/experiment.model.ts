@@ -2,7 +2,6 @@ export interface ExperimentDescription {
     DomainDescription?: DomainDescription
     Context: {
         TaskConfiguration: TaskConfiguration
-        SearchSpace: unknown
     }
     TaskConfiguration?: TaskConfiguration
     Predictor?: Predictor
@@ -10,10 +9,39 @@ export interface ExperimentDescription {
     ConfigurationSelection?: unknown
     RepetitionManager?: unknown
     StopCondition?: unknown
+    PlotSelection?: PlotSelection
 }
 
 interface DomainDescription {
     DataFile: String
+}
+
+interface PlotSelection {
+    Plot?: Record<string, unknown>
+}
+
+// the product configuration as uploaded and sent by Start: the description of the experiment together with its
+// search space, which main-node sends to the frontend separately, as regions
+export interface RawProductConfiguration extends Omit<ExperimentDescription, 'Context'> {
+    Context: ExperimentDescription['Context'] & { SearchSpace: unknown }
+}
+
+// a parameter of the search space as main-node describes it (SearchSpace.describe_regions()); Inactive is the value
+// that stands for the parameter in a configuration where it is not active
+export interface ParameterSpec {
+    Name: string
+    Type: string
+    Level: number
+    Categories?: string[]
+    Lower?: number
+    Upper?: number
+    Inactive: string | number
+}
+
+// the parameters that are activated together; the ActivationCategory is 'root' for the top-level ones
+export interface SearchSpaceRegion {
+    ActivationCategory: string
+    Parameters: ParameterSpec[]
 }
 
 export interface SurrogateModel {
@@ -31,6 +59,7 @@ export interface SurrogateModel {
 interface TaskConfiguration {
     MaxTasksPerConfiguration: number
     MaxTimeToRunTask: number
+    RepeaterDecisionFunction?: string
 Objectives: Record<string, Objective>
     ObjectivesDataTypes: Array<string>
     ObjectivesPriorities: Array<number>

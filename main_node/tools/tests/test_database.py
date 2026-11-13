@@ -98,7 +98,7 @@ class TestDatabase:
         # Task belongs to the expected configuration and has expected task ID
         c1 = Configuration(OrderedDict({"Context.SearchSpace.frequency": "dummy", "Context.SearchSpace.threads": "dummy"}), Configuration.Type.DEFAULT, "DummyID")
         task = {'task id': 'id', 'worker': 'worker', 'result': {'energy': 0.9}, 'ResultValidityCheckMark': 'OK'}
-        c1.add_task(task)
+        c1.add_task(task, self.initialize_experiment()[0].objectives)
         database.write_one_record("Task", c1.get_task_record(task))
         written_record = database.get_all_records("Task")[-1]
         assert c1.unique_id == written_record["Configuration_ID"]
@@ -109,5 +109,4 @@ class TestDatabase:
     def initialize_experiment() -> Tuple[Experiment, SearchSpace]:
         experiment_description, search_space = load_experiment_setup(experiment_description_file)
         experiment = Experiment(experiment_description, search_space)
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         return experiment, search_space

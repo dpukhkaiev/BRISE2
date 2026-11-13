@@ -1,31 +1,27 @@
+import numpy as np
 import pandas as pd
-from typing import Dict, Tuple, Mapping
+import pygmo as pg
+from typing import Dict, List, Tuple, Mapping
 from abc import ABC, abstractmethod
 
-from configuration_selection.model.configuration_transformer.configuration_transformer_orchestrator import ConfigurationTransformerOrchestrator
 from configuration_selection.model.value_transformer.value_transformer_orchestrator import ValueTransformerOrchestrator
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from configuration_selection.model import configuration_transformation
 from core_entities.search_space import Hyperparameter
+from core_entities.objectives import Objectives
 
 
 class Optimizer(ABC):
-    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Objectives):
         self.region = region
         self.objectives = objectives
         self.feature_name = list(optimizer_description['Instance'].keys())[0]
         self.optimizer_description = optimizer_description
 
         # Configuration Transformers
-        self.configuration_transformer_orchestrator = ConfigurationTransformerOrchestrator()
-        self.mapping_config_transformer_parameter: Mapping[ConfigurationTransformer, Tuple[Hyperparameter]] = {}
-        for i in optimizer_description.items():
-            if "ConfigurationTransformer" in i[0]:
-                for ct in i[1].items():
-                    relevant_parameters = tuple(filter(lambda r: r.type in ct[0], region))
-                    configuration_transformer = (self.configuration_transformer_orchestrator.
-                                                 get_configuration_transformer(ct, relevant_parameters))
-                    self.mapping_config_transformer_parameter[configuration_transformer] = relevant_parameters
+        self.mapping_config_transformer_parameter: Mapping[ConfigurationTransformer, Tuple[Hyperparameter]] = (
+            configuration_transformation.build_transformers(optimizer_description, region))
 
         # Value Transformers
         self.value_transformers = []
@@ -43,80 +39,45 @@ class Optimizer(ABC):
     def optimize(self, surrogate: Surrogate) -> pd.DataFrame:
         """
         :param surrogate: surrogate used for evaluation.
-        :return: a list of evaluated configurations, sorted by their quality.
+        :return: a list of evaluated configurations, sorted by their quality, the best first.
         """
         pass
 
-    def _resolve_configuration_transformers(self, surrogate: Surrogate) -> Tuple[bool, bool]:
+    def _get_direction_signs(self, label_columns: List[str]) -> np.ndarray:
         """
-        :param surrogate: surrogate used for evaluation.
-        :return: True if surrogate needs to transform a configuration on its own; and
-        True if optimizer needs to inverse transform a configuration before passing it to surrogate.
+        Gives the direction of each column as a sign.
+        :param label_columns: columns holding the (value-transformed) predictions of candidates: objective names, or the
+        single column produced by a value transformer.
+        :return: +1 for a column to be minimized and -1 for one to be maximized, so that multiplying a column by its
+        sign makes it a column to be minimized. A column that is not an objective follows the direction of the first
+        objective.
         """
-        inverse_transform_optimizer = False
-        transform_surrogate = False
+        first_objective = next(iter(self.objectives))
+        return np.array([(self.objectives.by_name(column) if column in self.objectives.names else first_objective).sign
+                         for column in label_columns])
 
-        if (len(surrogate.mapping_config_transformer_parameter.keys()) == 0 and len(
-                self.mapping_config_transformer_parameter.keys()) > 0):
-            inverse_transform_optimizer = True
-        elif (len(surrogate.mapping_config_transformer_parameter.keys()) > 0 and len(
-                self.mapping_config_transformer_parameter.keys()) == 0):
-            transform_surrogate = True
-        elif not self.mapping_config_transformer_parameter.__eq__(surrogate.mapping_config_transformer_parameter):
-            inverse_transform_optimizer = True
-            transform_surrogate = True
-
-        return transform_surrogate, inverse_transform_optimizer
+    def _rank_candidates(self, candidates: pd.DataFrame, label_columns: List[str]) -> pd.DataFrame:
+        """
+        Sorts candidates by their predicted quality, the best first, each column in its own direction.
+        :param candidates: parameter values of candidates, followed by their predictions.
+        :param label_columns: names of the columns that hold the predictions to rank: one per objective,
+        or the single column of a value transformer.
+        :return: the same candidates, reordered, with a default index.
+        """
+        if candidates.empty:
+            return candidates
+        values_to_minimize = candidates[label_columns].to_numpy(dtype=float) * self._get_direction_signs(label_columns)
+        if len(label_columns) == 1:
+            order = np.argsort(values_to_minimize[:, 0], kind="stable")
+        else:
+            order = pg.sort_population_mo(values_to_minimize.tolist())
+        return candidates.iloc[order].reset_index(drop=True)
 
     def _transform_configuration(self, features: pd.DataFrame) -> pd.DataFrame:
-        features = features.reset_index(drop=True)
-        if len(self.mapping_config_transformer_parameter) > 0:
-            transformed_names = sum([[hp.name for hp in p] for p in self.mapping_config_transformer_parameter.values()], [])
-            transformed_features = pd.DataFrame()
-            for f_name in features.columns:
-                if f_name in transformed_names:
-                    for ct, p in self.mapping_config_transformer_parameter.items():
-                        for hp in p:
-                            if hp.name == f_name:
-                                transformed_relevant_features = ct.transform(pd.DataFrame(features.loc[:, hp.name]))
-                                if transformed_features.empty:
-                                    transformed_features = transformed_relevant_features
-                                else:
-                                    transformed_features = transformed_features.join(transformed_relevant_features)
-                else:
-                    if transformed_features.empty:
-                        transformed_features = pd.DataFrame(features.loc[:, f_name])
-                    else:
-                        transformed_features = transformed_features.join(pd.DataFrame(features.loc[:, f_name]))
-        else:
-            transformed_features = features
-        return transformed_features
+        return configuration_transformation.transform(features, self.mapping_config_transformer_parameter)
 
     def _inverse_transform_configuration(self, optimized_features: pd.DataFrame) -> pd.DataFrame:
-        result = pd.DataFrame()
-        involved_features = set()  # features involved in configuration transformers
-        for new_hp_name in optimized_features.columns:
-            for ct, params in self.mapping_config_transformer_parameter.items():
-                for old_f, new_f in ct.mapping_old_new_features.items():
-                    if new_hp_name not in new_f:
-                        continue
-                    else:
-                        inverse_transformed = ct.inverse_transform(
-                            optimized_features[ct.mapping_old_new_features[old_f]])
-                        if result.empty:
-                            result = inverse_transformed
-                        elif inverse_transformed.columns[0] not in result.columns:
-                            result = result.join(inverse_transformed)
-                        involved_features.add(new_hp_name)
-            if new_hp_name not in involved_features:  # parameter not in configuration transformers
-                if result.empty:
-                    temp_df = optimized_features.copy()
-                    temp_df = temp_df[[new_hp_name]]
-                    result = temp_df
-                elif new_hp_name not in result.columns:
-                    result = result.join(optimized_features[new_hp_name])
-
-        return result
+        return configuration_transformation.inverse_transform(optimized_features, self.mapping_config_transformer_parameter)
 
     def _transform_values(self, labels: pd.DataFrame) -> pd.DataFrame:
         transformed_labels = pd.DataFrame()

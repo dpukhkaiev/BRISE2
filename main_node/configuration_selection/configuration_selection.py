@@ -53,9 +53,9 @@ class ConfigurationSelection:
                 - N + 1 if the number of the available Workers has increased by N.
             3.   new configuration(s) are sent to the Repetition Manager for evaluation.
 
-        :return: FOR TESTING ONLY: Two lists:
-                                * configs_to_be_evaluated: contains all parameters for the flat search space
-                                * hierarchical_configs: the way a configuration is being sent to the worker
+        :return: FOR TESTING ONLY: Two lists, both holding configurations in their measured form (active parameters only):
+                                * configs_to_be_evaluated: the configurations added to the evaluated ones
+                                * configs_sent: copies of them, the way a configuration is being sent to the worker
         """
         needed_configs = json.loads(body.decode()).get("worker_capacity", 1)
 
@@ -170,26 +170,25 @@ class ConfigurationSelection:
                 self.logger.info(temp_msg)
                 configs_to_be_evaluated.append(sampled_config)
 
-        hierarchical_configs = []
+        # TODO: configs_to_be_evaluated and configs_sent can be safely refactored into one list (the copy and the second list exist for the tests only)
+        configs_sent = []
         for c in configs_to_be_evaluated:
             self.experiment.add_evaluated_configuration_to_experiment(c)
             if c.type is Configuration.Type.PREDICTED:
                 self.experiment.update_model_state(True)
             else:
                 self.experiment.update_model_state(False)
-            self.logger.info(temp_msg)
             c_to_send = deepcopy(c)
-            if self.experiment.search_space.is_flat:
-                c_to_send.parameters = self.experiment.search_space.transform_flat_parameters_to_hierarchic(
-                    c.parameters)
-            hierarchical_configs.append(c_to_send)
+            configs_sent.append(c_to_send)
+            temp_msg = f"Configuration {c_to_send} is sent to be measured."
+            self.logger.info(temp_msg)
             self.sub.send('log', 'info', message=temp_msg)
             if os.environ.get('TEST_MODE') != 'UNIT_TEST':
                 publish(exchange='measure_new_configuration_exchange',
                         routing_key=self.experiment.unique_id,
                         body=json.dumps({"configuration": c_to_send.to_json()}))
 
-        return configs_to_be_evaluated, hierarchical_configs
+        return configs_to_be_evaluated, configs_sent
 
     def _regular_prediction(self, needed_configs: int, number_of_predicted_configs: int):
         result = []

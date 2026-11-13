@@ -6,18 +6,19 @@ from typing import Dict, Tuple
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
 from core_entities.search_space import CategoricalHyperparameter
+from core_entities.objectives import Objectives
 
 
 class MultiArmedBandit(Surrogate):
 
-    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, surrogate_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(surrogate_description, region, objectives)
-        self.objective = self.objectives[list(self.objectives.keys())[0]]  # FRAMAB is always single-objective
+        self.objective = next(iter(self.objectives))  # FRAMAB is always single-objective
         self.multi_objective = surrogate_description['Instance']['MultiArmedBandit']['MultiObjective']
         self.c = surrogate_description['Instance']['MultiArmedBandit']['Parameters']['c']
 
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
-        if self.objective["Minimization"]:
+        if self.objective.minimization:
             raise TypeError("Multi Armed Bandit optimizer performs only maximization tasks!")
 
         transformed_features = self._transform_configuration(features)
@@ -92,8 +93,17 @@ class MultiArmedBandit(Surrogate):
             ucbs.append(ucb)
         summed_ucb = sum(ucbs)
         if not self.scalarized:
-            result = pd.DataFrame([summed_ucb], columns=list(self.objectives.keys()))
+            result = pd.DataFrame([summed_ucb], columns=self.objectives.names)
         else:
             result = pd.DataFrame([summed_ucb], columns=["Y"])
 
         return result
+
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        # UCB values come from a category lookup table, not a fittable model, so there is no vectorized
+        # form to call into; each row is predicted on its own, same as predict(), just collected into one result
+        predicted = pd.DataFrame()
+        for _, cfg in configurations.reset_index(drop=True).iterrows():
+            prediction = self.predict(cfg, transform)
+            predicted = pd.concat([predicted, prediction], ignore_index=True)
+        return predicted

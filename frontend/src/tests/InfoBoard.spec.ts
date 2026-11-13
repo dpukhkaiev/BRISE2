@@ -19,14 +19,12 @@ const mockUnsubscribe = vi.fn()
 const mockExperimentDescription = ref({
     Context: { TaskConfiguration: { TaskName: 'TestExperiment' } }
 })
-const mockSearchspace = ref([])
 const mockExperimentFinished = ref(false)
 
 // Mocks
 vi.mock('../entities/main', () => ({
     useMainEventStore: vi.fn(() => ({
         experiment_description: mockExperimentDescription,
-        searchspace: mockSearchspace,
         experimentFinished: mockExperimentFinished,
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {

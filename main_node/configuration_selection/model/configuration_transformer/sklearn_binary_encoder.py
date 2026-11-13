@@ -13,8 +13,14 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
 
     Decoding is done with O(n) complexity by selecting the value of parameter, binary representation of which is the
     closest to one of the existing categories in terms of Euclidean distance.
+    The categories get unequal shares of the bit space, unless their number is a power of two.
 
     Choices object should be hashable.
+
+    The code has the fewest bits that hold the highest index, n - 1 for n categories (at least one bit). Earlier
+    versions sized it by n itself, which added a column that was always zero when n was a power of two.
+    The inactive value of a surrogate's transformer is one more category, so it adds a column when n is a power
+    of two.
     """
 
     def __init__(self, categories: Union[str, List[object]] = 'auto'):
@@ -28,9 +34,9 @@ class BinaryEncoder(BaseEstimator, TransformerMixin):
 
     def fit(self, df: pd.DataFrame, y=None):
         self.__transformer.fit(X=df, y=y)
-        self.__n_bits = {c_name: len(format(len(c_cats), 'b'))
+        self.__n_bits = {c_name: max(len(c_cats) - 1, 1).bit_length()
                          for c_name, c_cats in enumerate(self.__transformer.categories_)}
-        # __n_bits reflects how many bits it is needed to encode categories of corresponding (by index) column
+        # __n_bits reflects how many bits are needed to encode the highest index of the corresponding (by index) column
 
         # precompute binary encodings
         for idx, column_categories in enumerate(self.__transformer.categories_):

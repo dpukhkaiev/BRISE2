@@ -32,16 +32,6 @@
                         "Type": "FloatHyperparameter",
                         "Level": 1
                     },
-                    "I1": {
-                        "Lower": 0,
-                        "Upper": 10000,
-                        "Default": 0,
-                        "Type": "IntegerHyperparameter",
-                        "Level": 1
-                    },
-                    "Type": "Category"
-                },
-                "N02": {
                     "N1": {
                         "N11": {
                             "Type": "Category"
@@ -50,11 +40,21 @@
                             "Type": "Category"
                         },
                         "Categories": [
-                            "Context.SearchSpace.N0.N02.N1.N11",
-                            "Context.SearchSpace.N0.N02.N1.N12"
+                            "Context.SearchSpace.N0.N01.N1.N11",
+                            "Context.SearchSpace.N0.N01.N1.N12"
                         ],
-                        "Default": "Context.SearchSpace.N0.N02.N1.N11",
+                        "Default": "Context.SearchSpace.N0.N01.N1.N11",
                         "Type": "NominalHyperparameter",
+                        "Level": 1
+                    },
+                    "Type": "Category"
+                },
+                "N02": {
+                    "I1": {
+                        "Lower": 0,
+                        "Upper": 10000,
+                        "Default": 0,
+                        "Type": "IntegerHyperparameter",
                         "Level": 1
                     },
                     "O1": {
@@ -166,10 +166,10 @@
                         "QualityValidator": {
                             "Split": {
                                 "HoldOut": {
-                                    "TrainingSet": 0.5
+                                    "TrainingSet": 0.8
                                 }
                             },
-                            "QualityThreshold": -10000,
+                            "QualityThreshold": -1000000000.0,
                             "Type": "quality_validator"
                         }
                     },
@@ -177,10 +177,10 @@
                         "QualityValidator": {
                             "Split": {
                                 "KFold": {
-                                    "NumberOfFolds": 4
+                                    "NumberOfFolds": 2
                                 }
                             },
-                            "QualityThreshold": -10000,
+                            "QualityThreshold": -1000000000.0,
                             "Type": "quality_validator"
                         }
                     }

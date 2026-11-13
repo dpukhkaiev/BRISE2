@@ -809,10 +809,7 @@ class MainAPIClient:
         return status_report
 
     def start_main(self, experiment_description: dict, search_space: SearchSpace):
-        data = pickle.dumps(
-            {"metric_description": experiment_description,
-             "search_space": search_space}
-        )
+        data = pickle.dumps(experiment_description)
         response = self.call("start", param=data)
 
         return response

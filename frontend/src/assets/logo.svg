@@ -1,7 +1,10 @@
 <svg version="1.1" id="underground" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
   y="0px" width="90" height="90" viewBox="0 0 2500 2500" enable-background="new 0 0 200 200" preserveAspectRatio="xMinYMin meet">
 
-  <g id="logo">
+  <g
+    id="logo"
+    fill="#5C3EE8"
+  >
     <path class="logo-curve" d="M429 1590 c-121 -19 -238 -76 -330 -160 -53 -49 -73 -95 -44 -106 10 -4 27 2 43 15 195 158 366 199 611 146 35 -7 70 -11 78 -8 19 8 16 47 -7 68 -40 36 -241 62 -351 45z"
     />
     <path class="logo-curve" d="M370 1344 c-131 -34 -290 -140 -290 -193 0 -38 27 -34 101 15 109 72 183 96 314 102 140 6 214 -9 492 -99 269 -86 340 -102 478 -102 93 0 122 5 190 27 108 37 159 72 163 114 4 42 -14 42 -100 2 -95 -44 -195 -63 -298 -56 -111 8 -203 31 -447 110 -110 36 -238 72 -283 80 -101 20 -247 20 -320 0z"

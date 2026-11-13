@@ -3,13 +3,16 @@ from __future__ import annotations
 import pickle
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Dict, Iterable, List, Set, MutableMapping, Union, Tuple
+from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Set, MutableMapping, Union, Tuple
 import numpy as np
 import pandas as pd
 
 _CATEGORY = Union[str, int, float, bool]
 
 SEARCH_SPACE_PREFIX = "Context.SearchSpace"
+# the category that stands for an inactive categorical parameter; real categories are absolute paths that start
+# with SEARCH_SPACE_PREFIX, so it cannot collide with one
+INACTIVE_CATEGORY = "inactive"
 
 
 class Hyperparameter(ABC):
@@ -54,6 +57,10 @@ class Hyperparameter(ABC):
             bounded.
     """
 
+    # The condition that activates the Hyperparameter; None for a top-level one. Unlike parent and activation_category,
+    # which the flat view replaces by the root, it stays with the Hyperparameter.
+    activation_condition: Optional[ActivationCondition] = None
+
     def __init__(self,
                  name: str,
                  level: int,
@@ -89,6 +96,15 @@ class Hyperparameter(ABC):
     def transform(self, value):
         """
         Transform a value between 0 and 1 to a corresponding Hyperparameter value.
+        """
+        pass
+
+    @abstractmethod
+    def inactive_value(self) -> _CATEGORY:
+        """
+        Get the value that stands for this Hyperparameter when it is inactive, i.e. missing from a configuration.
+        It lies outside the legal values: a value that is none of the categories of a categorical Hyperparameter,
+        a value below the lower boundary of a numeric one. It is never stored in a configuration.
         """
         pass
 
@@ -136,13 +152,6 @@ class Hyperparameter(ABC):
     def __hash__(self):
         return hash(self.name)
 
-    def serialize(self, first, boundaries=None) -> Dict:
-        """
-        Serialize search space to mapping object, which could be later used to restore search space object.
-        :return: Mapping
-        """
-        raise NotImplementedError
-
 
 class CategoricalHyperparameter(Hyperparameter, ABC):
     """
@@ -162,7 +171,7 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
         # Each category could 'activate' children, so list of activated children is 'behind' each category.
         self._categories: MutableMapping[_CATEGORY, List[Hyperparameter]] = OrderedDict({cat: [] for cat in categories})
 
-        self._default_value = default_value or list(self._categories)[len(self._categories) // 2]
+        self._default_value = default_value if default_value is not None else list(self._categories)[len(self._categories) // 2]
 
     @property
     def categories(self):
@@ -198,6 +207,11 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
         for category in self._categories:
             self._categories[category] = []
 
+    def inactive_value(self) -> _CATEGORY:
+        if INACTIVE_CATEGORY in self._categories:
+            raise ValueError(f"{self.name}: category {INACTIVE_CATEGORY} is reserved for an inactive parameter.")
+        return INACTIVE_CATEGORY
+
     def get_size(self) -> Union[int, np.inf]:
         accumulated_size = 0
         for children in self._categories.values():
@@ -221,52 +235,10 @@ class CategoricalHyperparameter(Hyperparameter, ABC):
                 represent += "\n├+   " + "\n├    ".join(str(child).split("\n"))
         return represent
 
-    def serialize(self, first, boundaries=None) -> Dict:
-        if first is True:
-            self.first = True
-            boundaries = {}
-            parameters = []
-            root_parameters_list = []
-        else:
-            self.first = False
-
-        first = False
-        categories_description = []
-        for category, children in self._categories.items():
-            categories_description.append(category)
-            if self.first:
-                parameters.append({"RootParameter": category})
-                root_parameters_list.append(category)
-        if not self.first:
-            boundaries[self.name] = categories_description
-        for category, children in self._categories.items():
-            if self.first:
-                boundaries[self.name] = [category]
-            for child in children:
-                boundaries = child.serialize(first, boundaries)
-            if self.first:
-                for index in range(0, len(parameters)):
-                    if parameters[index]["RootParameter"] == category:
-                        parameters[index]["Boundaries"] = boundaries
-                        boundaries = {}
-
-        if self.first:
-            search_space_size = self.get_size()
-            if search_space_size == np.inf:
-                search_space_size = "Infinity"
-            serialization = dict(
-                size=search_space_size,
-                name=self.name,
-                boundaries=parameters,
-                root_parameters_list=root_parameters_list
-            )
-            return serialization
-        else:
-            return boundaries
-
     def transform(self, value):
         categories = list(self._categories.keys())
-        category_index = round(value * (len(categories) - 1))
+        # equal-width bins; value == 1 is clamped to the last category
+        category_index = min(int(value * len(categories)), len(categories) - 1)
         return categories[category_index]
 
     def __eq__(self, other):
@@ -310,6 +282,13 @@ class NumericHyperparameter(Hyperparameter, ABC):
     def get_default(self) -> MutableMapping:
         return OrderedDict({self.name: self._default_value})
 
+    def inactive_value(self) -> Union[int, float]:
+        # one range below the lower boundary: a scaler fitted on the boundaries maps it to -1
+        value_range = self._upper - self._lower
+        if value_range == 0:
+            value_range = 1
+        return self._lower - value_range
+
     def get_upper(self):
         return self._upper
 
@@ -334,10 +313,6 @@ class NumericHyperparameter(Hyperparameter, ABC):
     def __hash__(self):
         return super().__hash__(self)
 
-    def serialize(self, first, boundaries=None) -> Dict:
-        boundaries[self.name] = self._lower, self._upper
-        return boundaries
-
 
 class IntegerHyperparameter(NumericHyperparameter):
 
@@ -349,7 +324,8 @@ class IntegerHyperparameter(NumericHyperparameter):
                  default_value: Union[int, float] = None,
                  parent: Hyperparameter = None,
                  activation_category: _CATEGORY = None):
-        default_value = default_value or (upper - lower) // 2
+        if default_value is None:
+            default_value = lower + (upper - lower) // 2
         super().__init__(name, level, int(lower), int(upper), default_value, parent, activation_category)
         self.type = "Integer"
 
@@ -357,7 +333,8 @@ class IntegerHyperparameter(NumericHyperparameter):
         return self._upper - self._lower + 1
 
     def transform(self, value) -> int:
-        return round(self._lower + value*(self._upper - self._lower))
+        # equal-width bins; value == 1 is clamped to the upper bound
+        return min(self._lower + int(value*(self._upper - self._lower + 1)), self._upper)
 
     def __eq__(self, other):
         return super.__eq__(self, other)
@@ -376,7 +353,8 @@ class FloatHyperparameter(NumericHyperparameter):
                  default_value: Union[int, float] = None,
                  parent: Hyperparameter = None,
                  activation_category: _CATEGORY = None):
-        default_value = default_value or (upper - lower) / 2
+        if default_value is None:
+            default_value = lower + (upper - lower) / 2
         super().__init__(name, level, float(lower), float(upper), default_value, parent, activation_category)
         self.type = "Float"
 
@@ -456,10 +434,22 @@ class NominalHyperparameter(CategoricalHyperparameter):
         return super.__hash__(self)
 
 
+class ActivationCondition(NamedTuple):
+    """
+    A Hyperparameter is active when its parent was chosen with the category that activates it. A Hyperparameter
+    without an ActivationCondition (a top-level one) is always active.
+    """
+    parameter: str  # name of the Hyperparameter
+    parent: str  # name of its parent Hyperparameter
+    activation_category: _CATEGORY  # category of the parent, which activates the Hyperparameter
+
+
 class SearchSpace:
     def __init__(self, h: dict):
         self.is_flat = False
         self.hierarchical_view = self.initialize_hierarchical_view(h)
+        self._activation_conditions = [hp.activation_condition for hp in self.flatten(self.hierarchical_view)
+                                       if hp.activation_condition is not None]
         self.flat_view = self.initialize_flat_view()
         self.number_of_levels = self.__get_number_of_levels()
 
@@ -513,21 +503,41 @@ class SearchSpace:
 
         return regions
 
-    def activate_regions(self, parent: pd.DataFrame) -> Set[Tuple[Hyperparameter]]:
-        parent = parent.drop(columns=parent.columns.difference(self.hp_names))
-        available_regions = self.get_regions_on_current_level()
-        activated_regions = set()
-        for r in available_regions:
-            for hp in r:
-                for p in parent.to_numpy().flatten():
-                    if type(p) is str:
-                        if hp.activation_category in p:
-                            activated_regions.add(r)
-        return activated_regions
+    def describe_regions(self) -> List[Dict]:
+        """
+        Describe the regions of the Search Space, in the order of self.regions, for clients of main-node.
+        A flat Search Space is a single region.
+        :return: list of {"ActivationCategory": str, "Parameters": [...]}, where a parameter is a mapping with "Name",
+        "Type" (as in the product configuration), "Level", "Inactive" and either "Categories" or "Lower" and "Upper".
+        """
+        described_regions = []
+        for region in self.regions:
+            parameters = []
+            for hp in region:
+                parameter = {"Name": hp.name, "Type": f"{hp.get_type()}Hyperparameter", "Level": hp.level}
+                if isinstance(hp, CategoricalHyperparameter):
+                    parameter["Categories"] = list(hp.categories)
+                else:
+                    parameter["Lower"] = hp.get_lower()
+                    parameter["Upper"] = hp.get_upper()
+                parameter["Inactive"] = hp.inactive_value()
+                parameters.append(parameter)
+            described_regions.append({"ActivationCategory": str(region[0].activation_category),
+                                      "Parameters": parameters})
+        return described_regions
 
-    def serialize(self) -> Dict:
-        serialized_search_space_description = self.search_space_description.serialize(True)
-        return serialized_search_space_description
+    def activate_regions(self, parent: pd.DataFrame) -> Set[Tuple[Hyperparameter]]:
+        """
+        Get the regions on the current level, whose parent was chosen with the activation category of the region.
+        :param parent: Configurations (one per row) with the values of the Hyperparameters chosen so far.
+        :return: set of the activated regions
+        """
+        activated_regions = set()
+        for r in self.get_regions_on_current_level():
+            parent_name = r[0].parent.name
+            if parent_name in parent.columns and is_activated(parent[parent_name], r[0].activation_category).any():
+                activated_regions.add(r)
+        return activated_regions
 
     def flatten(self, h: Hyperparameter):
         """
@@ -657,38 +667,18 @@ class SearchSpace:
             import logging
             logging.debug(f"{hyperparameter_description}")
             raise TypeError(f"Hyperparameter {h_name} has unknown type: {h_type}.")
+        if parent.name != "root":
+            h.activation_condition = ActivationCondition(h_name, parent.name, activation_category)
         return h
 
-    def transform_flat_parameters_to_hierarchic(self, parameters: MutableMapping) -> MutableMapping:
+    def keep_active_parameters(self, parameters: Mapping) -> MutableMapping:
         """
-        Constructs a valid hierarchic configuration from a flattened configuration.
+        Reduce a configuration to its active parameters.
+        :param parameters: parameters of a configuration.
+        :return: the active parameters with their values.
         """
-        self.search_space_description = self.hierarchical_view
-        self.reset_level()
-
-        valid_parameters = {}
-
-        activated_regions = self.get_regions_on_current_level()
-        while len(activated_regions) > 0:
-            self.next_level()
-            next_activated_regions: Set[Tuple[Hyperparameter]] = set()
-            for region in activated_regions:
-                for hp in region:
-                    valid_parameters[hp.name] = parameters[hp.name]
-
-                    valid_parameters_series = pd.Series(valid_parameters.values(), valid_parameters.keys())
-                    valid_parameters_df = pd.DataFrame(columns=valid_parameters_series.index)
-                    valid_parameters_df.loc[0] = valid_parameters_series.values
-
-                    if len(next_activated_regions) == 0:
-                        next_activated_regions = self.activate_regions(valid_parameters_df)
-                    else:
-                        next_activated_regions.update(self.activate_regions(valid_parameters_df))
-                activated_regions = next_activated_regions
-
-        self.search_space_description = self.flat_view
-        self.reset_level()
-        return valid_parameters
+        mask = active_mask(pd.DataFrame([parameters]), self._activation_conditions)
+        return {name: value for name, value in parameters.items() if mask.at[0, name]}
 
 ################
 # Auxiliary methods
@@ -702,3 +692,45 @@ def get_search_space_record(search_space: SearchSpace, experiment_id: str) -> Di
         "SearchspaceObject": pickle.dumps(search_space)
     }
     return record
+
+def is_activated(parent_values: pd.Series, activation_category: _CATEGORY) -> pd.Series:
+    """
+    The rule of activation: a parent activates its child when it was chosen with exactly the activation category.
+    :param parent_values: the values of the parent, one per configuration.
+    :param activation_category: the category of the parent that activates the child.
+    :return: one boolean per configuration; a missing value of the parent activates nothing.
+    """
+    return parent_values == activation_category
+
+
+def active_mask(candidates: pd.DataFrame, activation_conditions: Iterable[ActivationCondition]) -> pd.DataFrame:
+    """
+    Decide for every value of every candidate, whether its Hyperparameter is active.
+    A Hyperparameter is active iff its parent is active and it is activated by the value of the parent(is_activated); 
+    top-level parameters are always active. If the parent is not a column of candidates, the parameter counts as active.
+    :param candidates: configurations, one per row, with a column per Hyperparameter.
+    :param activation_conditions: the ActivationConditions of the Search Space.
+    :return: a table of the same shape as candidates: True where the parameter is active in that candidate, False where not.
+    """
+    condition_of = {c.parameter: c for c in activation_conditions}
+    masks = {}
+
+    def resolve(parameter_name: str) -> pd.Series:
+        if parameter_name not in masks:
+            condition = condition_of.get(parameter_name)
+            if condition is None or condition.parent not in candidates.columns:
+                masks[parameter_name] = pd.Series(True, index=candidates.index)
+            else:
+                masks[parameter_name] = resolve(condition.parent) & is_activated(candidates[condition.parent],
+                                                                       condition.activation_category)
+        return masks[parameter_name]
+
+    return pd.DataFrame({candidate: resolve(candidate) for candidate in candidates.columns}, index=candidates.index)
+
+
+def find_parameters_activated_within_region(region: Iterable[Hyperparameter]) -> List[Hyperparameter]:
+    """
+    The Hyperparameters of a region that are activated based on the region alone.
+    """
+    names = {hp.name for hp in region}
+    return [hp for hp in region if hp.activation_condition is not None and hp.activation_condition.parent in names]

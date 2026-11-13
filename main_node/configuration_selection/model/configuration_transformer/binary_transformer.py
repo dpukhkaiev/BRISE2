@@ -8,8 +8,9 @@ from configuration_selection.model.configuration_transformer.sklearn_column_enco
 
 
 class BinaryTransformer(NominalTransformer):
-    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple):
-        super().__init__(configuration_transformer_description, relevant_parameters)
+    def __init__(self, configuration_transformer_description: dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
+        super().__init__(configuration_transformer_description, relevant_parameters, parameters_with_inactive_value)
         self.mapping_old_feature_pipeline = {}
 
     def transform(self, features: pd.DataFrame) -> pd.DataFrame:
@@ -26,43 +27,26 @@ class BinaryTransformer(NominalTransformer):
         if len(relevant_features) == 0:
             return pd.DataFrame()
 
-        intact_features = features.drop(columns=relevant_features.columns)
+        # the rows are joined by position, whatever the index of the features
+        intact_features = features.drop(columns=relevant_features.columns).reset_index(drop=True)
         if not intact_features.empty:
             self.mapping_old_new_features = dict(
                 map(lambda i, j: (i, j), intact_features.columns.tolist(), intact_features.columns.tolist()))
-        intact_features['temp_index'] = range(1, len(intact_features) + 1)
 
         transformed_features = pd.DataFrame()
 
         for feature_name in relevant_features.columns:
-            categories = [list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0].categories]
+            features_pipeline = self._get_or_build_pipeline(feature_name)
 
-            # create encoder object
-            encoder = BinaryEncoder(categories)
-            encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
-            name = list(self.configuration_transformer_description.keys())[0]
-            encoder_name = f"{name} for {feature_name}"
-
-            # append to steps
-            steps = []
-            steps.append((encoder_name, encoder))
-
-            # create pipeline
-            features_pipeline = Pipeline(steps)
-
-            # fit transform by pipeline
-            transformed_feature = features_pipeline.fit_transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
-            self.mapping_old_feature_pipeline[feature_name] = features_pipeline
+            # transform only - the pipeline was already fit once, on the hyperparameter's own categories
+            transformed_feature = features_pipeline.transform(pd.DataFrame(relevant_features.loc[:, feature_name]))
             if transformed_features.empty:
                 transformed_features = pd.DataFrame(transformed_feature)
             else:
-                transformed_features = pd.concat([transformed_features, transformed_feature])
+                transformed_features = pd.concat([transformed_features, transformed_feature], axis=1)
             self.mapping_old_new_features[feature_name] = transformed_feature.columns.tolist()
 
-        transformed_features['temp_index'] = range(1, len(transformed_features) + 1)
-
-        merged_features = transformed_features.merge(intact_features, on='temp_index')
-        merged_features = merged_features.drop(columns="temp_index")
+        merged_features = pd.concat([transformed_features, intact_features], axis=1)
 
         # sort
         sorted_transformed = []
@@ -79,3 +63,28 @@ class BinaryTransformer(NominalTransformer):
 
     def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
         return super()._inverse_sklearn_transform(transformed_features, self.mapping_old_feature_pipeline)
+
+    def _get_or_build_pipeline(self, feature_name: str) -> Pipeline:
+        """
+        Build and fit this feature's Pipeline once, from the hyperparameter's own category list - not from whatever
+        batch of rows happens to be passed to transform(). BinaryEncoder(categories) already fixes the code of each
+        category from that list regardless of what data it is fit on, so this is a pure performance fix (skip
+        rebuilding and refitting the encoder on every call); every later transform() call reuses this fitted pipeline.
+        """
+        if feature_name in self.mapping_old_feature_pipeline:
+            return self.mapping_old_feature_pipeline[feature_name]
+
+        hyperparameter = list(filter(lambda p: p.name == feature_name, self.relevant_parameters))[0]
+        categories = [self._categories_of(hyperparameter)]
+        reference_data = pd.DataFrame({feature_name: categories[0]})
+
+        encoder = BinaryEncoder(categories)
+        encoder = SklearnColumnTransformer(encoder, input_column_names=[feature_name])
+        name = list(self.configuration_transformer_description.keys())[0]
+        encoder_name = f"{name} for {feature_name}"
+
+        features_pipeline = Pipeline([(encoder_name, encoder)])
+        features_pipeline.fit(reference_data)
+
+        self.mapping_old_feature_pipeline[feature_name] = features_pipeline
+        return features_pipeline

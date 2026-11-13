@@ -53,16 +53,6 @@
                         "Type": "FloatHyperparameter",
                         "Level": 0
                     },
-                    "I1": {
-                        "Lower": -1,
-                        "Upper": 800,
-                        "Default": 10,
-                        "Type": "IntegerHyperparameter",
-                        "Level": 0
-                    },
-                    "Type": "Category"
-                },
-                "N02": {
                     "N1": {
                         "N11": {
                             "Type": "Category"
@@ -71,11 +61,21 @@
                             "Type": "Category"
                         },
                         "Categories": [
-                            "Context.SearchSpace.N0.N02.N1.N11",
-                            "Context.SearchSpace.N0.N02.N1.N12"
+                            "Context.SearchSpace.N0.N01.N1.N11",
+                            "Context.SearchSpace.N0.N01.N1.N12"
                         ],
-                        "Default": "Context.SearchSpace.N0.N02.N1.N11",
+                        "Default": "Context.SearchSpace.N0.N01.N1.N11",
                         "Type": "NominalHyperparameter",
+                        "Level": 0
+                    },
+                    "Type": "Category"
+                },
+                "N02": {
+                    "I1": {
+                        "Lower": -1,
+                        "Upper": 800,
+                        "Default": 10,
+                        "Type": "IntegerHyperparameter",
                         "Level": 0
                     },
                     "O1": {
@@ -349,6 +349,12 @@
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
                             }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
                         }
                     },
                     "ValueTransformers": {
@@ -383,6 +389,12 @@
                             "SklearnBinaryEncoder": {
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
                             }
                         }
                     },
@@ -419,6 +431,12 @@
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
                             }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
                         }
                     },
                     "ValueTransformers": {
@@ -454,6 +472,12 @@
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
                             }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
                         }
                     },
                     "ValueTransformers": {
@@ -488,6 +512,12 @@
                             "SklearnBinaryEncoder": {
                                 "Type": "sklearn_binary_transformer",
                                 "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
                             }
                         }
                     },

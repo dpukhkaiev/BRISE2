@@ -1,8 +1,8 @@
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { MainEvent } from './main.types'
 import { stompClient } from '../../../shared/api/stomp.client'
-import type { ExperimentDescription } from '../../experiment/model/experiment.model'
+import type { ExperimentDescription, ParameterSpec, RawProductConfiguration, SearchSpaceRegion } from '../../experiment/model/experiment.model'
 import type { IMessage } from '@stomp/stompjs'
 import type { Observable } from 'rxjs'
 import { parseJsonWithInfinity } from '../../../shared/lib'
@@ -13,10 +13,24 @@ stompClient.connectionState$.subscribe(state => {
 })
 
 export const useMainEventStore = defineStore('mainEvent', () => {
+   // the description of the running experiment, written only by the description event
    const experiment_description = ref<ExperimentDescription | null>(null)
-   const searchspace = ref<any>(null)
+   // the uploaded product configuration, written only by the upload and read only by Start: the description event
+   // has no search space, so the running description could not start an experiment again
+   const raw_product_configuration = ref<RawProductConfiguration | null>(null)
+   // the search space regions as main-node describes them, in its canonical order
+   const regions = ref<SearchSpaceRegion[]>([])
+   // every parameter of the search space by its full name
+   const specsByName = computed(() => {
+      const specs: Record<string, ParameterSpec> = {}
+      for (const region of regions.value) {
+         for (const parameter of region.Parameters) {
+            specs[parameter.Name] = parameter
+         }
+      }
+      return specs
+   })
    const searchspaceReady = ref(false)
-   const globalConfig = ref<any>(null)
    const experimentFinished = ref(false)
    const plotlyInstance = shallowRef<any>(null)
    const listeners: Record<string, Observable<IMessage>> = {
@@ -73,12 +87,18 @@ export const useMainEventStore = defineStore('mainEvent', () => {
          if (message.headers['message_subtype'] === 'description') {
             console.log(message.body)
             // cleans invalid json parts (raw Infinity/-Infinity tokens) while preserving the real value
-            const body = parseJsonWithInfinity(message.body) as { experiment_description: ExperimentDescription, searchspace_description: any, global_configuration: any }
+            const body = parseJsonWithInfinity(message.body) as { experiment_description: ExperimentDescription, regions?: SearchSpaceRegion[] }
             console.log('after the setting', experiment_description.value?.Context?.TaskConfiguration?.TaskName)
             experiment_description.value = body.experiment_description
-            searchspace.value = body.searchspace_description
-            searchspaceReady.value = true
-            globalConfig.value = body.global_configuration
+            // regions are always an array, and the search space is ready only once they have arrived
+            if (Array.isArray(body.regions)) {
+               regions.value = body.regions
+               searchspaceReady.value = true
+            } else {
+               console.error('the description event has no regions')
+               regions.value = []
+               searchspaceReady.value = false
+            }
             experimentFinished.value = false
 
          }
@@ -93,5 +113,5 @@ export const useMainEventStore = defineStore('mainEvent', () => {
 
 
 
-   return { globalConfig, searchspace, searchspaceReady, experiment_description, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
+   return { regions, specsByName, searchspaceReady, experiment_description, raw_product_configuration, experimentFinished, isConnected, onEvent, initEvent, loadPlotly, plotlyInstance }
 })

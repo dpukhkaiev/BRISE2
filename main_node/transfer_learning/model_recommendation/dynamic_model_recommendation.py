@@ -5,6 +5,7 @@ import pickle
 from transfer_learning.model_recommendation.model_recommendation_abs import ModelRecommendation
 from transfer_learning.model_recommendation.metrics.metric_orchestrator import MetricOrchestrator
 from configuration_selection.model.model import Model
+from core_entities.objectives import Objectives
 from core_entities.search_space import Hyperparameter
 from core_entities.search_space import SearchSpace
 
@@ -24,13 +25,12 @@ class DynamicModelRecommendation(ModelRecommendation):
         [self.feature_name]["TimeUnit"])
         # metric orchestration
         metric_orchestrator = MetricOrchestrator()
-        self.objective_name = list(experiment_description["Context"]["TaskConfiguration"]["Objectives"].keys())[0]  # SO only
-        is_minimization = experiment_description["Context"]["TaskConfiguration"]["Objectives"][self.objective_name][
-            "Minimization"]
+        # single objective only, required by the feature model
+        self.objective = next(iter(Objectives.from_description(experiment_description["Context"]["TaskConfiguration"]["Objectives"])))
         self.performance_metric = (metric_orchestrator.get_metric(self.experiment_description[
                                                                       "TransferLearning"]["ModelRecommendation"][
                                                                       self.feature_name]["PerformanceMetric"],
-                                                                  is_minimization))
+                                                                  self.objective.minimization))
 
         self.was_model_recommended = False
 
@@ -57,7 +57,7 @@ class DynamicModelRecommendation(ModelRecommendation):
             for experiment in similar_experiments:
                 prediction_infos = [sample["prediction_info"] for sample in experiment["Samples"]]
                 improvement_curve = experiment["Current_best_curve"]  # a list of dicts
-                improvement_curve = [i[self.objective_name] for i in improvement_curve]
+                improvement_curve = [i[self.objective.name] for i in improvement_curve]
                 if self.recommendation_granularity_value == 1:
                     improvement_start_index = current_iteration-1
                     improvement_end_index = current_iteration
@@ -160,7 +160,7 @@ class DynamicModelRecommendation(ModelRecommendation):
             region = search_space.regions[int(region_index)]
             # a single model description is shared by all regions on the same level
             model = Model(models_types[region[0].level], region,
-                          self.experiment_description["Context"]["TaskConfiguration"]["Objectives"])
+                          Objectives.from_description(self.experiment_description["Context"]["TaskConfiguration"]["Objectives"]))
             model.update_surrogates_and_optimizers(model_description["Model"])
             mapping_region_model[region] = model
         return mapping_region_model

@@ -3,10 +3,11 @@ from typing import Tuple, Dict
 from configuration_selection.model.optimizer.optimizer_abs import Optimizer
 
 from tools.reflective_class_import import reflective_class_import
+from core_entities.objectives import Objectives
 
 
 class OptimizerOrchestrator:
-    def get_optimizer(self, optimizer_description: Dict, region: Tuple, objectives: Dict) -> Optimizer:
+    def get_optimizer(self, optimizer_description: Dict, region: Tuple, objectives: Objectives) -> Optimizer:
         keys = list(optimizer_description['Instance'].keys())
         assert len(keys) == 1
         feature_name = keys[0]

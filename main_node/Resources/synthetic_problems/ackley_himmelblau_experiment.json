@@ -61,6 +61,26 @@
                     }
                 },
                 "Optimizer": {
+                    "ConfigurationTransformers": {
+                        "OrdinalTransformer": {
+                            "SklearnOrdinalEncoder": {
+                                "Type": "sklearn_ordinal_transformer",
+                                "Class": "sklearn.OrdinalEncoder"
+                            }
+                        },
+                        "NominalTransformer": {
+                            "BinaryEncoder": {
+                                "Type": "binary_transformer",
+                                "Class": "brise.BinaryEncoder"
+                            }
+                        },
+                        "IntegerTransformer": {
+                            "SklearnIntMinMaxScaler": {
+                                "Type": "sklearn_integer_transformer",
+                                "Class": "sklearn.MinMaxScaler"
+                            }
+                        }
+                    },
                     "Instance": {
                         "MOEA": {
                             "Generations": 10,
@@ -128,6 +148,18 @@
         "BatchedDistribution": {
             "BatchSize": 5,
             "Type": "batched_distribution"
+        }
+    },
+    "PlotSelection": {
+        "Plot": {
+            "OptimizationHistory": {},
+            "ParallelCoordinates": {},
+            "RankPlot": {},
+            "HyperparameterImportances": {},
+            "SlicePlot": {},
+            "ContourPlot": {},
+            "EDFPlot": {},
+            "Heatmap": {}
         }
     }
 }

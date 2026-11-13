@@ -1,6 +1,7 @@
-import { ref, onUnmounted } from 'vue'
+import { computed, ref, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMainEventStore, MainClientApi } from '../../../entities/main'
+import { usePlotStore } from '../../../entities/main/model/plot.store'
 //data
 import { MainEvent } from '../../../entities/main'
 import { Subscription } from 'rxjs'
@@ -15,7 +16,13 @@ export function useLaunchControl() {
     // create a store 
   const store = useMainEventStore()
   // destructure reactive value from main.event.store
-  const { experiment_description, isConnected } = storeToRefs(store)
+  const { experiment_description, raw_product_configuration, searchspaceReady, isConnected } = storeToRefs(store)
+  // plot selection in the frontend is allowed only once an experiment is started
+  const plotStore = usePlotStore()
+  const { canChangeVisibleCharts } = storeToRefs(plotStore)
+
+  // the experiment the card shows: the uploaded file, or the running experiment if nothing was uploaded
+  const shownConfiguration = computed(() => raw_product_configuration.value ?? experiment_description.value)
 
 const subscriptions = new Subscription()
 subscriptions.add(
@@ -39,9 +46,10 @@ subscriptions.add(
 
   function startMainControl(): void {
     if (!isRunning.value) {
-      MainClientApi.startMain(experiment_description.value);
+      MainClientApi.startMain(raw_product_configuration.value);
       isRunning.value = true
       isFinish.value = false
+      canChangeVisibleCharts.value = true
     }
   }
 
@@ -62,8 +70,12 @@ subscriptions.add(
     reader.onload = () => {
       try {
         const parsed = parseJsonWithInfinity(reader.result as string)
-        store.experiment_description = parsed
-        store.searchspaceReady = false // serialized search space is provided by the main node
+        raw_product_configuration.value = parsed
+        searchspaceReady.value = false // the search space is described by the main node once the experiment starts
+        // the charts of the previous experiment would stay next to the uploaded file otherwise; the selection of the
+        // new one appears with its description, once the experiment has started
+        plotStore.clearCharts()
+        canChangeVisibleCharts.value = false
         selectedFile.value = null // reset input
       } catch (error) {
         console.error('Failed to parse experiment file:', error)
@@ -78,7 +90,7 @@ subscriptions.add(
     isFinish,
     showDownload,
     selectedFile,
-    experiment_description,
+    shownConfiguration,
     isConnected,
     openDownloadOption,
     closeDownloadOption,

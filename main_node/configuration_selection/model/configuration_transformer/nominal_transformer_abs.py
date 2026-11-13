@@ -6,8 +6,9 @@ from configuration_selection.model.configuration_transformer.configuration_trans
 
 
 class NominalTransformer(ConfigurationTransformer, ABC):
-    def __init__(self, nominal_transformer_description: Dict, relevant_parameters: Tuple):
-        super().__init__(nominal_transformer_description, relevant_parameters)
+    def __init__(self, nominal_transformer_description: Dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
+        super().__init__(nominal_transformer_description, relevant_parameters, parameters_with_inactive_value)
         self.nominal_transformer_description = nominal_transformer_description
 
     @abstractmethod

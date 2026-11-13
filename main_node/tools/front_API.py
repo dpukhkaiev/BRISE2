@@ -111,7 +111,7 @@ class APIMessageBuilder:
     Usage (used only in the API class):
     APIMessageBuilder.LOG(msg="log message")
     APIMessageBuilder.TASK(configurations=[[1,2,3], .. [3,2,1]], results=[[2,3], .. [5,4]], field=[[..], .. [..]])
-    APIMessageBuilder.EXPERIMENT(global_config={..}, experiment_config={..})
+    APIMessageBuilder.EXPERIMENT(experiment_description={..}, regions=[{..}, .. {..}])
     """
 
     @staticmethod
@@ -184,23 +184,23 @@ class APIMessageBuilder:
     def _build_experiment_message(**kwargs) -> dict:
         """
             Takes all key-value parameters
-            and checks if "global_config", "experiment_description" and "searchspace_description" are presents.
+            and checks if "experiment_description" and "regions" are presents.
             Currently, it just provides validation of input (needed fields are present).
 
-        :param kwargs: "global_config", "experiment_description" and "searchspace_description" as mandatory fields.
+        :param kwargs: "experiment_description" (without Context.SearchSpace) and "regions"
+            (SearchSpace.describe_regions(): the regions of the search space with their parameters)
+            as mandatory fields.
         :return: Dictionary.
         """
         # Validation
         try:
-            assert "global_config" in kwargs.keys(), "The global configuration is not provided!"
             assert "experiment_description" in kwargs.keys(), "The experiment description is not provided!"
-            assert "searchspace_description" in kwargs.keys(), "The search space description is not provided!"
+            assert "regions" in kwargs.keys(), "The search space regions are not provided!"
         except AssertionError as error:
             getLogger(__name__).error(error)
             raise KeyError("Invalid parameters passed to send message via API: %s" % error)
 
         return {
-            "global_configuration": kwargs["global_config"],
             "experiment_description": kwargs["experiment_description"],
-            "searchspace_description": kwargs["searchspace_description"]
+            "regions": kwargs["regions"]
         }

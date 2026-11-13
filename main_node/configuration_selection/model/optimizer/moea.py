@@ -9,13 +9,14 @@ from core_entities.search_space import CategoricalHyperparameter
 from configuration_selection.model.optimizer.optimizer_abs import Optimizer
 from configuration_selection.model.configuration_transformer.configuration_transformer_abs import ConfigurationTransformer
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from core_entities.objectives import Objectives
 
 # these algorithms may leave the bounds of the problem unless explicitly forced to respect them
 FORCE_BOUNDS_ALGORITHMS = frozenset({"cmaes", "xnes"})
 
 
 class MOEA(Optimizer):
-    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Dict):
+    def __init__(self, optimizer_description: Dict, region: Tuple, objectives: Objectives):
         super().__init__(optimizer_description, region, objectives)
         self.generations = optimizer_description["Instance"][self.feature_name]["Generations"]
         self.pop_size = optimizer_description["Instance"][self.feature_name]["PopulationSize"]
@@ -29,8 +30,10 @@ class MOEA(Optimizer):
         self.masked_params: Dict[str: Tuple[float, int]] = {}  # if lower bound == upper bound nsga2 and moead don't work
         # which surrogate a categorical hyperparameter's transformer was borrowed from is only known per optimize()
         # call, so bounds/params/masked_params/_borrowed_config_transformer_parameter are (re)built there
+        # TOBEDROPPED
         self._borrowed_config_transformer_parameter: Dict[ConfigurationTransformer, Tuple] = {}
 
+    # TOBEDROPPED
     def _resolve_categorical_transform(self, hp, surrogate: Surrogate, borrowed: Dict):
         """
         A MOEA optimizer needs numeric bounds even for a categorical hyperparameter its own
@@ -40,6 +43,11 @@ class MOEA(Optimizer):
             return self._transform_configuration
         for ct, params in surrogate.mapping_config_transformer_parameter.items():
             if hp in params:
+                if hp in surrogate.parameters_activated_within_region:
+                    # the surrogate's transformer knows the inactive value as a category, which MOEA would search
+                    raise ValueError(
+                        f"MOEA cannot borrow the transformer of categorical hyperparameter '{hp.name}': it can be "
+                        f"inactive, so the paired Surrogate's transformer holds the inactive value.")
                 borrowed[ct] = params
                 return surrogate._transform_configuration
         raise ValueError(
@@ -96,19 +104,20 @@ class MOEA(Optimizer):
     def optimize(self, surrogate: Surrogate) -> pd.DataFrame:
         self._build_bounds_params_masked(surrogate)
         problem = self._PygmoProblem(optimizer=self, surrogate=surrogate)
-        population = pg.population(problem, self.pop_size)
+        population = pg.population(problem, self.pop_size, b=pg.default_bfe())  # the initial population in one batch
         for algo_name in self.algorithms:
             algo_parameters = {"gen": self.generations}
             if algo_name in FORCE_BOUNDS_ALGORITHMS:
                 algo_parameters["force_bounds"] = True
-            algo = pg.algorithm(getattr(pg, algo_name)(**algo_parameters))
-            population = algo.evolve(population)
+            algorithm = getattr(pg, algo_name)(**algo_parameters)
+            if hasattr(algorithm, "set_bfe"):  # not every algorithm can evaluate a population in one batch
+                algorithm.set_bfe(pg.bfe())
+            population = pg.algorithm(algorithm).evolve(population)
 
         optimized_features = pd.DataFrame(population.get_x(), columns=self.params)
-        if surrogate.scalarized:
-            optimized_labels = pd.DataFrame(population.get_f(), columns=["Y"])
-        else:
-            optimized_labels = pd.DataFrame(population.get_f(), columns=list(self.objectives.keys()))
+        label_columns = ["Y"] if surrogate.scalarized else self.objectives.names
+        # pygmo minimizes, so the fitness of a maximized objective is negated; restore the predicted values
+        optimized_labels = pd.DataFrame(population.get_f() * problem.signs, columns=label_columns)
 
         for p, val_ind in self.masked_params.items():
             optimized_features.insert(loc=val_ind[1], column=p, value=val_ind[0])
@@ -116,8 +125,9 @@ class MOEA(Optimizer):
         optimized_features = self._inverse_transform_configuration(optimized_features)  # inverse transform
 
         result = optimized_features.join(optimized_labels)
-        return result
+        return self._rank_candidates(result, label_columns)
 
+    # TOBEDROPPED
     def _inverse_transform_configuration(self, optimized_features: pd.DataFrame) -> pd.DataFrame:
         result = super()._inverse_transform_configuration(optimized_features)
         for ct, _ in self._borrowed_config_transformer_parameter.items():
@@ -140,30 +150,29 @@ class MOEA(Optimizer):
             self._optimizer: MOEA = optimizer
             self._bounds = self._optimizer.bounds
             self._objectives = self._optimizer.objectives
+            label_columns = ["Y"] if surrogate.scalarized else self._objectives.names
+            self.signs = self._optimizer._get_direction_signs(label_columns)
             self._params = self._optimizer.params
-            self._transform_surrogate, self._inverse_transform_optimizer = (
-                self._optimizer._resolve_configuration_transformers(surrogate))
 
         def fitness(self, x):
-            temp_params = self._params.copy()
-            temp_x = x
+            return self.batch_fitness(np.asarray(x)).tolist()
+
+        def batch_fitness(self, dvs):
+            """
+            :param dvs: the decision vectors of a population, one after another.
+            :return: the fitness of every individual of the population, one after another.
+            """
+            configurations = pd.DataFrame(np.asarray(dvs).reshape(-1, len(self._params)), columns=self._params)
             for p, val_ind in self._optimizer.masked_params.items():
-                temp_params.insert(val_ind[1], p)
-                temp_x = np.insert(temp_x, val_ind[1], val_ind[0])
-            x = dict(map(lambda i, j: (i, j), temp_params, temp_x))
+                configurations.insert(loc=val_ind[1], column=p, value=val_ind[0])
 
-            x = pd.Series(x)
+            # the surrogate scores the configurations the individuals stand for, which are the ones that get measured
+            configurations = self._optimizer._inverse_transform_configuration(configurations)
 
-            if self._inverse_transform_optimizer:
-                x_df = pd.DataFrame(columns=x.index)
-                x_df.loc[0] = x.values
-                x_df = self._optimizer._inverse_transform_configuration(x_df)
-                x = x_df.loc[0]
-
-            result = self._surrogate.predict(x, self._transform_surrogate)
+            result = self._surrogate.predict_batch(configurations)
 
             transformed_result = self._optimizer._transform_values(result)
-            return transformed_result.values.flatten().tolist()
+            return (transformed_result.values * self.signs).flatten()
 
         def get_nobj(self):
             return len(self._objectives) if not self._surrogate.scalarized else 1

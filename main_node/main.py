@@ -96,7 +96,6 @@ class MainThread(threading.Thread):
         self.experiment = Experiment(experiment_description, search_space)
         # self.experiment_id = self.experiment.unique_id
         # search_space.experiment_id = self.experiment_id
-        Configuration.set_task_config(self.experiment.description["Context"]["TaskConfiguration"])
 
         # initialize connection to rabbitmq service
         self.connection = pika.BlockingConnection(
@@ -137,11 +136,10 @@ class MainThread(threading.Thread):
         self.experiment.send_state_to_db()
 
         self.sub.send('experiment', 'description',
-                      global_config={},
-                      experiment_description=self.experiment.description,
-                      searchspace_description=self.experiment.search_space.serialize()
+                      experiment_description=self.experiment.get_description_without_search_space(),
+                      regions=self.experiment.search_space.describe_regions()
                       )
-        self.logger.debug("Experiment description and global configuration sent to the API.")
+        self.logger.debug("Experiment description and search space regions sent to the API.")
 
         # Create and launch Stop Condition services in separate threads.
         launch_stop_condition_threads(self.experiment.unique_id)

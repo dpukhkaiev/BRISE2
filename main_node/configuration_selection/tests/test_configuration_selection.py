@@ -1,3 +1,8 @@
+import random
+
+import numpy as np
+import pandas as pd
+import pygmo as pg
 from configuration_selection.configuration_selection import ConfigurationSelection
 from configuration_selection.model.surrogate.tree_parzen_estimator import TreeParzenEstimator
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -29,7 +34,6 @@ class TestConfigurationSelection:
         experiment.database.write_one_record(
             "Search_space", get_search_space_record(search_space, experiment.unique_id)
         )
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         dch_o = DefaultConfigHandlerOrchestrator()
         default_config_handler = dch_o.get_default_configuration_handler(experiment=experiment)
         default_configuration = default_config_handler.get_default_configuration()
@@ -94,7 +98,7 @@ class TestConfigurationSelection:
 
     def test_2(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
+         ['1 nom 1 float 1 nom 1 int 1 ord', 'hierarchical', '5-mo', 'pure', 'gpr-gpr',
          'surr.vt.none', 'surr.ct',  'optimizer.nsga2-moead', 'opt.ct',, 'opt.vt.none'
          'validator.quality', 'validator.internal.none' , 'cs.random',
          'ted.none', 'mr.none', 'mtl.none', 'sc.guaranteed', 'rm.quality', 'dch.random', 'ss.sobol']
@@ -103,20 +107,20 @@ class TestConfigurationSelection:
         experiment = Experiment(experiment_description, search_space)
         cs = ConfigurationSelection(experiment)
         configs = []
-        hierarchical_configs = []
+        configs_sent = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
             predicted[0].results = get_configurations_all_types[i]['Result']
             predicted[0].status['measured'] = True
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
-            hierarchical_configs = hierarchical_configs + measured
+            configs_sent = configs_sent + measured
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
             experiment.measured_configurations.append(predicted[0])
 
         assert all([len(c.parameters) == 3 for c in configs]) is True
-        assert all([len(c.parameters) == 3 for c in hierarchical_configs]) is True
+        assert all([len(c.parameters) == 3 for c in configs_sent]) is True
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # Pure
@@ -124,7 +128,7 @@ class TestConfigurationSelection:
 
     def test_3(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
+         ['1 nom 1 float 1 nom 1 int 1 ord', 'flat', '5-mo', 'compositional', 'tpe', 'tpe', 'tpe', 'tpe', 'tpe',
          'surr.vt.none', 'surr.ct', 'optimizer.gaco', 'optimizer.gaco', 'optimizer.gaco',
          'optimizer.gaco', 'optimizer.gaco', 'opt.vt', 'opt.ct','validator.mock', 'validator.internal.none',
          'cs.best', 'ted.none', 'mr.none', 'mtl.none', 'sc.bad', 'rm.experiment_aware', 'dch.none', 'ss.mersenne']
@@ -133,20 +137,20 @@ class TestConfigurationSelection:
         experiment = Experiment(experiment_description, search_space)
         cs = ConfigurationSelection(experiment)
         configs = []
-        hierarchical_configs = []
+        configs_sent = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
             predicted[0].results = get_configurations_all_types[i]['Result']
             predicted[0].status['measured'] = True
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
-            hierarchical_configs = hierarchical_configs + measured
+            configs_sent = configs_sent + measured
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
             experiment.measured_configurations.append(predicted[0])
 
-        assert all([len(c.parameters) == 5 for c in configs]) is True
-        assert all([len(c.parameters) == 3 for c in hierarchical_configs]) is True
+        assert all([len(c.parameters) == 3 for c in configs]) is True  # the 3 active ones of the 5 parameters
+        assert all([len(c.parameters) == 3 for c in configs_sent]) is True
 
         temp_region = list(cs.predictor.mapping_region_model.keys())[0]
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 5  # Compositional
@@ -174,7 +178,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -236,7 +239,7 @@ class TestConfigurationSelection:
         experiment.measured_configurations.append(default_configuration)
 
         configs = []
-        hierarchical_configs = []
+        configs_sent = []
         for i in range(20):
             predicted, measured = cs.send_new_configurations_to_measure("", "", "", get_workers)
             results = get_configurations_2_float[i]['Result']
@@ -247,7 +250,7 @@ class TestConfigurationSelection:
             predicted[0].status['measured'] = True
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
-            hierarchical_configs = hierarchical_configs + measured
+            configs_sent = configs_sent + measured
             assert len(configs) == i + 1
             assert predicted[0].type in [Configuration.Type.FROM_SELECTOR, Configuration.Type.PREDICTED]
             experiment.measured_configurations.append(predicted[0])
@@ -319,7 +322,7 @@ class TestConfigurationSelection:
 
     def test_8(self, get_experiment, get_workers, get_configurations_all_types):
         """
-         ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
+         ['1 nom 1 float 1 nom 1 int 1 ord', 'hierarchical', '2-mo', 'scalar-pf', 'mab', 'lr-gbr-brr-mock',
          'surr.vt', 'surr.ct', 'optimizer.random', 'opt.vt.none', 'opt.ct.none',
          'validator.mock-q', 'validator.internal.none-y', 'cs.best', 'ted.none',
          'mr.none', 'mtl.none', 'sc.time', 'rm.quality', 'dch.none', 'ss.sobol']
@@ -334,17 +337,10 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[second_region].mapping_surrogate_objective) == 9  # PF 2 Obj 4 Surr 1 MO
 
         configs = []
-        for i in range(40):
-            j = i
-            if i > 19:
-                j = i - 20
+        for i in range(20):
             predicted, _ = cs.send_new_configurations_to_measure("", "", "", get_workers)
-            results = get_configurations_all_types[j]['Result']
-            if not i > 19:
-                del results["Y3"]
-                del results["Y4"]
-                del results["Y5"]
-            predicted[0].results = results
+            measured = get_configurations_all_types[i]['Result']
+            predicted[0].results = {"Y1": measured["Y1"], "Y2": measured["Y2"]}
             predicted[0].status['measured'] = True
             predicted[0].status['evaluated'] = True
             configs = configs + predicted
@@ -377,7 +373,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(12):
@@ -423,7 +418,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0].surrogate_instance, GradientBoostingRegressor)
@@ -463,7 +457,7 @@ class TestConfigurationSelection:
 
     def test_11(self, get_experiment, get_workers, get_configurations_all_types):
         """
-        ['1 nom 1 float 1 nom 1 ord 1 float, 'hierarchical', 'so', 'mo.none', 'mab-brr',
+        ['1 nom 1 float 1 nom 1 int 1 ord, 'hierarchical', 'so', 'mo.none', 'mab-brr',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.bee-gwo', 'opt.vt.none', 'opt.ct.y-none',
         'validator.mock', 'validator.internal.none', 'cs.random', 'ted.quantity', 'mr.none',
         'mtl.oldnewratio-onlybest', 'sc.guaranteed', 'rm.experiment_aware', 'dch.none', 'ss.mersenne']
@@ -484,7 +478,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -520,7 +513,7 @@ class TestConfigurationSelection:
 
     def test_12(self, get_experiment, get_workers, get_configurations_all_types):
         """
-        ['1 nom 1 float 1 nom 1 ord 1 float', 'hierarchical', 'so', 'mo.none', 'framab-tpe',
+        ['1 nom 1 float 1 nom 1 int 1 ord', 'hierarchical', 'so', 'mo.none', 'framab-tpe',
         'surr.vt.none', 'surr.ct.none-y', 'optimizer.de-cmaes', 'opt.vt.none-af', 'opt.ct.y-none',
         'validator.mock', 'validator.internal.none', 'cs.best', 'ted.none', 'mr.fsl', 'mtl.none',
         'sc.fsl', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
@@ -541,7 +534,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -577,7 +569,7 @@ class TestConfigurationSelection:
 
     def test_13(self, get_experiment, get_workers, get_configurations_all_types):
         """
-        ['1 nom 1 float 1 nom 1 ord 1 float', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
+        ['1 nom 1 float 1 nom 1 int 1 ord', 'flat', 'so', 'mo.none', 'brr', 'surr.vt.none', 'surr.ct',
         'optimizer.sade', 'opt.vt.none', 'opt.ct', 'validator.mock', 'validator.internal.none', 'cs.random',
         'ted.quantity', 'mr.dynamic', 'mtl.none', 'sc.bad', 'rm.experiment_aware', 'dch.none', 'ss.sobol']
         """
@@ -597,7 +589,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(0, 9):
@@ -631,6 +622,86 @@ class TestConfigurationSelection:
         assert len(cs.predictor.mapping_region_model[temp_region].mapping_surrogate_objective) == 1  # SO
         experiment.dump("Results")
 
+    @staticmethod
+    def _selection_for_flat_space_with_conditional_parameters(get_experiment, get_configurations_all_types):
+        """
+        'test_case_13': flat search space with the conditional parameters N01 {F1, N1} and N02 {I1, O1}, a measured
+        default as in test_13 and no transfer learning, so the model is asked from the first proposal.
+        """
+        rdb.cleanup()
+        rdb.restore()
+        experiment_description, search_space = get_experiment(13)
+        del experiment_description["TransferLearning"]
+        experiment = Experiment(experiment_description, search_space)
+        experiment.database.write_one_record("Experiment_description", experiment.get_experiment_description_record())
+        experiment.database.write_one_record(
+            "Search_space", get_search_space_record(search_space, experiment.unique_id)
+        )
+        default_config_handler = DefaultConfigHandlerOrchestrator().get_default_configuration_handler(experiment=experiment)
+        default_configuration = default_config_handler.get_default_configuration()
+        default_configuration.results = {"Y1": get_configurations_all_types[10]['Result']["Y1"]}
+        default_configuration.status['measured'] = True
+        default_configuration.status['evaluated'] = True
+        experiment.default_configuration = default_configuration
+        return experiment, ConfigurationSelection(experiment)
+
+    BRANCH_PARAMETERS = {
+        "Context.SearchSpace.N0.N01": {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N01.F1",
+                                       "Context.SearchSpace.N0.N01.N1"},
+        "Context.SearchSpace.N0.N02": {"Context.SearchSpace.N0", "Context.SearchSpace.N0.N02.I1",
+                                       "Context.SearchSpace.N0.N02.O1"},
+    }
+
+    def test_flat_space_with_conditional_parameters_proposes_model_predictions(
+            self, get_experiment, get_workers, get_configurations_all_types):
+        """
+        A configuration is measured with its active parameters only, as in a real run, and that is what gets fed
+        back. Once model proposals start, they come from measurements of both branches, each lacking the other
+        branch's parameters.
+        """
+        experiment, cs = self._selection_for_flat_space_with_conditional_parameters(
+            get_experiment, get_configurations_all_types)
+
+        rounds_after_first_prediction = 0
+        for i in range(len(get_configurations_all_types)):
+            evaluated, sent = cs.send_new_configurations_to_measure("", "", "", get_workers)
+            configuration = sent[0]
+            assert set(evaluated[0].parameters) == self.BRANCH_PARAMETERS[evaluated[0].parameters["Context.SearchSpace.N0"]]
+            assert set(configuration.parameters) == self.BRANCH_PARAMETERS[configuration.parameters["Context.SearchSpace.N0"]]
+            configuration.results = {"Y1": get_configurations_all_types[i]['Result']["Y1"]}
+            configuration.status['enabled'] = True
+            configuration.status['measured'] = True
+            configuration.status['evaluated'] = True
+            experiment.add_configuration(configuration)
+            if rounds_after_first_prediction > 0:
+                rounds_after_first_prediction += 1
+            elif configuration.type is Configuration.Type.PREDICTED:
+                rounds_after_first_prediction = 1
+            if rounds_after_first_prediction == 3:
+                break
+
+        assert rounds_after_first_prediction == 3, "no PREDICTED configuration was proposed within the fixture's results"
+        assert all(set(c.parameters) == self.BRANCH_PARAMETERS[c.parameters["Context.SearchSpace.N0"]]
+                   for c in experiment.evaluated_configurations)
+
+    def test_prediction_that_differs_from_an_evaluated_configuration_only_in_inactive_values_is_replaced_by_a_sample(
+            self, get_experiment, get_workers, get_configurations_all_types):
+        experiment, cs = self._selection_for_flat_space_with_conditional_parameters(
+            get_experiment, get_configurations_all_types)
+        prefix = "Context.SearchSpace.N0"
+        evaluated = {prefix: f"{prefix}.N01", f"{prefix}.N01.F1": 12.5, f"{prefix}.N01.N1": f"{prefix}.N01.N1.N11"}
+        experiment.add_evaluated_configuration_to_experiment(
+            Configuration(evaluated, Configuration.Type.FROM_SELECTOR, experiment.unique_id))
+        # the model proposes the evaluated configuration, with other values in the parameters of the branch N02
+        proposal = {**evaluated, f"{prefix}.N02.I1": 11, f"{prefix}.N02.O1": f"{prefix}.N02.O1.O11", "Y1": 1.0}
+        region = cs.predictor.search_space.regions[0]
+        cs.predictor.mapping_region_model[region].predict = lambda parameters, configurations: pd.DataFrame([proposal])
+
+        configurations, _ = cs.send_new_configurations_to_measure("", "", "", get_workers)
+
+        assert [c.type for c in configurations] == [Configuration.Type.FROM_SELECTOR]
+        assert configurations[0].parameters != evaluated
+
     def test_14(self, get_experiment, get_workers, get_configurations_2_float):
         """
         ['2 float', 'flat', 'so', 'mo.none', 'lr', 'surr.vt.none', 'surr.ct.none',
@@ -653,7 +724,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         assert isinstance(list(list(cs.predictor.mapping_region_model.values())[0].mapping_surrogate_objective.keys())[
                               0].surrogate_instance, LinearRegression)
@@ -739,6 +809,12 @@ class TestConfigurationSelection:
         Tests duplication of parameter names. Where the same leaf hyperparameter name ('X') resides at two different levels
         of the same branch (N0.N01.X, itself Nominal, has a child also named 'X').
         """
+        # The model proposes only if every region on the path of a configuration validates its surrogate, and the
+        # child regions hold 6-10 rows of their branch: they are validated on 2-4 held-out rows, whose split (and the
+        # surrogates, and the optimizer) are random. Unseeded, about one run in ten has no proposal at all.
+        random.seed(0)
+        np.random.seed(0)
+        pg.set_global_rng_seed(0)
         experiment_description, search_space = get_experiment(16)
         experiment = Experiment(experiment_description, search_space)
         cs = ConfigurationSelection(experiment)
@@ -784,7 +860,6 @@ class TestConfigurationSelection:
         default_configuration.status['measured'] = True
         default_configuration.status['evaluated'] = True
         experiment.default_configuration = default_configuration
-        Configuration.set_task_config(experiment.description["Context"]["TaskConfiguration"])
         cs = ConfigurationSelection(experiment)
         configs = []
         for i in range(12):

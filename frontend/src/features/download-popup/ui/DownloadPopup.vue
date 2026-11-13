@@ -20,8 +20,7 @@ async function download(format: string) {
       <v-btn
         block
         variant="elevated"
-        color="#B8C9F4"
-        style="color: #2E3F8B;"
+        color="primary"
         prepend-icon="mdi-file"
         @click="download('pkl')"
       >
@@ -29,9 +28,8 @@ async function download(format: string) {
       </v-btn>
       <v-btn
         block
-        variant="elevated"
-        color="#A8D5A2"
-        style="color: #2D6A27;"
+        variant="tonal"
+        color="primary"
         prepend-icon="mdi-table"
         @click="download('csv')"
       >

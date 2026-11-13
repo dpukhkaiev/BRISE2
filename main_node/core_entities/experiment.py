@@ -13,6 +13,7 @@ from typing import List, Union
 
 import numpy as np
 from core_entities.configuration import Configuration
+from core_entities.objectives import Objectives
 from core_entities.search_space import SearchSpace
 from tools.front_API import API
 from tools.mongo_dao import MongoDB
@@ -37,6 +38,7 @@ class Experiment:
         self._default_configuration: Configuration = None
         self._description: Mapping = description
         self.search_space: SearchSpace = search_space
+        self.objectives: Objectives = Objectives.from_description(description["Context"]["TaskConfiguration"]["Objectives"])
         self.end_time = self.start_time = datetime.datetime.now()
         # An ID that is used to differentiate Experiments by descriptions.
         self.ed_id = hashlib.sha1(json.dumps(self.description, sort_keys=True).encode("utf-8")).hexdigest()
@@ -62,6 +64,15 @@ class Experiment:
 
     def _get_description(self):
         return deepcopy(self._description)
+
+    def get_description_without_search_space(self) -> dict:
+        """
+        The description that is sent to the clients of main-node. They get the search space as the regions of
+        SearchSpace.describe_regions(), so Context.SearchSpace is left out of it.
+        """
+        description = self.description  # a copy
+        del description["Context"]["SearchSpace"]
+        return description
 
     def _set_description(self, description):
         if not self._description:
@@ -279,8 +290,7 @@ class Experiment:
         :return: None
         """
         self.measured_configurations.append(configuration)
-        if configuration.is_better(self.get_objectives_minimization(),
-                                   self.current_best_configurations[0]):
+        if self._is_better_than_current_best(configuration):
             # we do not need parameter_control_info anymore, since better configuration was found
             self.current_best_configurations[0].parameter_control_info = {}
             self.current_best_configurations = [configuration]
@@ -302,6 +312,18 @@ class Experiment:
                       results=[configuration.results])
         self.logger.info("Adding to Experiment: %s" % configuration)
 
+    def _is_better_than_current_best(self, configuration: Configuration) -> bool:
+        """
+        A configuration is better unless the results of the current best configuration dominate its results, each
+        objective in its own direction. A configuration without results (or a current best without) is never better.
+        """
+        current_best = self.current_best_configurations[0]
+        if not (configuration.results and current_best.results):
+            self.logger.error(f"One (or both) of Configurations doesn't (don't) have the results: "
+                              f"{configuration}, {current_best}.")
+            return False
+        return self.objectives.is_better(configuration.results, current_best.results)
+
     def add_evaluated_configuration_to_experiment(self, configuration: Configuration) -> None:
         """
         Save configuration after passing all checks.
@@ -309,18 +331,6 @@ class Experiment:
         :return: None
         """
         self.evaluated_configurations.append(configuration)
-
-    def get_objectives(self) -> dict:
-        return self.description["Context"]["TaskConfiguration"]["Objectives"]
-
-    def get_objectives_minimization(self) -> List[bool]:
-        minimizations = []
-        for k in self.get_objectives().keys():
-            minimizations.append(self.get_objectives()[k]["Minimization"])
-        return minimizations
-
-    def get_models_objectives_priorities(self) -> List[int]:
-        return self.description["TaskConfiguration"]["ObjectivesPrioritiesModels"]
 
     def dump(self, folder_path: str) -> None:
         """
@@ -416,7 +426,7 @@ class Experiment:
             [List] -- List with results for all atom-tasks
         """
         all_tasks = []
-        result_key = list(self.description["Context"]['TaskConfiguration']['Objectives'].keys())[0]  # clarify purpose
+        result_key = self.objectives.names[0]  # clarify purpose
         for configuration in self.measured_configurations:
             for task in configuration.get_tasks().values():
                 if 'result' in task:

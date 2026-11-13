@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import HeatmapReg from '@/widgets/charts/heatmap-reg/ui/HeatmapReg.vue'
+import type { ParameterSpec, SearchSpaceRegion } from '../entities/experiment/model/experiment.model'
 
 
 globalThis.ResizeObserver = class ResizeObserver {
@@ -15,7 +16,19 @@ const PlotlyMock = vi.hoisted(() => ({
     purge: vi.fn(),
 }))
 
-function buildMockStore(searchspaceReady = true) {
+const categorical = (Name: string, Categories: string[]): ParameterSpec => ({
+    Name, Type: 'NominalHyperparameter', Level: 0, Categories, Inactive: 'inactive'
+})
+
+// the top-level region holds threads and frequency; the second region is only active for one category of threads
+const threads = categorical('threads', ['t1', 't2'])
+const frequency = categorical('frequency', ['f1', 'f2'])
+const defaultRegions: SearchSpaceRegion[] = [
+    { ActivationCategory: 'root', Parameters: [threads, frequency] },
+    { ActivationCategory: 'Context.SearchSpace.threads.t1', Parameters: [categorical('mode', ['m1', 'm2'])] }
+]
+
+function buildMockStore(searchspaceReady = true, regions: SearchSpaceRegion[] = defaultRegions) {
     return {
         plotlyInstance: PlotlyMock,
         experiment_description: ref({
@@ -29,16 +42,8 @@ function buildMockStore(searchspaceReady = true) {
                 }
             }
         }),
-        searchspace: ref({
-            boundaries: [{
-                Boundaries: {
-                    threads: ['t1', 't2'],
-                    frequency: ['f1', 'f2']
-                }
-            }]
-        }),
+        regions: ref(regions),
         searchspaceReady: ref(searchspaceReady),
-        globalConfig: ref({}),
         experimentFinished: ref(false),
         onEvent: vi.fn((eventType) => ({
             subscribe: vi.fn((callback) => {
@@ -116,6 +121,21 @@ describe('HeatmapReg.vue', () => {
         await flushPromises()
 
         expect(PlotlyMock.react).toHaveBeenCalled()
+    })
+
+    it('spans the heatmap by the first two parameters of the top-level region', async () => {
+        mountComponent()
+        await flushPromises()
+
+        eventCallbacks['PREDICTIONS']({
+            body: JSON.stringify([{ configurations: { frequency: 'f1', threads: 't1' }, results: { energy: 100 } }])
+        })
+        await flushPromises()
+
+        // the first parameter is the horizontal axis, the second the vertical one
+        const surface = vi.mocked(PlotlyMock.react).mock.calls.at(-1)![1][0]
+        expect(surface.x).toEqual(['t1', 't2'])
+        expect(surface.y).toEqual(['f1', 'f2'])
     })
 
     it('does not render when searchspaceReady is false', async () => {

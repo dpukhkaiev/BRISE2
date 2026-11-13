@@ -55,20 +55,20 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         self.transformer = transformer
         self.input_column_names = input_column_names
         self.out_column_names = None
-        self.original_data_types = {}
         self._enc_suffix = f"_{self.transformer.__class__.__name__}"
 
     def fit(self, df: pd.DataFrame, y=None, **fit_params):
         if not self.input_column_names:
             # If column_names parameter was provided in 'fit' - use it, otherwise - apply transformation to all columns.
             self.input_column_names = fit_params.get("column_names", None) or df.keys().tolist()
-        self.original_data_types = df.dtypes.to_dict()
+        # the trailing underscore marks this adapter as fitted for sklearn; do not set it in __init__
+        self.original_data_types_ = df.dtypes.to_dict()
         self.transformer = self.transformer.fit(df[self.input_column_names], y=y, **fit_params)
         return self
 
     def transform(self, df: pd.DataFrame, y=None) -> pd.DataFrame:
-        df = df.copy(deep=True)
-        df['temp_index'] = range(1, len(df) + 1)
+        # the rows are joined by position, whatever the index of the input
+        df = df.reset_index(drop=True)
         # Select needed columns
         df_to_transform = df[self.input_column_names]
         transformed_raw = self.transformer.transform(df_to_transform)
@@ -80,10 +80,7 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         else:
             self.out_column_names = [name + self._enc_suffix for name in self.input_column_names]
         transformed_df = pd.DataFrame(transformed_raw, columns=self.out_column_names)
-        transformed_df['temp_index'] = range(1, len(transformed_df) + 1)
-        df = df.merge(transformed_df, on="temp_index")
-        df = df.drop(columns=self.input_column_names)
-        df = df.drop(columns='temp_index')
+        df = pd.concat([df.drop(columns=self.input_column_names), transformed_df], axis=1)
 
         return df
 
@@ -97,6 +94,6 @@ class SklearnColumnTransformer(BaseEstimator, TransformerMixin):
         for idx, c_name in enumerate(self.input_column_names):
             df[c_name] = transformed_raw.T[idx]
         df = df.drop(columns=self.out_column_names)
-        df = df.astype(self.original_data_types)
+        df = df.astype(self.original_data_types_)
 
         return df

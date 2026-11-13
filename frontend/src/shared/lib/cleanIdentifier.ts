@@ -15,4 +15,3 @@ export function normalizeConfigKeys(config: Record<string, unknown>): Record<str
   })
   return normalized
 }
-

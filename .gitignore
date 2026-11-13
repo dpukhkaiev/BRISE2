@@ -35,6 +35,7 @@ tmp/
 npm-debug.log*
 yarn-error.log*
 .ng_pkg_build/
+temp/
 
 # Mac OSX Finder files.
 **/.DS_Store

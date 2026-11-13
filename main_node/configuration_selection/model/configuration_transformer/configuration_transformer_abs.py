@@ -4,9 +4,12 @@ from typing import Tuple, Dict
 
 
 class ConfigurationTransformer(ABC):
-    def __init__(self, configuration_transformer_description: Dict, relevant_parameters: Tuple):
+    def __init__(self, configuration_transformer_description: Dict, relevant_parameters: Tuple,
+                 parameters_with_inactive_value: frozenset = frozenset()):
         self.configuration_transformer_description = configuration_transformer_description
         self.relevant_parameters = relevant_parameters
+        # A surrogate's transformer also encodes the inactive value of these parameters. Optimizers search the space without it.
+        self.parameters_with_inactive_value = parameters_with_inactive_value
         self.mapping_old_new_features = {}
 
     @abstractmethod
@@ -22,6 +25,15 @@ class ConfigurationTransformer(ABC):
     @abstractmethod
     def inverse_transform(self, transformed_features: pd.DataFrame) -> pd.DataFrame:
         pass
+
+    def _categories_of(self, hyperparameter) -> list:
+        """
+        The categories a categorical transformer is fitted on. The inactive values are appended to the real categories.
+        """
+        categories = list(hyperparameter.categories)
+        if hyperparameter.name in self.parameters_with_inactive_value:
+            categories.append(hyperparameter.inactive_value())
+        return categories
 
     def _inverse_sklearn_transform(self,
                                    transformed_features: pd.DataFrame,
@@ -42,7 +54,7 @@ class ConfigurationTransformer(ABC):
             if result.empty:
                 result = transformed
             else:
-                result = pd.concat([result, transformed])
+                result = pd.concat([result, transformed], axis=1)
         return result
 
     def _filter_relevant_features(self, features: pd.DataFrame) -> pd.DataFrame:

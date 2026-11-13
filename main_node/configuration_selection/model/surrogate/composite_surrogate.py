@@ -2,18 +2,18 @@ import pandas as pd
 from typing import Tuple
 
 from configuration_selection.model.surrogate.surrogate_abs import Surrogate
+from core_entities.objectives import Objectives
 
 
 class CompositeSurrogate(Surrogate):
     def __init__(self, surrogates: Tuple[Surrogate], region: Tuple):
         self.surrogates = surrogates
-        objectives = {}
         surrogate_description = {}
         for s in surrogates:
-            key = f"{s.feature_name}_{'_'.join(s.objectives.keys())}"
+            key = f"{s.feature_name}_{'_'.join(s.objectives.names)}"
             surrogate_description[key] = s.surrogate_description
-            for o, o_value in s.objectives.items():
-                objectives[o] = o_value
+        # the union of the surrogates' objectives, each name once
+        objectives = Objectives(tuple({o.name: o for s in surrogates for o in s.objectives}.values()))
 
         super().__init__(surrogate_description, region, objectives)
         self.multi_objective = True
@@ -23,7 +23,7 @@ class CompositeSurrogate(Surrogate):
     def create(self, features: pd.DataFrame, labels: pd.DataFrame) -> bool:
         is_built = []
         for s in self.surrogates:
-            i_b = s.create(features, labels[list(s.objectives.keys())])
+            i_b = s.create(features, labels[s.objectives.names])
             is_built.append(i_b)
         return all(is_built) is True
 
@@ -35,5 +35,16 @@ class CompositeSurrogate(Surrogate):
                 result = s.predict(cfg, transform)
             else:
                 temp = s.predict(cfg, transform)
+                result = result.join(temp)
+        return result
+
+    def predict_batch(self, configurations: pd.DataFrame, transform: bool = True) -> pd.DataFrame:
+        result = pd.DataFrame()
+
+        for s in self.surrogates:
+            if result.empty:
+                result = s.predict_batch(configurations, transform)
+            else:
+                temp = s.predict_batch(configurations, transform)
                 result = result.join(temp)
         return result

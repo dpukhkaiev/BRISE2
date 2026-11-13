@@ -25,9 +25,6 @@ def _load_experiment(test_id, get_experiment):
         if exp_desc is None or search_space is None:
             return None, None
         experiment = Experiment(exp_desc, search_space)
-        Configuration.set_task_config(
-            experiment.description["Context"]["TaskConfiguration"]
-        )
         return experiment, search_space
     else:
         experiment, _, search_space = create_experiment_from_test_case(
